@@ -1,0 +1,52 @@
+# Compiled python
+*.pyc
+*.pyd
+
+# Compiled MATLAB
+*.mex*
+
+# IPython notebook checkpoints
+.ipynb_checkpoints
+
+# Editor temporaries
+*.swn
+*.swo
+*.swp
+*~
+
+# Sublime Text settings
+*.sublime-workspace
+*.sublime-project
+
+# Eclipse Project settings
+*.*project
+.settings
+
+# QtCreator files
+*.user
+
+# PyCharm files
+.idea
+
+# Visual Studio Code files
+.vscode
+.vs
+
+# OSX dir files
+.DS_Store
+
+# Outputs
+*/__pycache__
+.pytest_cache/
+build/
+dist/
+.cache/
+.eggs/
+lightning_logs/
+/outputs
+*.egg-info/
+.coverage
+.coverage.*
+coverage.xml
+*.out
+*.pt

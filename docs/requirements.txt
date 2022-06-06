@@ -1,0 +1,15 @@
+Sphinx >= 3.0.0
+docutils
+pylons-sphinx-themes >= 1.0.8
+pylons_sphinx_latesturl
+repoze.sphinx.autointerface
+sphinxcontrib-autoprogram
+tqdm
+numpy
+pandas
+scipy
+scikit-learn
+lmdb
+torch
+einops
+torch_geometric
