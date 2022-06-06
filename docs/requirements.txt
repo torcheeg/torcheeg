@@ -1,4 +1,6 @@
 torch
+torch-scatter
+torch_sparse
 Sphinx >= 3.0.0
 docutils
 pylons-sphinx-themes >= 1.0.8
@@ -13,4 +15,3 @@ scikit-learn
 lmdb
 einops
 torch_geometric
-torch_sparse
