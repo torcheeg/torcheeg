@@ -13,3 +13,4 @@ lmdb
 torch
 einops
 torch_geometric
+torch_sparse

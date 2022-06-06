@@ -10,11 +10,11 @@ from torcheeg.io import EEGSignalIO
 
 class TestEEGSignalIO(unittest.TestCase):
     def setUp(self):
-        shutil.rmtree('./outputs/')
-        os.mkdir('./outputs/')
+        shutil.rmtree('./tmp_out/')
+        os.mkdir('./tmp_out/')
 
     def test_init(self):
-        io_cache_path = f'./outputs/{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
+        io_cache_path = f'./tmp_out/{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
         io = EEGSignalIO(cache_path=io_cache_path)
         self.assertEqual(len(io), 0)
 
@@ -23,7 +23,7 @@ class TestEEGSignalIO(unittest.TestCase):
         self.assertEqual(len(io), 0)
 
     def test_write_eeg(self):
-        io_cache_path = f'./outputs/{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
+        io_cache_path = f'./tmp_out/{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
         io = EEGSignalIO(cache_path=io_cache_path)
 
         eeg = np.random.randn(32, 128)
@@ -33,7 +33,7 @@ class TestEEGSignalIO(unittest.TestCase):
         io.write_eeg(eeg)
 
     def test_len(self):
-        io_cache_path = f'./outputs/{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
+        io_cache_path = f'./tmp_out/{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
         io = EEGSignalIO(cache_path=io_cache_path)
 
         eeg = np.random.randn(32, 128)
@@ -45,7 +45,7 @@ class TestEEGSignalIO(unittest.TestCase):
         self.assertEqual(len(io), 2)
 
     def test_read_eeg(self):
-        io_cache_path = f'./outputs/{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
+        io_cache_path = f'./tmp_out/{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
         io = EEGSignalIO(cache_path=io_cache_path)
 
         eeg = np.random.randn(32, 128)

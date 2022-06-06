@@ -1,4 +1,5 @@
 import torch
+import random
 import torch.nn as nn
 from pytorch_lightning import Trainer, seed_everything
 from pytorch_lightning.callbacks import ModelCheckpoint
@@ -17,26 +18,18 @@ from torchmetrics import Accuracy
 class CNN(torch.nn.Module):
     def __init__(self):
         super().__init__()
-        self.conv1 = nn.Sequential(
-            nn.ZeroPad2d((1, 2, 1, 2)),
-            nn.Conv2d(4, 64, kernel_size=4, stride=1),
-            nn.ReLU()
-        )
-        self.conv2 = nn.Sequential(
-            nn.ZeroPad2d((1, 2, 1, 2)),
-            nn.Conv2d(64, 128, kernel_size=4, stride=1),
-            nn.ReLU()
-        )
-        self.conv3 = nn.Sequential(
-            nn.ZeroPad2d((1, 2, 1, 2)),
-            nn.Conv2d(128, 256, kernel_size=4, stride=1),
-            nn.ReLU()
-        )
-        self.conv4 = nn.Sequential(
-            nn.ZeroPad2d((1, 2, 1, 2)),
-            nn.Conv2d(256, 64, kernel_size=4, stride=1),
-            nn.ReLU()
-        )
+        self.conv1 = nn.Sequential(nn.ZeroPad2d((1, 2, 1, 2)),
+                                   nn.Conv2d(4, 64, kernel_size=4, stride=1),
+                                   nn.ReLU())
+        self.conv2 = nn.Sequential(nn.ZeroPad2d((1, 2, 1, 2)),
+                                   nn.Conv2d(64, 128, kernel_size=4, stride=1),
+                                   nn.ReLU())
+        self.conv3 = nn.Sequential(nn.ZeroPad2d((1, 2, 1, 2)),
+                                   nn.Conv2d(128, 256, kernel_size=4, stride=1),
+                                   nn.ReLU())
+        self.conv4 = nn.Sequential(nn.ZeroPad2d((1, 2, 1, 2)),
+                                   nn.Conv2d(256, 64, kernel_size=4, stride=1),
+                                   nn.ReLU())
 
         self.lin1 = nn.Linear(9 * 9 * 64, 1024)
         self.lin2 = nn.Linear(1024, 2)
@@ -51,6 +44,7 @@ class CNN(torch.nn.Module):
         x = self.lin1(x)
         x = self.lin2(x)
         return x
+
 
 class EEGClassifier(LightningModule):
     def __init__(self, lr=1e-4):
@@ -93,18 +87,25 @@ class EEGClassifier(LightningModule):
 if __name__ == "__main__":
     seed_everything(42)
 
-    dataset = DEAPDataset(io_path=f'./outputs/deap',
-                      root_path='/home/zhangzhi/Data/eeg-datasets/DEAP/data_preprocessed_python',
-                      offline_transform=transforms.Compose([
-                          transforms.BandDifferentialEntropy(),
-                          transforms.ToGrid(DEAP_CHANNEL_LOCATION_DICT)
-                      ]),
-                      online_transform=transforms.ToTensor(),
-                      label_transform=transforms.Compose([
-                          transforms.Select('valence'),
-                          transforms.Binary(5.0),
-                      ]))
-    k_fold = KFoldDataset(n_splits=10, split_path='./outputs/split', shuffle=True, random_state=42)
+    dataset = DEAPDataset(
+        io_path=
+        f'./tmp_out/deap_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}',
+        root_path='./tmp_in/data_preprocessed_python',
+        offline_transform=transforms.Compose([
+            transforms.BandDifferentialEntropy(),
+            transforms.ToGrid(DEAP_CHANNEL_LOCATION_DICT)
+        ]),
+        online_transform=transforms.ToTensor(),
+        label_transform=transforms.Compose([
+            transforms.Select('valence'),
+            transforms.Binary(5.0),
+        ]))
+    k_fold = KFoldDataset(
+        n_splits=10,
+        split_path=
+        f'./tmp_out/split_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}',
+        shuffle=True,
+        random_state=42)
 
     for i, (train_dataset, val_dataset) in enumerate(k_fold.split(dataset)):
         train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True)

@@ -12,20 +12,20 @@ from torcheeg.datasets.functional import (deap_constructor,
 
 class TestEmotionRecognitionDataset(unittest.TestCase):
     def setUp(self):
-        shutil.rmtree('./outputs/')
-        os.mkdir('./outputs/')
+        shutil.rmtree('./tmp_out/')
+        os.mkdir('./tmp_out/')
 
     def test_deap_constructor(self):
-        io_path = f'./outputs/deap_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
-        root_path = '~/Data/eeg-datasets/DEAP/data_preprocessed_python'
+        io_path = f'./tmp_out/deap_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
+        root_path = './tmp_in/data_preprocessed_python'
         deap_constructor(io_path=io_path,
                          root_path=root_path,
                          transform=transforms.BandDifferentialEntropy(),
                          num_worker=4)
 
     def test_deap_dataset(self):
-        io_path = f'./outputs/deap_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
-        root_path = '~/Data/eeg-datasets/DEAP/data_preprocessed_python'
+        io_path = f'./tmp_out/deap_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
+        root_path = './tmp_in/data_preprocessed_python'
 
         dataset = DEAPDataset(
             io_path=io_path,
@@ -44,14 +44,14 @@ class TestEmotionRecognitionDataset(unittest.TestCase):
         self.assertEqual(last_item[0].shape, (32, 4))
 
     def test_dreamer_constructor(self):
-        io_path = f'./outputs/dreamer_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
-        mat_path = '~/Data/eeg-datasets/DREAMER/DREAMER.mat'
+        io_path = f'./tmp_out/dreamer_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
+        mat_path = './tmp_in/DREAMER.mat'
 
         dreamer_constructor(io_path=io_path, mat_path=mat_path, num_worker=4)
 
     def test_dreamer_dataset(self):
-        io_path = f'./outputs/dreamer_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
-        mat_path = '~/Data/eeg-datasets/DREAMER/DREAMER.mat'
+        io_path = f'./tmp_out/dreamer_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
+        mat_path = './tmp_in/DREAMER.mat'
 
         dataset = DREAMERDataset(io_path=io_path, mat_path=mat_path)
 
@@ -62,8 +62,8 @@ class TestEmotionRecognitionDataset(unittest.TestCase):
         self.assertEqual(last_item[0].shape, (14, 128))
 
     def test_seed_constructor(self):
-        io_path = f'./outputs/seed_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
-        root_path = '~/Data/eeg-datasets/SEED/Preprocessed_EEG'
+        io_path = f'./tmp_out/seed_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
+        root_path = './tmp_in/Preprocessed_EEG'
 
         seed_constructor(io_path=io_path,
                          root_path=root_path,
@@ -71,8 +71,8 @@ class TestEmotionRecognitionDataset(unittest.TestCase):
                          num_worker=9)
 
     def test_seed_dataset(self):
-        io_path = f'./outputs/seed_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
-        root_path = '~/Data/eeg-datasets/SEED/Preprocessed_EEG'
+        io_path = f'./tmp_out/seed_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
+        root_path = './tmp_in/Preprocessed_EEG'
 
         dataset = SEEDDataset(
             io_path=io_path,

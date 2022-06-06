@@ -20,7 +20,7 @@ import datetime
 
 project = 'torcheeg'
 version = torcheeg.__version__
-author = 'Anonymous'
+author = 'TorchEEG Team'
 copyright = f'{datetime.datetime.now().year}, {author}'
 
 # The full version, including alpha/beta/rc tags

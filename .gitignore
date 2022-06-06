@@ -43,10 +43,11 @@ dist/
 .cache/
 .eggs/
 lightning_logs/
-/outputs
 *.egg-info/
 .coverage
 .coverage.*
 coverage.xml
 *.out
 *.pt
+/tmp_in
+/tmp_out
