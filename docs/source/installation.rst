@@ -16,7 +16,7 @@ Nightly
 
 In case you want to experiment with the latest TorchEEG features which
 are not fully released yet, please run the following command to install
-from the master branch on github:
+from the main branch on github:
 
 ::
 

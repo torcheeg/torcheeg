@@ -10,7 +10,7 @@
 [![PyPI Version][pypi-image]][pypi-url]
 [![Docs Status][docs-image]][docs-url]
 
-**[Documentation](https://torcheeg.readthedocs.io/)** | **[TorchEEG Examples](https://github.com/tczhangzhi/torcheeg/tree/master/examples)**
+**[Documentation](https://torcheeg.readthedocs.io/)** | **[TorchEEG Examples](https://github.com/tczhangzhi/torcheeg/tree/main/examples)**
 
 TorchEEG is a library built on PyTorch for EEG signal analysis. TorchEEG aims to provide a plug-and-play EEG analysis tool, so that researchers can quickly reproduce EEG analysis work and start new EEG analysis research without paying attention to technical details unrelated to the research focus.
 
@@ -22,15 +22,15 @@ TorchEEG specifies a unified data input-output format (IO) and implement commonl
 
 TorchEEG also allows pip-based installation, please use the following command:
 
-```
+```shell
 pip install torcheeg
 ```
 
 ### Nightly
 
-In case you want to experiment with the latest TorchEEG features which are not fully released yet, please run the following command to install from the master branch on github:
+In case you want to experiment with the latest TorchEEG features which are not fully released yet, please run the following command to install from the main branch on github:
 
-```
+```shell
 pip install git+https://github.com/tczhangzhi/torcheeg.git
 ```
 
@@ -53,7 +53,7 @@ In this quick tour, we highlight the ease of starting an EEG analysis research w
 
 The `torcheeg.datasets` module contains dataset objects for many real-world EEG data, such as DEAP, DREAMER, and SEED. In this tutorial, we use the `DEAP` dataset. Each `Dataset` contains three parameters: `online_transform`, `offline_transform`, and `target_transform`, which are used to modify samples and labels, respectively.
 
-```
+```python
 from torcheeg.datasets import DEAPDataset
 from torcheeg.datasets.constants.emotion_recognition.deap import DEAP_CHANNEL_LOCATION_DICT
 
@@ -74,7 +74,7 @@ Here, `offline_transform` is used to modify samples when generating and processi
 
 Next, we need to divide the dataset into a training set and a test set. In the field of EEG analysis, commonly used data partitioning methods include k-fold cross-validation and leave-one-out cross-validation. In this tutorial, we use k-fold cross-validation on the entire dataset (`KFoldDataset`) as an example for dataset partitioning.
 
-```
+```python
 from torcheeg.model_selection import KFoldDataset
 
 k_fold = KFoldDataset(n_splits=5, split_path='./split', shuffle=True)
@@ -82,7 +82,7 @@ k_fold = KFoldDataset(n_splits=5, split_path='./split', shuffle=True)
 
 Let's define a simple but effective CNN model:
 
-```
+```python
 class CNN(torch.nn.Module):
     def __init__(self):
         super().__init__()
@@ -126,7 +126,7 @@ During the research, we may also use other GNN or Transformer-based models and b
 
 The training and validation scripts for the model are taken from the PyTorch tutorial without much modification. The only thing worth noting is that the `Dataset` provides three values when it is traversed, namely the EEG signal (denoted by `X` in the code), the baseline signal (denoted by `b` in the code), and the sample label (denoted by `y` in the code). In particular, to achieve baseline removal, we subtract the baseline signal from the original signal as input to the model (see `pred = model(X - b)`).
 
-```
+```python
 device = "cuda" if torch.cuda.is_available() else "cpu"
 model = CNN().to(device)
 
@@ -200,4 +200,4 @@ If you would like to contribute new datasets, deep learning methods, and extensi
 
 ## License
 
-TorchEEG has a MIT license, as found in the [LICENSE](https://github.com/tczhangzhi/torcheeg/blob/master/LICENSE) file.
+TorchEEG has a MIT license, as found in the [LICENSE](https://github.com/tczhangzhi/torcheeg/blob/main/LICENSE) file.

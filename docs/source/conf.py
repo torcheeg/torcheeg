@@ -75,7 +75,7 @@ html_context = {
   'display_github': True,
   'github_user': 'tczhangzhi',
   'github_repo': 'torcheeg',
-  'github_version': 'master/docs/',
+  'github_version': 'main/docs/',
 }
 
 html_favicon = '_static/favicon.ico'

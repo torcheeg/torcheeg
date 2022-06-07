@@ -1,9 +1,11 @@
-.. figure:: https://github.com/tczhangzhi/torcheeg/blob/master/docs/source/_static/torcheeg_logo_dark.png
+.. figure:: https://github.com/tczhangzhi/torcheeg/blob/main/docs/source/_static/torcheeg_logo_dark.png
    :alt: TorchEEG Logo
 
    TorchEEG Logo
 
 --------------
+
+|PyPI Version| |Docs Status|
 
 `Documentation <https://torcheeg.readthedocs.io/>`__ \| `TorchEEG
 Examples <https://github.com/tczhangzhi/torcheeg/tree/master/examples>`__
@@ -37,7 +39,7 @@ Pip
 TorchEEG also allows pip-based installation, please use the following
 command:
 
-::
+.. code:: shell
 
    pip install torcheeg
 
@@ -48,7 +50,7 @@ In case you want to experiment with the latest TorchEEG features which
 are not fully released yet, please run the following command to install
 from the master branch on github:
 
-::
+.. code:: shell
 
    pip install git+https://github.com/tczhangzhi/torcheeg.git
 
@@ -104,7 +106,7 @@ we use the ``DEAP`` dataset. Each ``Dataset`` contains three parameters:
 ``online_transform``, ``offline_transform``, and ``target_transform``,
 which are used to modify samples and labels, respectively.
 
-::
+.. code:: python
 
    from torcheeg.datasets import DEAPDataset
    from torcheeg.datasets.constants.emotion_recognition.deap import DEAP_CHANNEL_LOCATION_DICT
@@ -134,7 +136,7 @@ include k-fold cross-validation and leave-one-out cross-validation. In
 this tutorial, we use k-fold cross-validation on the entire dataset
 (``KFoldDataset``) as an example for dataset partitioning.
 
-::
+.. code:: python
 
    from torcheeg.model_selection import KFoldDataset
 
@@ -142,7 +144,7 @@ this tutorial, we use k-fold cross-validation on the entire dataset
 
 Let’s define a simple but effective CNN model:
 
-::
+.. code:: python
 
    class CNN(torch.nn.Module):
        def __init__(self):
@@ -195,7 +197,7 @@ signal (denoted by ``b`` in the code), and the sample label (denoted by
 subtract the baseline signal from the original signal as input to the
 model (see ``pred = model(X - b)``).
 
-::
+.. code:: python
 
    device = "cuda" if torch.cuda.is_available() else "cpu"
    model = CNN().to(device)
@@ -279,3 +281,8 @@ License
 TorchEEG has a MIT license, as found in the
 `LICENSE <https://github.com/tczhangzhi/torcheeg/blob/master/LICENSE>`__
 file.
+
+.. |PyPI Version| image:: https://badge.fury.io/py/torcheeg.svg
+   :target: https://pypi.python.org/pypi/torcheeg
+.. |Docs Status| image:: https://readthedocs.org/projects/torcheeg/badge/?version=latest
+   :target: https://torcheeg.readthedocs.io/en/latest/?badge=latest
