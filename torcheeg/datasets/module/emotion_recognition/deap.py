@@ -15,6 +15,14 @@ class DEAPDataset(BaseDataset):
     - Stimulus: 40 one-minute long excerpts from music videos.
     - Signals: Electroencephalogram (32 channels at 512Hz, downsampled to 128Hz), skinconductance level (SCL), respiration amplitude, skin temperature,electrocardiogram, blood volume by plethysmograph, electromyograms ofZygomaticus and Trapezius muscles (EMGs), electrooculogram (EOG), face video (for 22 participants).
     - Rating: Arousal, valence, like/dislike, dominance (all ona scale from 1 to 9), familiarity (on a scale from 1 to 5).
+    
+    In order to use this dataset, the download folder :obj:`data_preprocessed_python` is required, containing the following files:
+    
+    - s01.dat
+    - s02.dat
+    - s03.dat
+    - ...
+    - s32.dat
 
     An example dataset for CNN-based methods:
 
@@ -43,8 +51,8 @@ class DEAPDataset(BaseDataset):
         dataset = DEAPDataset(io_path=f'./deap',
                               root_path='./data_preprocessed_python',
                               online_transform=transforms.Compose([
-                                  transforms.ToTensor(),
-                                  transforms.Lambda(lambda x: x.unsqueeze(0))
+                                  transforms.To2d(),
+                                  transforms.ToTensor()
                               ]),
                               label_transform=transforms.Compose([
                                   transforms.Select(['valence', 'arousal']),

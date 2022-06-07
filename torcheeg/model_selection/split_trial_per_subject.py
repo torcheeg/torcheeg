@@ -23,7 +23,7 @@ def train_test_split_trial_per_subject(dataset: BaseDataset,
                               root_path='./data_preprocessed_python',
                               online_transform=transforms.Compose([
                                   transforms.ToTensor(),
-                                  transforms.Lambda(lambda x: x.unsqueeze(0))
+                                  transforms.To2d()
                               ]),
                               label_transform=transforms.Compose([
                                   transforms.Select(['valence', 'arousal']),

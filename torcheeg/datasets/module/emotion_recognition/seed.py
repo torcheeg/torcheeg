@@ -16,6 +16,14 @@ class SEEDDataset(BaseDataset):
     - Signals: Electroencephalogram (62 channels at 200Hz) of 15 subjects, and eye movement data of 12 subjects. Each subject conducts the experiment three times, with an interval of about one week, totally 15 people x 3 times = 45
     - Rating: positive (-1), negative (0), and neutral (1).
 
+    In order to use this dataset, the download folder :obj:`data_preprocessed_python` is required, containing the following files:
+    
+    - label.mat
+    - readme.txt
+    - 10_20131130.mat
+    - ...
+    - 9_20140704.mat
+
     An example dataset for CNN-based methods:
 
     .. code-block:: python
@@ -44,7 +52,7 @@ class SEEDDataset(BaseDataset):
                               root_path='./Preprocessed_EEG',
                               online_transform=transforms.Compose([
                                   transforms.ToTensor(),
-                                  transforms.Lambda(lambda x: x.unsqueeze(0))
+                                  transforms.To2d()
                               ]),
                               label_transform=transforms.Compose([
                                   transforms.Select(['emotion']),

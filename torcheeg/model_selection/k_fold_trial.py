@@ -20,8 +20,8 @@ class KFoldTrial:
         dataset = DEAPDataset(io_path=f'./deap',
                               root_path='./data_preprocessed_python',
                               online_transform=transforms.Compose([
-                                  transforms.ToTensor(),
-                                  transforms.Lambda(lambda x: x.unsqueeze(0))
+                                  transforms.To2d(),
+                                  transforms.ToTensor()
                               ]),
                               label_transform=transforms.Compose([
                                   transforms.Select(['valence', 'arousal']),

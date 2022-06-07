@@ -16,6 +16,8 @@ class DREAMERDataset(BaseDataset):
     - Signals: Electroencephalogram (14 channels at 128Hz), and electrocardiogram (2 channels at 256Hz) of 23 subjects.
     - Rating: Arousal, valence, like/dislike, dominance, familiarity (all ona scale from 1 to 5).
 
+    In order to use this dataset, the download file :obj:`DREAMER.mat` is required.
+
     An example dataset for CNN-based methods:
 
     .. code-block:: python
@@ -43,8 +45,8 @@ class DREAMERDataset(BaseDataset):
         dataset = DREAMERDataset(io_path=f'./dreamer',
                               mat_path='./DREAMER.mat',
                               online_transform=transforms.Compose([
-                                  transforms.ToTensor(),
-                                  transforms.Lambda(lambda x: x.unsqueeze(0))
+                                  transforms.To2d(),
+                                  transforms.ToTensor()
                               ]),
                               label_transform=transforms.Compose([
                                   transforms.Select(['valence', 'arousal']),

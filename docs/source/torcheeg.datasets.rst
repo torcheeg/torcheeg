@@ -24,3 +24,11 @@ SEEDDataset
    :members:
    :undoc-members:
    :show-inheritance:
+
+AMIGOSDataset
+---------------------------------------------------------
+
+.. autoclass:: torcheeg.datasets.AMIGOSDataset
+   :members:
+   :undoc-members:
+   :show-inheritance:
