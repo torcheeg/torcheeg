@@ -1,4 +1,4 @@
-from typing import Callable, Union, Tuple
+from typing import Callable, Union, Tuple, List
 
 from ..base_dataset import BaseDataset
 from ...functional.emotion_recognition.amigos import amigos_constructor
@@ -89,6 +89,9 @@ class AMIGOSDataset(BaseDataset):
         overlap (int): The number of overlapping data points between different chunks when dividing EEG chunks. (default: :obj:`0`)
         channel_num (int): Number of channels used, of which the first 14 channels are EEG signals. (default: :obj:`14`)
         trial_num (int): Number of trials used, of which the first 16 trials are conducted with short videos and the last 4 trials are conducted with long videos. (default: :obj:`16`)
+        skipped_subjects (int): The participant ID to be removed because there are some invalid data in the preprocessed version. (default: :obj:`[9, 12, 21, 22, 23, 24, 33]`)
+        baseline_num (int): Number of baseline signal chunks used. (default: :obj:`5`)
+        baseline_chunk_size (int): Number of data points included in each baseline signal chunk. The baseline signal in the AMIGOS dataset has a total of 640 data points. (default: :obj:`128`)
         online_transform (Callable, optional): The transformation of the EEG signals and baseline EEG signals. The input is a :obj:`np.ndarray`, and the ouput is used as the first and second value of each element in the dataset. (default: :obj:`None`)
         offline_transform (Callable, optional): The usage is the same as :obj:`online_transform`, but executed before generating IO intermediate results. (default: :obj:`None`)
         label_transform (Callable, optional): The transformation of the label. The input is an information dictionary, and the ouput is used as the third value of each element in the dataset. (default: :obj:`None`)
@@ -103,6 +106,9 @@ class AMIGOSDataset(BaseDataset):
                  overlap: int = 0,
                  channel_num: int = 14,
                  trial_num: int = 16,
+                 skipped_subjects: List[int] = [9, 12, 21, 22, 23, 24, 33],
+                 baseline_num: int = 5,
+                 baseline_chunk_size: int = 128,
                  online_transform: Union[None, Callable] = None,
                  offline_transform: Union[None, Callable] = None,
                  label_transform: Union[None, Callable] = None,
@@ -114,6 +120,9 @@ class AMIGOSDataset(BaseDataset):
                            overlap=overlap,
                            channel_num=channel_num,
                            trial_num=trial_num,
+                           skipped_subjects=skipped_subjects,
+                           baseline_num=baseline_num,
+                           baseline_chunk_size=baseline_chunk_size,
                            transform=offline_transform,
                            io_path=io_path,
                            num_worker=num_worker,
@@ -125,6 +134,9 @@ class AMIGOSDataset(BaseDataset):
         self.overlap = overlap
         self.channel_num = channel_num
         self.trial_num = trial_num
+        self.skipped_subjects = skipped_subjects
+        self.baseline_num = baseline_num
+        self.baseline_chunk_size = baseline_chunk_size
         self.online_transform = online_transform
         self.offline_transform = offline_transform
         self.label_transform = label_transform
@@ -140,11 +152,17 @@ class AMIGOSDataset(BaseDataset):
         if self.online_transform:
             eeg = self.online_transform(eeg)
 
+        baseline_index = str(info['baseline_id'])
+        baseline = self.eeg_io.read_eeg(baseline_index)
+
+        if self.online_transform:
+            baseline = self.online_transform(baseline)
+
         if self.label_transform:
             info = self.label_transform(info)
 
         if isinstance(info, list):
-            return (eeg, *info)
+            return (eeg, baseline, *info)
         if isinstance(info, dict):
-            return (eeg, *info.values())
-        return eeg, info
+            return (eeg, baseline, *info.values())
+        return eeg, baseline, info

@@ -154,6 +154,7 @@ class DEAPDataset(BaseDataset):
 
         if self.label_transform:
             info = self.label_transform(info)
+
         if isinstance(info, list):
             return (eeg, baseline, *info)
         if isinstance(info, dict):

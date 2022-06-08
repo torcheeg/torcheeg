@@ -31,10 +31,10 @@ class TestEmotionRecognitionDataset(unittest.TestCase):
                                 ]),
                                 num_worker=9)
 
-        self.assertEqual(len(dataset), 58320)
+        self.assertEqual(len(dataset), 45474)
         first_item = dataset[0]
         self.assertEqual(first_item[0].shape, (14, 128))
-        last_item = dataset[58319]
+        last_item = dataset[45473]
         self.assertEqual(last_item[0].shape, (14, 128))
 
     def test_deap_constructor(self):
