@@ -109,31 +109,28 @@ up!).
    from Miranda-Correa et al.: `AMIGOS: A dataset for affect,
    personality and mood research on individuals and
    groups <https://ieeexplore.ieee.org/abstract/document/8554112/>`__.
-
 -  `DREAMER
    dataset <https://torcheeg.readthedocs.io/en/latest/torcheeg.datasets.html#dreamerdataset>`__
    from Katsigiannis et al.: `DREAMER: A database for emotion
    recognition through EEG and ECG signals from wireless low-cost
    off-the-shelf
    devices <https://ieeexplore.ieee.org/abstract/document/7887697>`__.
-
 -  `SEED
    dataset <https://torcheeg.readthedocs.io/en/latest/torcheeg.datasets.html#seeddataset>`__
    from Zheng et al.: `Investigating critical frequency bands and
    channels for EEG-based emotion recognition with deep neural
    networks <https://ieeexplore.ieee.org/abstract/document/7104132>`__.
-
 -  `DEAP
    dataset <https://torcheeg.readthedocs.io/en/latest/torcheeg.datasets.html#deapdataset>`__
    from Koelstra et al.: `DEAP: A database for emotion analysis; using
    physiological
    signals <https://ieeexplore.ieee.org/abstract/document/5871728>`__.
 
-   .. raw:: html
+.. raw:: html
 
-      <details>
+   <details>
 
-   Expand to see more…
+Expand to see more…
 
 -  `MAHNOB
    dataset <https://torcheeg.readthedocs.io/en/latest/torcheeg.datasets.html#mahnobdataset>`__
@@ -141,13 +138,13 @@ up!).
    and implicit
    tagging <https://ieeexplore.ieee.org/abstract/document/5975141>`__.
 
-   .. raw:: html
+.. raw:: html
 
-      </details>
+   </details>
 
-   **Transforms:** TorchEEG provides rich data transformation tools to
-   help users build EEG data representations suitable for a variety of
-   task formulation and a variety of model structures.
+**Transforms:** TorchEEG provides rich data transformation tools to help
+users build EEG data representations suitable for a variety of task
+formulation and a variety of model structures.
 
 -  Feature Engineering:
    `BandDifferentialEntropy <https://torcheeg.readthedocs.io/en/latest/torcheeg.transforms.numpy.html#transforms-banddifferentialentropy>`__,
@@ -156,12 +153,10 @@ up!).
    `BandKurtosis <https://torcheeg.readthedocs.io/en/latest/torcheeg.transforms.numpy.html#transforms-bandkurtosis>`__,
    `BandSkewness <https://torcheeg.readthedocs.io/en/latest/torcheeg.transforms.numpy.html#transforms-bandskewness>`__,
    `Concatenate <https://torcheeg.readthedocs.io/en/latest/torcheeg.transforms.numpy.html#transforms-concatenate>`__
-
 -  General Operation:
    `PickElectrode <https://torcheeg.readthedocs.io/en/latest/torcheeg.transforms.numpy.html#transforms-pickelectrode>`__,
    `MeanStdNormalize <https://torcheeg.readthedocs.io/en/latest/torcheeg.transforms.numpy.html#transforms-meanstdnormalize>`__,
    `MinMaxNormalize <https://torcheeg.readthedocs.io/en/latest/torcheeg.transforms.numpy.html#transforms-minmaxnormalize>`__
-
 -  For CNN:
    `To2d <https://torcheeg.readthedocs.io/en/latest/torcheeg.transforms.numpy.html#transforms-to2d>`__,
    `ToGrid <https://torcheeg.readthedocs.io/en/latest/torcheeg.transforms.numpy.html#transforms-togrid>`__,
@@ -171,16 +166,18 @@ up!).
 
    <details>
 
-Expand to see more… \* For GNN:
-`ToG <https://torcheeg.readthedocs.io/en/latest/torcheeg.transforms.pyg.html#transforms-tog>`__
-\* For Augmentation:
-`Resize <https://torcheeg.readthedocs.io/en/latest/torcheeg.transforms.torch.html#transforms-resize>`__,
-`RandomNoise <https://torcheeg.readthedocs.io/en/latest/torcheeg.transforms.torch.html#transforms-randomnoise>`__,
-`RandomMask <https://torcheeg.readthedocs.io/en/latest/torcheeg.transforms.torch.html#transforms-randommask>`__
-\* For Label Construction:
-`Select <https://torcheeg.readthedocs.io/en/latest/torcheeg.transforms.label.html#transforms-select>`__,
-`Binary <https://torcheeg.readthedocs.io/en/latest/torcheeg.transforms.label.html#transforms-binary>`__,
-`BinariesToCategory <https://torcheeg.readthedocs.io/en/latest/torcheeg.transforms.label.html#transforms-binariestocategory>`__
+Expand to see more…
+
+-  For GNN:
+   `ToG <https://torcheeg.readthedocs.io/en/latest/torcheeg.transforms.pyg.html#transforms-tog>`__
+-  For Augmentation:
+   `Resize <https://torcheeg.readthedocs.io/en/latest/torcheeg.transforms.torch.html#transforms-resize>`__,
+   `RandomNoise <https://torcheeg.readthedocs.io/en/latest/torcheeg.transforms.torch.html#transforms-randomnoise>`__,
+   `RandomMask <https://torcheeg.readthedocs.io/en/latest/torcheeg.transforms.torch.html#transforms-randommask>`__
+-  For Label Construction:
+   `Select <https://torcheeg.readthedocs.io/en/latest/torcheeg.transforms.label.html#transforms-select>`__,
+   `Binary <https://torcheeg.readthedocs.io/en/latest/torcheeg.transforms.label.html#transforms-binary>`__,
+   `BinariesToCategory <https://torcheeg.readthedocs.io/en/latest/torcheeg.transforms.label.html#transforms-binariestocategory>`__
 
 .. raw:: html
 
