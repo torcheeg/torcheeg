@@ -13,10 +13,10 @@ class TestEmotionRecognitionDataset(unittest.TestCase):
         shutil.rmtree('./tmp_out/')
         os.mkdir('./tmp_out/')
 
-    # def test_mahnob_constructor(self):
-    #     io_path = f'./tmp_out/mahnob_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
-    #     root_path = './tmp_in/Sessions'
-    #     mahnob_constructor(io_path=io_path, root_path=root_path, num_worker=4)
+    def test_mahnob_constructor(self):
+        io_path = f'./tmp_out/mahnob_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
+        root_path = './tmp_in/Sessions'
+        mahnob_constructor(io_path=io_path, root_path=root_path, num_worker=4)
 
     def test_mahnob_dataset(self):
         io_path = f'./tmp_out/mahnob_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
@@ -36,102 +36,102 @@ class TestEmotionRecognitionDataset(unittest.TestCase):
         last_item = dataset[16409]
         self.assertEqual(last_item[0].shape, (32, 128))
 
-    # def test_amigos_constructor(self):
-    #     io_path = f'./tmp_out/amigos_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
-    #     root_path = './tmp_in/data_preprocessed'
-    #     amigos_constructor(io_path=io_path, root_path=root_path, num_worker=4)
+    def test_amigos_constructor(self):
+        io_path = f'./tmp_out/amigos_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
+        root_path = './tmp_in/data_preprocessed'
+        amigos_constructor(io_path=io_path, root_path=root_path, num_worker=4)
 
-    # def test_amigos_dataset(self):
-    #     io_path = f'./tmp_out/amigos_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
-    #     root_path = './tmp_in/data_preprocessed'
+    def test_amigos_dataset(self):
+        io_path = f'./tmp_out/amigos_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
+        root_path = './tmp_in/data_preprocessed'
 
-    #     dataset = AMIGOSDataset(io_path=io_path,
-    #                             root_path=root_path,
-    #                             trial_num=16,
-    #                             label_transform=transforms.Compose([
-    #                                 transforms.Select('valence'),
-    #                                 transforms.Binary(5.0),
-    #                             ]),
-    #                             num_worker=9)
+        dataset = AMIGOSDataset(io_path=io_path,
+                                root_path=root_path,
+                                trial_num=16,
+                                label_transform=transforms.Compose([
+                                    transforms.Select('valence'),
+                                    transforms.Binary(5.0),
+                                ]),
+                                num_worker=9)
 
-    #     self.assertEqual(len(dataset), 45474)
-    #     first_item = dataset[0]
-    #     self.assertEqual(first_item[0].shape, (14, 128))
-    #     last_item = dataset[45473]
-    #     self.assertEqual(last_item[0].shape, (14, 128))
+        self.assertEqual(len(dataset), 45474)
+        first_item = dataset[0]
+        self.assertEqual(first_item[0].shape, (14, 128))
+        last_item = dataset[45473]
+        self.assertEqual(last_item[0].shape, (14, 128))
 
-    # def test_deap_constructor(self):
-    #     io_path = f'./tmp_out/deap_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
-    #     root_path = './tmp_in/data_preprocessed_python'
-    #     deap_constructor(io_path=io_path,
-    #                      root_path=root_path,
-    #                      transform=transforms.BandDifferentialEntropy(),
-    #                      num_worker=4)
+    def test_deap_constructor(self):
+        io_path = f'./tmp_out/deap_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
+        root_path = './tmp_in/data_preprocessed_python'
+        deap_constructor(io_path=io_path,
+                         root_path=root_path,
+                         transform=transforms.BandDifferentialEntropy(),
+                         num_worker=4)
 
-    # def test_deap_dataset(self):
-    #     io_path = f'./tmp_out/deap_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
-    #     root_path = './tmp_in/data_preprocessed_python'
+    def test_deap_dataset(self):
+        io_path = f'./tmp_out/deap_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
+        root_path = './tmp_in/data_preprocessed_python'
 
-    #     dataset = DEAPDataset(io_path=io_path,
-    #                           root_path=root_path,
-    #                           offline_transform=transforms.BandDifferentialEntropy(),
-    #                           label_transform=transforms.Compose([
-    #                               transforms.Select('valence'),
-    #                               transforms.Binary(5.0),
-    #                           ]),
-    #                           num_worker=4)
-    #     self.assertEqual(len(dataset), 76800)
-    #     self.assertEqual(len(dataset.eeg_io), 78080)
-    #     first_item = dataset[0]
-    #     self.assertEqual(first_item[0].shape, (32, 4))
-    #     last_item = dataset[76799]
-    #     self.assertEqual(last_item[0].shape, (32, 4))
+        dataset = DEAPDataset(io_path=io_path,
+                              root_path=root_path,
+                              offline_transform=transforms.BandDifferentialEntropy(),
+                              label_transform=transforms.Compose([
+                                  transforms.Select('valence'),
+                                  transforms.Binary(5.0),
+                              ]),
+                              num_worker=4)
+        self.assertEqual(len(dataset), 76800)
+        self.assertEqual(len(dataset.eeg_io), 78080)
+        first_item = dataset[0]
+        self.assertEqual(first_item[0].shape, (32, 4))
+        last_item = dataset[76799]
+        self.assertEqual(last_item[0].shape, (32, 4))
 
-    # def test_dreamer_constructor(self):
-    #     io_path = f'./tmp_out/dreamer_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
-    #     mat_path = './tmp_in/DREAMER.mat'
+    def test_dreamer_constructor(self):
+        io_path = f'./tmp_out/dreamer_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
+        mat_path = './tmp_in/DREAMER.mat'
 
-    #     dreamer_constructor(io_path=io_path, mat_path=mat_path, num_worker=4)
+        dreamer_constructor(io_path=io_path, mat_path=mat_path, num_worker=4)
 
-    # def test_dreamer_dataset(self):
-    #     io_path = f'./tmp_out/dreamer_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
-    #     mat_path = './tmp_in/DREAMER.mat'
+    def test_dreamer_dataset(self):
+        io_path = f'./tmp_out/dreamer_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
+        mat_path = './tmp_in/DREAMER.mat'
 
-    #     dataset = DREAMERDataset(io_path=io_path, mat_path=mat_path)
+        dataset = DREAMERDataset(io_path=io_path, mat_path=mat_path)
 
-    #     self.assertEqual(len(dataset), 85744)
-    #     first_item = dataset[0]
-    #     self.assertEqual(first_item[0].shape, (14, 128))
-    #     last_item = dataset[85743]
-    #     self.assertEqual(last_item[0].shape, (14, 128))
+        self.assertEqual(len(dataset), 85744)
+        first_item = dataset[0]
+        self.assertEqual(first_item[0].shape, (14, 128))
+        last_item = dataset[85743]
+        self.assertEqual(last_item[0].shape, (14, 128))
 
-    # def test_seed_constructor(self):
-    #     io_path = f'./tmp_out/seed_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
-    #     root_path = './tmp_in/Preprocessed_EEG'
+    def test_seed_constructor(self):
+        io_path = f'./tmp_out/seed_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
+        root_path = './tmp_in/Preprocessed_EEG'
 
-    #     seed_constructor(io_path=io_path,
-    #                      root_path=root_path,
-    #                      transform=transforms.BandDifferentialEntropy(),
-    #                      num_worker=9)
+        seed_constructor(io_path=io_path,
+                         root_path=root_path,
+                         transform=transforms.BandDifferentialEntropy(),
+                         num_worker=9)
 
-    # def test_seed_dataset(self):
-    #     io_path = f'./tmp_out/seed_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
-    #     root_path = './tmp_in/Preprocessed_EEG'
+    def test_seed_dataset(self):
+        io_path = f'./tmp_out/seed_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
+        root_path = './tmp_in/Preprocessed_EEG'
 
-    #     dataset = SEEDDataset(io_path=io_path,
-    #                           root_path=root_path,
-    #                           offline_transform=transforms.BandDifferentialEntropy(),
-    #                           label_transform=transforms.Compose([
-    #                               transforms.Select('emotion'),
-    #                               transforms.Lambda(lambda x: x + 1),
-    #                           ]),
-    #                           num_worker=9)
+        dataset = SEEDDataset(io_path=io_path,
+                              root_path=root_path,
+                              offline_transform=transforms.BandDifferentialEntropy(),
+                              label_transform=transforms.Compose([
+                                  transforms.Select('emotion'),
+                                  transforms.Lambda(lambda x: x + 1),
+                              ]),
+                              num_worker=9)
 
-    #     self.assertEqual(len(dataset), 152730)
-    #     first_item = dataset[0]
-    #     self.assertEqual(first_item[0].shape, (62, 4))
-    #     last_item = dataset[152729]
-    #     self.assertEqual(last_item[0].shape, (62, 4))
+        self.assertEqual(len(dataset), 152730)
+        first_item = dataset[0]
+        self.assertEqual(first_item[0].shape, (62, 4))
+        last_item = dataset[152729]
+        self.assertEqual(last_item[0].shape, (62, 4))
 
 
 if __name__ == '__main__':

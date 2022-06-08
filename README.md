@@ -40,12 +40,45 @@ At a granular level, PyTorch is a library that consists of the following compone
 
 | Component | Description |
 | ---- | --- |
-| torcheeg.io | A set of unified input and output API is used to store the processing results of various EEG databases for more efficient and convenient use. |
-| torcheeg.datasets | The packaged benchmark dataset implementation provides a multi-process preprocessing interface. |
-| torcheeg.transforms | Rich EEG preprocessing methods help users extract features, construct EEG signal representations, and connect to commonly used deep learning libraries. |
-| torcheeg.model_selection | Rich dataset partitioning methods for users to experiment with different settings. |
-| torcheeg.models | Rich baseline method reproduction. |
-| torcheeg.utils | Other helper functions. |
+| [torcheeg.io](https://torcheeg.readthedocs.io/en/latest/torcheeg.io.html) | A set of unified input and output API is used to store the processing results of various EEG databases for more efficient and convenient use. |
+| [torcheeg.datasets](https://torcheeg.readthedocs.io/en/latest/torcheeg.datasets.html) | The packaged benchmark dataset implementation provides a multi-process preprocessing interface. |
+| [torcheeg.transforms](https://torcheeg.readthedocs.io/en/latest/torcheeg.transforms.html) | Rich EEG preprocessing methods help users extract features, construct EEG signal representations, and connect to commonly used deep learning libraries. |
+| [torcheeg.model_selection](https://torcheeg.readthedocs.io/en/latest/torcheeg.model_selection.html) | Rich dataset partitioning methods for users to experiment with different settings. |
+| [torcheeg.models](https://torcheeg.readthedocs.io/en/latest/torcheeg.models.html) | Rich baseline method reproduction. |
+
+## Implemented Modules
+
+We list currently supported datasets, transforms, data splitting, and deep learning models by category.
+
+**Datasets:** All datasets rely on a set of efficient IO APIs, [torcheeg.io](https://torcheeg.readthedocs.io/en/latest/torcheeg.io.html), to store data preprocessing results on disk and read them quickly during training. Data preprocessing and storage support multiprocessing (speed up!).
+
+* [AMIGOS dataset](https://torcheeg.readthedocs.io/en/latest/torcheeg.datasets.html#amigosdataset) from Miranda-Correa et al.: [AMIGOS: A dataset for affect, personality and mood research on individuals and groups](https://ieeexplore.ieee.org/abstract/document/8554112/).
+* [DREAMER dataset](https://torcheeg.readthedocs.io/en/latest/torcheeg.datasets.html#dreamerdataset) from Katsigiannis et al.: [DREAMER: A database for emotion recognition through EEG and ECG signals from wireless low-cost off-the-shelf devices](https://ieeexplore.ieee.org/abstract/document/7887697).
+* [SEED dataset](https://torcheeg.readthedocs.io/en/latest/torcheeg.datasets.html#seeddataset) from Zheng et al.: [Investigating critical frequency bands and channels for EEG-based emotion recognition with deep neural networks](https://ieeexplore.ieee.org/abstract/document/7104132).
+* [DEAP dataset](https://torcheeg.readthedocs.io/en/latest/torcheeg.datasets.html#deapdataset) from Koelstra et al.: [DEAP: A database for emotion analysis; using physiological signals](https://ieeexplore.ieee.org/abstract/document/5871728).
+<details>
+<summary><b>Expand to see more...</b></summary>
+* [MAHNOB dataset](https://torcheeg.readthedocs.io/en/latest/torcheeg.datasets.html#mahnobdataset) from Soleymani et al.: [A multimodal database for affect recognition and implicit tagging](https://ieeexplore.ieee.org/abstract/document/5975141).
+</details>
+**Transforms:** TorchEEG provides rich data transformation tools to help users build EEG data representations suitable for a variety of task formulation and a variety of model structures.
+
+* Feature Engineering: [BandDifferentialEntropy](https://torcheeg.readthedocs.io/en/latest/torcheeg.transforms.numpy.html#transforms-banddifferentialentropy), [BandPowerSpectralDensity](https://torcheeg.readthedocs.io/en/latest/torcheeg.transforms.numpy.html#transforms-bandpowerspectraldensity), [BandMeanAbsoluteDeviation](https://torcheeg.readthedocs.io/en/latest/torcheeg.transforms.numpy.html#transforms-bandmeanabsolutedeviation), [BandKurtosis](https://torcheeg.readthedocs.io/en/latest/torcheeg.transforms.numpy.html#transforms-bandkurtosis), [BandSkewness](https://torcheeg.readthedocs.io/en/latest/torcheeg.transforms.numpy.html#transforms-bandskewness), [Concatenate](https://torcheeg.readthedocs.io/en/latest/torcheeg.transforms.numpy.html#transforms-concatenate)
+* General Operation: [PickElectrode](https://torcheeg.readthedocs.io/en/latest/torcheeg.transforms.numpy.html#transforms-pickelectrode), [MeanStdNormalize](https://torcheeg.readthedocs.io/en/latest/torcheeg.transforms.numpy.html#transforms-meanstdnormalize), [MinMaxNormalize](https://torcheeg.readthedocs.io/en/latest/torcheeg.transforms.numpy.html#transforms-minmaxnormalize)
+* For CNN: [To2d](https://torcheeg.readthedocs.io/en/latest/torcheeg.transforms.numpy.html#transforms-to2d), [ToGrid](https://torcheeg.readthedocs.io/en/latest/torcheeg.transforms.numpy.html#transforms-togrid), [ToInterpolatedGrid](https://torcheeg.readthedocs.io/en/latest/torcheeg.transforms.numpy.html#transforms-tointerpolatedgrid)
+
+<details>
+<summary><b>Expand to see more...</b></summary>
+* For GNN: [ToG](https://torcheeg.readthedocs.io/en/latest/torcheeg.transforms.pyg.html#transforms-tog)
+* For Augmentation: [Resize](https://torcheeg.readthedocs.io/en/latest/torcheeg.transforms.torch.html#transforms-resize), [RandomNoise](https://torcheeg.readthedocs.io/en/latest/torcheeg.transforms.torch.html#transforms-randomnoise), [RandomMask](https://torcheeg.readthedocs.io/en/latest/torcheeg.transforms.torch.html#transforms-randommask)
+* For Label Construction: [Select](https://torcheeg.readthedocs.io/en/latest/torcheeg.transforms.label.html#transforms-select), [Binary](https://torcheeg.readthedocs.io/en/latest/torcheeg.transforms.label.html#transforms-binary), [BinariesToCategory](https://torcheeg.readthedocs.io/en/latest/torcheeg.transforms.label.html#transforms-binariestocategory)
+</details>
+**Data Splitting:** In current research in the field of EEG analysis, there are various settings based on different considerations for data partitioning. Please choose a reasonable data division method according to the research focus:
+
+* Subject Dependent: [KFoldTrialPerSubject](https://torcheeg.readthedocs.io/en/latest/torcheeg.model_selection.html#kfoldtrialpersubject), [train_test_split_trial_per_subject](https://torcheeg.readthedocs.io/en/latest/torcheeg.model_selection.html#train-test-split-trial-per-subject)
+* Subject Independent: [LeaveOneSubjectOut](https://torcheeg.readthedocs.io/en/latest/torcheeg.model_selection.html#leaveonesubjectout)
+* Conventional: [KFoldDataset](https://torcheeg.readthedocs.io/en/latest/torcheeg.model_selection.html#kfolddataset), [train_test_split_dataset](https://torcheeg.readthedocs.io/en/latest/torcheeg.model_selection.html#train-test-split-dataset), [KFoldTrial](https://torcheeg.readthedocs.io/en/latest/torcheeg.model_selection.html#kfoldtrial), [train_test_split_trial](https://torcheeg.readthedocs.io/en/latest/torcheeg.model_selection.html#train-test-split-trial)
+
+**Models:** Coming soon after pushing to align with the official implementation or description. If the current version of [CNNs](https://torcheeg.readthedocs.io/en/latest/torcheeg.models.cnn.html), [GNNs](https://torcheeg.readthedocs.io/en/latest/torcheeg.models.gnn.html) and [Transformers](https://torcheeg.readthedocs.io/en/latest/torcheeg.models.transformer.html) is to be used, please refer to the implementation in [torcheeg.models](https://torcheeg.readthedocs.io/en/latest/torcheeg.models.html).
 
 ## Quickstart
 
