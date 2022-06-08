@@ -13,7 +13,7 @@ install_requires = [
     'torch',
     'einops',
     'torch_geometric',
-    'mne'
+    'mne',
     'xmltodict'
 ]
 
