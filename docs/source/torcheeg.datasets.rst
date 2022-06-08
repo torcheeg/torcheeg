@@ -32,3 +32,11 @@ AMIGOSDataset
    :members:
    :undoc-members:
    :show-inheritance:
+
+MAHNOBDataset
+---------------------------------------------------------
+
+.. autoclass:: torcheeg.datasets.MAHNOBDataset
+   :members:
+   :undoc-members:
+   :show-inheritance:

@@ -10,7 +10,7 @@ class TestCNN(unittest.TestCase):
         eeg = torch.randn(1, 1, 28, 512)
         model = TSCeption(num_classes=2,
                           num_electrodes=28,
-                          frequency=128,
+                          sampling_rate=128,
                           num_T=15,
                           num_S=15,
                           hid_channels=32,

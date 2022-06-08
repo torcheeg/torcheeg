@@ -88,7 +88,7 @@ class AMIGOSDataset(BaseDataset):
         chunk_size (int): Number of data points included in each EEG chunk as training or test samples. (default: :obj:`128`)
         overlap (int): The number of overlapping data points between different chunks when dividing EEG chunks. (default: :obj:`0`)
         channel_num (int): Number of channels used, of which the first 14 channels are EEG signals. (default: :obj:`14`)
-        trial_num (int): Number of trials used, of which the first 16 trials are conducted with short videos and the last 4 trials are conducted with long videos. (default: :obj:`16`)
+        trial_num (int): Number of trials used, of which the first 16 trials are conducted with short videos and the last 4 trials are conducted with long videos. If set to -1, all trials are used. (default: :obj:`16`)
         skipped_subjects (int): The participant ID to be removed because there are some invalid data in the preprocessed version. (default: :obj:`[9, 12, 21, 22, 23, 24, 33]`)
         baseline_num (int): Number of baseline signal chunks used. (default: :obj:`5`)
         baseline_chunk_size (int): Number of data points included in each baseline signal chunk. The baseline signal in the AMIGOS dataset has a total of 640 data points. (default: :obj:`128`)

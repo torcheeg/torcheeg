@@ -30,7 +30,7 @@ class DEAPDataset(BaseDataset):
     
         dataset = DEAPDataset(io_path=f'./deap',
                               root_path='./data_preprocessed_python',
-                              offline_transform=.Compose([
+                              offline_transform=transforms.Compose([
                                   transforms.BandDifferentialEntropy(),
                                   transforms.ToGrid(DEAP_CHANNEL_LOCATION_DICT)
                               ]),

@@ -32,8 +32,13 @@ def transform_producer(file_name: str, root_path: str, chunk_size: int, overlap:
         transform = lambda x: x
 
     write_pointer = 0
+
+    max_len = len(samples)
+    if not (trial_num <= 0):
+        max_len = min(len(samples), trial_num)
+
     # loop for each trial
-    for trial_id in range(min(len(samples), trial_num)):
+    for trial_id in range(max_len):
         # extract baseline signals
         trail_samples = samples[trial_id]  # timestep(n*128), channel(17)
 

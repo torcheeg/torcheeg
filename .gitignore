@@ -51,3 +51,4 @@ coverage.xml
 *.pt
 /tmp_in
 /tmp_out
+/dev

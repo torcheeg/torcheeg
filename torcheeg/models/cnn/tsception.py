@@ -37,7 +37,7 @@ class TSCeption(nn.Module):
                     ]))
         model = TSCeption(num_classes=2,
                           num_electrodes=28,
-                          frequency=128,
+                          sampling_rate=128,
                           num_T=15,
                           num_S=15,
                           hid_channels=32,
@@ -49,7 +49,7 @@ class TSCeption(nn.Module):
         num_S (int): The number of multi-scale 1D spatial kernels in the asymmetric spatial layer. (defualt: :obj:`15`)
         hid_channels (int): The number of hidden nodes in the first fully connected layer. (defualt: :obj:`32`)
         num_classes (int): The number of classes to predict. (defualt: :obj:`2`)
-        frequency (int): The sampling rate of the EEG signals, i.e., :math:`f_s` in the paper. (defualt: :obj:`128`)
+        sampling_rate (int): The sampling rate of the EEG signals, i.e., :math:`f_s` in the paper. (defualt: :obj:`128`)
         dropout (float): Probability of an element to be zeroed in the dropout layers. (defualt: :obj:`0.5`)
     '''
     def __init__(self,
@@ -58,7 +58,7 @@ class TSCeption(nn.Module):
                  num_S: int = 15,
                  hid_channels: int = 32,
                  num_classes: int = 2,
-                 frequency: int = 128,
+                 sampling_rate: int = 128,
                  dropout: float = 0.5):
         # input_size: 1 x EEG channel x datapoint
         super(TSCeption, self).__init__()
@@ -66,9 +66,9 @@ class TSCeption(nn.Module):
         self.pool = 8
         # by setting the convolutional kernel being (1,lenght) and the strids being 1 we can use conv2d to
         # achieve the 1d convolution operation
-        self.Tception1 = self.conv_block(1, num_T, (1, int(self.inception_window[0] * frequency)), 1, self.pool)
-        self.Tception2 = self.conv_block(1, num_T, (1, int(self.inception_window[1] * frequency)), 1, self.pool)
-        self.Tception3 = self.conv_block(1, num_T, (1, int(self.inception_window[2] * frequency)), 1, self.pool)
+        self.Tception1 = self.conv_block(1, num_T, (1, int(self.inception_window[0] * sampling_rate)), 1, self.pool)
+        self.Tception2 = self.conv_block(1, num_T, (1, int(self.inception_window[1] * sampling_rate)), 1, self.pool)
+        self.Tception3 = self.conv_block(1, num_T, (1, int(self.inception_window[2] * sampling_rate)), 1, self.pool)
 
         self.Sception1 = self.conv_block(num_T, num_S, (int(num_electrodes), 1), 1, int(self.pool * 0.25))
         self.Sception2 = self.conv_block(num_T, num_S, (int(num_electrodes * 0.5), 1), (int(num_electrodes * 0.5), 1),

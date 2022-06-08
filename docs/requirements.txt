@@ -15,3 +15,5 @@ scikit-learn
 lmdb
 einops
 torch_geometric
+mne
+xmltodict
