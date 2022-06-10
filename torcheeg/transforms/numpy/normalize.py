@@ -9,16 +9,12 @@ class MeanStdNormalize:
 
     .. code-block:: python
 
-        transform = Concatenate([
-            MeanStdNormalize(axis=0)
-        ])
+        transform = MeanStdNormalize(axis=0)
         # normalize along the first dimension (electrode dimension)
         transform(torch.randn(32, 128)).shape
         >>> (32, 128)
 
-        transform = Concatenate([
-            MeanStdNormalize(axis=1)
-        ])
+        transform = MeanStdNormalize(axis=1)
         # normalize along the second dimension (temproal dimension)
         transform(torch.randn(32, 128)).shape
         >>> (32, 128)
@@ -67,16 +63,12 @@ class MinMaxNormalize:
 
     .. code-block:: python
 
-        transform = Concatenate([
-            MinMaxNormalize(axis=0)
-        ])
+        transform = MinMaxNormalize(axis=0)
         # normalize along the first dimension (electrode dimension)
         transform(torch.randn(32, 128)).shape
         >>> (32, 128)
 
-        transform = Concatenate([
-            MinMaxNormalize(axis=1)
-        ])
+        transform = MinMaxNormalize(axis=1)
         # normalize along the second dimension (temproal dimension)
         transform(torch.randn(32, 128)).shape
         >>> (32, 128)

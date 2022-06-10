@@ -71,19 +71,19 @@ components:
 | o/en/latest/torcheeg.datasets.html>`__ | provides a multi-process    |
 |                                        | preprocessing interface.    |
 +----------------------------------------+-----------------------------+
-| `torcheeg.transf                       | Rich EEG preprocessing      |
+| `torcheeg.transf                       | Extensive EEG preprocessing      |
 | orms <https://torcheeg.readthedocs.io/ | methods help users extract  |
 | en/latest/torcheeg.transforms.html>`__ | features, construct EEG     |
 |                                        | signal representations, and |
 |                                        | connect to commonly used    |
 |                                        | deep learning libraries.    |
 +----------------------------------------+-----------------------------+
-| `torcheeg.model_selection              | Rich dataset partitioning   |
+| `torcheeg.model_selection              | Extensive dataset partitioning   |
 | <https://torcheeg.readthedocs.io/en/la | methods for users to        |
 | test/torcheeg.model_selection.html>`__ | experiment with different   |
 |                                        | settings.                   |
 +----------------------------------------+-----------------------------+
-| `torchee                               | Rich baseline method        |
+| `torchee                               | Extensive baseline method        |
 | g.models <https://torcheeg.readthedocs | reproduction.               |
 | .io/en/latest/torcheeg.models.html>`__ |                             |
 +----------------------------------------+-----------------------------+
@@ -127,7 +127,7 @@ up!).
    and implicit
    tagging <https://ieeexplore.ieee.org/abstract/document/5975141>`__.
 
-**Transforms:** TorchEEG provides rich data transformation tools to help
+**Transforms:** TorchEEG provides extensive data transformation tools to help
 users build EEG data representations suitable for a variety of task
 formulation and a variety of model structures.
 
