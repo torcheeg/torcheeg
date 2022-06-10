@@ -2,6 +2,7 @@ from typing import Callable, Union, Tuple
 
 from ..base_dataset import BaseDataset
 from ...functional.emotion_recognition.dreamer import dreamer_constructor
+from ...constants.emotion_recognition.dreamer import DREAMER_CHANNEL_LOCATION_DICT, DREAMER_ADJACENCY_MATRIX
 
 
 class DREAMERDataset(BaseDataset):
@@ -93,6 +94,9 @@ class DREAMERDataset(BaseDataset):
         verbose (bool): Whether to display logs during processing, such as progress bars, etc. (default: :obj:`True`)
     
     '''
+    channel_location_dict = DREAMER_CHANNEL_LOCATION_DICT
+    adjacency_matrix = DREAMER_ADJACENCY_MATRIX
+
     def __init__(self,
                  mat_path: str = './DREAMER.mat',
                  chunk_size: int = 128,
@@ -107,15 +111,15 @@ class DREAMERDataset(BaseDataset):
                  num_worker: int = 1,
                  verbose: bool = True):
         dreamer_constructor(mat_path=mat_path,
-                         chunk_size=chunk_size,
-                         overlap=overlap,
-                         channel_num=channel_num,
-                         baseline_num=baseline_num,
-                         baseline_chunk_size=baseline_chunk_size,
-                         transform=offline_transform,
-                         io_path=io_path,
-                         num_worker=num_worker,
-                         verbose=verbose)
+                            chunk_size=chunk_size,
+                            overlap=overlap,
+                            channel_num=channel_num,
+                            baseline_num=baseline_num,
+                            baseline_chunk_size=baseline_chunk_size,
+                            transform=offline_transform,
+                            io_path=io_path,
+                            num_worker=num_worker,
+                            verbose=verbose)
         super().__init__(io_path)
 
         self.mat_path = mat_path

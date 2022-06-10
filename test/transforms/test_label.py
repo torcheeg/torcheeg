@@ -3,7 +3,7 @@ import unittest
 from torcheeg.transforms import Select, Binary, BinariesToCategory
 
 
-class TestPyGTransforms(unittest.TestCase):
+class TestLabelTransforms(unittest.TestCase):
     def test_select(self):
         label = {'valence': 4.5, 'arousal': 5.5, 'subject': 7}
         transformed_label = Select(key='valence')(label)

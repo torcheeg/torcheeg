@@ -68,7 +68,7 @@ class EEGSignalIO:
         Get the sample data shapes and types acceptable to the database.
 
         Returns:
-            tuple(np.ndarray, str): the sample data shapes and types acceptable to the database.
+            tuple (np.ndarray, str): the sample data shapes and types acceptable to the database.
         '''
         with lmdb.open(self.cache_path, self.cache_size, lock=False) as env:
             with env.begin() as transaction:

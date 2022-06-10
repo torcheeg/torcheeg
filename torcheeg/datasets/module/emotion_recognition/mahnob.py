@@ -2,6 +2,7 @@ from typing import Callable, Union, Tuple
 
 from ..base_dataset import BaseDataset
 from ...functional.emotion_recognition.mahnob import mahnob_constructor
+from ...constants.emotion_recognition.mahnob import MAHNOB_CHANNEL_LOCATION_DICT, MAHNOB_ADJACENCY_MATRIX
 
 
 class MAHNOBDataset(BaseDataset):
@@ -90,7 +91,7 @@ class MAHNOBDataset(BaseDataset):
     In particular, TorchEEG utilizes the producer-consumer model to allow multi-process data preprocessing. If your data preprocessing is time consuming, consider increasing :obj:`num_worker` for higher speedup.
 
     Args:
-        root_path (str): Downloaded data files in pickled python/numpy (unzipped Sessions.zip) formats (default: :obj:`'./Sessions'`)
+        root_path (str): Downloaded data files in bdf and xml (unzipped Sessions.zip) formats (default: :obj:`'./Sessions'`)
         chunk_size (int): Number of data points included in each EEG chunk as training or test samples. (default: :obj:`128`)
         sampling_rate (int): The number of data points taken over a second. (default: :obj:`128`)
         overlap (int): The number of overlapping data points between different chunks when dividing EEG chunks. (default: :obj:`0`)
@@ -106,6 +107,9 @@ class MAHNOBDataset(BaseDataset):
         verbose (bool): Whether to display logs during processing, such as progress bars, etc. (default: :obj:`True`)
     
     '''
+    channel_location_dict = MAHNOB_CHANNEL_LOCATION_DICT
+    adjacency_matrix = MAHNOB_ADJACENCY_MATRIX
+
     def __init__(self,
                  root_path: str = './Sessions',
                  chunk_size: int = 128,
@@ -122,17 +126,17 @@ class MAHNOBDataset(BaseDataset):
                  num_worker: int = 1,
                  verbose: bool = True):
         mahnob_constructor(root_path=root_path,
-                         chunk_size=chunk_size,
-                         sampling_rate=sampling_rate,
-                         overlap=overlap,
-                         channel_num=channel_num,
-                         baseline_num=baseline_num,
-                         baseline_chunk_size=baseline_chunk_size,
-                         trial_sample_num=trial_sample_num,
-                         transform=offline_transform,
-                         io_path=io_path,
-                         num_worker=num_worker,
-                         verbose=verbose)
+                           chunk_size=chunk_size,
+                           sampling_rate=sampling_rate,
+                           overlap=overlap,
+                           channel_num=channel_num,
+                           baseline_num=baseline_num,
+                           baseline_chunk_size=baseline_chunk_size,
+                           trial_sample_num=trial_sample_num,
+                           transform=offline_transform,
+                           io_path=io_path,
+                           num_worker=num_worker,
+                           verbose=verbose)
         super().__init__(io_path)
 
         self.root_path = root_path

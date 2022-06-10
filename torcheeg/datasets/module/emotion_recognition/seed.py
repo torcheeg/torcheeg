@@ -2,6 +2,7 @@ from typing import Callable, Union, Tuple
 
 from ..base_dataset import BaseDataset
 from ...functional.emotion_recognition.seed import seed_constructor
+from ...constants.emotion_recognition.seed import SEED_CHANNEL_LOCATION_DICT, SEED_ADJACENCY_MATRIX
 
 
 class SEEDDataset(BaseDataset):
@@ -96,6 +97,9 @@ class SEEDDataset(BaseDataset):
         verbose (bool): Whether to display logs during processing, such as progress bars, etc. (default: :obj:`True`)
     
     '''
+    channel_location_dict = SEED_CHANNEL_LOCATION_DICT
+    adjacency_matrix = SEED_ADJACENCY_MATRIX
+
     def __init__(self,
                  root_path: str = './Preprocessed_EEG',
                  chunk_size: int = 200,

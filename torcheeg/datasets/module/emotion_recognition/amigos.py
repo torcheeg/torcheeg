@@ -2,6 +2,7 @@ from typing import Callable, Union, Tuple, List
 
 from ..base_dataset import BaseDataset
 from ...functional.emotion_recognition.amigos import amigos_constructor
+from ...constants.emotion_recognition.amigos import AMIGOS_CHANNEL_LOCATION_DICT, AMIGOS_ADJACENCY_MATRIX
 
 
 class AMIGOSDataset(BaseDataset):
@@ -100,6 +101,9 @@ class AMIGOSDataset(BaseDataset):
         verbose (bool): Whether to display logs during processing, such as progress bars, etc. (default: :obj:`True`)
     
     '''
+    channel_location_dict = AMIGOS_CHANNEL_LOCATION_DICT
+    adjacency_matrix = AMIGOS_ADJACENCY_MATRIX
+
     def __init__(self,
                  root_path: str = './data_preprocessed',
                  chunk_size: int = 128,

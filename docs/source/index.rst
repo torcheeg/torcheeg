@@ -43,6 +43,7 @@ Transformers.
    torcheeg.model_selection
    torcheeg.models
    torcheeg.transforms
+   torcheeg.utils
 
 Indices and tables
 ==================

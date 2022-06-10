@@ -4,7 +4,7 @@ Installation
 Pip
 ~~~
 
-TorchEEG also allows pip-based installation, please use the following
+TorchEEG allows pip-based installation, please use the following
 command:
 
 ::

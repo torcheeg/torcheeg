@@ -6,7 +6,10 @@ from torcheeg.io import EEGSignalIO, MetaInfoIO
 
 
 class BaseDataset(Dataset, metaclass=ABCMeta):
-    _repr_indent = 4
+    repr_indent = 4
+
+    channel_location_dict = {}
+    adjacency_matrix = []
 
     def __init__(self, io_path: str):
         if not self.exist(io_path):
@@ -48,5 +51,5 @@ class BaseDataset(Dataset, metaclass=ABCMeta):
     def __repr__(self) -> str:
         head = "Dataset " + self.__class__.__name__
         body = ["Length: {}".format(self.__len__())]
-        lines = [head] + [" " * self._repr_indent + line for line in body]
+        lines = [head] + [" " * self.repr_indent + line for line in body]
         return '\n'.join(lines)
