@@ -47,7 +47,7 @@ this tutorial, we use k-fold cross-validation on the entire dataset
 
    k_fold = KFoldDataset(n_splits=5, split_path='./split', shuffle=True)
 
-Let’s define a simple but effective CNN model:
+Let's define a simple but effective CNN model:
 
 ::
 

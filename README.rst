@@ -1,9 +1,5 @@
-.. figure:: https://github.com/tczhangzhi/torcheeg/blob/main/docs/source/_static/torcheeg_logo_dark.png
-   :alt: TorchEEG Logo
-
-   TorchEEG Logo
-
---------------
+TorchEEG
+------------
 
 |PyPI Version| |Docs Status|
 
@@ -125,22 +121,11 @@ up!).
    from Koelstra et al.: `DEAP: A database for emotion analysis; using
    physiological
    signals <https://ieeexplore.ieee.org/abstract/document/5871728>`__.
-
-.. raw:: html
-
-   <details>
-
-Expand to see more…
-
 -  `MAHNOB
    dataset <https://torcheeg.readthedocs.io/en/latest/torcheeg.datasets.html#mahnobdataset>`__
    from Soleymani et al.: `A multimodal database for affect recognition
    and implicit
    tagging <https://ieeexplore.ieee.org/abstract/document/5975141>`__.
-
-.. raw:: html
-
-   </details>
 
 **Transforms:** TorchEEG provides rich data transformation tools to help
 users build EEG data representations suitable for a variety of task
@@ -161,13 +146,6 @@ formulation and a variety of model structures.
    `To2d <https://torcheeg.readthedocs.io/en/latest/torcheeg.transforms.numpy.html#transforms-to2d>`__,
    `ToGrid <https://torcheeg.readthedocs.io/en/latest/torcheeg.transforms.numpy.html#transforms-togrid>`__,
    `ToInterpolatedGrid <https://torcheeg.readthedocs.io/en/latest/torcheeg.transforms.numpy.html#transforms-tointerpolatedgrid>`__
-
-.. raw:: html
-
-   <details>
-
-Expand to see more…
-
 -  For GNN:
    `ToG <https://torcheeg.readthedocs.io/en/latest/torcheeg.transforms.pyg.html#transforms-tog>`__
 -  For Augmentation:
@@ -178,10 +156,6 @@ Expand to see more…
    `Select <https://torcheeg.readthedocs.io/en/latest/torcheeg.transforms.label.html#transforms-select>`__,
    `Binary <https://torcheeg.readthedocs.io/en/latest/torcheeg.transforms.label.html#transforms-binary>`__,
    `BinariesToCategory <https://torcheeg.readthedocs.io/en/latest/torcheeg.transforms.label.html#transforms-binariestocategory>`__
-
-.. raw:: html
-
-   </details>
 
 **Data Splitting:** In current research in the field of EEG analysis,
 there are various settings based on different considerations for data
@@ -257,7 +231,7 @@ this tutorial, we use k-fold cross-validation on the entire dataset
 
    k_fold = KFoldDataset(n_splits=5, split_path='./split', shuffle=True)
 
-Let’s define a simple but effective CNN model:
+Let's define a simple but effective CNN model:
 
 .. code:: python
 
