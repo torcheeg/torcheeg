@@ -31,21 +31,15 @@ class ToG(EEGTransform):
     
     .. automethod:: __call__
     '''
-    def __init__(self,
-                 adj: List[List],
-                 complete_graph: bool = False,
-                 apply_to_baseline: bool = False):
+    def __init__(self, adj: List[List], complete_graph: bool = False, apply_to_baseline: bool = False):
         super(ToG, self).__init__(apply_to_baseline=apply_to_baseline)
         adj = torch.tensor(adj)
         if complete_graph:
             adj[adj == 0] = 1e-6
         self.adj = adj.to_sparse()
+        self.complete_graph = complete_graph
 
-    def __call__(self,
-                 *args,
-                 eeg: np.ndarray,
-                 baseline: Union[np.ndarray, None] = None,
-                 **kwargs) -> Dict[str, Data]:
+    def __call__(self, *args, eeg: np.ndarray, baseline: Union[np.ndarray, None] = None, **kwargs) -> Dict[str, Data]:
         r'''
         Args:
             eeg (np.ndarray): The input EEG signals in shape of [number of electrodes, number of data points].
@@ -58,7 +52,7 @@ class ToG(EEGTransform):
 
     def apply(self, eeg: np.ndarray, **kwargs) -> Data:
         data = Data(edge_index=self.adj._indices())
-        data.eeg = torch.from_numpy(eeg).float()
+        data.x = torch.from_numpy(eeg).float()
         data.edge_weight = self.adj._values()
 
         return data
