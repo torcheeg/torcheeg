@@ -27,10 +27,6 @@ def transform_producer(file_name: str, root_path: str, chunk_size: int, overlap:
     # calculate moving step
     step = chunk_size - overlap
 
-    # prepare transform
-    if transform is None:
-        transform = lambda x: x
-
     write_pointer = 0
 
     max_len = len(samples)
@@ -69,7 +65,11 @@ def transform_producer(file_name: str, root_path: str, chunk_size: int, overlap:
                                                                   1, 0)  # channel(14), timestep(128)
 
         # put baseline signal into IO
-        transformed_eeg = transform(trail_baseline_sample)
+        transformed_eeg = trail_baseline_sample
+
+        if not transform is None:
+            transformed_eeg = transform(eeg=trail_baseline_sample)['eeg']
+
         trail_base_id = f'{file_name}_{write_pointer}'
         queue.put({'eeg': transformed_eeg, 'key': trail_base_id})
         write_pointer += 1
@@ -81,7 +81,11 @@ def transform_producer(file_name: str, root_path: str, chunk_size: int, overlap:
 
         while end_at <= trail_samples.shape[0]:
             clip_sample = trail_samples[start_at:end_at, :channel_num].swapaxes(1, 0)
-            transformed_eeg = transform(clip_sample)
+
+            transformed_eeg = clip_sample
+            if not transform is None:
+                transformed_eeg = transform(eeg=clip_sample, baseline=trail_baseline_sample)['eeg']
+
             clip_id = f'{file_name}_{write_pointer}'
             queue.put({'eeg': transformed_eeg, 'key': clip_id})
             write_pointer += 1

@@ -12,8 +12,9 @@ from tqdm import tqdm
 
 MAX_QUEUE_SIZE = 1099511627776
 
-def transform_producer(file_name: str, root_path: str, chunk_size: int, sampling_rate:int, overlap: int, channel_num: int,
-                       baseline_num: int, baseline_chunk_size: int, trial_sample_num: int,
+
+def transform_producer(file_name: str, root_path: str, chunk_size: int, sampling_rate: int, overlap: int,
+                       channel_num: int, baseline_num: int, baseline_chunk_size: int, trial_sample_num: int,
                        transform: Union[List[Callable], Callable, None], write_info_fn: Callable, queue: Queue):
     trial_dir = os.path.join(root_path, file_name)
 
@@ -24,7 +25,7 @@ def transform_producer(file_name: str, root_path: str, chunk_size: int, sampling
     with open(label_file) as f:
         label_info = xmltodict.parse('\n'.join(f.readlines()))
     label_info = json.loads(json.dumps(label_info))['session']
-    
+
     if not '@feltArsl' in label_info:
         # skip label_info['@isStim'] == '0' and other exception
         return
@@ -38,10 +39,6 @@ def transform_producer(file_name: str, root_path: str, chunk_size: int, sampling
     trial_meta_info.update({k[1:]: int(label_info[k]) for k in emodims})
 
     write_pointer = 0
-
-    # prepare transform
-    if transform is None:
-        transform = lambda x: x
 
     # extract signals
     sample_file = glob.glob(str(os.path.join(trial_dir, '*.bdf')))[0]
@@ -68,7 +65,10 @@ def transform_producer(file_name: str, root_path: str, chunk_size: int, sampling
         axis=1)  # channel(32), timestep(128)
 
     # put baseline signal into IO
-    transformed_eeg = transform(trial_baseline_sample)
+    transformed_eeg = trial_baseline_sample
+    if not transform is None:
+        transformed_eeg = transform(eeg=trial_baseline_sample)
+
     trial_base_id = f'{file_name}_{write_pointer}'
     queue.put({'eeg': transformed_eeg, 'key': trial_base_id})
     write_pointer += 1
@@ -91,7 +91,11 @@ def transform_producer(file_name: str, root_path: str, chunk_size: int, sampling
 
     while end_at <= max_len:
         clip_sample = trial_samples[:, start_at:end_at]
-        transformed_eeg = transform(clip_sample)
+
+        transformed_eeg = clip_sample
+        if not transform is None:
+            transformed_eeg = transform(eeg=clip_sample, baseline=trial_baseline_sample)
+
         clip_id = f'{file_name}_{write_pointer}'
         queue.put({'eeg': transformed_eeg, 'key': clip_id})
         write_pointer += 1

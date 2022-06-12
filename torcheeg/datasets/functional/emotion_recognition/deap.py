@@ -11,12 +11,9 @@ from tqdm import tqdm
 MAX_QUEUE_SIZE = 1099511627776
 
 
-def transform_producer(file_name: str, root_path: str, chunk_size: int,
-                       overlap: int, channel_num: int, baseline_num: int,
-                       baseline_chunk_size: int,
-                       transform: Union[List[Callable], Callable,
-                                        None], write_info_fn: Callable,
-                       label_encoder: preprocessing.LabelEncoder, queue: Queue):
+def transform_producer(file_name: str, root_path: str, chunk_size: int, overlap: int, channel_num: int,
+                       baseline_num: int, baseline_chunk_size: int, transform: Union[List[Callable], Callable, None],
+                       write_info_fn: Callable, label_encoder: preprocessing.LabelEncoder, queue: Queue):
     with open(os.path.join(root_path, file_name), 'rb') as f:
         pkl_data = pkl.load(f, encoding='iso-8859-1')
 
@@ -27,41 +24,29 @@ def transform_producer(file_name: str, root_path: str, chunk_size: int,
     # calculate moving step
     step = chunk_size - overlap
 
-    # prepare transform
-    if transform is None:
-        transform = lambda x: x
-
     write_pointer = 0
     # loop for each trial
     for trial_id in range(len(samples)):
         # extract baseline signals
-        trail_samples = samples[trial_id, :
-                                channel_num]  # channel(32), timestep(63*128)
-        trail_baseline_sample = trail_samples[:, :baseline_chunk_size *
-                                              baseline_num]  # channel(32), timestep(3*128)
-        trail_baseline_sample = trail_baseline_sample.reshape(
-            channel_num, baseline_num,
-            baseline_chunk_size).mean(axis=1)  # channel(32), timestep(128)
+        trail_samples = samples[trial_id, :channel_num]  # channel(32), timestep(63*128)
+        trail_baseline_sample = trail_samples[:, :baseline_chunk_size * baseline_num]  # channel(32), timestep(3*128)
+        trail_baseline_sample = trail_baseline_sample.reshape(channel_num, baseline_num, baseline_chunk_size).mean(
+            axis=1)  # channel(32), timestep(128)
 
         # put baseline signal into IO
-        transformed_eeg = transform(trail_baseline_sample)
+        transformed_eeg = trail_baseline_sample
+        if not transform is None:
+            transformed_eeg = transform(eeg=trail_baseline_sample)['eeg']
+
         trail_base_id = f'{file_name}_{write_pointer}'
-        queue.put({
-            'eeg': transformed_eeg,
-            'key': trail_base_id
-        })
+        queue.put({'eeg': transformed_eeg, 'key': trail_base_id})
         write_pointer += 1
 
         # record the common meta info
-        trail_meta_info = {
-            'subject_id': subject_id,
-            'trail_id': trial_id,
-            'baseline_id': trail_base_id
-        }
+        trail_meta_info = {'subject_id': subject_id, 'trail_id': trial_id, 'baseline_id': trail_base_id}
         trail_rating = labels[trial_id]
 
-        for label_idx, label_name in enumerate(
-            ['valence', 'arousal', 'dominance', 'liking']):
+        for label_idx, label_name in enumerate(['valence', 'arousal', 'dominance', 'liking']):
             trail_meta_info[label_name] = trail_rating[label_idx]
 
         # extract experimental signals
@@ -70,21 +55,17 @@ def transform_producer(file_name: str, root_path: str, chunk_size: int,
 
         while end_at <= trail_samples.shape[1]:
             clip_sample = trail_samples[:, start_at:end_at]
-            transformed_eeg = transform(clip_sample)
+
+            transformed_eeg = clip_sample
+            if not transform is None:
+                transformed_eeg = transform(eeg=clip_sample, baseline=trail_baseline_sample)['eeg']
 
             clip_id = f'{file_name}_{write_pointer}'
-            queue.put({
-                'eeg': transformed_eeg,
-                'key': clip_id
-            })
+            queue.put({'eeg': transformed_eeg, 'key': clip_id})
             write_pointer += 1
 
             # record meta info for each signal
-            record_info = {
-                'start_at': start_at,
-                'end_at': end_at,
-                'clip_id': clip_id
-            }
+            record_info = {'start_at': start_at, 'end_at': end_at, 'clip_id': clip_id}
             record_info.update(trail_meta_info)
             write_info_fn(record_info)
 
@@ -142,9 +123,7 @@ def deap_constructor(root_path: str = './data_preprocessed_python',
 
     manager = Manager()
     queue = manager.Queue(maxsize=MAX_QUEUE_SIZE)
-    io_consumer_process = Process(target=io_consumer,
-                                  args=(eeg_io.write_eeg, queue),
-                                  daemon=True)
+    io_consumer_process = Process(target=io_consumer, args=(eeg_io.write_eeg, queue), daemon=True)
     io_consumer_process.start()
 
     partial_mp_fn = partial(transform_producer,

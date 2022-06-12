@@ -1,11 +1,9 @@
 import os
 from torch.utils.data import Dataset
-from abc import ABCMeta, abstractmethod
-
 from torcheeg.io import EEGSignalIO, MetaInfoIO
 
 
-class BaseDataset(Dataset, metaclass=ABCMeta):
+class BaseDataset(Dataset):
     repr_indent = 4
 
     channel_location_dict = {}
@@ -32,9 +30,10 @@ class BaseDataset(Dataset, metaclass=ABCMeta):
         return os.path.exists(meta_info_io_path) and os.path.exists(
             eeg_signal_io_path)
 
-    @abstractmethod
     def __getitem__(self, index: int) -> any:
-        ...
+        raise NotImplementedError(
+            "Method __getitem__ is not implemented in class " +
+            self.__class__.__name__)
 
     def __len__(self):
         return len(self.info)

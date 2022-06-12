@@ -46,7 +46,7 @@ class EEGSignalIO:
                 length = transaction.stat()['entries'] - 2
                 return length if length > 0 else 0
 
-    def set_eeg_format(self, eeg: np.ndarray) -> None:
+    def set_eeg_format(self, eeg: np.ndarray, **kwargs) -> None:
         r'''
         Set the sample data shapes and types acceptable to the database based on the inserted EEG signals.
 

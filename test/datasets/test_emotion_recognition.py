@@ -4,8 +4,11 @@ import shutil
 import unittest
 
 from torcheeg import transforms
-from torcheeg.datasets import DEAPDataset, DREAMERDataset, SEEDDataset, AMIGOSDataset, MAHNOBDataset
-from torcheeg.datasets.functional import (deap_constructor, dreamer_constructor, seed_constructor, amigos_constructor, mahnob_constructor)
+from torcheeg.datasets import (AMIGOSDataset, DEAPDataset, DREAMERDataset,
+                               MAHNOBDataset, SEEDDataset)
+from torcheeg.datasets.functional import (amigos_constructor, deap_constructor,
+                                          dreamer_constructor,
+                                          mahnob_constructor, seed_constructor)
 
 
 class TestEmotionRecognitionDataset(unittest.TestCase):
@@ -23,12 +26,13 @@ class TestEmotionRecognitionDataset(unittest.TestCase):
         root_path = './tmp_in/Sessions'
 
         dataset = MAHNOBDataset(io_path=io_path,
-                              root_path=root_path,
-                              online_transform=transforms.ToTensor(),
-                              label_transform=transforms.Compose([
-                                  transforms.Select('feltVlnc'),
-                                  transforms.Binary(5.0),
-                              ]), num_worker=4)
+                                root_path=root_path,
+                                online_transform=transforms.ToTensor(),
+                                label_transform=transforms.Compose([
+                                    transforms.Select('feltVlnc'),
+                                    transforms.Binary(5.0),
+                                ]),
+                                num_worker=4)
 
         self.assertEqual(len(dataset), 16410)
         first_item = dataset[0]
@@ -72,14 +76,15 @@ class TestEmotionRecognitionDataset(unittest.TestCase):
         io_path = f'./tmp_out/deap_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
         root_path = './tmp_in/data_preprocessed_python'
 
-        dataset = DEAPDataset(io_path=io_path,
-                              root_path=root_path,
-                              offline_transform=transforms.BandDifferentialEntropy(),
-                              label_transform=transforms.Compose([
-                                  transforms.Select('valence'),
-                                  transforms.Binary(5.0),
-                              ]),
-                              num_worker=4)
+        dataset = DEAPDataset(
+            io_path=io_path,
+            root_path=root_path,
+            offline_transform=transforms.BandDifferentialEntropy(),
+            label_transform=transforms.Compose([
+                transforms.Select('valence'),
+                transforms.Binary(5.0),
+            ]),
+            num_worker=4)
         self.assertEqual(len(dataset), 76800)
         self.assertEqual(len(dataset.eeg_io), 78080)
         first_item = dataset[0]
@@ -118,14 +123,15 @@ class TestEmotionRecognitionDataset(unittest.TestCase):
         io_path = f'./tmp_out/seed_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
         root_path = './tmp_in/Preprocessed_EEG'
 
-        dataset = SEEDDataset(io_path=io_path,
-                              root_path=root_path,
-                              offline_transform=transforms.BandDifferentialEntropy(),
-                              label_transform=transforms.Compose([
-                                  transforms.Select('emotion'),
-                                  transforms.Lambda(lambda x: x + 1),
-                              ]),
-                              num_worker=9)
+        dataset = SEEDDataset(
+            io_path=io_path,
+            root_path=root_path,
+            offline_transform=transforms.BandDifferentialEntropy(),
+            label_transform=transforms.Compose([
+                transforms.Select('emotion'),
+                transforms.Lambda(lambda x: x + 1),
+            ]),
+            num_worker=9)
 
         self.assertEqual(len(dataset), 152730)
         first_item = dataset[0]

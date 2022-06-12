@@ -141,19 +141,16 @@ class DREAMERDataset(BaseDataset):
         eeg_index = str(info['clip_id'])
         eeg = self.eeg_io.read_eeg(eeg_index)
 
-        if self.online_transform:
-            eeg = self.online_transform(eeg)
-
         baseline_index = str(info['baseline_id'])
         baseline = self.eeg_io.read_eeg(baseline_index)
 
+        signal = eeg
+        label = info
+        
         if self.online_transform:
-            baseline = self.online_transform(baseline)
+            signal = self.online_transform(eeg=eeg, baseline=baseline)['eeg']
 
         if self.label_transform:
-            info = self.label_transform(info)
-        if isinstance(info, list):
-            return (eeg, baseline, *info)
-        if isinstance(info, dict):
-            return (eeg, baseline, *info.values())
-        return eeg, baseline, info
+            label = self.label_transform(y=info)['y']
+
+        return signal, label

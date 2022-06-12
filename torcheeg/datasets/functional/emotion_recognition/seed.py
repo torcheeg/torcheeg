@@ -10,30 +10,20 @@ from tqdm import tqdm
 MAX_QUEUE_SIZE = 1099511627776
 
 
-def transform_producer(file_name: str, root_path: str, chunk_size: int,
-                       overlap: int, channel_num: int,
-                       transform: Union[List[Callable], Callable, None],
-                       write_info_fn: Callable, queue: Queue):
-    subject = int(
-        os.path.basename(file_name).split('.')[0].split('_')[0])  # subject (15)
-    date = int(
-        os.path.basename(file_name).split('.')[0].split('_')[1])  # period (3)
+def transform_producer(file_name: str, root_path: str, chunk_size: int, overlap: int, channel_num: int,
+                       transform: Union[List[Callable], Callable, None], write_info_fn: Callable, queue: Queue):
+    subject = int(os.path.basename(file_name).split('.')[0].split('_')[0])  # subject (15)
+    date = int(os.path.basename(file_name).split('.')[0].split('_')[1])  # period (3)
 
     samples = scio.loadmat(os.path.join(root_path, file_name),
-                           verify_compressed_data_integrity=False
-                           )  # trail (15), channel(62), timestep(n*200)
+                           verify_compressed_data_integrity=False)  # trail (15), channel(62), timestep(n*200)
     # label file
-    labels = scio.loadmat(os.path.join(root_path, 'label.mat'),
-                          verify_compressed_data_integrity=False)['label'][0]
+    labels = scio.loadmat(os.path.join(root_path, 'label.mat'), verify_compressed_data_integrity=False)['label'][0]
 
     trail_ids = [key for key in samples.keys() if 'eeg' in key]
 
     # calculate moving step
     step = chunk_size - overlap
-
-    # prepare transform
-    if transform is None:
-        transform = lambda x: x
 
     write_pointer = 0
     # loop for each trial
@@ -55,17 +45,17 @@ def transform_producer(file_name: str, root_path: str, chunk_size: int,
 
         while end_at <= trail_samples.shape[1]:
             clip_sample = trail_samples[:channel_num, start_at:end_at]
-            transformed_eeg = transform(clip_sample)
+
+            transformed_eeg = clip_sample
+            if not transform is None:
+                transformed_eeg = transform(eeg=clip_sample)['eeg']
+
             clip_id = f'{file_name}_{write_pointer}'
             queue.put({'eeg': transformed_eeg, 'key': clip_id})
             write_pointer += 1
 
             # record meta info for each signal
-            record_info = {
-                'start_at': start_at,
-                'end_at': end_at,
-                'clip_id': clip_id
-            }
+            record_info = {'start_at': start_at, 'end_at': end_at, 'clip_id': clip_id}
             record_info.update(trail_meta_info)
             write_info_fn(record_info)
 
@@ -119,9 +109,7 @@ def seed_constructor(root_path: str = './Preprocessed_EEG',
 
     manager = Manager()
     queue = manager.Queue(maxsize=MAX_QUEUE_SIZE)
-    io_consumer_process = Process(target=io_consumer,
-                                  args=(eeg_io.write_eeg, queue),
-                                  daemon=True)
+    io_consumer_process = Process(target=io_consumer, args=(eeg_io.write_eeg, queue), daemon=True)
     io_consumer_process.start()
 
     partial_mp_fn = partial(transform_producer,

@@ -7,10 +7,10 @@ from torcheeg.transforms import ToG
 
 
 class TestPyGTransforms(unittest.TestCase):
-    def test_to_tensor(self):
+    def test_to_g(self):
         eeg = np.random.randn(32, 128)
-        transformed_eeg = ToG(DEAP_ADJACENCY_MATRIX)(eeg)
-        self.assertTrue(isinstance(transformed_eeg, Data))
+        transformed_eeg = ToG(DEAP_ADJACENCY_MATRIX)(eeg=eeg)
+        self.assertTrue(isinstance(transformed_eeg['eeg'], Data))
 
 
 if __name__ == '__main__':

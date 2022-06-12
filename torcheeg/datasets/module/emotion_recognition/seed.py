@@ -137,14 +137,13 @@ class SEEDDataset(BaseDataset):
         eeg_index = str(info['clip_id'])
         eeg = self.eeg_io.read_eeg(eeg_index)
 
+        signal = eeg
+        label = info
+        
         if self.online_transform:
-            eeg = self.online_transform(eeg)
+            signal = self.online_transform(eeg=eeg)['eeg']
 
         if self.label_transform:
-            info = self.label_transform(info)
+            label = self.label_transform(y=info)['y']
 
-        if isinstance(info, list):
-            return (eeg, *info)
-        if isinstance(info, dict):
-            return (eeg, *info.values())
-        return eeg, info
+        return signal, label

@@ -9,77 +9,59 @@ from tqdm import tqdm
 MAX_QUEUE_SIZE = 1099511627776
 
 
-def transform_producer(subject: int, trial_len: int, mat_data: any,
-                       chunk_size: int, overlap: int, channel_num: int,
-                       baseline_num: int, baseline_chunk_size: int,
-                       transform: Union[List[Callable], Callable, None],
+def transform_producer(subject: int, trial_len: int, mat_data: any, chunk_size: int, overlap: int, channel_num: int,
+                       baseline_num: int, baseline_chunk_size: int, transform: Union[List[Callable], Callable, None],
                        write_info_fn: Callable, queue: Queue):
     # calculate moving step
     step = chunk_size - overlap
-
-    # prepare transform
-    if transform is None:
-        transform = lambda x: x
 
     write_pointer = 0
     # loop for each trial
     for trial_id in range(trial_len):
         # extract baseline signals
-        trail_baseline_sample = mat_data['DREAMER'][0, 0]['Data'][
-            0, subject]['EEG'][0, 0]['baseline'][0, 0][trial_id, 0]
-        trail_baseline_sample = trail_baseline_sample[:, :channel_num].swapaxes(
-            1, 0)  # channel(14), timestep(61*128)
-        trail_baseline_sample = trail_baseline_sample[:, :baseline_num *
-                                                      baseline_chunk_size].reshape(
-                                                          channel_num,
-                                                          baseline_num,
-                                                          baseline_chunk_size
-                                                      ).mean(
-                                                          axis=1
-                                                      )  # channel(14), timestep(128)
+        trail_baseline_sample = mat_data['DREAMER'][0, 0]['Data'][0, subject]['EEG'][0, 0]['baseline'][0, 0][trial_id,
+                                                                                                             0]
+        trail_baseline_sample = trail_baseline_sample[:, :channel_num].swapaxes(1, 0)  # channel(14), timestep(61*128)
+        trail_baseline_sample = trail_baseline_sample[:, :baseline_num * baseline_chunk_size].reshape(
+            channel_num, baseline_num, baseline_chunk_size).mean(axis=1)  # channel(14), timestep(128)
 
         # put baseline signal into IO
-        transformed_eeg = transform(trail_baseline_sample)
+        transformed_eeg = trail_baseline_sample
+        if not transform is None:
+            transformed_eeg = transform(eeg=trail_baseline_sample)['eeg']
+
         trail_base_id = f'{subject}_{write_pointer}'
         queue.put({'eeg': transformed_eeg, 'key': trail_base_id})
         write_pointer += 1
 
         # record the common meta info
-        trail_meta_info = {
-            'subject': subject,
-            'trail_id': trial_id,
-            'baseline_id': trail_base_id
-        }
+        trail_meta_info = {'subject': subject, 'trail_id': trial_id, 'baseline_id': trail_base_id}
 
-        trail_meta_info['valence'] = mat_data['DREAMER'][0, 0]['Data'][
-            0, subject]['ScoreValence'][0, 0][trial_id, 0]
-        trail_meta_info['arousal'] = mat_data['DREAMER'][0, 0]['Data'][
-            0, subject]['ScoreArousal'][0, 0][trial_id, 0]
-        trail_meta_info['dominance'] = mat_data['DREAMER'][0, 0]['Data'][
-            0, subject]['ScoreDominance'][0, 0][trial_id, 0]
+        trail_meta_info['valence'] = mat_data['DREAMER'][0, 0]['Data'][0, subject]['ScoreValence'][0, 0][trial_id, 0]
+        trail_meta_info['arousal'] = mat_data['DREAMER'][0, 0]['Data'][0, subject]['ScoreArousal'][0, 0][trial_id, 0]
+        trail_meta_info['dominance'] = mat_data['DREAMER'][0, 0]['Data'][0, subject]['ScoreDominance'][0, 0][trial_id,
+                                                                                                             0]
 
         # extract experimental signals
         start_at = 0
         end_at = chunk_size
 
-        trail_samples = mat_data['DREAMER'][0, 0]['Data'][0, subject]['EEG'][
-            0, 0]['stimuli'][0, 0][trial_id, 0]
-        trail_samples = trail_samples[:, :channel_num].swapaxes(
-            1, 0)  # channel(14), timestep(n*128)
+        trail_samples = mat_data['DREAMER'][0, 0]['Data'][0, subject]['EEG'][0, 0]['stimuli'][0, 0][trial_id, 0]
+        trail_samples = trail_samples[:, :channel_num].swapaxes(1, 0)  # channel(14), timestep(n*128)
 
         while end_at <= trail_samples.shape[1]:
             clip_sample = trail_samples[:, start_at:end_at]
-            transformed_eeg = transform(clip_sample)
+
+            transformed_eeg = clip_sample
+            if not transform is None:
+                transformed_eeg = transform(eeg=clip_sample, baseline=trail_baseline_sample)['eeg']
+
             clip_id = f'{subject}_{write_pointer}'
             queue.put({'eeg': transformed_eeg, 'key': clip_id})
             write_pointer += 1
 
             # record meta info for each signal
-            record_info = {
-                'start_at': start_at,
-                'end_at': end_at,
-                'clip_id': clip_id
-            }
+            record_info = {'start_at': start_at, 'end_at': end_at, 'clip_id': clip_id}
             record_info.update(trail_meta_info)
             write_info_fn(record_info)
 
@@ -127,10 +109,7 @@ def dreamer_constructor(mat_path: str = './DREAMER.mat',
     mat_data = scio.loadmat(mat_path, verify_compressed_data_integrity=False)
 
     subject_len = len(mat_data['DREAMER'][0, 0]['Data'][0])  # 23
-    trial_len = len(
-        mat_data['DREAMER'][0, 0]['Data'][0, 0]['EEG'][0,
-                                                       0]['stimuli'][0,
-                                                                     0])  # 18
+    trial_len = len(mat_data['DREAMER'][0, 0]['Data'][0, 0]['EEG'][0, 0]['stimuli'][0, 0])  # 18
 
     if verbose:
         # show process bar
@@ -139,9 +118,7 @@ def dreamer_constructor(mat_path: str = './DREAMER.mat',
 
     manager = Manager()
     queue = manager.Queue(maxsize=MAX_QUEUE_SIZE)
-    io_consumer_process = Process(target=io_consumer,
-                                  args=(eeg_io.write_eeg, queue),
-                                  daemon=True)
+    io_consumer_process = Process(target=io_consumer, args=(eeg_io.write_eeg, queue), daemon=True)
     io_consumer_process.start()
 
     partial_mp_fn = partial(transform_producer,
