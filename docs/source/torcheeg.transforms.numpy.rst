@@ -56,11 +56,6 @@ transforms.ToInterpolatedGrid
 
 .. autoclass:: torcheeg.transforms.ToInterpolatedGrid
 
-transforms.BaselineRemoval
---------------------------------------
-
-.. autoclass:: torcheeg.transforms.BaselineRemoval
-
 transforms.Concatenate
 --------------------------------------
 

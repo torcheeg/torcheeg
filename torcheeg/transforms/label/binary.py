@@ -10,7 +10,7 @@ class Binary(LabelTransform):
     .. code-block:: python
 
         transform = Binary(threshold=5.0)
-        transform(4.5)
+        transform(y=4.5)['y']
         >>> 0
 
     :obj:`Binary` allows simultaneous binarization using the same threshold for multiple labels.
@@ -18,7 +18,7 @@ class Binary(LabelTransform):
     .. code-block:: python
 
         transform = Binary(threshold=5.0)
-        transform([4.5, 5.5])
+        transform(y=[4.5, 5.5])['y']
         >>> [0, 1]
 
     Args:
@@ -57,13 +57,13 @@ class BinariesToCategory(LabelTransform):
     .. code-block:: python
 
         transform = BinariesToCategory()
-        transform([0, 0])
+        transform(y=[0, 0])['y']
         >>> 0
-        transform([0, 1])
+        transform(y=[0, 1])['y']
         >>> 1
-        transform([1, 0])
+        transform(y=[1, 0])['y']
         >>> 2
-        transform([1, 1])
+        transform(y=[1, 1])['y']
         >>> 3
     
     .. automethod:: __call__

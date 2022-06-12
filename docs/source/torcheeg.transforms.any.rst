@@ -10,3 +10,9 @@ transforms.Lambda
 ----------------------------------------
 
 .. autoclass:: torcheeg.transforms.Lambda
+
+
+transforms.BaselineRemoval
+--------------------------------------
+
+.. autoclass:: torcheeg.transforms.BaselineRemoval

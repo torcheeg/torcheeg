@@ -10,7 +10,7 @@ class Select(LabelTransform):
     .. code-block:: python
 
         transform = Select(key='valence')
-        transform({'valence': 4.5, 'arousal': 5.5, 'subject': 7})
+        transform(y={'valence': 4.5, 'arousal': 5.5, 'subject': 7})['y']
         >>> 4.5
 
     :obj:`Select` allows multiple values to be selected and returned as a list. Suitable for multi-classification tasks or multi-task learning.
@@ -18,7 +18,7 @@ class Select(LabelTransform):
     .. code-block:: python
 
         transform = Select(key=['valence', 'arousal'])
-        transform({'valence': 4.5, 'arousal': 5.5, 'subject': 7})
+        transform(y={'valence': 4.5, 'arousal': 5.5, 'subject': 7})['y']
         >>> [4.5, 5.5]
 
     Args:
