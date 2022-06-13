@@ -32,7 +32,8 @@ Transformers.
 
    installation
    introduction_by_example
-   creating_your_own_datasets
+   implementing_gnns_with_pyg
+   managing_experiments_with_pytorch_lightning
 
 .. toctree::
    :maxdepth: 2

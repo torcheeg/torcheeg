@@ -1,9 +1,10 @@
-Introduction by Example
-=======================
+Managing Experiments with PyTorch Lightning
+===========================================
 
-In this quick tour, we highlight the ease of starting an EEG analysis
-research with only modifying a few lines of `PyTorch
-tutorial <https://pytorch.org/tutorials/beginner/basics/quickstart_tutorial.html>`__.
+In this quick tour, we'll take a closer look at how to bring together
+TorchEEG and `PyTorch
+Lightning <https://github.com/PyTorchLightning/pytorch-lightning>`__ to
+organize and run experiments using multiple GPUs.
 
 Define the Dataset
 ~~~~~~~~~~~~~~~~~~
@@ -128,62 +129,56 @@ https://torcheeg.readthedocs.io/en/latest/torcheeg.models.html
 Define the Training and Test Process
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Specify the device and loss function used during training and test.
-
-.. code:: python
-
-   device = "cuda" if torch.cuda.is_available() else "cpu"
-   loss_fn = nn.CrossEntropyLoss()
-   batch_size = 64
-
-The training and validation scripts for the model are taken from the
-`PyTorch
-tutorial <https://pytorch.org/tutorials/beginner/basics/quickstart_tutorial.html>`__
-without much modification. Usually, the value of ``batch``
+A simple case implemented according to the official documentation of
+`pytorch-lightning <https://github.com/PyTorchLightning/pytorch-lightning>`__.
+Here, ``__init__``, ``forward``, ``training_step``, ``validation_step``,
+and ``configure_optimizers`` need to be implemented, where ``__init__``
+is used to specify hyperparameters and initialize related dependencies,
+``forward`` is used to define the forward propagation process of the
+network, ``training_step`` and ``validation_step`` are used to define
+the training and testing process. Usually, the value of ``batch``
 contains two parts; the first part refers to the result of
 ``online_transform``, which generally corresponds to the ``Tensor``
 sequence representing EEG signals. The second part refers to the result
 of ``label_transform``, a sequence of integers representing the label.
+Besides, ``configure_optimizers`` is used to define the required
+optimizers and schedulers.
 
 .. code:: python
 
-   def train(dataloader, model, loss_fn, optimizer):
-       size = len(dataloader.dataset)
-       model.train()
-       for batch_idx, batch in enumerate(dataloader):
-           X = batch[0].to(device)
-           y = batch[1].to(device)
+   class EEGClassifier(LightningModule):
+       def __init__(self, model, lr=1e-4):
+           super().__init__()
+           self.save_hyperparameters(ignore="model")
+           self.model = model
+           self.val_acc = Accuracy()
 
-           # Compute prediction error
-           pred = model(X)
-           loss = loss_fn(pred, y)
+       def forward(self, x):
+           return self.model(x)
 
-           # Backpropagation
-           optimizer.zero_grad()
-           loss.backward()
-           optimizer.step()
+       def training_step(self, batch, batch_idx):
+           X = batch[0]
+           y = batch[1]
 
-           if batch_idx % 100 == 0:
-               loss, current = loss.item(), batch_idx * len(X)
-               print(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
+           logits = self.forward(X)
+           loss = F.cross_entropy(logits, y.long())
+           return loss
 
+       def validation_step(self, batch, batch_idx):
+           X = batch[0]
+           y = batch[1]
 
-   def valid(dataloader, model, loss_fn):
-       size = len(dataloader.dataset)
-       num_batches = len(dataloader)
-       model.eval()
-       val_loss, correct = 0, 0
-       with torch.no_grad():
-           for batch in dataloader:
-               X = batch[0].to(device)
-               y = batch[1].to(device)
+           logits = self.forward(X)
+           loss = F.cross_entropy(logits, y.long())
 
-               pred = model(X)
-               val_loss += loss_fn(pred, y).item()
-               correct += (pred.argmax(1) == y).type(torch.float).sum().item()
-       val_loss /= num_batches
-       correct /= size
-       print(f"Test Error: \n Accuracy: {(100*correct):>0.1f}%, Avg loss: {val_loss:>8f} \n")
+           self.val_acc(logits, y)
+           self.log("val_acc", self.val_acc)
+           self.log("val_loss", loss)
+
+       def configure_optimizers(self):
+           optimizer = torch.optim.Adam(self.model.parameters(), lr=self.hparams.lr)
+
+           return [optimizer], []
 
 Traverse ``k`` folds and train the model separately for testing. It is
 worth noting that, in general, we need to specify ``shuffle=True`` for
@@ -193,19 +188,25 @@ the model training caused by consecutive labels of the same category.
 .. code:: python
 
    for i, (train_dataset, val_dataset) in enumerate(k_fold.split(dataset)):
+           train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True)
+           val_loader = DataLoader(val_dataset, batch_size=64, shuffle=False)
+           tb_logger = TensorBoardLogger(save_dir='lightning_logs', name=f'fold_{i + 1}')
+           checkpoint_callback = ModelCheckpoint(dirpath=tb_logger.log_dir,
+                                                 filename="{epoch:02d}-{val_metric:.4f}",
+                                                 monitor='val_metric',
+                                                 mode='max')
 
-       model = CNN().to(device)
-       optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
+           model = EEGClassifier(CNN())
 
-       train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
-       val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
+           trainer = Trainer(max_epochs=50,
+                             devices=2,
+                             accelerator="auto",
+                             strategy="ddp",
+                             checkpoint_callback=checkpoint_callback,
+                             logger=tb_logger)
 
-       epochs = 50
-       for t in range(epochs):
-           print(f"Epoch {t+1}\n-------------------------------")
-           train(train_loader, model, loss_fn, optimizer)
-           valid(val_loader, model, loss_fn)
-       print("Done!")
+           trainer.fit(model, train_loader, val_loader)
 
-For full code, please refer to
-https://github.com/tczhangzhi/torcheeg/blob/main/examples/examples_torch.py.
+For multi-GPU parallel training, just define the number of GPUs using
+``device`` and set ``strategy="ddp"``. For full code, please refer to
+https://github.com/tczhangzhi/torcheeg/blob/main/examples/examples_torch_lightening.py.

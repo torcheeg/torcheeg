@@ -40,10 +40,10 @@ class CNN(torch.nn.Module):
 
 
 class EEGClassifier(LightningModule):
-    def __init__(self, lr=1e-4):
+    def __init__(self, model, lr=1e-4):
         super().__init__()
         self.save_hyperparameters(ignore="model")
-        self.model = CNN()
+        self.model = model
         self.val_acc = Accuracy()
 
     def forward(self, x):
@@ -102,7 +102,7 @@ if __name__ == "__main__":
                                               monitor='val_metric',
                                               mode='max')
 
-        model = EEGClassifier()
+        model = EEGClassifier(CNN())
 
         trainer = Trainer(max_epochs=50,
                           devices=2,

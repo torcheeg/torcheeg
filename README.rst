@@ -1,5 +1,5 @@
 TorchEEG
-------------
+--------------
 
 |PyPI Version| |Docs Status|
 
@@ -32,7 +32,7 @@ Installation
 Pip
 ~~~
 
-TorchEEG also allows pip-based installation, please use the following
+TorchEEG allows pip-based installation, please use the following
 command:
 
 .. code:: shell
@@ -71,19 +71,19 @@ components:
 | o/en/latest/torcheeg.datasets.html>`__ | provides a multi-process    |
 |                                        | preprocessing interface.    |
 +----------------------------------------+-----------------------------+
-| `torcheeg.transf                       | Extensive EEG preprocessing      |
+| `torcheeg.transf                       | Extensive EEG preprocessing |
 | orms <https://torcheeg.readthedocs.io/ | methods help users extract  |
 | en/latest/torcheeg.transforms.html>`__ | features, construct EEG     |
 |                                        | signal representations, and |
 |                                        | connect to commonly used    |
 |                                        | deep learning libraries.    |
 +----------------------------------------+-----------------------------+
-| `torcheeg.model_selection              | Extensive dataset partitioning   |
-| <https://torcheeg.readthedocs.io/en/la | methods for users to        |
-| test/torcheeg.model_selection.html>`__ | experiment with different   |
-|                                        | settings.                   |
+| `torcheeg.model_selection              | Extensive dataset           |
+| <https://torcheeg.readthedocs.io/en/la | partitioning methods for    |
+| test/torcheeg.model_selection.html>`__ | users to experiment with    |
+|                                        | different settings.         |
 +----------------------------------------+-----------------------------+
-| `torchee                               | Extensive baseline method        |
+| `torchee                               | Extensive baseline method   |
 | g.models <https://torcheeg.readthedocs | reproduction.               |
 | .io/en/latest/torcheeg.models.html>`__ |                             |
 +----------------------------------------+-----------------------------+
@@ -127,8 +127,8 @@ up!).
    and implicit
    tagging <https://ieeexplore.ieee.org/abstract/document/5975141>`__.
 
-**Transforms:** TorchEEG provides extensive data transformation tools to help
-users build EEG data representations suitable for a variety of task
+**Transforms:** TorchEEG provides extensive data transformation tools to
+help users build EEG data representations suitable for a variety of task
 formulation and a variety of model structures.
 
 -  Feature Engineering:
@@ -189,58 +189,76 @@ In this quick tour, we highlight the ease of starting an EEG analysis
 research with only modifying a few lines of `PyTorch
 tutorial <https://pytorch.org/tutorials/beginner/basics/quickstart_tutorial.html>`__.
 
-The ``torcheeg.datasets`` module contains dataset objects for many
-real-world EEG data, such as DEAP, DREAMER, and SEED. In this tutorial,
-we use the ``DEAP`` dataset. Each ``Dataset`` contains three parameters:
-``online_transform``, ``offline_transform``, and ``target_transform``,
-which are used to modify samples and labels, respectively.
+The ``torcheeg.datasets`` module contains dataset classes for many
+real-world EEG datasets. In this tutorial, we use the ``DEAP`` dataset.
+We first go to the official website to apply for data download
+permission according to the introduction of `DEAP
+dataset <https://www.eecs.qmul.ac.uk/mmv/datasets/deap/>`__, and
+download the dataset. Next, we need to specify the download location of
+the dataset in the ``root_path`` parameter. For the DEAP dataset, we
+specify the path to the ``data_preprocessed_python`` folder,
+e.g. ``./tmp_in/data_preprocessed_python``.
 
 .. code:: python
 
    from torcheeg.datasets import DEAPDataset
    from torcheeg.datasets.constants.emotion_recognition.deap import DEAP_CHANNEL_LOCATION_DICT
 
-   dataset = DEAPDataset(io_path=f'./deap',
-                         root_path='./data_preprocessed_python',
-                         offline_transform=transforms.Compose([
-                             transforms.BandDifferentialEntropy(),
-                             transforms.ToGrid(DEAP_CHANNEL_LOCATION_DICT)
-                         ]),
-                         online_transform=transforms.ToTensor(),
+   dataset = DEAPDataset(io_path=f'./tmp_out/deap',
+                         root_path='./tmp_in/data_preprocessed_python',
+                         offline_transform=transforms.Compose(
+                             [transforms.BandDifferentialEntropy(),
+                              transforms.ToGrid(DEAP_CHANNEL_LOCATION_DICT)]),
+                         online_transform=transforms.Compose([transforms.BaselineRemoval(),
+                                                              transforms.ToTensor()]),
                          label_transform=transforms.Compose([
                              transforms.Select('valence'),
                              transforms.Binary(5.0),
-                         ]))
+                         ]), num_worker=4)
 
-Here, ``offline_transform`` is used to modify samples when generating
-and processing intermediate results, ``online_transform`` is used to
-modify samples during operation, and\ ``target_transform`` is used to
-modify labels. We strongly recommend placing time-consuming numpy
-transforms in ``offline_transform``, and pytorch and data augmentation
-related transforms in ``online_transform``.
+The ``DEAPDataset`` API further contains three parameters:
+``online_transform``, ``offline_transform``, and ``label_transform``,
+which are used to modify samples and labels, respectively.
+
+Here, ``offline_transform`` will only be called once when the dataset is
+initialized to preprocess all samples in the dataset, and the processed
+dataset will be stored in ``io_path`` to avoid time-consuming repeated
+transformations in subsequent use. If offline preprocessing is a
+computationally intensive operation, we also recommend setting multi-CPU
+parallelism for offline_transform, e.g., set ``num_worker`` to 4.
+
+``online_transform`` is used to transform samples on the fly. Please use
+``online_transform`` if you don't want to wait for the preprocessing of
+the entire dataset (suitable for scenarios where new ``transform``
+algorithms are designed) or expect data transformation with randomness
+each time a sample is indexed.
 
 Next, we need to divide the dataset into a training set and a test set.
 In the field of EEG analysis, commonly used data partitioning methods
 include k-fold cross-validation and leave-one-out cross-validation. In
 this tutorial, we use k-fold cross-validation on the entire dataset
-(``KFoldDataset``) as an example for dataset partitioning.
+(``KFoldDataset``) as an example of dataset splitting.
 
 .. code:: python
 
    from torcheeg.model_selection import KFoldDataset
 
-   k_fold = KFoldDataset(n_splits=5, split_path='./split', shuffle=True)
+   k_fold = KFoldDataset(n_splits=10,
+                         split_path=f'./tmp_out/split',
+                         shuffle=True,
+                         random_state=42)
 
-Let's define a simple but effective CNN model:
+Let's define a simple but effective CNN model according to
+`CCNN <https://link.springer.com/chapter/10.1007/978-3-030-04239-4_39>`__:
 
 .. code:: python
 
    class CNN(torch.nn.Module):
-       def __init__(self):
+       def __init__(self, in_channels=4, num_classes=3):
            super().__init__()
            self.conv1 = nn.Sequential(
                nn.ZeroPad2d((1, 2, 1, 2)),
-               nn.Conv2d(4, 64, kernel_size=4, stride=1),
+               nn.Conv2d(in_channels, 64, kernel_size=4, stride=1),
                nn.ReLU()
            )
            self.conv2 = nn.Sequential(
@@ -260,7 +278,7 @@ Let's define a simple but effective CNN model:
            )
 
            self.lin1 = nn.Linear(9 * 9 * 64, 1024)
-           self.lin2 = nn.Linear(1024, 2)
+           self.lin2 = nn.Linear(1024, num_classes)
 
        def forward(self, x):
            x = self.conv1(x)
@@ -273,39 +291,38 @@ Let's define a simple but effective CNN model:
            x = self.lin2(x)
            return x
 
-During the research, we may also use other GNN or Transformer-based
-models and build more complex projects. Please refer to the examples in
-the ``exmaples/`` folder.
-
-The training and validation scripts for the model are taken from the
-PyTorch tutorial without much modification. The only thing worth noting
-is that the ``Dataset`` provides three values when it is traversed,
-namely the EEG signal (denoted by ``X`` in the code), the baseline
-signal (denoted by ``b`` in the code), and the sample label (denoted by
-``y`` in the code). In particular, to achieve baseline removal, we
-subtract the baseline signal from the original signal as input to the
-model (see ``pred = model(X - b)``).
+Specify the device and loss function used during training and test. It
+is worth mentioning that TorchEEG's implementation supports
+serialization, so we can easily define multi-GPU parallel model
+training. For this part, please refer to
+https://torcheeg.readthedocs.io/en/latest/introduction_by_example_torch_lightning.html.
 
 .. code:: python
 
    device = "cuda" if torch.cuda.is_available() else "cpu"
-   model = CNN().to(device)
-
    loss_fn = nn.CrossEntropyLoss()
-   optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
-
    batch_size = 64
+
+The training and validation scripts for the model are taken from the
+`PyTorch
+tutorial <https://pytorch.org/tutorials/beginner/basics/quickstart_tutorial.html>`__
+without much modification. Usually, the value of ``batch``
+contains two parts; the first part refers to the result of
+``online_transform``, which generally corresponds to the ``Tensor``
+sequence representing EEG signals. The second part refers to the result
+of ``label_transform``, a sequence of integers representing the label.
+
+.. code:: python
 
    def train(dataloader, model, loss_fn, optimizer):
        size = len(dataloader.dataset)
        model.train()
        for batch_idx, batch in enumerate(dataloader):
            X = batch[0].to(device)
-           b = batch[1].to(device)
-           y = batch[2].to(device)
+           y = batch[1].to(device)
 
            # Compute prediction error
-           pred = model(X - b)
+           pred = model(X)
            loss = loss_fn(pred, y)
 
            # Backpropagation
@@ -326,24 +343,31 @@ model (see ``pred = model(X - b)``).
        with torch.no_grad():
            for batch in dataloader:
                X = batch[0].to(device)
-               b = batch[1].to(device)
-               y = batch[2].to(device)
+               y = batch[1].to(device)
 
-               pred = model(X - b)
+               pred = model(X)
                val_loss += loss_fn(pred, y).item()
                correct += (pred.argmax(1) == y).type(torch.float).sum().item()
        val_loss /= num_batches
        correct /= size
-       print(
-           f"Test Error: \n Accuracy: {(100*correct):>0.1f}%, Avg loss: {val_loss:>8f} \n"
-       )
+       print(f"Test Error: \n Accuracy: {(100*correct):>0.1f}%, Avg loss: {val_loss:>8f} \n")
 
+Traverse ``k`` folds and train the model separately for testing. It is
+worth noting that, in general, we need to specify ``shuffle=True`` for
+the ``DataLoader`` of the training data set to avoid the deviation of
+the model training caused by consecutive labels of the same category.
+
+.. code:: python
 
    for i, (train_dataset, val_dataset) in enumerate(k_fold.split(dataset)):
+
+       model = CNN().to(device)
+       optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
+
        train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
        val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
 
-       epochs = 5
+       epochs = 50
        for t in range(epochs):
            print(f"Epoch {t+1}\n-------------------------------")
            train(train_loader, model, loss_fn, optimizer)

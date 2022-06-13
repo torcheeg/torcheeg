@@ -42,15 +42,15 @@ k_fold = KFoldDataset(n_splits=10,
 
 
 class CNN(torch.nn.Module):
-    def __init__(self):
+    def __init__(self, in_channels=4, num_classes=3):
         super().__init__()
-        self.conv1 = nn.Sequential(nn.ZeroPad2d((1, 2, 1, 2)), nn.Conv2d(4, 64, kernel_size=4, stride=1), nn.ReLU())
+        self.conv1 = nn.Sequential(nn.ZeroPad2d((1, 2, 1, 2)), nn.Conv2d(in_channels, 64, kernel_size=4, stride=1), nn.ReLU())
         self.conv2 = nn.Sequential(nn.ZeroPad2d((1, 2, 1, 2)), nn.Conv2d(64, 128, kernel_size=4, stride=1), nn.ReLU())
         self.conv3 = nn.Sequential(nn.ZeroPad2d((1, 2, 1, 2)), nn.Conv2d(128, 256, kernel_size=4, stride=1), nn.ReLU())
         self.conv4 = nn.Sequential(nn.ZeroPad2d((1, 2, 1, 2)), nn.Conv2d(256, 64, kernel_size=4, stride=1), nn.ReLU())
 
         self.lin1 = nn.Linear(9 * 9 * 64, 1024)
-        self.lin2 = nn.Linear(1024, 2)
+        self.lin2 = nn.Linear(1024, num_classes)
 
     def forward(self, x):
         x = self.conv1(x)

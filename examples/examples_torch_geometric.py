@@ -121,6 +121,7 @@ def valid(dataloader, model, loss_fn):
 
 
 for i, (train_dataset, val_dataset) in enumerate(k_fold.split(dataset)):
+    
     model = GNN().to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
 
