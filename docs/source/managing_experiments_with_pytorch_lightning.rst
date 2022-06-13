@@ -209,4 +209,4 @@ the model training caused by consecutive labels of the same category.
 
 For multi-GPU parallel training, just define the number of GPUs using
 ``device`` and set ``strategy="ddp"``. For full code, please refer to
-https://github.com/tczhangzhi/torcheeg/blob/main/examples/examples_torch_lightening.py.
+https://github.com/tczhangzhi/torcheeg/blob/main/examples/examples_torch_lightning.py.
