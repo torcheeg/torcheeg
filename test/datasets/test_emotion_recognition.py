@@ -4,11 +4,9 @@ import shutil
 import unittest
 
 from torcheeg import transforms
-from torcheeg.datasets import (AMIGOSDataset, DEAPDataset, DREAMERDataset,
-                               MAHNOBDataset, SEEDDataset)
-from torcheeg.datasets.functional import (amigos_constructor, deap_constructor,
-                                          dreamer_constructor,
-                                          mahnob_constructor, seed_constructor)
+from torcheeg.datasets import (AMIGOSDataset, DEAPDataset, DREAMERDataset, MAHNOBDataset, SEEDDataset)
+from torcheeg.datasets.functional import (amigos_constructor, deap_constructor, dreamer_constructor, mahnob_constructor,
+                                          seed_constructor)
 
 
 class TestEmotionRecognitionDataset(unittest.TestCase):
@@ -85,6 +83,29 @@ class TestEmotionRecognitionDataset(unittest.TestCase):
                 transforms.Binary(5.0),
             ]),
             num_worker=4)
+        self.assertEqual(len(dataset), 76800)
+        self.assertEqual(len(dataset.eeg_io), 78080)
+        first_item = dataset[0]
+        self.assertEqual(first_item[0].shape, (32, 4))
+        last_item = dataset[76799]
+        self.assertEqual(last_item[0].shape, (32, 4))
+
+    def test_deap_dataset_transforms(self):
+        io_path = f'./tmp_out/deap_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
+        root_path = './tmp_in/data_preprocessed_python'
+
+        dataset = DEAPDataset(io_path=io_path,
+                              root_path=root_path,
+                              offline_transform=transforms.BandDifferentialEntropy(apply_to_baseline=True),
+                              online_transform=transforms.Compose([
+                                  transforms.BaselineRemoval(),
+                                  transforms.ToTensor()
+                              ]),
+                              label_transform=transforms.Compose([
+                                  transforms.Select('valence'),
+                                  transforms.Binary(5.0),
+                              ]),
+                              num_worker=4)
         self.assertEqual(len(dataset), 76800)
         self.assertEqual(len(dataset.eeg_io), 78080)
         first_item = dataset[0]

@@ -27,7 +27,7 @@ e.g. ``./tmp_in/Preprocessed_EEG``.
 
    dataset = SEEDDataset(io_path=f'./tmp_out/seed',
                          root_path='./tmp_in/Preprocessed_EEG',
-                         offline_transform=transforms.BandDifferentialEntropy(),
+                         offline_transform=transforms.BandDifferentialEntropy(apply_to_baseline=True),
                          online_transform=transforms.Compose([
                              transforms.BaselineRemoval(),
                              transforms.ToG(SEED_ADJACENCY_MATRIX)

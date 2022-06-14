@@ -26,8 +26,8 @@ e.g. ``./tmp_in/data_preprocessed_python``.
    dataset = DEAPDataset(io_path=f'./tmp_out/deap',
                          root_path='./tmp_in/data_preprocessed_python',
                          offline_transform=transforms.Compose(
-                             [transforms.BandDifferentialEntropy(),
-                              transforms.ToGrid(DEAP_CHANNEL_LOCATION_DICT)]),
+                             [transforms.BandDifferentialEntropy(apply_to_baseline=True),
+                              transforms.ToGrid(DEAP_CHANNEL_LOCATION_DICT, apply_to_baseline=True)]),
                          online_transform=transforms.Compose([transforms.BaselineRemoval(),
                                                               transforms.ToTensor()]),
                          label_transform=transforms.Compose([

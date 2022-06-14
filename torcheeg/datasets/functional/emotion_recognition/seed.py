@@ -46,12 +46,12 @@ def transform_producer(file_name: str, root_path: str, chunk_size: int, overlap:
         while end_at <= trail_samples.shape[1]:
             clip_sample = trail_samples[:channel_num, start_at:end_at]
 
-            transformed_eeg = clip_sample
+            t_eeg = clip_sample
             if not transform is None:
-                transformed_eeg = transform(eeg=clip_sample)['eeg']
+                t_eeg = transform(eeg=clip_sample)['eeg']
 
             clip_id = f'{file_name}_{write_pointer}'
-            queue.put({'eeg': transformed_eeg, 'key': clip_id})
+            queue.put({'eeg': t_eeg, 'key': clip_id})
             write_pointer += 1
 
             # record meta info for each signal

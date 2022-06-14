@@ -80,8 +80,8 @@ if __name__ == "__main__":
     dataset = DEAPDataset(io_path=f'./tmp_out/deap_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}',
                           root_path='./tmp_in/data_preprocessed_python',
                           offline_transform=transforms.Compose(
-                              [transforms.BandDifferentialEntropy(),
-                               transforms.ToGrid(DEAP_CHANNEL_LOCATION_DICT)]),
+                              [transforms.BandDifferentialEntropy(apply_to_baseline=True),
+                               transforms.ToGrid(DEAP_CHANNEL_LOCATION_DICT, apply_to_baseline=True)]),
                           online_transform=transforms.Compose([transforms.BaselineRemoval(),
                                                                transforms.ToTensor()]),
                           label_transform=transforms.Compose([

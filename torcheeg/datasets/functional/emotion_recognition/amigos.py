@@ -64,17 +64,6 @@ def transform_producer(file_name: str, root_path: str, chunk_size: int, overlap:
                                                               baseline_chunk_size, channel_num).mean(axis=0).swapaxes(
                                                                   1, 0)  # channel(14), timestep(128)
 
-        # put baseline signal into IO
-        transformed_eeg = trail_baseline_sample
-
-        if not transform is None:
-            transformed_eeg = transform(eeg=trail_baseline_sample)['eeg']
-
-        trail_base_id = f'{file_name}_{write_pointer}'
-        queue.put({'eeg': transformed_eeg, 'key': trail_base_id})
-        write_pointer += 1
-        trail_meta_info['baseline_id'] = trail_base_id
-
         # extract experimental signals
         start_at = baseline_chunk_size * baseline_num
         end_at = start_at + chunk_size
@@ -82,12 +71,22 @@ def transform_producer(file_name: str, root_path: str, chunk_size: int, overlap:
         while end_at <= trail_samples.shape[0]:
             clip_sample = trail_samples[start_at:end_at, :channel_num].swapaxes(1, 0)
 
-            transformed_eeg = clip_sample
+            t_eeg = clip_sample
+            t_baseline = trail_baseline_sample
             if not transform is None:
-                transformed_eeg = transform(eeg=clip_sample, baseline=trail_baseline_sample)['eeg']
+                t = transform(eeg=clip_sample, baseline=trail_baseline_sample)
+                t_eeg = t['eeg']
+                t_baseline = t['baseline']
+
+            # put baseline signal into IO
+            if not 'baseline_id' in trail_meta_info:
+                trail_base_id = f'{file_name}_{write_pointer}'
+                queue.put({'eeg': t_baseline, 'key': trail_base_id})
+                write_pointer += 1
+                trail_meta_info['baseline_id'] = trail_base_id
 
             clip_id = f'{file_name}_{write_pointer}'
-            queue.put({'eeg': transformed_eeg, 'key': clip_id})
+            queue.put({'eeg': t_eeg, 'key': clip_id})
             write_pointer += 1
 
             # record meta info for each signal

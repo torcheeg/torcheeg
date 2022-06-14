@@ -64,16 +64,6 @@ def transform_producer(file_name: str, root_path: str, chunk_size: int, sampling
     trial_baseline_sample = trial_baseline_sample.reshape(channel_num, baseline_num, baseline_chunk_size).mean(
         axis=1)  # channel(32), timestep(128)
 
-    # put baseline signal into IO
-    transformed_eeg = trial_baseline_sample
-    if not transform is None:
-        transformed_eeg = transform(eeg=trial_baseline_sample)
-
-    trial_base_id = f'{file_name}_{write_pointer}'
-    queue.put({'eeg': transformed_eeg, 'key': trial_base_id})
-    write_pointer += 1
-    trial_meta_info['baseline_id'] = trial_base_id
-
     # extract experimental signals
     trial_raw = raw.copy().crop(raw.times[start_samp], raw.times[end_samp])
     trial_raw = trial_raw.resample(sampling_rate)
@@ -92,12 +82,22 @@ def transform_producer(file_name: str, root_path: str, chunk_size: int, sampling
     while end_at <= max_len:
         clip_sample = trial_samples[:, start_at:end_at]
 
-        transformed_eeg = clip_sample
+        t_eeg = clip_sample
+        t_baseline = trial_baseline_sample
         if not transform is None:
-            transformed_eeg = transform(eeg=clip_sample, baseline=trial_baseline_sample)
+            t = transform(eeg=clip_sample, baseline=trial_baseline_sample)
+            t_eeg = t['eeg']
+            t_baseline = t['baseline']
+
+        # put baseline signal into IO
+        if not 'baseline_id' in trial_meta_info:
+            trial_base_id = f'{file_name}_{write_pointer}'
+            queue.put({'eeg': t_baseline, 'key': trial_base_id})
+            write_pointer += 1
+            trial_meta_info['baseline_id'] = trial_base_id
 
         clip_id = f'{file_name}_{write_pointer}'
-        queue.put({'eeg': transformed_eeg, 'key': clip_id})
+        queue.put({'eeg': t_eeg, 'key': clip_id})
         write_pointer += 1
 
         # record meta info for each signal
