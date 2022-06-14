@@ -29,11 +29,8 @@ seed_everything(42)
 
 dataset = SEEDDataset(io_path=f'./tmp_out/seed_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}',
                       root_path='./tmp_in/Preprocessed_EEG',
-                      offline_transform=transforms.BandDifferentialEntropy(apply_to_baseline=True),
-                      online_transform=transforms.Compose([
-                          transforms.BaselineRemoval(),
-                          transforms.ToG(SEED_ADJACENCY_MATRIX)
-                      ]),
+                      offline_transform=transforms.BandDifferentialEntropy(),
+                      online_transform=transforms.ToG(SEED_ADJACENCY_MATRIX),
                       label_transform=transforms.Compose([
                           transforms.Select('emotion'),
                           transforms.Lambda(lambda x: x + 1),
