@@ -1,5 +1,5 @@
 TorchEEG
---------------
+========
 
 |PyPI Version| |Docs Status|
 
@@ -197,7 +197,7 @@ dataset <https://www.eecs.qmul.ac.uk/mmv/datasets/deap/>`__, and
 download the dataset. Next, we need to specify the download location of
 the dataset in the ``root_path`` parameter. For the DEAP dataset, we
 specify the path to the ``data_preprocessed_python`` folder,
-e.g. ``./tmp_in/data_preprocessed_python``.
+e.g. ``./tmp_in/data_preprocessed_python``.
 
 .. code:: python
 
@@ -228,7 +228,7 @@ computationally intensive operation, we also recommend setting multi-CPU
 parallelism for offline_transform, e.g., set ``num_worker`` to 4.
 
 ``online_transform`` is used to transform samples on the fly. Please use
-``online_transform`` if you don't want to wait for the preprocessing of
+``online_transform`` if you don’t want to wait for the preprocessing of
 the entire dataset (suitable for scenarios where new ``transform``
 algorithms are designed) or expect data transformation with randomness
 each time a sample is indexed.
@@ -291,11 +291,7 @@ Let's define a simple but effective CNN model according to
            x = self.lin2(x)
            return x
 
-Specify the device and loss function used during training and test. It
-is worth mentioning that TorchEEG's implementation supports
-serialization, so we can easily define multi-GPU parallel model
-training. For this part, please refer to
-https://torcheeg.readthedocs.io/en/latest/introduction_by_example_torch_lightning.html.
+Specify the device and loss function used during training and test.
 
 .. code:: python
 
@@ -306,11 +302,11 @@ https://torcheeg.readthedocs.io/en/latest/introduction_by_example_torch_lightnin
 The training and validation scripts for the model are taken from the
 `PyTorch
 tutorial <https://pytorch.org/tutorials/beginner/basics/quickstart_tutorial.html>`__
-without much modification. Usually, the value of ``batch``
-contains two parts; the first part refers to the result of
-``online_transform``, which generally corresponds to the ``Tensor``
-sequence representing EEG signals. The second part refers to the result
-of ``label_transform``, a sequence of integers representing the label.
+without much modification. Usually, the value of ``batch`` contains two
+parts; the first part refers to the result of ``online_transform``,
+which generally corresponds to the ``Tensor`` sequence representing EEG
+signals. The second part refers to the result of ``label_transform``, a
+sequence of integers representing the label.
 
 .. code:: python
 
@@ -387,6 +383,36 @@ If you would like to contribute new datasets, deep learning methods, and
 extensions to the core, please first open an issue and then send a PR.
 If you are planning to contribute back bug fixes, please do so without
 any further discussion.
+
+About Us
+--------
+
+The following authors provide long-term support for this project. If you
+notice anything in the project that is not as expected, please do not
+hesitate to contact us.
+
+`Zhi ZHANG <tczhangzhi@gmail.com>`__: received the M.Eng. degree at the
+College of Computer Science and Software Engineering from Shenzhen
+University, China, in 2021. He is currently with the Hong Kong
+Polytechnic University as a PhD candidate. His research interests mainly
+include graph convolutional networks, abnormal event detection, and EEG
+analysis.
+
+`Sheng-hua ZHONG <csshzhong@szu.edu.cn>`__: received the Ph.D. degree
+from the Department of Computing, The Hong Kong Polytechnic University
+in 2013. Currently, she is an Associate Professor in College of Computer
+Science & Software Engineering at Shenzhen University. Her research
+interests include multimedia content analysis and brain science.
+
+`Yan LIU <csyliu@comp.polyu.edu.hk>`__: is the director of cognitive
+computing lab and the group leader of artificial intelligence and
+robotics AIR research group. She obtained Ph.D. degree in computer
+Science from Columbia University in the US. In 2005, she joined The Hong
+Kong Polytechnic University, Hong Kong, where she is currently an
+Associate Professor with the Department of Computing. Her research
+interests span a wide range of topics, ranging from brain modeling and
+cognitive computing, image/video retrieval, computer music to machine
+learning and pattern recognition.
 
 License
 -------

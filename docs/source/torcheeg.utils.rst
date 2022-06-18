@@ -25,3 +25,8 @@ plot_2d_tensor
 -----------------------------------------------------------
 
 .. autofunction:: torcheeg.utils.plot_2d_tensor
+
+plot_graph
+-----------------------------------------------------------
+
+.. autofunction:: torcheeg.utils.plot_graph
