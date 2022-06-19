@@ -39,9 +39,7 @@ class BaseTransform:
 
     def get_params_dependent_on_targets(
             self, params: Dict[str, any]) -> Dict[str, any]:
-        raise NotImplementedError(
-            "Method get_params_dependent_on_targets is not implemented in class "
-            + self.__class__.__name__)
+        raise {}
 
     def _get_target_function(self, key: str) -> Callable:
         transform_key = key

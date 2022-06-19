@@ -40,7 +40,11 @@ class ToG(EEGTransform):
         self.adj = adj.to_sparse()
         self.complete_graph = complete_graph
 
-    def __call__(self, *args, eeg: np.ndarray, baseline: Union[np.ndarray, None] = None, **kwargs) -> Dict[str, Data]:
+    def __call__(self,
+                 *args,
+                 eeg: Union[np.ndarray, torch.Tensor],
+                 baseline: Union[np.ndarray, None] = None,
+                 **kwargs) -> Dict[str, Data]:
         r'''
         Args:
             eeg (np.ndarray): The input EEG signals in shape of [number of electrodes, number of data points].
@@ -51,9 +55,12 @@ class ToG(EEGTransform):
         '''
         return super().__call__(*args, eeg=eeg, baseline=baseline, **kwargs)
 
-    def apply(self, eeg: np.ndarray, **kwargs) -> Data:
+    def apply(self, eeg: Union[np.ndarray, torch.Tensor], **kwargs) -> Data:
         data = Data(edge_index=self.adj._indices())
-        data.x = torch.from_numpy(eeg).float()
+        if isinstance(eeg, np.ndarray):
+            data.x = torch.from_numpy(eeg).float()
+        else:
+            data.x = eeg
         data.edge_weight = self.adj._values()
 
         return data
@@ -119,7 +126,10 @@ class ToDynamicG(EEGTransform):
         self._adj = None
         self.kwargs = kwargs
 
-    def opt(self, eeg: np.ndarray) -> np.ndarray:
+    def opt(self, eeg: Union[np.ndarray, torch.Tensor]) -> np.ndarray:
+        if isinstance(eeg, torch.Tensor):
+            eeg = eeg.numpy()
+            
         func = None
 
         if hasattr(self.edge_func, '__call__'):
@@ -139,7 +149,7 @@ class ToDynamicG(EEGTransform):
 
         return adj
 
-    def adj(self, eeg: np.ndarray) -> torch.Tensor:
+    def adj(self, eeg: Union[np.ndarray, torch.Tensor]) -> torch.Tensor:
         if not self._adj is None:
             return self._adj
 
@@ -179,7 +189,11 @@ class ToDynamicG(EEGTransform):
                (np.sqrt(np.inner(x_hill, np.conj(x_hill)) * np.inner(y_hill, np.conj(y_hill)))))
         return np.angle(pdt)
 
-    def __call__(self, *args, eeg: np.ndarray, baseline: Union[np.ndarray, None] = None, **kwargs) -> Dict[str, Data]:
+    def __call__(self,
+                 *args,
+                 eeg: Union[np.ndarray, torch.Tensor],
+                 baseline: Union[np.ndarray, None] = None,
+                 **kwargs) -> Dict[str, Data]:
         r'''
         Args:
             eeg (np.ndarray): The input EEG signals in shape of [number of electrodes, number of data points].
@@ -190,10 +204,13 @@ class ToDynamicG(EEGTransform):
         '''
         return super().__call__(*args, eeg=eeg, baseline=baseline, **kwargs)
 
-    def apply(self, eeg: np.ndarray, **kwargs) -> Data:
+    def apply(self, eeg: Union[np.ndarray, torch.Tensor], **kwargs) -> Data:
         adj = self.adj(eeg)
         data = Data(edge_index=adj._indices())
-        data.x = torch.from_numpy(eeg).float()
+        if isinstance(eeg, np.ndarray):
+            data.x = torch.from_numpy(eeg).float()
+        else:
+            data.x = eeg
         data.edge_weight = adj._values()
 
         return data
