@@ -8,7 +8,7 @@ from typing import Callable, List, Union
 import mne
 import xmltodict
 from torcheeg.io import EEGSignalIO, MetaInfoIO
-from tqdm import tqdm
+from tqdm.auto import tqdm
 
 MAX_QUEUE_SIZE = 1099511627776
 

@@ -5,7 +5,7 @@ from typing import Callable, List, Union
 
 import scipy.io as scio
 from torcheeg.io import EEGSignalIO, MetaInfoIO
-from tqdm import tqdm
+from tqdm.auto import tqdm
 
 MAX_QUEUE_SIZE = 1099511627776
 

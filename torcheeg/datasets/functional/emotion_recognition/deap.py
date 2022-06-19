@@ -6,7 +6,7 @@ from typing import Callable, List, Union
 
 from sklearn import preprocessing
 from torcheeg.io import EEGSignalIO, MetaInfoIO
-from tqdm import tqdm
+from tqdm.auto import tqdm
 
 MAX_QUEUE_SIZE = 1099511627776
 
