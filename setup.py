@@ -5,13 +5,10 @@ URL = 'https://github.com/tczhangzhi/torcheeg'
 
 install_requires = [
     'tqdm>=4.64.0', 'numpy>=1.21.5', 'pandas>=1.3.5', 'scipy>=1.7.3', 'scikit-learn>=1.0.2', 'lmdb>=1.3.0',
-    'torch-scatter', 'torch-sparse', 'torch-cluster', 'torch-spline-conv', 'einops>=0.4.1', 'torch_geometric>=2.0.3',
-    'mne>=1.0.3', 'xmltodict>=0.13.0', 'networkx>=2.6.3'
+    'einops>=0.4.1', 'torch_geometric>=2.0.3', 'mne>=1.0.3', 'xmltodict>=0.13.0', 'networkx>=2.6.3'
 ]
 
-test_requires = [
-    'pytest>=7.1.2'
-]
+test_requires = ['pytest>=7.1.2']
 
 example_requires = ['pytorch-lightning']
 
