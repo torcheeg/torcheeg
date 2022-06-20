@@ -29,6 +29,29 @@ Transformers.
 Installation
 ------------
 
+TorchEEG depends on PyTorch, please complete the installation of PyTorch
+according to the system, CUDA version and other information:
+
+.. code:: shell
+
+   # please refer to https://pytorch.org/get-started/previous-versions/
+   # e.g. CPU version
+   pip install torch==1.10.1+cpu -f https://download.pytorch.org/whl/torch_stable.html
+   # e.g. GPU version
+   pip install torch==1.10.1+cu102 torchvision==0.11.2+cu102 torchaudio==0.10.1 -f https://download.pytorch.org/whl/torch_stable.html
+
+TorchEEG provides algorithms related to graph convolution. This part of
+the implementation relies on PyG. TorchEEG recommends users to manually
+install PyG to avoid possible errors:
+
+.. code:: shell
+
+   # please refer to https://pytorch-geometric.readthedocs.io/en/latest/notes/installation.html
+   # e.g. CPU version
+   pip install torch-scatter torch-sparse torch-cluster torch-spline-conv torch-geometric -f https://data.pyg.org/whl/torch-1.11.0+cpu.html
+   # e.g. GPU version
+   pip install torch-scatter torch-sparse torch-cluster torch-spline-conv torch-geometric -f https://data.pyg.org/whl/torch-1.11.0+cu102.html
+
 Pip
 ~~~
 
@@ -197,7 +220,7 @@ dataset <https://www.eecs.qmul.ac.uk/mmv/datasets/deap/>`__, and
 download the dataset. Next, we need to specify the download location of
 the dataset in the ``root_path`` parameter. For the DEAP dataset, we
 specify the path to the ``data_preprocessed_python`` folder,
-e.g. ``./tmp_in/data_preprocessed_python``.
+e.g. ``./tmp_in/data_preprocessed_python``.
 
 .. code:: python
 
@@ -391,22 +414,23 @@ The following authors provide long-term support for this project. If you
 notice anything in the project that is not as expected, please do not
 hesitate to contact us.
 
-`Zhi ZHANG <tczhangzhi@gmail.com>`__: received the M.Eng. degree at the
-College of Computer Science and Software Engineering from Shenzhen
-University, China, in 2021. He is currently with the Hong Kong
+`Zhi ZHANG <mailto:tczhangzhi@gmail.com>`__: received the M.Eng. degree
+at the College of Computer Science and Software Engineering from
+Shenzhen University, China, in 2021. He is currently with the Hong Kong
 Polytechnic University as a PhD candidate. His research interests mainly
 include graph convolutional networks, abnormal event detection, and EEG
 analysis.
 
-`Sheng-hua ZHONG <csshzhong@szu.edu.cn>`__: received the Ph.D. degree
-from the Department of Computing, The Hong Kong Polytechnic University
-in 2013. Currently, she is an Associate Professor in College of Computer
-Science & Software Engineering at Shenzhen University. Her research
-interests include multimedia content analysis and brain science.
+`Sheng-hua ZHONG <mailto:csshzhong@szu.edu.cn>`__: received the
+Ph.D. degree from the Department of Computing, The Hong Kong Polytechnic
+University in 2013. Currently, she is an Associate Professor in College
+of Computer Science & Software Engineering at Shenzhen University. Her
+research interests include multimedia content analysis and brain
+science.
 
-`Yan LIU <csyliu@comp.polyu.edu.hk>`__: is the director of cognitive
-computing lab and the group leader of artificial intelligence and
-robotics AIR research group. She obtained Ph.D. degree in computer
+`Yan LIU <mailto:csyliu@comp.polyu.edu.hk>`__: is the director of
+cognitive computing lab and the group leader of artificial intelligence
+and robotics AIR research group. She obtained Ph.D. degree in computer
 Science from Columbia University in the US. In 2005, she joined The Hong
 Kong Polytechnic University, Hong Kong, where she is currently an
 Associate Professor with the Department of Computing. Her research

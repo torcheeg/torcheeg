@@ -1,6 +1,29 @@
 Installation
 ====================================
 
+TorchEEG depends on PyTorch, please complete the installation of PyTorch
+according to the system, CUDA version and other information:
+
+.. code:: shell
+
+   # please refer to https://pytorch.org/get-started/previous-versions/
+   # e.g. CPU version
+   pip install torch==1.10.1+cpu -f https://download.pytorch.org/whl/torch_stable.html
+   # e.g. GPU version
+   pip install torch==1.10.1+cu102 torchvision==0.11.2+cu102 torchaudio==0.10.1 -f https://download.pytorch.org/whl/torch_stable.html
+
+TorchEEG provides algorithms related to graph convolution. This part of
+the implementation relies on PyG. TorchEEG recommends users to manually
+install PyG to avoid possible errors:
+
+.. code:: shell
+
+   # please refer to https://pytorch-geometric.readthedocs.io/en/latest/notes/installation.html
+   # e.g. CPU version
+   pip install torch-scatter torch-sparse torch-cluster torch-spline-conv torch-geometric -f https://data.pyg.org/whl/torch-1.11.0+cpu.html
+   # e.g. GPU version
+   pip install torch-scatter torch-sparse torch-cluster torch-spline-conv torch-geometric -f https://data.pyg.org/whl/torch-1.11.0+cu102.html
+
 Pip
 ~~~
 

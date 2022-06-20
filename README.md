@@ -3,9 +3,7 @@
 [docs-image]: https://readthedocs.org/projects/torcheeg/badge/?version=latest
 [docs-url]: https://torcheeg.readthedocs.io/en/latest/?badge=latest
 
-![TorchEEG Logo](https://github.com/tczhangzhi/torcheeg/blob/main/docs/source/_static/torcheeg_logo_dark.png)
-
---------------------------------------------------------------------------------
+# TorchEEG
 
 [![PyPI Version][pypi-image]][pypi-url]
 [![Docs Status][docs-image]][docs-url]
@@ -17,6 +15,26 @@ TorchEEG is a library built on PyTorch for EEG signal analysis. TorchEEG aims to
 TorchEEG specifies a unified data input-output format (IO) and implement commonly used EEG databases, allowing users to quickly access benchmark datasets and define new custom datasets. The datasets that have been defined so far include emotion recognition and so on. According to papers published in the field of EEG analysis, TorchEEG provides data preprocessing methods commonly used for EEG signals, and provides plug-and-play API for both offline and online pre-proocessing. Offline processing allow users to process once and use any times, speeding up the training process. Online processing allows users to save time when creating new data processing methods. TorchEEG also provides deep learning models following published papers for EEG analysis, including convolutional neural networks, graph convolutional neural networks, and Transformers.
 
 ## Installation
+
+TorchEEG depends on PyTorch, please complete the installation of PyTorch according to the system, CUDA version and other information:
+
+```shell
+# please refer to https://pytorch.org/get-started/previous-versions/
+# e.g. CPU version
+pip install torch==1.10.1+cpu -f https://download.pytorch.org/whl/torch_stable.html
+# e.g. GPU version
+pip install torch==1.10.1+cu102 torchvision==0.11.2+cu102 torchaudio==0.10.1 -f https://download.pytorch.org/whl/torch_stable.html
+```
+
+TorchEEG provides algorithms related to graph convolution. This part of the implementation relies on PyG. TorchEEG recommends users to manually install PyG to avoid possible errors:
+
+```shell
+# please refer to https://pytorch-geometric.readthedocs.io/en/latest/notes/installation.html
+# e.g. CPU version
+pip install torch-scatter torch-sparse torch-cluster torch-spline-conv torch-geometric -f https://data.pyg.org/whl/torch-1.11.0+cpu.html
+# e.g. GPU version
+pip install torch-scatter torch-sparse torch-cluster torch-spline-conv torch-geometric -f https://data.pyg.org/whl/torch-1.11.0+cu102.html
+```
 
 ### Pip
 
@@ -56,26 +74,16 @@ We list currently supported datasets, transforms, data splitting, and deep learn
 * [DREAMER dataset](https://torcheeg.readthedocs.io/en/latest/torcheeg.datasets.html#dreamerdataset) from Katsigiannis et al.: [DREAMER: A database for emotion recognition through EEG and ECG signals from wireless low-cost off-the-shelf devices](https://ieeexplore.ieee.org/abstract/document/7887697).
 * [SEED dataset](https://torcheeg.readthedocs.io/en/latest/torcheeg.datasets.html#seeddataset) from Zheng et al.: [Investigating critical frequency bands and channels for EEG-based emotion recognition with deep neural networks](https://ieeexplore.ieee.org/abstract/document/7104132).
 * [DEAP dataset](https://torcheeg.readthedocs.io/en/latest/torcheeg.datasets.html#deapdataset) from Koelstra et al.: [DEAP: A database for emotion analysis; using physiological signals](https://ieeexplore.ieee.org/abstract/document/5871728).
-
-<details>
-<summary><b>Expand to see more...</b></summary>
-
 * [MAHNOB dataset](https://torcheeg.readthedocs.io/en/latest/torcheeg.datasets.html#mahnobdataset) from Soleymani et al.: [A multimodal database for affect recognition and implicit tagging](https://ieeexplore.ieee.org/abstract/document/5975141).
-</details>
 
 **Transforms:** TorchEEG provides extensive data transformation tools to help users build EEG data representations suitable for a variety of task formulation and a variety of model structures.
 
 * Feature Engineering: [BandDifferentialEntropy](https://torcheeg.readthedocs.io/en/latest/torcheeg.transforms.numpy.html#transforms-banddifferentialentropy), [BandPowerSpectralDensity](https://torcheeg.readthedocs.io/en/latest/torcheeg.transforms.numpy.html#transforms-bandpowerspectraldensity), [BandMeanAbsoluteDeviation](https://torcheeg.readthedocs.io/en/latest/torcheeg.transforms.numpy.html#transforms-bandmeanabsolutedeviation), [BandKurtosis](https://torcheeg.readthedocs.io/en/latest/torcheeg.transforms.numpy.html#transforms-bandkurtosis), [BandSkewness](https://torcheeg.readthedocs.io/en/latest/torcheeg.transforms.numpy.html#transforms-bandskewness), [Concatenate](https://torcheeg.readthedocs.io/en/latest/torcheeg.transforms.numpy.html#transforms-concatenate)
 * General Operation: [PickElectrode](https://torcheeg.readthedocs.io/en/latest/torcheeg.transforms.numpy.html#transforms-pickelectrode), [MeanStdNormalize](https://torcheeg.readthedocs.io/en/latest/torcheeg.transforms.numpy.html#transforms-meanstdnormalize), [MinMaxNormalize](https://torcheeg.readthedocs.io/en/latest/torcheeg.transforms.numpy.html#transforms-minmaxnormalize)
 * For CNN: [To2d](https://torcheeg.readthedocs.io/en/latest/torcheeg.transforms.numpy.html#transforms-to2d), [ToGrid](https://torcheeg.readthedocs.io/en/latest/torcheeg.transforms.numpy.html#transforms-togrid), [ToInterpolatedGrid](https://torcheeg.readthedocs.io/en/latest/torcheeg.transforms.numpy.html#transforms-tointerpolatedgrid)
-
-<details>
-<summary><b>Expand to see more...</b></summary>
-
 * For GNN: [ToG](https://torcheeg.readthedocs.io/en/latest/torcheeg.transforms.pyg.html#transforms-tog)
 * For Augmentation: [Resize](https://torcheeg.readthedocs.io/en/latest/torcheeg.transforms.torch.html#transforms-resize), [RandomNoise](https://torcheeg.readthedocs.io/en/latest/torcheeg.transforms.torch.html#transforms-randomnoise), [RandomMask](https://torcheeg.readthedocs.io/en/latest/torcheeg.transforms.torch.html#transforms-randommask)
 * For Label Construction: [Select](https://torcheeg.readthedocs.io/en/latest/torcheeg.transforms.label.html#transforms-select), [Binary](https://torcheeg.readthedocs.io/en/latest/torcheeg.transforms.label.html#transforms-binary), [BinariesToCategory](https://torcheeg.readthedocs.io/en/latest/torcheeg.transforms.label.html#transforms-binariestocategory)
-</details>
 
 **Data Splitting:** In current research in the field of EEG analysis, there are various settings based on different considerations for data partitioning. Please choose a reasonable data division method according to the research focus:
 
@@ -248,11 +256,11 @@ If you would like to contribute new datasets, deep learning methods, and extensi
 
 The following authors provide long-term support for this project. If you notice anything in the project that is not as expected, please do not hesitate to contact us.
 
-[Zhi ZHANG](tczhangzhi@gmail.com): received the M.Eng. degree at the College of Computer Science and Software Engineering from Shenzhen University, China, in 2021. He is currently with the Hong Kong Polytechnic University as a PhD candidate. His research interests mainly include graph convolutional networks, abnormal event detection, and EEG analysis.
+[Zhi ZHANG](mailto:tczhangzhi@gmail.com): received the M.Eng. degree at the College of Computer Science and Software Engineering from Shenzhen University, China, in 2021. He is currently with the Hong Kong Polytechnic University as a PhD candidate. His research interests mainly include graph convolutional networks, abnormal event detection, and EEG analysis.
 
-[Sheng-hua ZHONG](csshzhong@szu.edu.cn): received the Ph.D. degree from the Department of Computing, The Hong Kong Polytechnic University in 2013. Currently, she is an Associate Professor in College of Computer Science & Software Engineering at Shenzhen University. Her research interests include multimedia content analysis and brain science.
+[Sheng-hua ZHONG](mailto:csshzhong@szu.edu.cn): received the Ph.D. degree from the Department of Computing, The Hong Kong Polytechnic University in 2013. Currently, she is an Associate Professor in College of Computer Science & Software Engineering at Shenzhen University. Her research interests include multimedia content analysis and brain science.
 
-[Yan LIU](csyliu@comp.polyu.edu.hk): is the director of cognitive computing lab and the group leader of artificial intelligence and robotics AIR research group. She obtained Ph.D. degree in computer Science from Columbia University in the US. In 2005, she joined The Hong Kong Polytechnic University, Hong Kong, where she is currently an Associate Professor with the Department of Computing. Her research interests span a wide range of topics, ranging from brain modeling and cognitive computing, image/video retrieval, computer music to machine learning and pattern recognition.
+[Yan LIU](mailto:csyliu@comp.polyu.edu.hk): is the director of cognitive computing lab and the group leader of artificial intelligence and robotics AIR research group. She obtained Ph.D. degree in computer Science from Columbia University in the US. In 2005, she joined The Hong Kong Polytechnic University, Hong Kong, where she is currently an Associate Professor with the Department of Computing. Her research interests span a wide range of topics, ranging from brain modeling and cognitive computing, image/video retrieval, computer music to machine learning and pattern recognition.
 
 ## License
 
