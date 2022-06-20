@@ -97,6 +97,7 @@ class DEAPDataset(BaseDataset):
         io_path (str): The path to generated unified data IO, cached as an intermediate result. (default: :obj:`./io/deap`)
         num_worker (str): How many subprocesses to use for data processing. (default: :obj:`1`)
         verbose (bool): Whether to display logs during processing, such as progress bars, etc. (default: :obj:`True`)
+        cache_size (int): Maximum size database may grow to; used to size the memory mapping. If database grows larger than ``map_size``, an exception will be raised and the user must close and reopen. (default: :obj:`8 * 1024 * 1024 * 1024`)
     
     '''
     def __init__(self,
@@ -111,7 +112,8 @@ class DEAPDataset(BaseDataset):
                  label_transform: Union[None, Callable] = None,
                  io_path: str = './io/deap',
                  num_worker: int = 1,
-                 verbose: bool = True):
+                 verbose: bool = True,
+                 cache_size: int = 8 * 1024 * 1024 * 1024):
         deap_constructor(root_path=root_path,
                          chunk_size=chunk_size,
                          overlap=overlap,
@@ -121,7 +123,8 @@ class DEAPDataset(BaseDataset):
                          transform=offline_transform,
                          io_path=io_path,
                          num_worker=num_worker,
-                         verbose=verbose)
+                         verbose=verbose,
+                         cache_size=cache_size)
         super().__init__(io_path)
 
         self.root_path = root_path
@@ -136,6 +139,7 @@ class DEAPDataset(BaseDataset):
         self.io_path = io_path
         self.num_worker = num_worker
         self.verbose = verbose
+        self.cache_size = cache_size
 
     def __getitem__(self, index: int) -> Tuple:
         info = self.info.iloc[index].to_dict()
@@ -148,7 +152,7 @@ class DEAPDataset(BaseDataset):
 
         signal = eeg
         label = info
-        
+
         if self.online_transform:
             signal = self.online_transform(eeg=eeg, baseline=baseline)['eeg']
 

@@ -5,8 +5,6 @@ from typing import Union
 import torch
 import lmdb
 
-MAX_LMDB_SIZE = 1099511627776
-
 
 class EEGSignalIO:
     r'''
@@ -24,7 +22,7 @@ class EEGSignalIO:
         cache_path (str): Where the database is stored.
         cache_size (int): The maximum capacity of the database. (default: :obj:`1099511627776`)
     '''
-    def __init__(self, cache_path: str, cache_size: int = MAX_LMDB_SIZE) -> None:
+    def __init__(self, cache_path: str, cache_size: int = 1024 * 1024 * 1024 * 1024) -> None:
         self.cache_path = cache_path
         self.cache_size = cache_size
 

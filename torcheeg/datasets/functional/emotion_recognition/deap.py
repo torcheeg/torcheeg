@@ -6,7 +6,7 @@ from typing import Callable, List, Union
 
 from sklearn import preprocessing
 from torcheeg.io import EEGSignalIO, MetaInfoIO
-from tqdm.auto import tqdm
+from tqdm import tqdm
 
 MAX_QUEUE_SIZE = 1099511627776
 
@@ -95,7 +95,8 @@ def deap_constructor(root_path: str = './data_preprocessed_python',
                      transform: Union[None, Callable] = None,
                      io_path: str = './io/deap',
                      num_worker: int = 1,
-                     verbose: bool = True) -> None:
+                     verbose: bool = True,
+                     cache_size: int = 8 * 1024 * 1024 * 1024) -> None:
     # init IO
     if os.path.exists(io_path):
         if verbose:
@@ -109,7 +110,7 @@ def deap_constructor(root_path: str = './data_preprocessed_python',
     eeg_signal_io_path = os.path.join(io_path, 'eeg')
 
     info_io = MetaInfoIO(meta_info_io_path)
-    eeg_io = EEGSignalIO(eeg_signal_io_path)
+    eeg_io = EEGSignalIO(eeg_signal_io_path, cache_size=cache_size)
 
     # loop to access the dataset files
     file_list = os.listdir(root_path)

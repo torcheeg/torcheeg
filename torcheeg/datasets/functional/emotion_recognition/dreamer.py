@@ -4,7 +4,7 @@ from functools import partial
 import scipy.io as scio
 from multiprocessing import Manager, Pool, Process, Queue
 from torcheeg.io import EEGSignalIO, MetaInfoIO
-from tqdm.auto import tqdm
+from tqdm import tqdm
 
 MAX_QUEUE_SIZE = 1099511627776
 
@@ -91,7 +91,8 @@ def dreamer_constructor(mat_path: str = './DREAMER.mat',
                         transform: Union[None, Callable] = None,
                         io_path: str = './io/dreamer',
                         num_worker: int = 1,
-                        verbose: bool = True) -> None:
+                        verbose: bool = True,
+                        cache_size: int = 8 * 1024 * 1024 * 1024) -> None:
     # init IO
     if os.path.exists(io_path):
         if verbose:
@@ -105,7 +106,7 @@ def dreamer_constructor(mat_path: str = './DREAMER.mat',
     eeg_signal_io_path = os.path.join(io_path, 'eeg')
 
     info_io = MetaInfoIO(meta_info_io_path)
-    eeg_io = EEGSignalIO(eeg_signal_io_path)
+    eeg_io = EEGSignalIO(eeg_signal_io_path, cache_size=cache_size)
 
     # access the dataset files
     mat_data = scio.loadmat(mat_path, verify_compressed_data_integrity=False)

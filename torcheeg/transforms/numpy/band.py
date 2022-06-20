@@ -1,4 +1,3 @@
-from abc import abstractmethod
 from typing import Dict, Tuple, Union
 
 from scipy.signal import butter, lfilter, welch
@@ -29,17 +28,14 @@ class BandTransform(EEGTransform):
         for low, high in self.band_dict.values():
             c_list = []
             for c in eeg:
-                b, a = butter(self.order, [low, high],
-                              fs=self.frequency,
-                              btype="band")
+                b, a = butter(self.order, [low, high], fs=self.frequency, btype="band")
                 c_list.append(self.opt(lfilter(b, a, c)))
             c_list = np.array(c_list)
             band_list.append(c_list)
         return np.stack(band_list, axis=-1)
 
-    @abstractmethod
     def opt(self, eeg: np.ndarray, **kwargs) -> np.ndarray:
-        ...
+        raise NotImplementedError
 
 
 class BandDifferentialEntropy(BandTransform):
@@ -108,8 +104,7 @@ class BandPowerSpectralDensity(EEGTransform):
                      "gamma": [31, 49]
                  },
                  apply_to_baseline: bool = False):
-        super(BandPowerSpectralDensity,
-              self).__init__(apply_to_baseline=apply_to_baseline)
+        super(BandPowerSpectralDensity, self).__init__(apply_to_baseline=apply_to_baseline)
         self.frequency = frequency
         self.window_size = window_size
         self.order = order
@@ -120,10 +115,7 @@ class BandPowerSpectralDensity(EEGTransform):
         for low, high in self.band_dict.values():
             c_list = []
             for c in eeg:
-                freqs, psd = welch(c,
-                                   self.frequency,
-                                   nperseg=self.window_size,
-                                   scaling='density')
+                freqs, psd = welch(c, self.frequency, nperseg=self.window_size, scaling='density')
 
                 index_min = np.argmax(np.round(freqs) > low) - 1
                 index_max = np.argmax(np.round(freqs) > high)
@@ -165,7 +157,8 @@ class BandMeanAbsoluteDeviation(BandTransform):
     .. automethod:: __call__
     '''
     def __call__(self,
-                 *args,eeg: np.ndarray,
+                 *args,
+                 eeg: np.ndarray,
                  baseline: Union[np.ndarray, None] = None,
                  **kwargs) -> Dict[str, np.ndarray]:
         r'''
@@ -199,7 +192,8 @@ class BandKurtosis(BandTransform):
     .. automethod:: __call__
     '''
     def __call__(self,
-                 *args,eeg: np.ndarray,
+                 *args,
+                 eeg: np.ndarray,
                  baseline: Union[np.ndarray, None] = None,
                  **kwargs) -> Dict[str, np.ndarray]:
         r'''
@@ -245,7 +239,8 @@ class BandSkewness(BandTransform):
     .. automethod:: __call__
     '''
     def __call__(self,
-                 *args,eeg: np.ndarray,
+                 *args,
+                 eeg: np.ndarray,
                  baseline: Union[np.ndarray, None] = None,
                  **kwargs) -> Dict[str, np.ndarray]:
         r'''

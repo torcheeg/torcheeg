@@ -6,7 +6,7 @@ from typing import Callable, List, Union
 
 import scipy.io as scio
 from torcheeg.io import EEGSignalIO, MetaInfoIO
-from tqdm.auto import tqdm
+from tqdm import tqdm
 
 MAX_QUEUE_SIZE = 1099511627776
 
@@ -120,7 +120,8 @@ def amigos_constructor(root_path: str = './data_preprocessed',
                        transform: Union[None, Callable] = None,
                        io_path: str = './io/amigos',
                        num_worker: int = 1,
-                       verbose: bool = True) -> None:
+                       verbose: bool = True,
+                       cache_size: int = 8 * 1024 * 1024 * 1024) -> None:
     # init IO
     if os.path.exists(io_path):
         if verbose:
@@ -134,7 +135,7 @@ def amigos_constructor(root_path: str = './data_preprocessed',
     eeg_signal_io_path = os.path.join(io_path, 'eeg')
 
     info_io = MetaInfoIO(meta_info_io_path)
-    eeg_io = EEGSignalIO(eeg_signal_io_path)
+    eeg_io = EEGSignalIO(eeg_signal_io_path, cache_size=cache_size)
 
     # loop to access the dataset files
     file_list = os.listdir(root_path)

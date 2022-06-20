@@ -99,7 +99,8 @@ class AMIGOSDataset(BaseDataset):
         io_path (str): The path to generated unified data IO, cached as an intermediate result. (default: :obj:`./io/amigos`)
         num_worker (str): How many subprocesses to use for data processing. (default: :obj:`1`)
         verbose (bool): Whether to display logs during processing, such as progress bars, etc. (default: :obj:`True`)
-    
+        cache_size (int): Maximum size database may grow to; used to size the memory mapping. If database grows larger than ``map_size``, an exception will be raised and the user must close and reopen. (default: :obj:`8 * 1024 * 1024 * 1024`)
+
     '''
     channel_location_dict = AMIGOS_CHANNEL_LOCATION_DICT
     adjacency_matrix = AMIGOS_ADJACENCY_MATRIX
@@ -118,7 +119,8 @@ class AMIGOSDataset(BaseDataset):
                  label_transform: Union[None, Callable] = None,
                  io_path: str = './io/amigos',
                  num_worker: int = 1,
-                 verbose: bool = True):
+                 verbose: bool = True,
+                 cache_size: int = 8 * 1024 * 1024 * 1024):
         amigos_constructor(root_path=root_path,
                            chunk_size=chunk_size,
                            overlap=overlap,
@@ -130,7 +132,8 @@ class AMIGOSDataset(BaseDataset):
                            transform=offline_transform,
                            io_path=io_path,
                            num_worker=num_worker,
-                           verbose=verbose)
+                           verbose=verbose,
+                           cache_size=cache_size)
         super().__init__(io_path)
 
         self.root_path = root_path
@@ -146,6 +149,7 @@ class AMIGOSDataset(BaseDataset):
         self.label_transform = label_transform
         self.io_path = io_path
         self.verbose = verbose
+        self.cache_size = cache_size
 
     def __getitem__(self, index: int) -> Tuple[any, any, int, int, int]:
         info = self.info.iloc[index].to_dict()
@@ -158,7 +162,7 @@ class AMIGOSDataset(BaseDataset):
 
         signal = eeg
         label = info
-        
+
         if self.online_transform:
             signal = self.online_transform(eeg=eeg, baseline=baseline)['eeg']
 

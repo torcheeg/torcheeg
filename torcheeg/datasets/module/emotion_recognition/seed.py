@@ -110,7 +110,8 @@ class SEEDDataset(BaseDataset):
                  label_transform: Union[None, Callable] = None,
                  io_path: str = './io/seed',
                  num_worker: int = 1,
-                 verbose: bool = True):
+                 verbose: bool = True,
+                 cache_size: int = 8 * 1024 * 1024 * 1024):
         seed_constructor(root_path=root_path,
                          chunk_size=chunk_size,
                          overlap=overlap,
@@ -118,7 +119,8 @@ class SEEDDataset(BaseDataset):
                          transform=offline_transform,
                          io_path=io_path,
                          num_worker=num_worker,
-                         verbose=verbose)
+                         verbose=verbose,
+                         cache_size=cache_size)
         super().__init__(io_path)
 
         self.root_path = root_path
@@ -130,6 +132,7 @@ class SEEDDataset(BaseDataset):
         self.label_transform = label_transform
         self.io_path = io_path
         self.verbose = verbose
+        self.cache_size = cache_size
 
     def __getitem__(self, index: int) -> Tuple[any, any, int, int, int]:
         info = self.info.iloc[index].to_dict()

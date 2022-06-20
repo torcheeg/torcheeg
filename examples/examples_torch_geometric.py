@@ -25,25 +25,6 @@ def seed_everything(seed):
     torch.backends.cudnn.benchmark = False
 
 
-seed_everything(42)
-
-dataset = SEEDDataset(io_path=f'./tmp_out/seed_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}',
-                      root_path='./tmp_in/Preprocessed_EEG',
-                      offline_transform=transforms.BandDifferentialEntropy(),
-                      online_transform=transforms.ToG(SEED_ADJACENCY_MATRIX),
-                      label_transform=transforms.Compose([
-                          transforms.Select('emotion'),
-                          transforms.Lambda(lambda x: x + 1),
-                      ]),
-                      num_worker=8)
-
-k_fold = KFoldTrialPerSubject(n_splits=10,
-                              split_path=f'./tmp_out/split_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}',
-                              shuffle=False)
-
-
-# import pdb
-# pdb.set_trace()
 class GNN(torch.nn.Module):
     def __init__(self, in_channels=4, num_layers=3, hid_channels=64, num_classes=3):
         super().__init__()
@@ -71,11 +52,6 @@ class GNN(torch.nn.Module):
         x = F.dropout(x, p=0.5, training=self.training)
         x = self.lin2(x)
         return x
-
-
-device = "cuda" if torch.cuda.is_available() else "cpu"
-loss_fn = nn.CrossEntropyLoss()
-batch_size = 64
 
 
 def train(dataloader, model, loss_fn, optimizer):
@@ -117,17 +93,39 @@ def valid(dataloader, model, loss_fn):
     print(f"Test Error: \n Accuracy: {(100*correct):>0.1f}%, Avg loss: {val_loss:>8f} \n")
 
 
-for i, (train_dataset, val_dataset) in enumerate(k_fold.split(dataset)):
-    
-    model = GNN().to(device)
-    optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
+if __name__ == "__main__":
+    seed_everything(42)
 
-    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
-    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
+    dataset = SEEDDataset(io_path=f'./tmp_out/seed',
+                          root_path='./tmp_in/Preprocessed_EEG',
+                          offline_transform=transforms.BandDifferentialEntropy(),
+                          online_transform=transforms.ToG(SEED_ADJACENCY_MATRIX),
+                          label_transform=transforms.Compose([
+                              transforms.Select('emotion'),
+                              transforms.Lambda(lambda x: x + 1),
+                          ]),
+                          num_worker=8)
 
-    epochs = 50
-    for t in range(epochs):
-        print(f"Epoch {t+1}\n-------------------------------")
-        train(train_loader, model, loss_fn, optimizer)
-        valid(val_loader, model, loss_fn)
-    print("Done!")
+    k_fold = KFoldTrialPerSubject(
+        n_splits=10,
+        split_path=f'./tmp_out/split',
+        shuffle=False)
+
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    loss_fn = nn.CrossEntropyLoss()
+    batch_size = 64
+
+    for i, (train_dataset, val_dataset) in enumerate(k_fold.split(dataset)):
+
+        model = GNN().to(device)
+        optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
+
+        train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+        val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
+
+        epochs = 50
+        for t in range(epochs):
+            print(f"Epoch {t+1}\n-------------------------------")
+            train(train_loader, model, loss_fn, optimizer)
+            valid(val_loader, model, loss_fn)
+        print("Done!")
