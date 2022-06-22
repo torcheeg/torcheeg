@@ -5,33 +5,26 @@ KFoldDataset
 -------------------------------------------------
 
 .. autoclass:: torcheeg.model_selection.KFoldDataset
-   :members:
-   :undoc-members:
-   :show-inheritance:
 
 KFoldTrial
 -----------------------------------------------
 
 .. autoclass:: torcheeg.model_selection.KFoldTrial
-   :members:
-   :undoc-members:
-   :show-inheritance:
+
+KFoldPerSubject
+-------------------------------------------------------------
+
+.. autoclass:: torcheeg.model_selection.KFoldPerSubject
 
 KFoldTrialPerSubject
 -------------------------------------------------------------
 
 .. autoclass:: torcheeg.model_selection.KFoldTrialPerSubject
-   :members:
-   :undoc-members:
-   :show-inheritance:
 
 LeaveOneSubjectOut
 ---------------------------------------------------------
 
 .. autoclass:: torcheeg.model_selection.LeaveOneSubjectOut
-   :members:
-   :undoc-members:
-   :show-inheritance:
 
 train_test_split_dataset
 -----------------------------------------------

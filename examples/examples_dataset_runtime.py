@@ -8,17 +8,9 @@ from torcheeg.datasets.constants.emotion_recognition.deap import \
 from torcheeg.datasets.constants.emotion_recognition.seed import \
     SEED_ADJACENCY_MATRIX
 
-logger = logging.getLogger('dataset_runtime')
-logger.setLevel(logging.DEBUG)
-console_handler = logging.StreamHandler()
-file_handler = logging.FileHandler('./tmp_out/dataset_runtime.log')
-logger.addHandler(console_handler)
-logger.addHandler(file_handler)
 
-
-def deap_dataset_runtime(num_worker):
-    start = time.time()
-    dataset = DEAPDataset(io_path=f'./tmp_out/deap_{num_worker}',
+def deap_dataset_factory(num_worker):
+    dataset = DEAPDataset(io_path=f'./tmp_out/examples_dataset_runtime/deap_{num_worker}',
                           root_path='./tmp_in/data_preprocessed_python',
                           offline_transform=transforms.Compose([
                               transforms.BandDifferentialEntropy(apply_to_baseline=True),
@@ -31,14 +23,11 @@ def deap_dataset_runtime(num_worker):
                               transforms.Binary(5.0),
                           ]),
                           num_worker=num_worker)
-    end = time.time()
-    logger.info(dataset)
-    logger.info(f'Runtime: {end - start}s')
+    return dataset
 
 
-def seed_dataset_runtime(num_worker):
-    start = time.time()
-    dataset = SEEDDataset(io_path=f'./tmp_out/seed_{num_worker}',
+def seed_dataset_factory(num_worker):
+    dataset = SEEDDataset(io_path=f'./tmp_out/examples_dataset_runtime/seed_{num_worker}',
                           root_path='./tmp_in/Preprocessed_EEG',
                           offline_transform=transforms.BandDifferentialEntropy(),
                           online_transform=transforms.ToG(SEED_ADJACENCY_MATRIX),
@@ -47,14 +36,29 @@ def seed_dataset_runtime(num_worker):
                               transforms.Lambda(lambda x: x + 1),
                           ]),
                           num_worker=num_worker)
-    end = time.time()
-    logger.info(dataset)
-    logger.info(f'Runtime: {end - start}s')
+    return dataset
+
 
 if __name__ == "__main__":
+    logger = logging.getLogger('dataset_runtime')
+    logger.setLevel(logging.DEBUG)
+    console_handler = logging.StreamHandler()
+    file_handler = logging.FileHandler('./tmp_out/examples_dataset_runtime/examples_dataset_runtime.log')
+    logger.addHandler(console_handler)
+    logger.addHandler(file_handler)
 
-    for n in [2, 4, 8, 16, 32, 64]:
-        deap_dataset_runtime(n)
+    for num_worker in [2, 4, 8, 16, 32, 64]:
+        start = time.time()
+        dataset = deap_dataset_factory(num_worker)
+        end = time.time()
 
-    for n in [2, 4, 8, 16, 32, 64]:
-        seed_dataset_runtime(n)
+        logger.info(dataset)
+        logger.info(f'Runtime: {end - start}s')
+
+    for num_worker in [2, 4, 8, 16, 32, 64]:
+        start = time.time()
+        dataset = seed_dataset_factory(num_worker)
+        end = time.time()
+
+        logger.info(dataset)
+        logger.info(f'Runtime: {end - start}s')

@@ -88,7 +88,9 @@ def valid(dataloader, model, loss_fn):
 if __name__ == "__main__":
     seed_everything(42)
 
-    dataset = DEAPDataset(io_path=f'./tmp_out/deap',
+    os.makedirs("./tmp_out/examples_torch", exist_ok=True)
+
+    dataset = DEAPDataset(io_path=f'./tmp_out/examples_torch/deap',
                           root_path='./tmp_in/data_preprocessed_python',
                           offline_transform=transforms.Compose([
                               transforms.BandDifferentialEntropy(apply_to_baseline=True),
@@ -102,10 +104,7 @@ if __name__ == "__main__":
                           ]),
                           num_worker=4)
 
-    k_fold = KFoldDataset(n_splits=10,
-                          split_path=f'./tmp_out/split',
-                          shuffle=True,
-                          random_state=42)
+    k_fold = KFoldDataset(n_splits=10, split_path=f'./tmp_out/examples_torch/split', shuffle=True, random_state=42)
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
     loss_fn = nn.CrossEntropyLoss()

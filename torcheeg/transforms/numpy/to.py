@@ -54,16 +54,16 @@ class ToGrid(EEGTransform):
         >>> (128, 9, 9)
 
     Args:
-        channel_location (dict): Electrode location information. Represented in dictionary form, where :obj:`key` corresponds to the electrode name and :obj:`value` corresponds to the row index and column index of the electrode on the grid.
+        channel_location_dict (dict): Electrode location information. Represented in dictionary form, where :obj:`key` corresponds to the electrode name and :obj:`value` corresponds to the row index and column index of the electrode on the grid.
         apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (defualt: :obj:`False`)
     
     .. automethod:: __call__
     '''
     def __init__(self,
-                 channel_location: Dict[str, Tuple[int, int]],
+                 channel_location_dict: Dict[str, Tuple[int, int]],
                  apply_to_baseline: bool = False):
         super(ToGrid, self).__init__(apply_to_baseline=apply_to_baseline)
-        self.channel_location = channel_location
+        self.channel_location_dict = channel_location_dict
 
     def __call__(self,
                  *args,
@@ -84,7 +84,7 @@ class ToGrid(EEGTransform):
         # electronode eeg timestep
         outputs = np.zeros([9, 9, eeg.shape[-1]])
         # 9 eeg 9 eeg timestep
-        for i, (loc_x, loc_y) in enumerate(self.channel_location.values()):
+        for i, (loc_x, loc_y) in enumerate(self.channel_location_dict.values()):
             outputs[loc_x][loc_y] = eeg[i]
 
         outputs = outputs.transpose(2, 0, 1)
@@ -94,7 +94,7 @@ class ToGrid(EEGTransform):
     @property
     def repr_body(self) -> Dict:
         return dict(super().repr_body, **{
-            'channel_location': {...}
+            'channel_location_dict': {...}
         })
 
 class ToInterpolatedGrid(EEGTransform):
@@ -115,18 +115,18 @@ class ToInterpolatedGrid(EEGTransform):
     Especially, missing values on the grid are supplemented using cubic interpolation
 
     Args:
-        channel_location (dict): Electrode location information. Represented in dictionary form, where :obj:`key` corresponds to the electrode name and :obj:`value` corresponds to the row index and column index of the electrode on the grid.
+        channel_location_dict (dict): Electrode location information. Represented in dictionary form, where :obj:`key` corresponds to the electrode name and :obj:`value` corresponds to the row index and column index of the electrode on the grid.
         apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (defualt: :obj:`False`)
 
     .. automethod:: __call__
     '''
     def __init__(self,
-                 channel_location: Dict[str, Tuple[int, int]],
+                 channel_location_dict: Dict[str, Tuple[int, int]],
                  apply_to_baseline: bool = False):
         super(ToInterpolatedGrid,
               self).__init__(apply_to_baseline=apply_to_baseline)
-        self.channel_location = channel_location
-        self.location_array = np.array(list(channel_location.values()))
+        self.channel_location_dict = channel_location_dict
+        self.location_array = np.array(list(channel_location_dict.values()))
         grid_x, grid_y = np.mgrid[
             min(self.location_array[:, 0]):max(self.location_array[:,
                                                                    0]):9 * 1j,
@@ -167,5 +167,5 @@ class ToInterpolatedGrid(EEGTransform):
     @property
     def repr_body(self) -> Dict:
         return dict(super().repr_body, **{
-            'channel_location': {...}
+            'channel_location_dict': {...}
         })

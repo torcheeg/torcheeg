@@ -96,7 +96,7 @@ def deap_constructor(root_path: str = './data_preprocessed_python',
                      io_path: str = './io/deap',
                      num_worker: int = 1,
                      verbose: bool = True,
-                     cache_size: int = 8 * 1024 * 1024 * 1024) -> None:
+                     cache_size: int = 64 * 1024 * 1024 * 1024) -> None:
     # init IO
     if os.path.exists(io_path):
         if verbose:

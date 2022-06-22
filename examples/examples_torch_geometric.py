@@ -96,7 +96,9 @@ def valid(dataloader, model, loss_fn):
 if __name__ == "__main__":
     seed_everything(42)
 
-    dataset = SEEDDataset(io_path=f'./tmp_out/seed',
+    os.makedirs("./tmp_out/examples_torch_geometric", exist_ok=True)
+
+    dataset = SEEDDataset(io_path=f'./tmp_out/examples_torch_geometric/seed',
                           root_path='./tmp_in/Preprocessed_EEG',
                           offline_transform=transforms.BandDifferentialEntropy(),
                           online_transform=transforms.ToG(SEED_ADJACENCY_MATRIX),
@@ -106,10 +108,7 @@ if __name__ == "__main__":
                           ]),
                           num_worker=8)
 
-    k_fold = KFoldTrialPerSubject(
-        n_splits=10,
-        split_path=f'./tmp_out/split',
-        shuffle=False)
+    k_fold = KFoldTrialPerSubject(n_splits=10, split_path=f'./tmp_out/examples_torch_geometric/split', shuffle=False)
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
     loss_fn = nn.CrossEntropyLoss()

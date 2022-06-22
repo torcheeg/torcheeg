@@ -1,4 +1,5 @@
-from ..utils import format_channel_location_dict, format_adj_matrix_from_adj_list
+from ..utils import format_adj_matrix_from_standard, format_channel_location_dict, format_adj_matrix_from_adj_list
+from ..standard_1020 import STANDARD_1020_CHANNEL_LOCATION_DICT
 
 DEAP_CHANNEL_LIST = [
     'FP1', 'AF3', 'F3', 'F7', 'FC5', 'FC1', 'C3', 'T7', 'CP5', 'CP1', 'P3', 'P7', 'PO3', 'O1', 'OZ', 'PZ', 'FP2', 'AF4',
@@ -14,7 +15,7 @@ DEAP_LOCATION_LIST = [['-', '-', '-', 'FP1', '-', 'FP2', '-', '-', '-'],
                       ['P7', '-', 'P3', '-', 'PZ', '-', 'P4', '-', 'P8'],
                       ['-', '-', '-', 'PO3', '-', 'PO4', '-', '-', '-'],
                       ['-', '-', '-', 'O1', 'OZ', 'O2', '-', '-', '-']]
-                      
+
 DEAP_CHANNEL_LOCATION_DICT = format_channel_location_dict(DEAP_CHANNEL_LIST, DEAP_LOCATION_LIST)
 
 DEAP_ADJACENCY_LIST = {
@@ -53,3 +54,5 @@ DEAP_ADJACENCY_LIST = {
 }
 
 DEAP_ADJACENCY_MATRIX = format_adj_matrix_from_adj_list(DEAP_CHANNEL_LIST, DEAP_ADJACENCY_LIST)
+
+DEAP_STANDARD_ADJACENCY_MATRIX = format_adj_matrix_from_standard(DEAP_CHANNEL_LIST, STANDARD_1020_CHANNEL_LOCATION_DICT)

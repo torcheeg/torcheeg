@@ -1,4 +1,5 @@
-from ..utils import format_channel_location_dict, format_adj_matrix_from_adj_list
+from ..utils import format_adj_matrix_from_standard, format_channel_location_dict, format_adj_matrix_from_adj_list
+from ..standard_1020 import STANDARD_1020_CHANNEL_LOCATION_DICT
 
 MAHNOB_CHANNEL_LIST = [
     'FP1', 'AF3', 'F3', 'F7', 'FC5', 'FC1', 'C3', 'T7', 'CP5', 'CP1', 'P3', 'P7', 'PO3', 'O1', 'OZ', 'PZ', 'FP2', 'AF4',
@@ -6,15 +7,15 @@ MAHNOB_CHANNEL_LIST = [
 ]
 
 MAHNOB_LOCATION_LIST = [['-', '-', '-', 'FP1', '-', 'FP2', '-', '-', '-'],
-                      ['-', '-', '-', 'AF3', '-', 'AF4', '-', '-', '-'],
-                      ['F7', '-', 'F3', '-', 'FZ', '-', 'F4', '-', 'F8'],
-                      ['-', 'FC5', '-', 'FC1', '-', 'FC2', '-', 'FC6', '-'],
-                      ['T7', '-', 'C3', '-', 'CZ', '-', 'C4', '-', 'T8'],
-                      ['-', 'CP5', '-', 'CP1', '-', 'CP2', '-', 'CP6', '-'],
-                      ['P7', '-', 'P3', '-', 'PZ', '-', 'P4', '-', 'P8'],
-                      ['-', '-', '-', 'PO3', '-', 'PO4', '-', '-', '-'],
-                      ['-', '-', '-', 'O1', 'OZ', 'O2', '-', '-', '-']]
-                      
+                        ['-', '-', '-', 'AF3', '-', 'AF4', '-', '-', '-'],
+                        ['F7', '-', 'F3', '-', 'FZ', '-', 'F4', '-', 'F8'],
+                        ['-', 'FC5', '-', 'FC1', '-', 'FC2', '-', 'FC6', '-'],
+                        ['T7', '-', 'C3', '-', 'CZ', '-', 'C4', '-', 'T8'],
+                        ['-', 'CP5', '-', 'CP1', '-', 'CP2', '-', 'CP6', '-'],
+                        ['P7', '-', 'P3', '-', 'PZ', '-', 'P4', '-', 'P8'],
+                        ['-', '-', '-', 'PO3', '-', 'PO4', '-', '-', '-'],
+                        ['-', '-', '-', 'O1', 'OZ', 'O2', '-', '-', '-']]
+
 MAHNOB_CHANNEL_LOCATION_DICT = format_channel_location_dict(MAHNOB_CHANNEL_LIST, MAHNOB_LOCATION_LIST)
 
 MAHNOB_ADJACENCY_LIST = {
@@ -53,3 +54,6 @@ MAHNOB_ADJACENCY_LIST = {
 }
 
 MAHNOB_ADJACENCY_MATRIX = format_adj_matrix_from_adj_list(MAHNOB_CHANNEL_LIST, MAHNOB_ADJACENCY_LIST)
+
+MAHNOB_STANDARD_ADJACENCY_MATRIX = format_adj_matrix_from_standard(MAHNOB_CHANNEL_LIST,
+                                                                   STANDARD_1020_CHANNEL_LOCATION_DICT)

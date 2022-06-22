@@ -92,7 +92,7 @@ def dreamer_constructor(mat_path: str = './DREAMER.mat',
                         io_path: str = './io/dreamer',
                         num_worker: int = 1,
                         verbose: bool = True,
-                        cache_size: int = 8 * 1024 * 1024 * 1024) -> None:
+                        cache_size: int = 64 * 1024 * 1024 * 1024) -> None:
     # init IO
     if os.path.exists(io_path):
         if verbose:

@@ -1,3 +1,5 @@
+import os
+
 import torch
 import torch.nn as nn
 from pytorch_lightning import Trainer, seed_everything
@@ -75,11 +77,14 @@ class EEGClassifier(LightningModule):
 if __name__ == "__main__":
     seed_everything(42)
 
-    dataset = DEAPDataset(io_path=f'./tmp_out/deap',
+    os.makedirs("./tmp_out/examples_torch_lightning", exist_ok=True)
+
+    dataset = DEAPDataset(io_path=f'./tmp_out/examples_torch_lightning/deap',
                           root_path='./tmp_in/data_preprocessed_python',
-                          offline_transform=transforms.Compose(
-                              [transforms.BandDifferentialEntropy(apply_to_baseline=True),
-                               transforms.ToGrid(DEAP_CHANNEL_LOCATION_DICT, apply_to_baseline=True)]),
+                          offline_transform=transforms.Compose([
+                              transforms.BandDifferentialEntropy(apply_to_baseline=True),
+                              transforms.ToGrid(DEAP_CHANNEL_LOCATION_DICT, apply_to_baseline=True)
+                          ]),
                           online_transform=transforms.Compose([transforms.BaselineRemoval(),
                                                                transforms.ToTensor()]),
                           label_transform=transforms.Compose([
@@ -87,7 +92,7 @@ if __name__ == "__main__":
                               transforms.Binary(5.0),
                           ]))
     k_fold = KFoldDataset(n_splits=10,
-                          split_path=f'./tmp_out/split',
+                          split_path=f'./tmp_out/examples_torch_lightning/split',
                           shuffle=True,
                           random_state=42)
 

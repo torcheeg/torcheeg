@@ -97,7 +97,7 @@ class DEAPDataset(BaseDataset):
         io_path (str): The path to generated unified data IO, cached as an intermediate result. (default: :obj:`./io/deap`)
         num_worker (str): How many subprocesses to use for data processing. (default: :obj:`1`)
         verbose (bool): Whether to display logs during processing, such as progress bars, etc. (default: :obj:`True`)
-        cache_size (int): Maximum size database may grow to; used to size the memory mapping. If database grows larger than ``map_size``, an exception will be raised and the user must close and reopen. (default: :obj:`8 * 1024 * 1024 * 1024`)
+        cache_size (int): Maximum size database may grow to; used to size the memory mapping. If database grows larger than ``map_size``, an exception will be raised and the user must close and reopen. (default: :obj:`64 * 1024 * 1024 * 1024`)
     
     '''
     def __init__(self,
@@ -113,7 +113,7 @@ class DEAPDataset(BaseDataset):
                  io_path: str = './io/deap',
                  num_worker: int = 1,
                  verbose: bool = True,
-                 cache_size: int = 8 * 1024 * 1024 * 1024):
+                 cache_size: int = 64 * 1024 * 1024 * 1024):
         deap_constructor(root_path=root_path,
                          chunk_size=chunk_size,
                          overlap=overlap,

@@ -248,7 +248,7 @@ def plot_2d_tensor(tensor: torch.Tensor, color: Union[colors.Colormap, str] = 'h
 
 
 def plot_graph(data: Data,
-               channel_location: Dict[str, List[int]],
+               channel_location_dict: Dict[str, List[int]],
                color: Union[colors.Colormap, str] = 'hsv'):
     r'''
     Visualize a graph structure. For the electrode position information, please refer to constants grouped by dataset:
@@ -274,7 +274,7 @@ def plot_graph(data: Data,
     
     Args:
         data (torch_geometric.data.Data): The input graph structure represented by torch_geometric.
-        channel_location (dict): Electrode location information. Represented in dictionary form, where :obj:`key` corresponds to the electrode name and :obj:`value` corresponds to the row index and column index of the electrode on the grid.
+        channel_location_dict (dict): Electrode location information. Represented in dictionary form, where :obj:`key` corresponds to the electrode name and :obj:`value` corresponds to the row index and column index of the electrode on the grid.
         color (colors.Colormap or str): The color map used for the face color of the axes. (default: :obj:`hsv`)
     
     Returns:
@@ -293,10 +293,10 @@ def plot_graph(data: Data,
 
     # get posistion of nodes
     # flip bottom down
-    max_pos = max(list(itertools.chain(*channel_location.values())))
+    max_pos = max(list(itertools.chain(*channel_location_dict.values())))
     # rot 90
-    pos = {i: [v[1], max_pos - v[0]] for i, v in enumerate(channel_location.values())}
-    labels = {i: v for i, v in enumerate(channel_location.keys())}
+    pos = {i: [v[1], max_pos - v[0]] for i, v in enumerate(channel_location_dict.values())}
+    labels = {i: v for i, v in enumerate(channel_location_dict.keys())}
 
     # draw network
     nx.draw_networkx(g,

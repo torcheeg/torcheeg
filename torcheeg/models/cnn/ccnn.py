@@ -10,6 +10,7 @@ class CCNN(torch.nn.Module):
 
     - Paper: Yang Y, Wu Q, Fu Y, et al. Continuous convolutional neural network with 3D input for EEG-based emotion recognition[C]//International Conference on Neural Information Processing. Springer, Cham, 2018: 433-443.
     - URL: https://link.springer.com/chapter/10.1007/978-3-030-04239-4_39
+    - Related Project: https://github.com/ynulonger/DE_CNN
 
     Below is a recommended suite for use in emotion recognition tasks:
 
@@ -32,12 +33,14 @@ class CCNN(torch.nn.Module):
         in_channels (int): The feature dimension of each electrode. (defualt: :obj:`4`)
         grid_size (tuple): Spatial dimensions of grid-like EEG representation. (defualt: :obj:`(9, 9)`)
         num_classes (int): The number of classes to predict. (defualt: :obj:`2`)
+        dropout (float): Probability of an element to be zeroed in the dropout layers. (defualt: :obj:`0.25`)
     '''
-    def __init__(self, in_channels: int = 4, grid_size: Tuple[int, int] = (9, 9), num_classes: int = 2):
+    def __init__(self, in_channels: int = 4, grid_size: Tuple[int, int] = (9, 9), num_classes: int = 2, dropout: float = 0.5):
         super().__init__()
-        self.num_classes = num_classes
         self.in_channels = in_channels
         self.grid_size = grid_size
+        self.num_classes = num_classes
+        self.dropout = dropout
 
         self.conv1 = nn.Sequential(nn.ZeroPad2d((1, 2, 1, 2)), nn.Conv2d(self.in_channels, 64, kernel_size=4, stride=1),
                                    nn.ReLU())
@@ -45,7 +48,11 @@ class CCNN(torch.nn.Module):
         self.conv3 = nn.Sequential(nn.ZeroPad2d((1, 2, 1, 2)), nn.Conv2d(128, 256, kernel_size=4, stride=1), nn.ReLU())
         self.conv4 = nn.Sequential(nn.ZeroPad2d((1, 2, 1, 2)), nn.Conv2d(256, 64, kernel_size=4, stride=1), nn.ReLU())
 
-        self.lin1 = nn.Linear(self.grid_size[0] * self.grid_size[1] * 64, 1024)
+        self.lin1 = nn.Sequential(
+            nn.Linear(self.grid_size[0] * self.grid_size[1] * 64, 1024),
+            nn.SELU(), # Not mentioned in paper
+            nn.Dropout2d(self.dropout)
+        )
         self.lin2 = nn.Linear(1024, self.num_classes)
 
     def forward(self, x):

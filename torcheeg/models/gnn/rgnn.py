@@ -103,19 +103,20 @@ class RGNN(torch.nn.Module):
 
         dataset = SEEDDataset(io_path=f'./seed',
                               root_path='./Preprocessed_EEG',
-                              online_transform=transforms.ToG(SEED_ADJACENCY_MATRIX),,
+                              offline_transform=transforms.BandDifferentialEntropy(),
+                              online_transform=transforms.ToG(SEED_STANDARD_ADJACENCY_MATRIX),
                               label_transform=transforms.Compose([
-                                  transforms.Select(['emotion']),
-                                  transforms.Lambda(x: x + 1)
-                              ]))
-        model = RGNN(adj=torch.Tensor(SEED_ADJACENCY_MATRIX),
+                                  transforms.Select('emotion'),
+                                  transforms.Lambda(lambda x: x + 1),
+                              ]),
+                              num_worker=8)
+        model = RGNN(adj=torch.Tensor(SEED_STANDARD_ADJACENCY_MATRIX),
                      in_channels=4,
                      num_electrodes=62,
-                     hid_channels=32,
+                     hid_channels=32,å
                      num_layers=2,
                      num_classes=2,
                      dropout=0.7,
-                     domain_adaptation=False,
                      beta=0.0,
                      learn_edge_weights=True)
 

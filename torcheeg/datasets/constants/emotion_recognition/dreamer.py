@@ -1,4 +1,5 @@
-from ..utils import format_channel_location_dict, format_adj_matrix_from_adj_list
+from ..utils import format_adj_matrix_from_standard, format_channel_location_dict, format_adj_matrix_from_adj_list
+from ..standard_1020 import STANDARD_1020_CHANNEL_LOCATION_DICT
 
 DREAMER_CHANNEL_LIST = ['AF3', 'F7', 'F3', 'FC5', 'T7', 'P7', 'O1', 'O2', 'P8', 'T8', 'FC6', 'F4', 'F8', 'AF4']
 
@@ -30,3 +31,7 @@ DREAMER_ADJACENCY_LIST = {
 }
 
 DREAMER_ADJACENCY_MATRIX = format_adj_matrix_from_adj_list(DREAMER_CHANNEL_LIST, DREAMER_ADJACENCY_LIST)
+
+DREAMER_STANDARD_ADJACENCY_MATRIX = format_adj_matrix_from_standard(DREAMER_CHANNEL_LIST,
+                                                                 STANDARD_1020_CHANNEL_LOCATION_DICT,
+                                                                 delta=0.00035)

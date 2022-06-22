@@ -9,12 +9,9 @@ from torch.utils.data.dataloader import DataLoader
 from torcheeg import transforms
 from torcheeg.datasets import DEAPDataset
 from torcheeg.datasets.constants.emotion_recognition.deap import \
-    DEAP_CHANNEL_LIST
-from torcheeg.model_selection import (KFoldTrialPerSubject,
-                                      train_test_split_dataset)
-from torcheeg.model_selection.k_fold_trial_per_subject import \
-    KFoldTrialPerSubject
-from torcheeg.models import TSCeption
+    DEAP_CHANNEL_LOCATION_DICT
+from torcheeg.model_selection import KFoldPerSubject, train_test_split_dataset
+from torcheeg.models import CCNN
 
 
 def seed_everything(seed):
@@ -73,38 +70,32 @@ def valid(dataloader, model, loss_fn):
 if __name__ == "__main__":
     seed_everything(42)
 
-    os.makedirs("./tmp_out/examples_tsception", exist_ok=True)
+    os.makedirs("./tmp_out/examples_ccnn", exist_ok=True)
 
     logger = logging.getLogger('examples_tsception')
     logger.setLevel(logging.DEBUG)
     console_handler = logging.StreamHandler()
-    file_handler = logging.FileHandler('./tmp_out/examples_tsception/examples_tsception.log')
+    file_handler = logging.FileHandler('./tmp_out/examples_ccnn/examples_tsception.log')
     logger.addHandler(console_handler)
     logger.addHandler(file_handler)
 
     # Define the dataset
-    dataset = DEAPDataset(
-        io_path=f'./tmp_out/examples_tsception/deap',
-        root_path='./tmp_in/data_preprocessed_python',
-        chunk_size=512,
-        baseline_num=1,
-        baseline_chunk_size=512,
-        offline_transform=transforms.Compose([
-            transforms.PickElectrode(
-                transforms.PickElectrode.to_index_list([
-                    'FP1', 'AF3', 'F3', 'F7', 'FC5', 'FC1', 'C3', 'T7', 'CP5', 'CP1', 'P3', 'P7', 'PO3', 'O1', 'FP2',
-                    'AF4', 'F4', 'F8', 'FC6', 'FC2', 'C4', 'T8', 'CP6', 'CP2', 'P4', 'P8', 'PO4', 'O2'
-                ], DEAP_CHANNEL_LIST)),
-            transforms.To2d()
-        ]),
-        online_transform=transforms.ToTensor(),
-        label_transform=transforms.Compose([
-            transforms.Select('valence'),
-            transforms.Binary(5.0),
-        ]))
+    dataset = DEAPDataset(io_path=f'./tmp_out/examples_ccnn/deap',
+                          root_path='./tmp_in/data_preprocessed_python',
+                          offline_transform=transforms.Compose([
+                              transforms.BandDifferentialEntropy(apply_to_baseline=True),
+                              transforms.BaselineRemoval(),
+                              transforms.ToGrid(DEAP_CHANNEL_LOCATION_DICT)
+                          ]),
+                          online_transform=transforms.ToTensor(),
+                          label_transform=transforms.Compose([
+                              transforms.Select('valence'),
+                              transforms.Binary(5.0),
+                          ]),
+                          num_worker=8)
 
     # Split dataset into train and test
-    k_fold = KFoldTrialPerSubject(n_splits=10, split_path=f'./tmp_out/examples_tsception/split', shuffle=True)
+    k_fold = KFoldPerSubject(n_splits=10, split_path=f'./tmp_out/examples_ccnn/split', shuffle=True)
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
     loss_fn = nn.CrossEntropyLoss()
@@ -116,19 +107,13 @@ if __name__ == "__main__":
     # Train and test
     for i, (train_dataset, test_dataset) in enumerate(k_fold.split(dataset)):
 
-        model = TSCeption(num_classes=2,
-                          num_electrodes=28,
-                          sampling_rate=128,
-                          num_T=15,
-                          num_S=15,
-                          hid_channels=32,
-                          dropout=0.5).to(device)
-        optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
+        model = CCNN(num_classes=2, in_channels=4, grid_size=(9, 9)).to(device)
+        optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)  # official: weight_decay=5e-1
 
         # Train
         train_dataset, val_dataset = train_test_split_dataset(train_dataset,
                                                               test_size=0.2,
-                                                              split_path=f'./tmp_out/examples_tsception/split{i}',
+                                                              split_path=f'./tmp_out/examples_ccnn/split{i}',
                                                               shuffle=True)
         train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
         val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=True)
@@ -141,12 +126,12 @@ if __name__ == "__main__":
 
             if val_acc > best_val_acc:
                 best_val_acc = val_acc
-                torch.save(model.state_dict(), f'./tmp_out/examples_tsception/model{i}.pt')
+                torch.save(model.state_dict(), f'./tmp_out/examples_ccnn/model{i}.pt')
 
         # Test
         test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
 
-        model.load_state_dict(torch.load(f'./tmp_out/examples_tsception/model{i}.pt'))
+        model.load_state_dict(torch.load(f'./tmp_out/examples_ccnn/model{i}.pt'))
         test_acc, test_loss = valid(test_loader, model, loss_fn)
 
         logger.info(f"Test Error {i}: \n Accuracy: {(100*test_acc):>0.1f}%, Avg loss: {test_loss:>8f}")

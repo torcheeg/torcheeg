@@ -27,18 +27,55 @@ class ToG(EEGTransform):
 
     Args:
         adj (list): An adjacency matrix represented by a 2D array, each element in the adjacency matrix represents the electrode-to-electrode edge weight. Please keep the order of electrodes in the rows and columns of the adjacency matrix consistent with the EEG signal to be transformed.
+        add_self_loop (bool): Whether to add self-loop edges to the graph. (default: :obj:`True`)
+        threshold (float, optional): Used to cut edges when not None. Edges whose weights exceed a threshold are retained. (defualt: :obj:`None`)
+        top_k (int, optional): Used to cut edges when not None. Keep the k edges connected to each node with the largest weights. (defualt: :obj:`None`)
+        binary (bool): Whether to binarize the weights on the edges to 0 and 1. If set to True, binarization are done after topk and threshold, the edge weights that still have values are set to 1, otherwise they are set to 0. (defualt: :obj:`False`)
         complete_graph (bool): Whether to build as a complete graph. If False, only construct edges between electrodes based on non-zero elements; if True, construct variables between all electrodes and set the weight of non-existing edges to 0. (defualt: :obj:`False`)
         apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (defualt: :obj:`False`)
     
     .. automethod:: __call__
     '''
-    def __init__(self, adj: List[List], complete_graph: bool = False, apply_to_baseline: bool = False):
+    def __init__(self,
+                 adj: List[List],
+                 add_self_loop: bool = True,
+                 threshold: Union[float, None] = None,
+                 top_k: Union[int, None] = None,
+                 binary: bool = False,
+                 complete_graph: bool = False,
+                 apply_to_baseline: bool = False):
         super(ToG, self).__init__(apply_to_baseline=apply_to_baseline)
-        adj = torch.tensor(adj)
-        if complete_graph:
-            adj[adj == 0] = 1e-6
-        self.adj = adj.to_sparse()
+
+        self.add_self_loop = add_self_loop
+        self.threshold = threshold
+        self.top_k = top_k
+        self.binary = binary
         self.complete_graph = complete_graph
+
+        adj = torch.tensor(adj)
+
+        if add_self_loop:
+            adj = adj + torch.eye(adj.shape[0])
+
+        if not self.threshold is None:
+            adj[adj < self.threshold] = 0
+
+        if not self.top_k is None:
+            rows = []
+            for row in adj:
+                vals, idx = row.topk(self.top_k)
+                topk = torch.zeros_like(row)
+                topk[idx] = vals
+                rows.append(topk)
+            adj = torch.stack(rows)
+
+        if self.binary:
+            adj[adj != 0] = 1.0
+
+        if self.complete_graph:
+            adj[adj == 0] = 1e-6
+
+        self.adj = adj.to_sparse()
 
     def __call__(self,
                  *args,
@@ -67,10 +104,16 @@ class ToG(EEGTransform):
 
     @property
     def repr_body(self) -> Dict:
-        return dict(super().repr_body, **{
-            'adj': [...],
-            'complete_graph': self.complete_graph
-        })
+        return dict(
+            super().repr_body, **{
+                'adj': [...],
+                'add_self_loop': self.add_self_loop,
+                'threshold': self.threshold,
+                'top_k': self.top_k,
+                'binary': self.binary,
+                'complete_graph': self.complete_graph
+            })
+
 
 class ToDynamicG(EEGTransform):
     r'''
@@ -102,8 +145,9 @@ class ToDynamicG(EEGTransform):
 
     Args:
         edge_func (str or Callable): Algorithms for computing functional connections. You can use the algorithms provided by TorchEEG, including gaussian_distance, absolute_pearson_correlation_coefficient and phase_locking_value. Or you can use custom functions by passing a callable object containing two parameters representing the signal of the two electrodes, and other named parameters (passed in when initializing the transform), and outputs the value of the functional connection between the two electrodes. (defualt: :obj:`gaussian_distance`)
+        add_self_loop (bool): Whether to add self-loop edges to the graph. (default: :obj:`True`)
+        threshold (float, optional): Used to cut edges when not None. Edges whose weights exceed a threshold are retained. (defualt: :obj:`None`)
         top_k (int, optional): Used to cut edges when not None. Keep the k edges connected to each node with the largest weights. (defualt: :obj:`None`)
-        threshold (float, optional): Used to cut edges when not None. Edges whose weights exceed a threshold are retained.(defualt: :obj:`None`)
         binary (bool): Whether to binarize the weights on the edges to 0 and 1. If set to True, binarization are done after topk and threshold, the edge weights that still have values are set to 1, otherwise they are set to 0. (defualt: :obj:`False`)
         complete_graph (bool): Whether to build as a complete graph. If False, only construct edges between electrodes based on non-zero elements; if True, construct variables between all electrodes and set the weight of non-existing edges to 0. (defualt: :obj:`False`)
         apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (defualt: :obj:`False`)
@@ -112,8 +156,9 @@ class ToDynamicG(EEGTransform):
     '''
     def __init__(self,
                  edge_func: Union[str, Callable] = 'gaussian_distance',
-                 top_k: Union[int, None] = None,
+                 add_self_loop: bool = True,
                  threshold: Union[float, None] = None,
+                 top_k: Union[int, None] = None,
                  binary: bool = False,
                  complete_graph: bool = False,
                  apply_to_baseline: bool = False,
@@ -121,6 +166,7 @@ class ToDynamicG(EEGTransform):
         super(ToDynamicG, self).__init__(apply_to_baseline=apply_to_baseline)
         self.top_k = top_k
         self.threshold = threshold
+        self.add_self_loop = add_self_loop
         self.binary = binary
         self.complete_graph = complete_graph
         self.edge_func = edge_func
@@ -129,13 +175,12 @@ class ToDynamicG(EEGTransform):
             'absolute_pearson_correlation_coefficient': self.absolute_pearson_correlation_coefficient,
             'phase_locking_value': self.phase_locking_value
         }
-        self._adj = None
         self.kwargs = kwargs
 
     def opt(self, eeg: Union[np.ndarray, torch.Tensor]) -> np.ndarray:
         if isinstance(eeg, torch.Tensor):
             eeg = eeg.numpy()
-            
+
         func = None
 
         if hasattr(self.edge_func, '__call__'):
@@ -156,10 +201,10 @@ class ToDynamicG(EEGTransform):
         return adj
 
     def adj(self, eeg: Union[np.ndarray, torch.Tensor]) -> torch.Tensor:
-        if not self._adj is None:
-            return self._adj
-
         adj = torch.tensor(self.opt(eeg))
+
+        if self.add_self_loop:
+            adj = adj + torch.eye(adj.shape[0])
 
         if not self.threshold is None:
             adj[adj < self.threshold] = 0
@@ -179,8 +224,7 @@ class ToDynamicG(EEGTransform):
         if self.complete_graph:
             adj[adj == 0] = 1e-6
 
-        self._adj = adj.to_sparse()
-        return self._adj
+        return adj.to_sparse()
 
     def gaussian_distance(self, x: np.ndarray, y: np.ndarray, sigma: float = 1.0, **kwargs):
         return np.exp(-np.linalg.norm(x - y, 2)**2 / (2. * sigma**2))
@@ -223,10 +267,12 @@ class ToDynamicG(EEGTransform):
 
     @property
     def repr_body(self) -> Dict:
-        return dict(super().repr_body, **{
-            'top_k': self.top_k,
-            'threshold': self.threshold,
-            'binary': self.binary,
-            'complete_graph': self.complete_graph,
-            'edge_func': self.edge_func
-        })
+        return dict(
+            super().repr_body, **{
+                'top_k': self.top_k,
+                'threshold': self.threshold,
+                'add_self_loop': self.add_self_loop,
+                'binary': self.binary,
+                'complete_graph': self.complete_graph,
+                'edge_func': self.edge_func
+            })

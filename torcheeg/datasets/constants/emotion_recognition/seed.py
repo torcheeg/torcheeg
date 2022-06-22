@@ -1,4 +1,5 @@
-from ..utils import format_channel_location_dict, format_adj_matrix_from_adj_list
+from ..utils import format_adj_matrix_from_standard, format_channel_location_dict, format_adj_matrix_from_adj_list
+from ..standard_1005 import STANDARD_1005_CHANNEL_LOCATION_DICT
 
 SEED_CHANNEL_LIST = [
     'FP1', 'FPZ', 'FP2', 'AF3', 'AF4', 'F7', 'F5', 'F3', 'F1', 'FZ', 'F2', 'F4', 'F6', 'F8', 'FT7', 'FC5', 'FC3', 'FC1',
@@ -85,3 +86,5 @@ SEED_ADJACENCY_LIST = {
 }
 
 SEED_ADJACENCY_MATRIX = format_adj_matrix_from_adj_list(SEED_CHANNEL_LIST, SEED_ADJACENCY_LIST)
+
+SEED_STANDARD_ADJACENCY_MATRIX = format_adj_matrix_from_standard(SEED_CHANNEL_LIST, STANDARD_1005_CHANNEL_LOCATION_DICT)
