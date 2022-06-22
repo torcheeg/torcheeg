@@ -56,6 +56,23 @@ class FBCCNN(nn.Module):
         self.lin2 = nn.Sequential(nn.Linear(512, 128), nn.ReLU())
         self.lin3 = nn.Linear(128, num_classes)
 
+    @property
+    def feature_dim(self):
+        with torch.no_grad():
+            mock_eeg = torch.zeros(1, self.in_channels, *self.grid_size)
+
+            mock_eeg = self.block1(mock_eeg)
+            mock_eeg = self.block2(mock_eeg)
+            mock_eeg = self.block3(mock_eeg)
+            mock_eeg = self.block4(mock_eeg)
+            mock_eeg = self.block5(mock_eeg)
+            mock_eeg = self.block6(mock_eeg)
+            mock_eeg = self.block7(mock_eeg)
+
+            mock_eeg = mock_eeg.flatten(start_dim=1)
+
+            return mock_eeg.shape[1]
+
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         r'''
         Args:
@@ -72,7 +89,7 @@ class FBCCNN(nn.Module):
         x = self.block6(x)
         x = self.block7(x)
 
-        x = x.view(x.size(0), -1)
+        x = x.flatten(start_dim=1)
 
         x = self.lin1(x)
         x = self.lin2(x)

@@ -65,12 +65,25 @@ class MTCNN(nn.Module):
         self.block3 = nn.Sequential(nn.ZeroPad2d((1, 2, 1, 2)), nn.Conv2d(128, 256, kernel_size=4, padding=0, stride=1),
                                     nn.ReLU(), nn.BatchNorm2d(256), nn.Dropout2d(dropout))
         self.block4 = nn.Sequential(nn.Conv2d(256, 64, kernel_size=1, padding=0, stride=1), nn.ReLU(),
-                                    nn.BatchNorm2d(64), nn.Dropout2d(dropout))
-        self.lin1 = nn.Sequential(nn.Linear(grid_size[0] * grid_size[1] * 64, 512), nn.ReLU())
-        self.lin1_bn = nn.Sequential(nn.BatchNorm1d(1),
-                                  nn.Dropout(dropout))
+                                    nn.MaxPool2d(kernel_size=2, stride=2), nn.BatchNorm2d(64), nn.Dropout2d(dropout))
+        self.lin1 = nn.Sequential(nn.Linear(self.feature_dim, 512), nn.ReLU())
+        self.lin1_bn = nn.Sequential(nn.BatchNorm1d(1), nn.Dropout(dropout))
         self.lin_v = nn.Linear(512, num_classes)
         self.lin_a = nn.Linear(512, num_classes)
+
+    @property
+    def feature_dim(self):
+        with torch.no_grad():
+            mock_eeg = torch.zeros(1, self.in_channels, *self.grid_size)
+
+            mock_eeg = self.block1(mock_eeg)
+            mock_eeg = self.block2(mock_eeg)
+            mock_eeg = self.block3(mock_eeg)
+            mock_eeg = self.block4(mock_eeg)
+
+            mock_eeg = mock_eeg.flatten(start_dim=1)
+
+            return mock_eeg.shape[1]
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         r'''
@@ -85,7 +98,7 @@ class MTCNN(nn.Module):
         x = self.block3(x)
         x = self.block4(x)
 
-        x = x.view(x.size(0), -1)
+        x = x.flatten(start_dim=1)
 
         x = self.lin1(x)
 

@@ -88,8 +88,27 @@ class STNet(nn.Module):
 
         self.drop_selu = nn.Sequential(nn.Dropout(p=dropout), nn.SELU())
 
-        self.lin1 = nn.Linear(grid_size[0] * grid_size[1] * 16, 1024, bias=True)
+        self.lin1 = nn.Linear(self.feature_dim, 1024, bias=True)
         self.lin2 = nn.Linear(1024, num_classes, bias=True)
+
+    @property
+    def feature_dim(self):
+        with torch.no_grad():
+            mock_eeg = torch.zeros(1, self.in_channels, *self.grid_size)
+
+            mock_eeg = self.layer1(mock_eeg)
+            mock_eeg = self.drop_selu(mock_eeg)
+            mock_eeg = self.layer2(mock_eeg)
+            mock_eeg = self.drop_selu(mock_eeg)
+            mock_eeg = self.layer3(mock_eeg)
+            mock_eeg = self.drop_selu(mock_eeg)
+            mock_eeg = self.layer4(mock_eeg)
+            mock_eeg = self.drop_selu(mock_eeg)
+            mock_eeg = self.layer5(mock_eeg)
+            mock_eeg = self.drop_selu(mock_eeg)
+            mock_eeg = mock_eeg.flatten(start_dim=1)
+
+            return mock_eeg.shape[1]
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         r'''
@@ -109,7 +128,7 @@ class STNet(nn.Module):
         x = self.drop_selu(x)
         x = self.layer5(x)
         x = self.drop_selu(x)
-        x = x.view(x.size(0), -1)
+        x = x.flatten(start_dim=1)
         x = self.lin1(x)
         x = self.drop_selu(x)
         x = self.lin2(x)

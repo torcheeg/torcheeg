@@ -44,7 +44,7 @@ class TestCNN(unittest.TestCase):
 
     def test_stnet(self):
         eeg = torch.randn(1, 128, 9, 9)
-        model = STNet(num_classes=2, in_channels=4, grid_size=(9, 9), dropout=0.2)
+        model = STNet(num_classes=2, in_channels=128, grid_size=(9, 9), dropout=0.2)
         pred = model(eeg)
         self.assertEqual(tuple(pred.shape), (1, 2))
 
