@@ -22,6 +22,10 @@ class RandomEEGTransform(EEGTransform):
     def random_apply(self, eeg: torch.Tensor, **kwargs) -> torch.Tensor:
         raise NotImplementedError
 
+    @property
+    def repr_body(self) -> Dict:
+        return dict(super().repr_body, **{'p': self.p})
+
 
 class RandomNoise(RandomEEGTransform):
     '''
@@ -66,6 +70,10 @@ class RandomNoise(RandomEEGTransform):
         noise = (noise + self.mean) * self.std
         return eeg + noise
 
+    @property
+    def repr_body(self) -> Dict:
+        return dict(super().repr_body, **{'mean': self.mean, 'std': self.std})
+
 
 class RandomMask(RandomEEGTransform):
     '''
@@ -107,6 +115,10 @@ class RandomMask(RandomEEGTransform):
         mask = torch.rand_like(eeg)
         mask = (mask < self.ratio).to(eeg.dtype)
         return eeg * mask
+
+    @property
+    def repr_body(self) -> Dict:
+        return dict(super().repr_body, **{'ratio': self.ratio})
 
 
 class RandomWindowSlice(RandomEEGTransform):
@@ -201,6 +213,10 @@ class RandomWindowSlice(RandomEEGTransform):
             new_eeg = new_eeg.transpose(undo_transpose_dims)
 
         return torch.from_numpy(new_eeg)
+
+    @property
+    def repr_body(self) -> Dict:
+        return dict(super().repr_body, **{'window_size': self.window_size, 'series_dim': self.series_dim})
 
 
 class RandomWindowWarp(RandomEEGTransform):
@@ -308,6 +324,14 @@ class RandomWindowWarp(RandomEEGTransform):
 
         return torch.from_numpy(new_eeg)
 
+    @property
+    def repr_body(self) -> Dict:
+        return dict(super().repr_body, **{
+            'window_size': self.window_size,
+            'warp_size': self.warp_size,
+            'series_dim': self.series_dim
+        })
+
 
 class RandomPCANoise(RandomEEGTransform):
     '''
@@ -401,6 +425,16 @@ class RandomPCANoise(RandomEEGTransform):
 
         return torch.from_numpy(new_eeg)
 
+    @property
+    def repr_body(self) -> Dict:
+        return dict(
+            super().repr_body, **{
+                'mean': self.mean,
+                'std': self.std,
+                'n_components': self.n_components,
+                'series_dim': self.series_dim
+            })
+
 
 class RandomFlip(RandomEEGTransform):
     '''
@@ -417,13 +451,13 @@ class RandomFlip(RandomEEGTransform):
         >>> (128, 9, 9)
 
     Args:
-        TODO
+        dim (int): Dimension to be flipped in the input tensor. (defualt: :obj:`-1`)
         p (float): Probability of applying random mask on EEG signal samples. Should be between 0.0 and 1.0, where 0.0 means no mask is applied to every sample and 1.0 means that masks are applied to every sample. (defualt: :obj:`0.5`)
         apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (defualt: :obj:`False`)
 
     .. automethod:: __call__
     '''
-    def __init__(self, p: float = 0.5, dim=-1, apply_to_baseline: bool = False):
+    def __init__(self, dim=-1, p: float = 0.5, apply_to_baseline: bool = False):
         super(RandomFlip, self).__init__(p=p, apply_to_baseline=apply_to_baseline)
         self.dim = dim
 
@@ -444,6 +478,10 @@ class RandomFlip(RandomEEGTransform):
 
     def random_apply(self, eeg: torch.Tensor, **kwargs) -> torch.Tensor:
         return torch.flip(eeg, dims=(self.dim, ))
+
+    @property
+    def repr_body(self) -> Dict:
+        return dict(super().repr_body, **{'dim': self.dim})
 
 
 class RandomSignFlip(RandomEEGTransform):
@@ -497,7 +535,7 @@ class RandomShift(RandomEEGTransform):
     Args:
         shift_min (float or int): The minimum shift in the random transformation. (defualt: :obj:`-2.0`)
         shift_max (float or int): The maximum shift in random transformation. (defualt: :obj:`2.0`)
-        dim (int): Dimension to be shifted the input tensor. (defualt: :obj:`-1`)
+        dim (int): Dimension to be shifted in the input tensor. (defualt: :obj:`-1`)
         p (float): Probability of applying random mask on EEG signal samples. Should be between 0.0 and 1.0, where 0.0 means no mask is applied to every sample and 1.0 means that masks are applied to every sample. (defualt: :obj:`0.5`)
         apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (defualt: :obj:`False`)
 
@@ -532,6 +570,10 @@ class RandomShift(RandomEEGTransform):
     def random_apply(self, eeg: torch.Tensor, **kwargs) -> torch.Tensor:
         shift = torch.randint(low=self.shift_min, high=self.shift_max, size=(1, ))
         return torch.roll(eeg, shifts=shift.item(), dims=self.dim)
+
+    @property
+    def repr_body(self) -> Dict:
+        return dict(super().repr_body, **{'shift_min': self.shift_min, 'shift_max': self.shift_max, 'dim': self.dim})
 
 
 class RandomChannelShuffle(RandomEEGTransform):
@@ -669,3 +711,13 @@ class RandomFrequencyShift(RandomEEGTransform):
             shifted = shifted.permute(undo_permute_dims)
 
         return shifted
+
+    @property
+    def repr_body(self) -> Dict:
+        return dict(
+            super().repr_body, **{
+                'frequency': self.frequency,
+                'shift_min': self.shift_min,
+                'shift_max': self.shift_max,
+                'series_dim': self.series_dim
+            })

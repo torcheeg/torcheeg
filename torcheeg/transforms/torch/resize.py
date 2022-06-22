@@ -47,17 +47,16 @@ class Resize(EEGTransform):
         return super().__call__(*args, eeg=eeg, baseline=baseline, **kwargs)
 
     def apply(self, eeg: torch.Tensor, **kwargs) -> torch.Tensor:
-        assert eeg.dim(
-        ) == 3, f'The module only allows to input a 3-d tensor, but the input has dimension {eeg.dim()}'
+        assert eeg.dim() == 3, f'The module only allows to input a 3-d tensor, but the input has dimension {eeg.dim()}'
 
         eeg = eeg.unsqueeze(0)
 
-        align_corners = False if self.interpolation in ["bilinear", "bicubic"
-                                                        ] else None
+        align_corners = False if self.interpolation in ["bilinear", "bicubic"] else None
 
-        interpolated_x = interpolate(eeg,
-                                     size=self.size,
-                                     mode=self.interpolation,
-                                     align_corners=align_corners)
+        interpolated_x = interpolate(eeg, size=self.size, mode=self.interpolation, align_corners=align_corners)
 
         return interpolated_x.squeeze(0)
+
+    @property
+    def repr_body(self) -> Dict:
+        return dict(super().repr_body, **{'size': self.size, 'interpolation': self.interpolation})

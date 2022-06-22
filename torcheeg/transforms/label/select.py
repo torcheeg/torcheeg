@@ -49,5 +49,8 @@ class Select(LabelTransform):
             return [y[k] for k in self.key]
         return y[self.key]
 
-    def __repr__(self) -> str:
-        return f"{self.__class__.__name__}()"
+    @property
+    def repr_body(self) -> Dict:
+        return dict(super().repr_body, **{
+            'key': self.key
+        })

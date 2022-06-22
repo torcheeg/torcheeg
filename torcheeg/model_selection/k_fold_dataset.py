@@ -57,8 +57,8 @@ class KFoldDataset:
             train_info = info.iloc[train_index]
             test_info = info.iloc[test_index]
 
-            train_info.to_csv(os.path.join(self.split_path, 'train_fold_{}.csv'.format(fold_id)), index=False)
-            test_info.to_csv(os.path.join(self.split_path, 'test_fold_{}.csv'.format(fold_id)), index=False)
+            train_info.to_csv(os.path.join(self.split_path, f'train_fold_{fold_id}.csv'), index=False)
+            test_info.to_csv(os.path.join(self.split_path, f'test_fold_{fold_id}.csv'), index=False)
 
     @property
     def fold_ids(self):
@@ -77,8 +77,8 @@ class KFoldDataset:
         fold_ids = self.fold_ids
 
         for fold_id in fold_ids:
-            train_info = pd.read_csv(os.path.join(self.split_path, 'train_fold_{}.csv'.format(fold_id)))
-            test_info = pd.read_csv(os.path.join(self.split_path, 'test_fold_{}.csv'.format(fold_id)))
+            train_info = pd.read_csv(os.path.join(self.split_path, f'train_fold_{fold_id}.csv'))
+            test_info = pd.read_csv(os.path.join(self.split_path, f'test_fold_{fold_id}.csv'))
 
             trian_dataset = copy(dataset)
             trian_dataset.info = train_info

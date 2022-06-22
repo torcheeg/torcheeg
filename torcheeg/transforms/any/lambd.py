@@ -48,3 +48,10 @@ class Lambda(BaseTransform):
             any: The transformed output.
         '''
         return super().__call__(*args, **kwargs)
+
+    @property
+    def repr_body(self) -> Dict:
+        return dict(super().repr_body, **{
+            'lambd': self.lambd,
+            'targets': [...]
+        })

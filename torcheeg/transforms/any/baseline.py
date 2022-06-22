@@ -1,4 +1,4 @@
-from typing import Callable, Dict, Union, List
+from typing import Dict, Union, List
 
 from ..base_transform import EEGTransform
 
@@ -20,20 +20,13 @@ class BaselineRemoval(EEGTransform):
 
         transform(eeg=np.random.randn(32, 128), baseline=np.random.randn(32, 128))['eeg'].shape
         >>> (4, 9, 9)
-
-    Args:
-        transform (Callable): The transformation of the baseline signal before baseline removal. In general, it should be consistent with the transformation of the experimental signal.
     
     .. automethod:: __call__
     '''
-    def __init__(self, transform: Union[Callable, None] = None):
+    def __init__(self):
         super(BaselineRemoval, self).__init__(apply_to_baseline=False)
-        self.transform = transform
 
-    def __call__(self,
-                 *args,eeg: any,
-                 baseline: Union[any, None] = None,
-                 **kwargs) -> Dict[str, any]:
+    def __call__(self, *args, eeg: any, baseline: Union[any, None] = None, **kwargs) -> Dict[str, any]:
         r'''
         Args:
             eeg (any): The input EEG signal.
@@ -48,14 +41,13 @@ class BaselineRemoval(EEGTransform):
         if kwargs['baseline'] is None:
             return eeg
 
-        assert kwargs['baseline'].shape == eeg.shape, 'The baseline needs to change to the same shape as the input signal, please check if the `transform` is correct.'
+        assert kwargs[
+            'baseline'].shape == eeg.shape, 'The baseline needs to change to the same shape as the input signal, please check if the `transform` is correct.'
         return eeg - kwargs['baseline']
 
     @property
     def targets_as_params(self) -> List[str]:
         return ['baseline']
-    
+
     def get_params_dependent_on_targets(self, params: Dict[str, any]) -> Dict[str, any]:
-        return {
-            'baseline': params['baseline']
-        }
+        return {'baseline': params['baseline']}

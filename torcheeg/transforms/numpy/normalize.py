@@ -70,6 +70,13 @@ class MeanStdNormalize(EEGTransform):
             std = self.std.reshape(*shape)
         return (eeg - mean) / std
 
+    @property
+    def repr_body(self) -> Dict:
+        return dict(super().repr_body, **{
+            'mean': self.mean,
+            'std': self.std,
+            'axis': self.axis
+        })
 
 class MinMaxNormalize(EEGTransform):
     r'''
@@ -136,3 +143,11 @@ class MinMaxNormalize(EEGTransform):
             max = self.max.reshape(*shape)
 
         return (eeg - min) / (max - min)
+    
+    @property
+    def repr_body(self) -> Dict:
+        return dict(super().repr_body, **{
+            'min': self.min,
+            'max': self.max,
+            'axis': self.axis
+        })

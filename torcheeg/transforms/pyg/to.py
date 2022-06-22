@@ -65,6 +65,12 @@ class ToG(EEGTransform):
 
         return data
 
+    @property
+    def repr_body(self) -> Dict:
+        return dict(super().repr_body, **{
+            'adj': [...],
+            'complete_graph': self.complete_graph
+        })
 
 class ToDynamicG(EEGTransform):
     r'''
@@ -214,3 +220,13 @@ class ToDynamicG(EEGTransform):
         data.edge_weight = adj._values()
 
         return data
+
+    @property
+    def repr_body(self) -> Dict:
+        return dict(super().repr_body, **{
+            'top_k': self.top_k,
+            'threshold': self.threshold,
+            'binary': self.binary,
+            'complete_graph': self.complete_graph,
+            'edge_func': self.edge_func
+        })

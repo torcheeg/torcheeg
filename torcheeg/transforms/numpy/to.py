@@ -91,6 +91,11 @@ class ToGrid(EEGTransform):
         # timestep eeg 9 eeg 9
         return outputs
 
+    @property
+    def repr_body(self) -> Dict:
+        return dict(super().repr_body, **{
+            'channel_location': {...}
+        })
 
 class ToInterpolatedGrid(EEGTransform):
     r'''
@@ -158,3 +163,9 @@ class ToInterpolatedGrid(EEGTransform):
                          fill_value=0))
         outputs = np.array(outputs)
         return outputs
+
+    @property
+    def repr_body(self) -> Dict:
+        return dict(super().repr_body, **{
+            'channel_location': {...}
+        })

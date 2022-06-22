@@ -51,9 +51,9 @@ class LeaveOneSubjectOut:
             train_info = pd.concat(train_info)
             test_info = info[info['subject'] == test_subject]
 
-            train_info.to_csv(os.path.join(self.split_path, 'train_subject_{}.csv'.format(test_subject)),
+            train_info.to_csv(os.path.join(self.split_path, f'train_subject_{test_subject}.csv'),
                               index=False)
-            test_info.to_csv(os.path.join(self.split_path, 'test_subject_{}.csv'.format(test_subject)), index=False)
+            test_info.to_csv(os.path.join(self.split_path, f'test_subject_{test_subject}.csv'), index=False)
 
     @property
     def subjects(self) -> List:
@@ -72,8 +72,8 @@ class LeaveOneSubjectOut:
         subjects = self.subjects
 
         for subject in subjects:
-            train_info = pd.read_csv(os.path.join(self.split_path, 'train_subject_{}.csv'.format(subject)))
-            test_info = pd.read_csv(os.path.join(self.split_path, 'test_subject_{}.csv'.format(subject)))
+            train_info = pd.read_csv(os.path.join(self.split_path, f'train_subject_{subject}.csv'))
+            test_info = pd.read_csv(os.path.join(self.split_path, f'test_subject_{subject}.csv'))
 
             train_dataset = copy(dataset)
             train_dataset.info = train_info

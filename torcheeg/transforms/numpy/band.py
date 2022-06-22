@@ -37,6 +37,13 @@ class BandTransform(EEGTransform):
     def opt(self, eeg: np.ndarray, **kwargs) -> np.ndarray:
         raise NotImplementedError
 
+    @property
+    def repr_body(self) -> Dict:
+        return dict(super().repr_body, **{
+            'frequency': self.frequency,
+            'order': self.order,
+            'band_dict': {...}
+        })
 
 class BandDifferentialEntropy(BandTransform):
     r'''
@@ -72,7 +79,6 @@ class BandDifferentialEntropy(BandTransform):
 
     def opt(self, eeg: np.ndarray, **kwargs) -> np.ndarray:
         return 1 / 2 * np.log2(2 * np.pi * np.e * np.std(eeg))
-
 
 class BandPowerSpectralDensity(EEGTransform):
     r'''
@@ -138,6 +144,14 @@ class BandPowerSpectralDensity(EEGTransform):
         '''
         return super().__call__(*args, eeg=eeg, baseline=baseline, **kwargs)
 
+    @property
+    def repr_body(self) -> Dict:
+        return dict(super().repr_body, **{
+            'frequency': self.frequency,
+            'window_size': self.window_size,
+            'order': self.order,
+            'band_dict': {...}
+        })
 
 class BandMeanAbsoluteDeviation(BandTransform):
     r'''

@@ -34,7 +34,7 @@ def transform_producer(file_name: str, root_path: str, chunk_size: int, overlap:
             axis=1)  # channel(32), timestep(128)
 
         # record the common meta info
-        trail_meta_info = {'subject_id': subject_id, 'trail_id': trial_id}
+        trail_meta_info = {'subject': subject_id, 'trail_id': trial_id}
         trail_rating = labels[trial_id]
 
         for label_idx, label_name in enumerate(['valence', 'arousal', 'dominance', 'liking']):

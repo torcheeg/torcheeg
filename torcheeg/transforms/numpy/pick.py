@@ -76,3 +76,9 @@ class PickElectrode(EEGTransform):
             dataset_electrode_dict[electrode] for electrode in electrode_list
             if electrode in dataset_electrode_dict
         ]
+
+    @property
+    def repr_body(self) -> Dict:
+        return dict(super().repr_body, **{
+            'pick_list': [...]
+        })

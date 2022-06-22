@@ -1,4 +1,4 @@
-from typing import List, Union
+from typing import List, Union, Dict
 
 from ..base_transform import LabelTransform
 
@@ -49,6 +49,11 @@ class Binary(LabelTransform):
             return [int(l >= self.threshold) for l in y]
         return int(y >= self.threshold)
 
+    @property
+    def repr_body(self) -> Dict:
+        return dict(super().repr_body, **{
+            'threshold': self.threshold
+        })
 
 class BinariesToCategory(LabelTransform):
     r'''

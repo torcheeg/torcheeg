@@ -1,4 +1,4 @@
-from typing import Callable, Union, Tuple
+from typing import Callable, Union, Tuple, Dict
 
 from ..base_dataset import BaseDataset
 from ...functional.emotion_recognition.mahnob import mahnob_constructor
@@ -153,7 +153,6 @@ class MAHNOBDataset(BaseDataset):
         self.online_transform = online_transform
         self.offline_transform = offline_transform
         self.label_transform = label_transform
-        self.io_path = io_path
         self.num_worker = num_worker
         self.verbose = verbose
         self.cache_size = cache_size
@@ -169,7 +168,7 @@ class MAHNOBDataset(BaseDataset):
 
         signal = eeg
         label = info
-        
+
         if self.online_transform:
             signal = self.online_transform(eeg=eeg, baseline=baseline)['eeg']
 
@@ -177,3 +176,23 @@ class MAHNOBDataset(BaseDataset):
             label = self.label_transform(y=info)['y']
 
         return signal, label
+
+    @property
+    def repr_body(self) -> Dict:
+        return dict(
+            super().repr_body, **{
+                'root_path': self.root_path,
+                'chunk_size': self.chunk_size,
+                'sampling_rate': self.sampling_rate,
+                'overlap': self.overlap,
+                'channel_num': self.channel_num,
+                'baseline_num': self.baseline_num,
+                'baseline_chunk_size': self.baseline_chunk_size,
+                'trial_sample_num': self.trial_sample_num,
+                'online_transform': self.online_transform,
+                'offline_transform': self.offline_transform,
+                'label_transform': self.label_transform,
+                'num_worker': self.num_worker,
+                'verbose': self.verbose,
+                'cache_size': self.cache_size
+            })
