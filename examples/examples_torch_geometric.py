@@ -12,7 +12,7 @@ from torcheeg import transforms
 from torcheeg.datasets import SEEDDataset
 from torcheeg.datasets.constants.emotion_recognition.seed import \
     SEED_ADJACENCY_MATRIX
-from torcheeg.model_selection import KFoldTrialPerSubject
+from torcheeg.model_selection import KFoldPerSubjectGroupbyTrial
 
 
 def seed_everything(seed):
@@ -108,7 +108,7 @@ if __name__ == "__main__":
                           ]),
                           num_worker=8)
 
-    k_fold = KFoldTrialPerSubject(n_splits=10, split_path=f'./tmp_out/examples_torch_geometric/split', shuffle=False)
+    k_fold = KFoldPerSubjectGroupbyTrial(n_splits=10, split_path=f'./tmp_out/examples_torch_geometric/split', shuffle=False)
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
     loss_fn = nn.CrossEntropyLoss()

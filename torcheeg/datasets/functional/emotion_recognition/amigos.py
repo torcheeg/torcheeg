@@ -20,9 +20,9 @@ def transform_producer(file_name: str, root_path: str, chunk_size: int, overlap:
         return
 
     data = scio.loadmat(os.path.join(root_path, file_name), verify_compressed_data_integrity=False)
-    samples = data['joined_data'][0]  # trail (20), timestep(n*128), channel(17) (14 channels are EEGs)
+    samples = data['joined_data'][0]  # trial (20), timestep(n*128), channel(17) (14 channels are EEGs)
     # label file
-    labels = data['labels_selfassessment'][0]  # trail (20), label of different dimensions ((1, 12))
+    labels = data['labels_selfassessment'][0]  # trial (20), label of different dimensions ((1, 12))
 
     # calculate moving step
     step = chunk_size - overlap
@@ -36,16 +36,16 @@ def transform_producer(file_name: str, root_path: str, chunk_size: int, overlap:
     # loop for each trial
     for trial_id in range(max_len):
         # extract baseline signals
-        trail_samples = samples[trial_id]  # timestep(n*128), channel(17)
+        trial_samples = samples[trial_id]  # timestep(n*128), channel(17)
 
         # record the common meta info
-        trail_meta_info = {'subject': subject, 'trail_id': trial_id}
-        trail_rating = labels[trial_id][0]  # label of different dimensions (12)
+        trial_meta_info = {'subject_id': subject, 'trial_id': trial_id}
+        trial_rating = labels[trial_id][0]  # label of different dimensions (12)
 
         # missing values
-        if (not sum(trail_samples.shape)) or (not sum(trail_rating.shape)):
+        if (not sum(trial_samples.shape)) or (not sum(trial_rating.shape)):
             # 3 of the participants (08,24,28<->32) of the previous experiment did not watch a set of 4 long affective
-            if sum(trail_samples.shape) != sum(trail_rating.shape):
+            if sum(trial_samples.shape) != sum(trial_rating.shape):
                 print(
                     f'[WARNING] Find EEG signals without labels, or labels without EEG signals. Please check the {trial_id + 1}-th experiment of the {subject}-th subject in the file {file_name}. TorchEEG currently skipped the mismatched data.'
                 )
@@ -55,12 +55,12 @@ def transform_producer(file_name: str, root_path: str, chunk_size: int, overlap:
                 'arousal', 'valence', 'dominance', 'liking', 'familiarity', 'neutral', 'disgust', 'happiness',
                 'surprise', 'anger', 'fear', 'sadness'
         ]):
-            trail_meta_info[label_name] = trail_rating[label_idx]
+            trial_meta_info[label_name] = trial_rating[label_idx]
 
         # extract baseline signals
-        trail_baseline_sample = trail_samples[:baseline_chunk_size *
+        trial_baseline_sample = trial_samples[:baseline_chunk_size *
                                               baseline_num, :channel_num]  # timestep(5*128), channel(14)
-        trail_baseline_sample = trail_baseline_sample.reshape(baseline_num,
+        trial_baseline_sample = trial_baseline_sample.reshape(baseline_num,
                                                               baseline_chunk_size, channel_num).mean(axis=0).swapaxes(
                                                                   1, 0)  # channel(14), timestep(128)
 
@@ -68,22 +68,22 @@ def transform_producer(file_name: str, root_path: str, chunk_size: int, overlap:
         start_at = baseline_chunk_size * baseline_num
         end_at = start_at + chunk_size
 
-        while end_at <= trail_samples.shape[0]:
-            clip_sample = trail_samples[start_at:end_at, :channel_num].swapaxes(1, 0)
+        while end_at <= trial_samples.shape[0]:
+            clip_sample = trial_samples[start_at:end_at, :channel_num].swapaxes(1, 0)
 
             t_eeg = clip_sample
-            t_baseline = trail_baseline_sample
+            t_baseline = trial_baseline_sample
             if not transform is None:
-                t = transform(eeg=clip_sample, baseline=trail_baseline_sample)
+                t = transform(eeg=clip_sample, baseline=trial_baseline_sample)
                 t_eeg = t['eeg']
                 t_baseline = t['baseline']
 
             # put baseline signal into IO
-            if not 'baseline_id' in trail_meta_info:
-                trail_base_id = f'{file_name}_{write_pointer}'
-                queue.put({'eeg': t_baseline, 'key': trail_base_id})
+            if not 'baseline_id' in trial_meta_info:
+                trial_base_id = f'{file_name}_{write_pointer}'
+                queue.put({'eeg': t_baseline, 'key': trial_base_id})
                 write_pointer += 1
-                trail_meta_info['baseline_id'] = trail_base_id
+                trial_meta_info['baseline_id'] = trial_base_id
 
             clip_id = f'{file_name}_{write_pointer}'
             queue.put({'eeg': t_eeg, 'key': clip_id})
@@ -91,7 +91,7 @@ def transform_producer(file_name: str, root_path: str, chunk_size: int, overlap:
 
             # record meta info for each signal
             record_info = {'start_at': start_at, 'end_at': end_at, 'clip_id': clip_id}
-            record_info.update(trail_meta_info)
+            record_info.update(trial_meta_info)
             write_info_fn(record_info)
 
             start_at = start_at + step

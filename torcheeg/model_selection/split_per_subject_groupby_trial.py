@@ -8,14 +8,22 @@ from sklearn import model_selection
 from torcheeg.datasets.module.base_dataset import BaseDataset
 
 
-def train_test_split_trial_per_subject(dataset: BaseDataset,
-                                       test_size: float = 0.2,
-                                       subject: int = 0,
-                                       shuffle: bool = False,
-                                       random_state: Union[float, None] = None,
-                                       split_path='./dataset/train_test_split_trial_per_subject'):
+def train_test_split_per_subject_groupby_trial(
+        dataset: BaseDataset,
+        test_size: float = 0.2,
+        subject: int = 0,
+        shuffle: bool = False,
+        random_state: Union[float, None] = None,
+        split_path='./dataset/train_test_split_per_subject_groupby_trial'):
     r'''
     A tool function for cross-validations, to divide the training set and the test set. It is suitable for subject dependent experiments with large dataset volume and no need to use k-fold cross-validations. For the first step, the EEG signal samples of the specified user are selected. Then, the test samples are sampled according to a certain proportion for each trial for this subject, and other samples are used as training samples. In most literatures, 20% of the data are sampled for testing.
+
+    .. image:: _static/train_test_split_per_subject_groupby_trial.png
+        :height: 70px
+        :alt: The schematic diagram of train_test_split_per_subject_groupby_trial
+        :align: center
+
+    |
 
     .. code-block:: python
 
@@ -31,12 +39,12 @@ def train_test_split_trial_per_subject(dataset: BaseDataset,
                                   transforms.BinariesToCategory()
                               ]))
 
-        train_dataset, test_dataset = train_test_split_trial_per_subject(dataset=dataset, split_path='./split')
+        train_dataset, test_dataset = train_test_split_per_subject_groupby_trial(dataset=dataset, split_path='./split')
 
         train_loader = DataLoader(train_dataset)
         test_loader = DataLoader(test_dataset)
         ...
-    
+
     Args:
         dataset (BaseDataset): Dataset to be divided.
         test_size (int):  If float, should be between 0.0 and 1.0 and represent the proportion of the dataset to include in the test split. If int, represents the absolute number of test samples. (default: :obj:`0.2`)
@@ -48,24 +56,26 @@ def train_test_split_trial_per_subject(dataset: BaseDataset,
     if not os.path.exists(split_path):
         os.makedirs(split_path)
         info = dataset.info
-        subjects = list(set(info['subject']))
+        subjects = list(set(info['subject_id']))
 
         assert subject in subjects, f'The subject should be in the subject list {subjects}.'
 
-        trail_ids = list(set(info['trail_id']))
+        trial_ids = list(set(info['trial_id']))
 
         train_info = None
         test_info = None
 
-        for trail_id in trail_ids:
-            cur_info = info[(info['subject'] == subject) & (info['trail_id'] == trail_id)].reset_index()
+        for trial_id in trial_ids:
+            cur_info = info[(info['subject_id'] == subject)
+                            & (info['trial_id'] == trial_id)].reset_index()
             n_samples = len(cur_info)
             indices = np.arange(n_samples)
 
-            train_index, test_index = model_selection.train_test_split(indices,
-                                                                       test_size=test_size,
-                                                                       random_state=random_state,
-                                                                       shuffle=shuffle)
+            train_index, test_index = model_selection.train_test_split(
+                indices,
+                test_size=test_size,
+                random_state=random_state,
+                shuffle=shuffle)
 
             if train_info is None and test_info is None:
                 train_info = cur_info.iloc[train_index]

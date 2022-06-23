@@ -186,15 +186,15 @@ partitioning. Please choose a reasonable data division method according
 to the research focus:
 
 -  Subject Dependent:
-   `KFoldTrialPerSubject <https://torcheeg.readthedocs.io/en/latest/torcheeg.model_selection.html#kfoldtrialpersubject>`__,
-   `train_test_split_trial_per_subject <https://torcheeg.readthedocs.io/en/latest/torcheeg.model_selection.html#train-test-split-trial-per-subject>`__
+   `KFoldPerSubjectGroupbyTrial <https://torcheeg.readthedocs.io/en/latest/torcheeg.model_selection.html#kfoldtrialpersubject>`__,
+   `train_test_split_per_subject_groupby_trial <https://torcheeg.readthedocs.io/en/latest/torcheeg.model_selection.html#train-test-split-trial-per-subject>`__
 -  Subject Independent:
    `LeaveOneSubjectOut <https://torcheeg.readthedocs.io/en/latest/torcheeg.model_selection.html#leaveonesubjectout>`__
 -  Conventional:
-   `KFoldDataset <https://torcheeg.readthedocs.io/en/latest/torcheeg.model_selection.html#kfolddataset>`__,
-   `train_test_split_dataset <https://torcheeg.readthedocs.io/en/latest/torcheeg.model_selection.html#train-test-split-dataset>`__,
-   `KFoldTrial <https://torcheeg.readthedocs.io/en/latest/torcheeg.model_selection.html#kfoldtrial>`__,
-   `train_test_split_trial <https://torcheeg.readthedocs.io/en/latest/torcheeg.model_selection.html#train-test-split-trial>`__
+   `KFold <https://torcheeg.readthedocs.io/en/latest/torcheeg.model_selection.html#kfolddataset>`__,
+   `train_test_split <https://torcheeg.readthedocs.io/en/latest/torcheeg.model_selection.html#train-test-split-dataset>`__,
+   `KFoldGroupbyTrial <https://torcheeg.readthedocs.io/en/latest/torcheeg.model_selection.html#kfoldtrial>`__,
+   `train_test_split_groupby_trial <https://torcheeg.readthedocs.io/en/latest/torcheeg.model_selection.html#train-test-split-trial>`__
 
 **Models:** Coming soon after pushing to align with the official
 implementation or description. If the current version of
@@ -260,13 +260,13 @@ Next, we need to divide the dataset into a training set and a test set.
 In the field of EEG analysis, commonly used data partitioning methods
 include k-fold cross-validation and leave-one-out cross-validation. In
 this tutorial, we use k-fold cross-validation on the entire dataset
-(``KFoldDataset``) as an example of dataset splitting.
+(``KFold``) as an example of dataset splitting.
 
 .. code:: python
 
-   from torcheeg.model_selection import KFoldDataset
+   from torcheeg.model_selection import KFold
 
-   k_fold = KFoldDataset(n_splits=10,
+   k_fold = KFold(n_splits=10,
                          split_path=f'./tmp_out/split',
                          shuffle=True,
                          random_state=42)

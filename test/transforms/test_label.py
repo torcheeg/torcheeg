@@ -5,7 +5,7 @@ from torcheeg.transforms import Select, Binary, BinariesToCategory
 
 class TestLabelTransforms(unittest.TestCase):
     def test_select(self):
-        info = {'valence': 4.5, 'arousal': 5.5, 'subject': 7}
+        info = {'valence': 4.5, 'arousal': 5.5, 'subject_id': 7}
         transformed_label = Select(key='valence')(y=info)
         self.assertEqual(transformed_label['y'], 4.5)
 

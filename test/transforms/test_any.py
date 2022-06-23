@@ -66,7 +66,7 @@ class TestAnyTransforms(unittest.TestCase):
             (4, 9, 9))
 
         # label
-        info = {'valence': 4.5, 'arousal': 5.5, 'subject': 7}
+        info = {'valence': 4.5, 'arousal': 5.5, 'subject_id': 7}
         transform = Compose([Select(key='valence'), Binary(threshold=5.0)])
         self.assertEqual(transform(y=info)['y'], 0)
 

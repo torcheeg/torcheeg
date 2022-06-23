@@ -1,42 +1,42 @@
 torcheeg.model\_selection
 =================================
 
-KFoldDataset
+KFold
 -------------------------------------------------
 
-.. autoclass:: torcheeg.model_selection.KFoldDataset
+.. autoclass:: torcheeg.model_selection.KFold
 
-KFoldTrial
+KFoldGroupbyTrial
 -----------------------------------------------
 
-.. autoclass:: torcheeg.model_selection.KFoldTrial
+.. autoclass:: torcheeg.model_selection.KFoldGroupbyTrial
 
 KFoldPerSubject
 -------------------------------------------------------------
 
 .. autoclass:: torcheeg.model_selection.KFoldPerSubject
 
-KFoldTrialPerSubject
+KFoldPerSubjectGroupbyTrial
 -------------------------------------------------------------
 
-.. autoclass:: torcheeg.model_selection.KFoldTrialPerSubject
+.. autoclass:: torcheeg.model_selection.KFoldPerSubjectGroupbyTrial
 
 LeaveOneSubjectOut
 ---------------------------------------------------------
 
 .. autoclass:: torcheeg.model_selection.LeaveOneSubjectOut
 
-train_test_split_dataset
+train_test_split
 -----------------------------------------------
 
-.. autofunction:: torcheeg.model_selection.train_test_split_dataset
+.. autofunction:: torcheeg.model_selection.train_test_split
 
-train_test_split_trial_per_subject
+train_test_split_per_subject_groupby_trial
 ---------------------------------------------
 
-.. autofunction:: torcheeg.model_selection.train_test_split_trial_per_subject
+.. autofunction:: torcheeg.model_selection.train_test_split_per_subject_groupby_trial
 
-train_test_split_trial
+train_test_split_groupby_trial
 -----------------------------------------------------------
 
-.. autofunction:: torcheeg.model_selection.train_test_split_trial
+.. autofunction:: torcheeg.model_selection.train_test_split_groupby_trial

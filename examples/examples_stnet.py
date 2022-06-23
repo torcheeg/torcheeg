@@ -10,8 +10,8 @@ from torcheeg import transforms
 from torcheeg.datasets import DEAPDataset
 from torcheeg.datasets.constants.emotion_recognition.deap import \
     DEAP_CHANNEL_LOCATION_DICT
-from torcheeg.model_selection import KFoldPerSubject, train_test_split_dataset
-from torcheeg.model_selection.k_fold_dataset import KFoldDataset
+from torcheeg.model_selection import KFoldPerSubject, train_test_split
+from torcheeg.model_selection.k_fold import KFold
 from torcheeg.models import CCNN
 
 
@@ -92,7 +92,7 @@ if __name__ == "__main__":
                           ]),
                           num_worker=8)
 
-    k_fold = KFoldDataset(n_splits=5, split_path=f'./tmp_out/examples_stnet/split', shuffle=True)
+    k_fold = KFold(n_splits=5, split_path=f'./tmp_out/examples_stnet/split', shuffle=True)
     device = "cuda" if torch.cuda.is_available() else "cpu"
     loss_fn = nn.CrossEntropyLoss()
     batch_size = 64
@@ -105,7 +105,7 @@ if __name__ == "__main__":
         model = CCNN(num_classes=2, in_channels=128, grid_size=(9, 9)).to(device)
         optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
 
-        train_dataset, val_dataset = train_test_split_dataset(train_dataset,
+        train_dataset, val_dataset = train_test_split(train_dataset,
                                                               test_size=0.2,
                                                               split_path=f'./tmp_out/examples_stnet/split{i}',
                                                               shuffle=True)

@@ -70,13 +70,13 @@ Next, we need to divide the dataset into a training set and a test set.
 In the field of EEG analysis, commonly used data partitioning methods
 include k-fold cross-validation and leave-one-out cross-validation. In
 this tutorial, we use k-fold cross-validation per subject
-(``KFoldTrialPerSubject``) as an example of dataset splitting.
+(``KFoldPerSubjectGroupbyTrial``) as an example of dataset splitting.
 
 .. code:: python
 
-   from torcheeg.model_selection import KFoldDataset
+   from torcheeg.model_selection import KFold
 
-   k_fold = KFoldTrialPerSubject(n_splits=10,
+   k_fold = KFoldPerSubjectGroupbyTrial(n_splits=10,
                                  split_path=f'./tmp_out/split',
                                  shuffle=False)
 

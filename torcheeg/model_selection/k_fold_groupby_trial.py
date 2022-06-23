@@ -8,15 +8,22 @@ from sklearn import model_selection
 from torcheeg.datasets.module.base_dataset import BaseDataset
 
 
-class KFoldTrial:
+class KFoldGroupbyTrial:
     r'''
-    A tool class for k-fold cross-validations, to divide the training set and the test set. A variant of :obj:`KFoldDataset`, where the data set is divided into k subsets, with one subset being retained as the test set and the remaining k-1 being used as training data. In most of the literature, K is chosen as 5 or 10 according to the size of the data set.
+    A tool class for k-fold cross-validations, to divide the training set and the test set. A variant of :obj:`KFold`, where the data set is divided into k subsets at the dimension of trials, with one subset being retained as the test set and the remaining k-1 being used as training data. In most of the literature, K is chosen as 5 or 10 according to the size of the data set.
 
-    :obj:`KFoldDataset` devides subsets at the dimension of each trial. Take the first partition with :obj:`k=5` as an example, the first 80% of samples of each trial are used for training, and the last 20% of samples are used for testing. It is more consistent with real applications and can test the generalization of the model to a certain extent.
+    .. image:: _static/KFoldGroupbyTrial.png
+        :height: 120px
+        :alt: The schematic diagram of KFoldGroupbyTrial
+        :align: center
+
+    |
+
+    :obj:`KFoldGroupbyTrial` devides subsets at the dimension of trials. Take the first partition with :obj:`k=5` as an example, the first 80% of samples of each trial are used for training, and the last 20% of samples are used for testing. It is more consistent with real applications and can test the generalization of the model to a certain extent.
 
     .. code-block:: python
 
-        cv = KFoldTrial(n_splits=5, shuffle=False, split_path='./split')
+        cv = KFoldGroupbyTrial(n_splits=5, shuffle=False, split_path='./split')
         dataset = DEAPDataset(io_path=f'./deap',
                               root_path='./data_preprocessed_python',
                               online_transform=transforms.Compose([
@@ -33,7 +40,7 @@ class KFoldTrial:
             train_loader = DataLoader(train_dataset)
             test_loader = DataLoader(test_dataset)
             ...
-    
+
     Args:
         n_splits (int): Number of folds. Must be at least 2. (default: :obj:`5`)
         shuffle (bool): Whether to shuffle the data before splitting into batches. Note that the samples within each split will not be shuffled. (default: :obj:`False`)
@@ -50,24 +57,27 @@ class KFoldTrial:
         self.random_state = random_state
         self.split_path = split_path
 
-        self.k_fold = model_selection.KFold(n_splits=n_splits, shuffle=shuffle, random_state=random_state)
+        self.k_fold = model_selection.KFold(n_splits=n_splits,
+                                            shuffle=shuffle,
+                                            random_state=random_state)
 
     def split_info_constructor(self, info: pd.DataFrame) -> None:
-        subjects = list(set(info['subject']))
+        subjects = list(set(info['subject_id']))
 
         train_infos = {}
         test_infos = {}
 
         for subject in subjects:
-            subject_info = info[info['subject'] == subject]
+            subject_info = info[info['subject_id'] == subject]
 
-            trail_ids = list(set(subject_info['trail_id']))
-            for trail_id in trail_ids:
-                trail_info = subject_info[subject_info['trail_id'] == trail_id]
+            trial_ids = list(set(subject_info['trial_id']))
+            for trial_id in trial_ids:
+                trial_info = subject_info[subject_info['trial_id'] == trial_id]
 
-                for i, (train_index, test_index) in enumerate(self.k_fold.split(trail_info)):
-                    train_info = trail_info.iloc[train_index]
-                    test_info = trail_info.iloc[test_index]
+                for i, (train_index,
+                        test_index) in enumerate(self.k_fold.split(trial_info)):
+                    train_info = trial_info.iloc[train_index]
+                    test_info = trial_info.iloc[test_index]
 
                     if not i in train_infos:
                         train_infos[i] = []
@@ -81,8 +91,12 @@ class KFoldTrial:
         for i in train_infos.keys():
             train_info = pd.concat(train_infos[i], ignore_index=True)
             test_info = pd.concat(test_infos[i], ignore_index=True)
-            train_info.to_csv(os.path.join(self.split_path, f'train_fold_{i}.csv'), index=False)
-            test_info.to_csv(os.path.join(self.split_path, f'test_fold_{i}.csv'), index=False)
+            train_info.to_csv(os.path.join(self.split_path,
+                                           f'train_fold_{i}.csv'),
+                              index=False)
+            test_info.to_csv(os.path.join(self.split_path,
+                                          f'test_fold_{i}.csv'),
+                             index=False)
 
     @property
     def fold_ids(self) -> List:
@@ -101,8 +115,10 @@ class KFoldTrial:
         fold_ids = self.fold_ids
 
         for fold_id in fold_ids:
-            train_info = pd.read_csv(os.path.join(self.split_path, f'train_fold_{fold_id}.csv'))
-            test_info = pd.read_csv(os.path.join(self.split_path, f'test_fold_{fold_id}.csv'))
+            train_info = pd.read_csv(
+                os.path.join(self.split_path, f'train_fold_{fold_id}.csv'))
+            test_info = pd.read_csv(
+                os.path.join(self.split_path, f'test_fold_{fold_id}.csv'))
 
             train_dataset = copy(dataset)
             train_dataset.info = train_info

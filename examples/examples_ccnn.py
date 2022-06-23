@@ -10,7 +10,7 @@ from torcheeg import transforms
 from torcheeg.datasets import DEAPDataset
 from torcheeg.datasets.constants.emotion_recognition.deap import \
     DEAP_CHANNEL_LOCATION_DICT
-from torcheeg.model_selection import KFoldPerSubject, train_test_split_dataset
+from torcheeg.model_selection import KFoldPerSubject, train_test_split
 from torcheeg.models import CCNN
 
 
@@ -106,7 +106,7 @@ if __name__ == "__main__":
         model = CCNN(num_classes=2, in_channels=4, grid_size=(9, 9)).to(device)
         optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)  # official: weight_decay=5e-1
 
-        train_dataset, val_dataset = train_test_split_dataset(train_dataset,
+        train_dataset, val_dataset = train_test_split(train_dataset,
                                                               test_size=0.2,
                                                               split_path=f'./tmp_out/examples_ccnn/split{i}',
                                                               shuffle=True)

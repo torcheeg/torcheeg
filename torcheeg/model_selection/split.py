@@ -8,15 +8,22 @@ from sklearn import model_selection
 from torcheeg.datasets.module.base_dataset import BaseDataset
 
 
-def train_test_split_dataset(dataset: BaseDataset,
-                             test_size: float = 0.2,
-                             shuffle: bool = False,
-                             random_state: Union[float, None] = None,
-                             split_path: str = './split/train_test_split_dataset'):
+def train_test_split(dataset: BaseDataset,
+                     test_size: float = 0.2,
+                     shuffle: bool = False,
+                     random_state: Union[float, None] = None,
+                     split_path: str = './split/train_test_split'):
     r'''
     A tool function for cross-validations, to divide the training set and the test set. It is suitable for experiments with large dataset volume and no need to use k-fold cross-validations. The test samples are sampled according to a certain proportion, and other samples are used as training samples. In most literatures, 20% of the data are sampled for testing.
 
-    :obj:`KFoldDataset` devides the training set and the test set at the dataset dimension. It means that during random sampling, adjacent signal samples may be assigned to the training set and the test set, respectively. When random sampling is not used, some subjects are not included in the training set. If you think these situations shouldn't happen, consider using :obj:`train_test_split_trial_per_subject` or :obj`train_test_split_trial`.
+    .. image:: _static/train_test_split.png
+        :height: 50px
+        :alt: The schematic diagram of train_test_split
+        :align: center
+
+    |
+    
+    :obj:`train_test_split` devides the training set and the test set without grouping. It means that during random sampling, adjacent signal samples may be assigned to the training set and the test set, respectively. When random sampling is not used, some subjects are not included in the training set. If you think these situations shouldn't happen, consider using :obj:`train_test_split_per_subject_groupby_trial` or :obj`train_test_split_groupby_trial`.
 
     .. code-block:: python
 
@@ -32,12 +39,12 @@ def train_test_split_dataset(dataset: BaseDataset,
                                   transforms.BinariesToCategory()
                               ]))
 
-        train_dataset, test_dataset = train_test_split_dataset(dataset=dataset, split_path='./split')
+        train_dataset, test_dataset = train_test_split(dataset=dataset, split_path='./split')
 
         train_loader = DataLoader(train_dataset)
         test_loader = DataLoader(test_dataset)
         ...
-    
+
     Args:
         dataset (BaseDataset): Dataset to be divided.
         test_size (int):  If float, should be between 0.0 and 1.0 and represent the proportion of the dataset to include in the test split. If int, represents the absolute number of test samples. (default: :obj:`0.2`)
@@ -51,10 +58,11 @@ def train_test_split_dataset(dataset: BaseDataset,
 
         n_samples = len(dataset)
         indices = np.arange(n_samples)
-        train_index, test_index = model_selection.train_test_split(indices,
-                                                                   test_size=test_size,
-                                                                   random_state=random_state,
-                                                                   shuffle=shuffle)
+        train_index, test_index = model_selection.train_test_split(
+            indices,
+            test_size=test_size,
+            random_state=random_state,
+            shuffle=shuffle)
         train_info = info.iloc[train_index]
         test_info = info.iloc[test_index]
 

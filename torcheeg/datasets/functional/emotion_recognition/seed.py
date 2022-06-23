@@ -16,25 +16,25 @@ def transform_producer(file_name: str, root_path: str, chunk_size: int, overlap:
     date = int(os.path.basename(file_name).split('.')[0].split('_')[1])  # period (3)
 
     samples = scio.loadmat(os.path.join(root_path, file_name),
-                           verify_compressed_data_integrity=False)  # trail (15), channel(62), timestep(n*200)
+                           verify_compressed_data_integrity=False)  # trial (15), channel(62), timestep(n*200)
     # label file
     labels = scio.loadmat(os.path.join(root_path, 'label.mat'), verify_compressed_data_integrity=False)['label'][0]
 
-    trail_ids = [key for key in samples.keys() if 'eeg' in key]
+    trial_ids = [key for key in samples.keys() if 'eeg' in key]
 
     # calculate moving step
     step = chunk_size - overlap
 
     write_pointer = 0
     # loop for each trial
-    for trial_id in trail_ids:
+    for trial_id in trial_ids:
         # extract baseline signals
-        trail_samples = samples[trial_id]  # channel(62), timestep(n*200)
+        trial_samples = samples[trial_id]  # channel(62), timestep(n*200)
 
         # record the common meta info
-        trail_meta_info = {
-            'subject': subject,
-            'trail_id': trial_id,
+        trial_meta_info = {
+            'subject_id': subject,
+            'trial_id': trial_id,
             'emotion': int(labels[int(trial_id.split('_')[-1][3:]) - 1]),
             'date': date
         }
@@ -43,8 +43,8 @@ def transform_producer(file_name: str, root_path: str, chunk_size: int, overlap:
         start_at = 0
         end_at = chunk_size
 
-        while end_at <= trail_samples.shape[1]:
-            clip_sample = trail_samples[:channel_num, start_at:end_at]
+        while end_at <= trial_samples.shape[1]:
+            clip_sample = trial_samples[:channel_num, start_at:end_at]
 
             t_eeg = clip_sample
             if not transform is None:
@@ -56,7 +56,7 @@ def transform_producer(file_name: str, root_path: str, chunk_size: int, overlap:
 
             # record meta info for each signal
             record_info = {'start_at': start_at, 'end_at': end_at, 'clip_id': clip_id}
-            record_info.update(trail_meta_info)
+            record_info.update(trial_meta_info)
             write_info_fn(record_info)
 
             start_at = start_at + step

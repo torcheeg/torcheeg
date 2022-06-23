@@ -17,7 +17,7 @@ def transform_producer(file_name: str, root_path: str, chunk_size: int, overlap:
     with open(os.path.join(root_path, file_name), 'rb') as f:
         pkl_data = pkl.load(f, encoding='iso-8859-1')
 
-    samples = pkl_data['data']  # trail(40), channel(32), timestep(63*128)
+    samples = pkl_data['data']  # trial(40), channel(32), timestep(63*128)
     labels = pkl_data['labels']
     subject_id = label_encoder.transform([file_name])[0]
 
@@ -28,39 +28,39 @@ def transform_producer(file_name: str, root_path: str, chunk_size: int, overlap:
     # loop for each trial
     for trial_id in range(len(samples)):
         # extract baseline signals
-        trail_samples = samples[trial_id, :channel_num]  # channel(32), timestep(63*128)
-        trail_baseline_sample = trail_samples[:, :baseline_chunk_size * baseline_num]  # channel(32), timestep(3*128)
-        trail_baseline_sample = trail_baseline_sample.reshape(channel_num, baseline_num, baseline_chunk_size).mean(
+        trial_samples = samples[trial_id, :channel_num]  # channel(32), timestep(63*128)
+        trial_baseline_sample = trial_samples[:, :baseline_chunk_size * baseline_num]  # channel(32), timestep(3*128)
+        trial_baseline_sample = trial_baseline_sample.reshape(channel_num, baseline_num, baseline_chunk_size).mean(
             axis=1)  # channel(32), timestep(128)
 
         # record the common meta info
-        trail_meta_info = {'subject': subject_id, 'trail_id': trial_id}
-        trail_rating = labels[trial_id]
+        trial_meta_info = {'subject_id': subject_id, 'trial_id': trial_id}
+        trial_rating = labels[trial_id]
 
         for label_idx, label_name in enumerate(['valence', 'arousal', 'dominance', 'liking']):
-            trail_meta_info[label_name] = trail_rating[label_idx]
+            trial_meta_info[label_name] = trial_rating[label_idx]
 
         # extract experimental signals
         start_at = baseline_chunk_size * baseline_num
         end_at = start_at + chunk_size
 
-        while end_at <= trail_samples.shape[1]:
-            clip_sample = trail_samples[:, start_at:end_at]
+        while end_at <= trial_samples.shape[1]:
+            clip_sample = trial_samples[:, start_at:end_at]
 
             t_eeg = clip_sample
-            t_baseline = trail_baseline_sample
+            t_baseline = trial_baseline_sample
 
             if not transform is None:
-                t = transform(eeg=clip_sample, baseline=trail_baseline_sample)
+                t = transform(eeg=clip_sample, baseline=trial_baseline_sample)
                 t_eeg = t['eeg']
                 t_baseline = t['baseline']
 
             # put baseline signal into IO
-            if not 'baseline_id' in trail_meta_info:
-                trail_base_id = f'{file_name}_{write_pointer}'
-                queue.put({'eeg': t_baseline, 'key': trail_base_id})
+            if not 'baseline_id' in trial_meta_info:
+                trial_base_id = f'{file_name}_{write_pointer}'
+                queue.put({'eeg': t_baseline, 'key': trial_base_id})
                 write_pointer += 1
-                trail_meta_info['baseline_id'] = trail_base_id
+                trial_meta_info['baseline_id'] = trial_base_id
 
             clip_id = f'{file_name}_{write_pointer}'
             queue.put({'eeg': t_eeg, 'key': clip_id})
@@ -68,7 +68,7 @@ def transform_producer(file_name: str, root_path: str, chunk_size: int, overlap:
 
             # record meta info for each signal
             record_info = {'start_at': start_at, 'end_at': end_at, 'clip_id': clip_id}
-            record_info.update(trail_meta_info)
+            record_info.update(trial_meta_info)
             write_info_fn(record_info)
 
             start_at = start_at + step

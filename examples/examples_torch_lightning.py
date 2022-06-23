@@ -12,7 +12,7 @@ from torcheeg import transforms
 from torcheeg.datasets import DEAPDataset
 from torcheeg.datasets.constants.emotion_recognition.deap import \
     DEAP_CHANNEL_LOCATION_DICT
-from torcheeg.model_selection import KFoldDataset
+from torcheeg.model_selection import KFold
 from torchmetrics import Accuracy
 
 
@@ -91,7 +91,7 @@ if __name__ == "__main__":
                               transforms.Select('valence'),
                               transforms.Binary(5.0),
                           ]))
-    k_fold = KFoldDataset(n_splits=10,
+    k_fold = KFold(n_splits=10,
                           split_path=f'./tmp_out/examples_torch_lightning/split',
                           shuffle=True,
                           random_state=42)

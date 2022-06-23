@@ -11,6 +11,13 @@ class LeaveOneSubjectOut:
     r'''
     A tool class for leave-one-subject-out cross-validations, to divide the training set and the test set, commonly used to study model performance in the case of subject independent experiments. During each fold, experiments require testing on one subject and training on the other subjects.
 
+    .. image:: _static/LeaveOneSubjectOut.png
+        :height: 120px
+        :alt: The schematic diagram of LeaveOneSubjectOut
+        :align: center
+
+    |
+    
     .. code-block:: python
 
         cv = LeaveOneSubjectOut('./split')
@@ -30,7 +37,7 @@ class LeaveOneSubjectOut:
             train_loader = DataLoader(train_dataset)
             test_loader = DataLoader(test_dataset)
             ...
-    
+
     Args:
         split_path (str): The path to data partition information. If the path exists, read the existing partition from the path. If the path does not exist, the current division method will be saved for next use. (default: :obj:`./split/leave_one_subject_out`)
     '''
@@ -38,7 +45,7 @@ class LeaveOneSubjectOut:
         self.split_path = split_path
 
     def split_info_constructor(self, info: pd.DataFrame) -> None:
-        subjects = list(set(info['subject']))
+        subjects = list(set(info['subject_id']))
 
         for test_subject in subjects:
             train_subjects = subjects.copy()
@@ -46,14 +53,17 @@ class LeaveOneSubjectOut:
 
             train_info = []
             for train_subject in train_subjects:
-                train_info.append(info[info['subject'] == train_subject])
+                train_info.append(info[info['subject_id'] == train_subject])
 
             train_info = pd.concat(train_info)
-            test_info = info[info['subject'] == test_subject]
+            test_info = info[info['subject_id'] == test_subject]
 
-            train_info.to_csv(os.path.join(self.split_path, f'train_subject_{test_subject}.csv'),
+            train_info.to_csv(os.path.join(self.split_path,
+                                           f'train_subject_{test_subject}.csv'),
                               index=False)
-            test_info.to_csv(os.path.join(self.split_path, f'test_subject_{test_subject}.csv'), index=False)
+            test_info.to_csv(os.path.join(self.split_path,
+                                          f'test_subject_{test_subject}.csv'),
+                             index=False)
 
     @property
     def subjects(self) -> List:
@@ -72,8 +82,10 @@ class LeaveOneSubjectOut:
         subjects = self.subjects
 
         for subject in subjects:
-            train_info = pd.read_csv(os.path.join(self.split_path, f'train_subject_{subject}.csv'))
-            test_info = pd.read_csv(os.path.join(self.split_path, f'test_subject_{subject}.csv'))
+            train_info = pd.read_csv(
+                os.path.join(self.split_path, f'train_subject_{subject}.csv'))
+            test_info = pd.read_csv(
+                os.path.join(self.split_path, f'test_subject_{subject}.csv'))
 
             train_dataset = copy(dataset)
             train_dataset.info = train_info

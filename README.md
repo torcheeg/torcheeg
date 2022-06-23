@@ -99,9 +99,9 @@ We list currently supported datasets, transforms, data splitting, and deep learn
 
 **Data Splitting:** In current research in the field of EEG analysis, there are various settings based on different considerations for data partitioning. Please choose a reasonable data division method according to the research focus:
 
-* Subject Dependent: [KFoldTrialPerSubject](https://torcheeg.readthedocs.io/en/latest/torcheeg.model_selection.html#kfoldtrialpersubject), [train_test_split_trial_per_subject](https://torcheeg.readthedocs.io/en/latest/torcheeg.model_selection.html#train-test-split-trial-per-subject)
+* Subject Dependent: [KFoldPerSubjectGroupbyTrial](https://torcheeg.readthedocs.io/en/latest/torcheeg.model_selection.html#kfoldtrialpersubject), [train_test_split_per_subject_groupby_trial](https://torcheeg.readthedocs.io/en/latest/torcheeg.model_selection.html#train-test-split-trial-per-subject)
 * Subject Independent: [LeaveOneSubjectOut](https://torcheeg.readthedocs.io/en/latest/torcheeg.model_selection.html#leaveonesubjectout)
-* Conventional: [KFoldDataset](https://torcheeg.readthedocs.io/en/latest/torcheeg.model_selection.html#kfolddataset), [train_test_split_dataset](https://torcheeg.readthedocs.io/en/latest/torcheeg.model_selection.html#train-test-split-dataset), [KFoldTrial](https://torcheeg.readthedocs.io/en/latest/torcheeg.model_selection.html#kfoldtrial), [train_test_split_trial](https://torcheeg.readthedocs.io/en/latest/torcheeg.model_selection.html#train-test-split-trial)
+* Conventional: [KFold](https://torcheeg.readthedocs.io/en/latest/torcheeg.model_selection.html#kfolddataset), [train_test_split](https://torcheeg.readthedocs.io/en/latest/torcheeg.model_selection.html#train-test-split-dataset), [KFoldGroupbyTrial](https://torcheeg.readthedocs.io/en/latest/torcheeg.model_selection.html#kfoldtrial), [train_test_split_groupby_trial](https://torcheeg.readthedocs.io/en/latest/torcheeg.model_selection.html#train-test-split-trial)
 
 **Models:** Coming soon after pushing to align with the official implementation or description. If the current version of [CNNs](https://torcheeg.readthedocs.io/en/latest/torcheeg.models.cnn.html), [GNNs](https://torcheeg.readthedocs.io/en/latest/torcheeg.models.gnn.html) and [Transformers](https://torcheeg.readthedocs.io/en/latest/torcheeg.models.transformer.html) is to be used, please refer to the implementation in [torcheeg.models](https://torcheeg.readthedocs.io/en/latest/torcheeg.models.html).
 
@@ -134,12 +134,12 @@ Here, `offline_transform` will only be called once when the dataset is initializ
 
 `online_transform` is used to transform samples on the fly. Please use `online_transform` if you don't want to wait for the preprocessing of the entire dataset (suitable for scenarios where new `transform` algorithms are designed) or expect data transformation with randomness each time a sample is indexed.
 
-Next, we need to divide the dataset into a training set and a test set. In the field of EEG analysis, commonly used data partitioning methods include k-fold cross-validation and leave-one-out cross-validation. In this tutorial, we use k-fold cross-validation on the entire dataset (`KFoldDataset`) as an example of dataset splitting.
+Next, we need to divide the dataset into a training set and a test set. In the field of EEG analysis, commonly used data partitioning methods include k-fold cross-validation and leave-one-out cross-validation. In this tutorial, we use k-fold cross-validation on the entire dataset (`KFold`) as an example of dataset splitting.
 
 ```python
-from torcheeg.model_selection import KFoldDataset
+from torcheeg.model_selection import KFold
 
-k_fold = KFoldDataset(n_splits=10,
+k_fold = KFold(n_splits=10,
                       split_path=f'./tmp_out/split',
                       shuffle=True,
                       random_state=42)

@@ -24,24 +24,24 @@ class TestMetaInfoIO(unittest.TestCase):
         io_cache_path = f'./tmp_out/{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
         io = MetaInfoIO(cache_path=io_cache_path)
 
-        io.write_info({'subject': 0, 'clip_id': 0, 'baseline_id': 0, 'valence': 0, 'arousal': 0})
+        io.write_info({'subject_id': 0, 'clip_id': 0, 'baseline_id': 0, 'valence': 0, 'arousal': 0})
 
-        io.write_info({'subject': 0, 'clip_id': 1, 'baseline_id': 0, 'valence': 0, 'arousal': 0})
+        io.write_info({'subject_id': 0, 'clip_id': 1, 'baseline_id': 0, 'valence': 0, 'arousal': 0})
 
     def test_len(self):
         io_cache_path = f'./tmp_out/{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
         io = MetaInfoIO(cache_path=io_cache_path)
 
-        io.write_info({'subject': 0, 'clip_id': 0, 'baseline_id': 0, 'valence': 0, 'arousal': 0})
+        io.write_info({'subject_id': 0, 'clip_id': 0, 'baseline_id': 0, 'valence': 0, 'arousal': 0})
 
-        io.write_info({'subject': 0, 'clip_id': 1, 'baseline_id': 0, 'valence': 0, 'arousal': 0})
+        io.write_info({'subject_id': 0, 'clip_id': 1, 'baseline_id': 0, 'valence': 0, 'arousal': 0})
         self.assertEqual(len(io), 2)
 
     def test_read_info(self):
         io_cache_path = f'./tmp_out/{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
         io = MetaInfoIO(cache_path=io_cache_path)
 
-        info = {'subject': 0, 'clip_id': 1, 'baseline_id': 0, 'valence': 0, 'arousal': 0}
+        info = {'subject_id': 0, 'clip_id': 1, 'baseline_id': 0, 'valence': 0, 'arousal': 0}
         io_info_idx = io.write_info(info)
         io_info = io.read_info(io_info_idx)
         for key in info.keys():
@@ -51,9 +51,9 @@ class TestMetaInfoIO(unittest.TestCase):
         io_cache_path = f'./tmp_out/{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
         io = MetaInfoIO(cache_path=io_cache_path)
 
-        io.write_info({'subject': 0, 'clip_id': 0, 'baseline_id': 0, 'valence': 0, 'arousal': 0})
+        io.write_info({'subject_id': 0, 'clip_id': 0, 'baseline_id': 0, 'valence': 0, 'arousal': 0})
 
-        io.write_info({'subject': 0, 'clip_id': 1, 'baseline_id': 0, 'valence': 0, 'arousal': 0})
+        io.write_info({'subject_id': 0, 'clip_id': 1, 'baseline_id': 0, 'valence': 0, 'arousal': 0})
         self.assertEqual(len(io.read_all()), 2)
 
 

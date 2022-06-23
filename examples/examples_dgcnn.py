@@ -8,7 +8,7 @@ import torch.nn as nn
 from torch.utils.data.dataloader import DataLoader
 from torcheeg import transforms
 from torcheeg.datasets import SEEDDataset
-from torcheeg.model_selection import LeaveOneSubjectOut, train_test_split_dataset
+from torcheeg.model_selection import LeaveOneSubjectOut, train_test_split
 from torcheeg.models import DGCNN
 
 
@@ -105,7 +105,7 @@ if __name__ == "__main__":
         model = DGCNN(in_channels=5, num_electrodes=62, hid_channels=32, num_layers=2, num_classes=3).to(device)
         optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)  # official: weight_decay=5e-1
 
-        train_dataset, val_dataset = train_test_split_dataset(train_dataset,
+        train_dataset, val_dataset = train_test_split(train_dataset,
                                                               test_size=0.2,
                                                               split_path=f'./tmp_out/examples_dgcnn/split{i}',
                                                               shuffle=True)

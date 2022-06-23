@@ -8,20 +8,20 @@ from sklearn import model_selection
 from torcheeg.datasets.module.base_dataset import BaseDataset
 
 
-class KFoldPerSubject:
+class KFoldPerSubjectCrossTrial:
     r'''
-    A tool class for k-fold cross-validations, to divide the training set and the test set, commonly used to study model performance in the case of subject dependent experiments. Experiments were performed separately for each subject, where the data of the subject is divided into k subsets, with one subset being retained as the test set and the remaining k-1 being used as training data. In most of the literature, K is chosen as 5 or 10 according to the size of the data set.
+    A tool class for k-fold cross-validations, to divide the training set and the test set, commonly used to study model performance in the case of subject dependent experiments. Experiments were performed separately for each subject, where the data set is divided into k subsets of trials, with one subset trials being retained as the test set and the remaining k-1 subset trials being used as training data. In most of the literature, K is chosen as 5 or 10 according to the size of the data set.
 
-    .. image:: _static/KFoldPerSubject.png
-        :height: 50px
-        :alt: The schematic diagram of KFoldPerSubject
+    .. image:: _static/KFoldPerSubjectCrossTrial.png
+        :height: 120px
+        :alt: The schematic diagram of KFoldPerSubjectCrossTrial
         :align: center
 
     |
 
     .. code-block:: python
 
-        cv = KFoldPerSubject(n_splits=5, shuffle=True, split_path='./split')
+        cv = KFoldPerSubjectCrossTrial(n_splits=5, shuffle=True, split_path='./split')
         dataset = DEAPDataset(io_path=f'./deap',
                               root_path='./data_preprocessed_python',
                               online_transform=transforms.Compose([
@@ -40,11 +40,11 @@ class KFoldPerSubject:
             test_loader = DataLoader(test_dataset)
             ...
     
-    :obj:`KFoldPerSubject` allows the user to specify the index of the subject of interest, when the user need to report the performance on each subject.
+    :obj:`KFoldPerSubjectCrossTrial` allows the user to specify the index of the subject of interest, when the user need to report the performance on each subject.
 
     .. code-block:: python
 
-        cv = KFoldPerSubject(n_splits=5, shuffle=True, split_path='./split')
+        cv = KFoldPerSubjectCrossTrial(n_splits=5, shuffle=True, split_path='./split')
         dataset = DEAPDataset(io_path=f'./deap',
                               root_path='./data_preprocessed_python',
                               online_transform=transforms.Compose([
@@ -85,19 +85,37 @@ class KFoldPerSubject:
 
     def split_info_constructor(self, info: pd.DataFrame) -> None:
         subjects = list(set(info['subject_id']))
+
         for subject in subjects:
             subject_info = info[info['subject_id'] == subject]
+            trial_ids = list(set(subject_info['trial_id']))
 
-            for i, (train_index,
-                    test_index) in enumerate(self.k_fold.split(subject_info)):
-                train_info = subject_info.iloc[train_index]
-                test_info = subject_info.iloc[test_index]
+            for fold_id, (train_trial_ids, test_trial_ids) in enumerate(
+                    self.k_fold.split(trial_ids)):
+                if len(train_trial_ids) == 0 or len(test_trial_ids) == 0:
+                    raise ValueError(
+                        f'The number of training or testing trials for subject {subject} is zero.'
+                    )
+
+                train_info = []
+                for train_trial_id in train_trial_ids:
+                    train_info.append(subject_info[subject_info['trial_id'] ==
+                                                   train_trial_id])
+                train_info = pd.concat(train_info, ignore_index=True)
+
+                test_info = []
+                for test_trial_id in test_trial_ids:
+                    test_info.append(
+                        subject_info[subject_info['trial_id'] == test_trial_id])
+                test_info = pd.concat(test_info, ignore_index=True)
 
                 train_info.to_csv(os.path.join(
-                    self.split_path, f'train_subject_{subject}_fold_{i}.csv'),
+                    self.split_path,
+                    f'train_subject_{subject}_fold_{fold_id}.csv'),
                                   index=False)
                 test_info.to_csv(os.path.join(
-                    self.split_path, f'test_subject_{subject}_fold_{i}.csv'),
+                    self.split_path,
+                    f'test_subject_{subject}_fold_{fold_id}.csv'),
                                  index=False)
 
     @property

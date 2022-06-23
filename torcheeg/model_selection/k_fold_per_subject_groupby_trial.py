@@ -8,13 +8,20 @@ from sklearn import model_selection
 from torcheeg.datasets.module.base_dataset import BaseDataset
 
 
-class KFoldTrialPerSubject:
+class KFoldPerSubjectGroupbyTrial:
     r'''
     A tool class for k-fold cross-validations, to divide the training set and the test set, commonly used to study model performance in the case of subject dependent experiments. Experiments were performed separately for each subject, where the data for all trials of the subject is divided into k subsets at the trial dimension, with one subset being retained as the test set and the remaining k-1 being used as training data. In most of the literature, K is chosen as 5 or 10 according to the size of the data set.
 
+    .. image:: _static/KFoldPerSubjectGroupbyTrial.png
+        :height: 50px
+        :alt: The schematic diagram of KFoldPerSubjectGroupbyTrial
+        :align: center
+
+    |
+
     .. code-block:: python
 
-        cv = KFoldTrialPerSubject(n_splits=5, shuffle=True, split_path='./split')
+        cv = KFoldPerSubjectGroupbyTrial(n_splits=5, shuffle=True, split_path='./split')
         dataset = DEAPDataset(io_path=f'./deap',
                               root_path='./data_preprocessed_python',
                               online_transform=transforms.Compose([
@@ -33,11 +40,11 @@ class KFoldTrialPerSubject:
             test_loader = DataLoader(test_dataset)
             ...
     
-    :obj:`KFoldTrialPerSubject` allows the user to specify the index of the subject of interest, when the user need to report the performance on each subject.
+    :obj:`KFoldPerSubjectGroupbyTrial` allows the user to specify the index of the subject of interest, when the user need to report the performance on each subject.
 
     .. code-block:: python
 
-        cv = KFoldTrialPerSubject(n_splits=5, shuffle=True, split_path='./split')
+        cv = KFoldPerSubjectGroupbyTrial(n_splits=5, shuffle=True, split_path='./split')
         dataset = DEAPDataset(io_path=f'./deap',
                               root_path='./data_preprocessed_python',
                               online_transform=transforms.Compose([
@@ -72,23 +79,26 @@ class KFoldTrialPerSubject:
         self.random_state = random_state
         self.split_path = split_path
 
-        self.k_fold = model_selection.KFold(n_splits=n_splits, shuffle=shuffle, random_state=random_state)
+        self.k_fold = model_selection.KFold(n_splits=n_splits,
+                                            shuffle=shuffle,
+                                            random_state=random_state)
 
     def split_info_constructor(self, info: pd.DataFrame) -> None:
-        subjects = list(set(info['subject']))
+        subjects = list(set(info['subject_id']))
         for subject in subjects:
-            subject_info = info[info['subject'] == subject]
+            subject_info = info[info['subject_id'] == subject]
 
             subject_train_infos = {}
             subject_test_infos = {}
 
-            trail_ids = list(set(subject_info['trail_id']))
-            for trail_id in trail_ids:
-                trail_info = subject_info[subject_info['trail_id'] == trail_id]
+            trial_ids = list(set(subject_info['trial_id']))
+            for trial_id in trial_ids:
+                trial_info = subject_info[subject_info['trial_id'] == trial_id]
 
-                for i, (train_index, test_index) in enumerate(self.k_fold.split(trail_info)):
-                    train_info = trail_info.iloc[train_index]
-                    test_info = trail_info.iloc[test_index]
+                for i, (train_index,
+                        test_index) in enumerate(self.k_fold.split(trial_info)):
+                    train_info = trial_info.iloc[train_index]
+                    test_info = trial_info.iloc[test_index]
 
                     if not i in subject_train_infos:
                         subject_train_infos[i] = []
@@ -100,11 +110,15 @@ class KFoldTrialPerSubject:
                     subject_test_infos[i].append(test_info)
 
             for i in subject_train_infos.keys():
-                subject_train_info = pd.concat(subject_train_infos[i], ignore_index=True)
-                subject_test_info = pd.concat(subject_test_infos[i], ignore_index=True)
-                subject_train_info.to_csv(os.path.join(self.split_path, f'train_subject_{subject}_fold_{i}.csv'),
+                subject_train_info = pd.concat(subject_train_infos[i],
+                                               ignore_index=True)
+                subject_test_info = pd.concat(subject_test_infos[i],
+                                              ignore_index=True)
+                subject_train_info.to_csv(os.path.join(
+                    self.split_path, f'train_subject_{subject}_fold_{i}.csv'),
                                           index=False)
-                subject_test_info.to_csv(os.path.join(self.split_path, f'test_subject_{subject}_fold_{i}.csv'),
+                subject_test_info.to_csv(os.path.join(
+                    self.split_path, f'test_subject_{subject}_fold_{i}.csv'),
                                          index=False)
 
     @property
@@ -112,7 +126,8 @@ class KFoldTrialPerSubject:
         indice_files = list(os.listdir(self.split_path))
 
         def indice_file_to_subject(indice_file):
-            return re.findall(r'subject_(\w*)_fold_(\d*).csv', indice_file)[0][0]
+            return re.findall(r'subject_(\w*)_fold_(\d*).csv',
+                              indice_file)[0][0]
 
         return list(set(map(indice_file_to_subject, indice_files)))
 
@@ -121,11 +136,16 @@ class KFoldTrialPerSubject:
         indice_files = list(os.listdir(self.split_path))
 
         def indice_file_to_fold_id(indice_file):
-            return int(re.findall(r'subject_(\w*)_fold_(\d*).csv', indice_file)[0][1])
+            return int(
+                re.findall(r'subject_(\w*)_fold_(\d*).csv', indice_file)[0][1])
 
         return list(set(map(indice_file_to_fold_id, indice_files)))
 
-    def split(self, dataset: BaseDataset, subject: Union[int, None] = None) -> Tuple[BaseDataset, BaseDataset]:
+    def split(
+            self,
+            dataset: BaseDataset,
+            subject: Union[int,
+                           None] = None) -> Tuple[BaseDataset, BaseDataset]:
         if not os.path.exists(self.split_path):
             os.makedirs(self.split_path)
             self.split_info_constructor(dataset.info)
@@ -142,9 +162,13 @@ class KFoldTrialPerSubject:
 
             for fold_id in fold_ids:
                 train_info = pd.read_csv(
-                    os.path.join(self.split_path, f'train_subject_{local_subject}_fold_{fold_id}.csv'))
+                    os.path.join(
+                        self.split_path,
+                        f'train_subject_{local_subject}_fold_{fold_id}.csv'))
                 test_info = pd.read_csv(
-                    os.path.join(self.split_path, f'test_subject_{local_subject}_fold_{fold_id}.csv'))
+                    os.path.join(
+                        self.split_path,
+                        f'test_subject_{local_subject}_fold_{fold_id}.csv'))
 
                 train_dataset = copy(dataset)
                 train_dataset.info = train_info

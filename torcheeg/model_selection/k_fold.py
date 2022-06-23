@@ -8,15 +8,22 @@ from sklearn import model_selection
 from torcheeg.datasets.module.base_dataset import BaseDataset
 
 
-class KFoldDataset:
+class KFold:
     r'''
     A tool class for k-fold cross-validations, to divide the training set and the test set. One of the most commonly used data partitioning methods, where the data set is divided into k subsets, with one subset being retained as the test set and the remaining k-1 being used as training data. In most of the literature, K is chosen as 5 or 10 according to the size of the data set.
 
-    :obj:`KFoldDataset` devides subsets at the dataset dimension. It means that during random sampling, adjacent signal samples may be assigned to the training set and the test set, respectively. When random sampling is not used, some subjects are not included in the training set. If you think these situations shouldn't happen, consider using :obj:`KFoldTrialPerSubject` or :obj`KFoldTrial`.
+    .. image:: _static/KFold.png
+        :height: 50px
+        :alt: The schematic diagram of KFold
+        :align: center
+
+    |
+
+    :obj:`KFold` devides subsets without grouping. It means that during random sampling, adjacent signal samples may be assigned to the training set and the test set, respectively. When random sampling is not used, some subjects are not included in the training set. If you think these situations shouldn't happen, consider using :obj:`KFoldPerSubjectGroupbyTrial` or :obj`KFoldGroupbyTrial`.
 
     .. code-block:: python
 
-        cv = KFoldDataset(n_splits=5, shuffle=True, split_path='./split')
+        cv = KFold(n_splits=5, shuffle=True, split_path='./split')
         dataset = DEAPDataset(io_path=f'./deap',
                               root_path='./data_preprocessed_python',
                               online_transform=transforms.Compose([
@@ -50,15 +57,22 @@ class KFoldDataset:
         self.random_state = random_state
         self.split_path = split_path
 
-        self.k_fold = model_selection.KFold(n_splits=n_splits, shuffle=shuffle, random_state=random_state)
+        self.k_fold = model_selection.KFold(n_splits=n_splits,
+                                            shuffle=shuffle,
+                                            random_state=random_state)
 
     def split_info_constructor(self, info: pd.DataFrame) -> None:
-        for fold_id, (train_index, test_index) in enumerate(self.k_fold.split(info)):
+        for fold_id, (train_index,
+                      test_index) in enumerate(self.k_fold.split(info)):
             train_info = info.iloc[train_index]
             test_info = info.iloc[test_index]
 
-            train_info.to_csv(os.path.join(self.split_path, f'train_fold_{fold_id}.csv'), index=False)
-            test_info.to_csv(os.path.join(self.split_path, f'test_fold_{fold_id}.csv'), index=False)
+            train_info.to_csv(os.path.join(self.split_path,
+                                           f'train_fold_{fold_id}.csv'),
+                              index=False)
+            test_info.to_csv(os.path.join(self.split_path,
+                                          f'test_fold_{fold_id}.csv'),
+                             index=False)
 
     @property
     def fold_ids(self):
@@ -77,8 +91,10 @@ class KFoldDataset:
         fold_ids = self.fold_ids
 
         for fold_id in fold_ids:
-            train_info = pd.read_csv(os.path.join(self.split_path, f'train_fold_{fold_id}.csv'))
-            test_info = pd.read_csv(os.path.join(self.split_path, f'test_fold_{fold_id}.csv'))
+            train_info = pd.read_csv(
+                os.path.join(self.split_path, f'train_fold_{fold_id}.csv'))
+            test_info = pd.read_csv(
+                os.path.join(self.split_path, f'test_fold_{fold_id}.csv'))
 
             trian_dataset = copy(dataset)
             trian_dataset.info = train_info

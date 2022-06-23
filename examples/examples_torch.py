@@ -9,7 +9,7 @@ from torcheeg import transforms
 from torcheeg.datasets import DEAPDataset
 from torcheeg.datasets.constants.emotion_recognition.deap import \
     DEAP_CHANNEL_LOCATION_DICT
-from torcheeg.model_selection import KFoldDataset
+from torcheeg.model_selection import KFold
 
 
 def seed_everything(seed):
@@ -104,7 +104,7 @@ if __name__ == "__main__":
                           ]),
                           num_worker=4)
 
-    k_fold = KFoldDataset(n_splits=10, split_path=f'./tmp_out/examples_torch/split', shuffle=True, random_state=42)
+    k_fold = KFold(n_splits=10, split_path=f'./tmp_out/examples_torch/split', shuffle=True, random_state=42)
 
     device = "cuda" if torch.cuda.is_available() else "cpu"
     loss_fn = nn.CrossEntropyLoss()

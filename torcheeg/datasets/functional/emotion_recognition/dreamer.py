@@ -19,44 +19,44 @@ def transform_producer(subject: int, trial_len: int, mat_data: any, chunk_size: 
     # loop for each trial
     for trial_id in range(trial_len):
         # extract baseline signals
-        trail_baseline_sample = mat_data['DREAMER'][0, 0]['Data'][0, subject]['EEG'][0, 0]['baseline'][0, 0][trial_id,
+        trial_baseline_sample = mat_data['DREAMER'][0, 0]['Data'][0, subject]['EEG'][0, 0]['baseline'][0, 0][trial_id,
                                                                                                              0]
-        trail_baseline_sample = trail_baseline_sample[:, :channel_num].swapaxes(1, 0)  # channel(14), timestep(61*128)
-        trail_baseline_sample = trail_baseline_sample[:, :baseline_num * baseline_chunk_size].reshape(
+        trial_baseline_sample = trial_baseline_sample[:, :channel_num].swapaxes(1, 0)  # channel(14), timestep(61*128)
+        trial_baseline_sample = trial_baseline_sample[:, :baseline_num * baseline_chunk_size].reshape(
             channel_num, baseline_num, baseline_chunk_size).mean(axis=1)  # channel(14), timestep(128)
 
         # record the common meta info
-        trail_meta_info = {'subject': subject, 'trail_id': trial_id}
+        trial_meta_info = {'subject_id': subject, 'trial_id': trial_id}
 
-        trail_meta_info['valence'] = mat_data['DREAMER'][0, 0]['Data'][0, subject]['ScoreValence'][0, 0][trial_id, 0]
-        trail_meta_info['arousal'] = mat_data['DREAMER'][0, 0]['Data'][0, subject]['ScoreArousal'][0, 0][trial_id, 0]
-        trail_meta_info['dominance'] = mat_data['DREAMER'][0, 0]['Data'][0, subject]['ScoreDominance'][0, 0][trial_id,
+        trial_meta_info['valence'] = mat_data['DREAMER'][0, 0]['Data'][0, subject]['ScoreValence'][0, 0][trial_id, 0]
+        trial_meta_info['arousal'] = mat_data['DREAMER'][0, 0]['Data'][0, subject]['ScoreArousal'][0, 0][trial_id, 0]
+        trial_meta_info['dominance'] = mat_data['DREAMER'][0, 0]['Data'][0, subject]['ScoreDominance'][0, 0][trial_id,
                                                                                                              0]
 
         # extract experimental signals
         start_at = 0
         end_at = chunk_size
 
-        trail_samples = mat_data['DREAMER'][0, 0]['Data'][0, subject]['EEG'][0, 0]['stimuli'][0, 0][trial_id, 0]
-        trail_samples = trail_samples[:, :channel_num].swapaxes(1, 0)  # channel(14), timestep(n*128)
+        trial_samples = mat_data['DREAMER'][0, 0]['Data'][0, subject]['EEG'][0, 0]['stimuli'][0, 0][trial_id, 0]
+        trial_samples = trial_samples[:, :channel_num].swapaxes(1, 0)  # channel(14), timestep(n*128)
 
-        while end_at <= trail_samples.shape[1]:
-            clip_sample = trail_samples[:, start_at:end_at]
+        while end_at <= trial_samples.shape[1]:
+            clip_sample = trial_samples[:, start_at:end_at]
 
             t_eeg = clip_sample
-            t_baseline = trail_baseline_sample
+            t_baseline = trial_baseline_sample
 
             if not transform is None:
-                t = transform(eeg=clip_sample, baseline=trail_baseline_sample)
+                t = transform(eeg=clip_sample, baseline=trial_baseline_sample)
                 t_eeg = t['eeg']
                 t_baseline = t['baseline']
 
             # put baseline signal into IO
-            if not 'baseline_id' in trail_meta_info:
-                trail_base_id = f'{subject}_{write_pointer}'
-                queue.put({'eeg': t_baseline, 'key': trail_base_id})
+            if not 'baseline_id' in trial_meta_info:
+                trial_base_id = f'{subject}_{write_pointer}'
+                queue.put({'eeg': t_baseline, 'key': trial_base_id})
                 write_pointer += 1
-                trail_meta_info['baseline_id'] = trail_base_id
+                trial_meta_info['baseline_id'] = trial_base_id
 
             clip_id = f'{subject}_{write_pointer}'
             queue.put({'eeg': t_eeg, 'key': clip_id})
@@ -64,7 +64,7 @@ def transform_producer(subject: int, trial_len: int, mat_data: any, chunk_size: 
 
             # record meta info for each signal
             record_info = {'start_at': start_at, 'end_at': end_at, 'clip_id': clip_id}
-            record_info.update(trail_meta_info)
+            record_info.update(trial_meta_info)
             write_info_fn(record_info)
 
             start_at = start_at + step

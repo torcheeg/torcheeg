@@ -10,9 +10,9 @@ from torcheeg import transforms
 from torcheeg.datasets import DEAPDataset
 from torcheeg.datasets.constants.emotion_recognition.deap import \
     DEAP_CHANNEL_LIST
-from torcheeg.model_selection import (KFoldTrialPerSubject, train_test_split_dataset)
-from torcheeg.model_selection.k_fold_trial_per_subject import \
-    KFoldTrialPerSubject
+from torcheeg.model_selection import (KFoldPerSubjectGroupbyTrial, train_test_split)
+from torcheeg.model_selection.k_fold_per_subject_groupby_trial import \
+    KFoldPerSubjectGroupbyTrial
 from torcheeg.models import TSCeption
 
 
@@ -101,7 +101,7 @@ if __name__ == "__main__":
             transforms.Binary(5.0),
         ]))
 
-    k_fold = KFoldTrialPerSubject(n_splits=10, split_path=f'./tmp_out/examples_tsception/split', shuffle=True)
+    k_fold = KFoldPerSubjectGroupbyTrial(n_splits=10, split_path=f'./tmp_out/examples_tsception/split', shuffle=True)
     device = "cuda" if torch.cuda.is_available() else "cpu"
     loss_fn = nn.CrossEntropyLoss()
     batch_size = 64
@@ -119,7 +119,7 @@ if __name__ == "__main__":
                           hid_channels=32,
                           dropout=0.5).to(device)
         optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
-        train_dataset, val_dataset = train_test_split_dataset(train_dataset,
+        train_dataset, val_dataset = train_test_split(train_dataset,
                                                               test_size=0.2,
                                                               split_path=f'./tmp_out/examples_tsception/split{i}',
                                                               shuffle=True)
