@@ -12,14 +12,14 @@ class KFoldGroupbyTrial:
     r'''
     A tool class for k-fold cross-validations, to divide the training set and the test set. A variant of :obj:`KFold`, where the data set is divided into k subsets at the dimension of trials, with one subset being retained as the test set and the remaining k-1 being used as training data. In most of the literature, K is chosen as 5 or 10 according to the size of the data set.
 
+    :obj:`KFoldGroupbyTrial` devides subsets at the dimension of trials. Take the first partition with :obj:`k=5` as an example, the first 80% of samples of each trial are used for training, and the last 20% of samples are used for testing. It is more consistent with real applications and can test the generalization of the model to a certain extent.
+
     .. image:: _static/KFoldGroupbyTrial.png
         :height: 120px
         :alt: The schematic diagram of KFoldGroupbyTrial
         :align: center
 
     |
-
-    :obj:`KFoldGroupbyTrial` devides subsets at the dimension of trials. Take the first partition with :obj:`k=5` as an example, the first 80% of samples of each trial are used for training, and the last 20% of samples are used for testing. It is more consistent with real applications and can test the generalization of the model to a certain extent.
 
     .. code-block:: python
 

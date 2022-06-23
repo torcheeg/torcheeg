@@ -186,15 +186,15 @@ partitioning. Please choose a reasonable data division method according
 to the research focus:
 
 -  Subject Dependent:
-   `KFoldPerSubjectGroupbyTrial <https://torcheeg.readthedocs.io/en/latest/torcheeg.model_selection.html#kfoldtrialpersubject>`__,
-   `train_test_split_per_subject_groupby_trial <https://torcheeg.readthedocs.io/en/latest/torcheeg.model_selection.html#train-test-split-trial-per-subject>`__
+   `KFoldPerSubjectGroupbyTrial <https://torcheeg.readthedocs.io/en/latest/torcheeg.model_selection.html#kfoldpersubjectgroupbytrial>`__,
+   `train_test_split_per_subject_groupby_trial <https://torcheeg.readthedocs.io/en/latest/torcheeg.model_selection.html#train-test-split-per-subject-groupby-trial>`__
 -  Subject Independent:
    `LeaveOneSubjectOut <https://torcheeg.readthedocs.io/en/latest/torcheeg.model_selection.html#leaveonesubjectout>`__
 -  Conventional:
-   `KFold <https://torcheeg.readthedocs.io/en/latest/torcheeg.model_selection.html#kfolddataset>`__,
-   `train_test_split <https://torcheeg.readthedocs.io/en/latest/torcheeg.model_selection.html#train-test-split-dataset>`__,
-   `KFoldGroupbyTrial <https://torcheeg.readthedocs.io/en/latest/torcheeg.model_selection.html#kfoldtrial>`__,
-   `train_test_split_groupby_trial <https://torcheeg.readthedocs.io/en/latest/torcheeg.model_selection.html#train-test-split-trial>`__
+   `KFold <https://torcheeg.readthedocs.io/en/latest/torcheeg.model_selection.html#kfold>`__,
+   `train_test_split <https://torcheeg.readthedocs.io/en/latest/torcheeg.model_selection.html#train-test-split>`__,
+   `KFoldGroupbyTrial <https://torcheeg.readthedocs.io/en/latest/torcheeg.model_selection.html#kfoldgroupbytrial>`__,
+   `train_test_split_groupby_trial <https://torcheeg.readthedocs.io/en/latest/torcheeg.model_selection.html#train-test-split-groupby-trial>`__
 
 **Models:** Coming soon after pushing to align with the official
 implementation or description. If the current version of

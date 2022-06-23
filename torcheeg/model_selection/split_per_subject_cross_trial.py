@@ -18,7 +18,7 @@ def train_test_split_per_subject_cross_trial(
     A tool function for cross-validations, to divide the training set and the test set. It is suitable for subject dependent experiments with large dataset volume and no need to use k-fold cross-validations. For the first step, the EEG signal samples of the specified user are selected. Then, parts of trials are sampled according to a certain proportion as the test dataset, and samples from other trials are used as training samples. In most literatures, 20% of the data are sampled for testing.
 
     .. image:: _static/train_test_split_per_subject_cross_trial.png
-        :height: 120px
+        :height: 70px
         :alt: The schematic diagram of train_test_split_per_subject_cross_trial
         :align: center
 

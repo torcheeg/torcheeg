@@ -17,14 +17,14 @@ def train_test_split_groupby_trial(
     r'''
     A tool function for cross-validations, to divide the training set and the test set. It is suitable for experiments with large dataset volume and no need to use k-fold cross-validations. The test samples are sampled according to a certain proportion, and other samples are used as training samples. In most literatures, 20% of the data are sampled for testing.
 
+    :obj:`train_test_split_groupby_trial` devides training set and the test set at the dimension of each trial. For example, when :obj:`test_size=0.2`, the first 80% of samples of each trial are used for training, and the last 20% of samples are used for testing. It is more consistent with real applications and can test the generalization of the model to a certain extent.
+
     .. image:: _static/train_test_split_groupby_trial.png
         :height: 120px
         :alt: The schematic diagram of train_test_split_groupby_trial
         :align: center
 
     |
-
-    :obj:`train_test_split_groupby_trial` devides training set and the test set at the dimension of each trial. For example, when :obj:`test_size=0.2`, the first 80% of samples of each trial are used for training, and the last 20% of samples are used for testing. It is more consistent with real applications and can test the generalization of the model to a certain extent.
 
     .. code-block:: python
 

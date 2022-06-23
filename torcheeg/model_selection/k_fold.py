@@ -12,14 +12,14 @@ class KFold:
     r'''
     A tool class for k-fold cross-validations, to divide the training set and the test set. One of the most commonly used data partitioning methods, where the data set is divided into k subsets, with one subset being retained as the test set and the remaining k-1 being used as training data. In most of the literature, K is chosen as 5 or 10 according to the size of the data set.
 
+    :obj:`KFold` devides subsets without grouping. It means that during random sampling, adjacent signal samples may be assigned to the training set and the test set, respectively. When random sampling is not used, some subjects are not included in the training set. If you think these situations shouldn't happen, consider using :obj:`KFoldPerSubjectGroupbyTrial` or :obj`KFoldGroupbyTrial`.
+
     .. image:: _static/KFold.png
         :height: 50px
         :alt: The schematic diagram of KFold
         :align: center
 
     |
-
-    :obj:`KFold` devides subsets without grouping. It means that during random sampling, adjacent signal samples may be assigned to the training set and the test set, respectively. When random sampling is not used, some subjects are not included in the training set. If you think these situations shouldn't happen, consider using :obj:`KFoldPerSubjectGroupbyTrial` or :obj`KFoldGroupbyTrial`.
 
     .. code-block:: python
 
