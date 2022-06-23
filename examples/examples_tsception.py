@@ -10,8 +10,7 @@ from torcheeg import transforms
 from torcheeg.datasets import DEAPDataset
 from torcheeg.datasets.constants.emotion_recognition.deap import \
     DEAP_CHANNEL_LIST
-from torcheeg.model_selection import (KFoldTrialPerSubject,
-                                      train_test_split_dataset)
+from torcheeg.model_selection import (KFoldTrialPerSubject, train_test_split_dataset)
 from torcheeg.model_selection.k_fold_trial_per_subject import \
     KFoldTrialPerSubject
 from torcheeg.models import TSCeption
@@ -47,7 +46,7 @@ def train(dataloader, model, loss_fn, optimizer):
             loss, current = loss.item(), batch_idx * len(X)
             print(f"Loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
 
-        return loss
+    return loss
 
 
 def valid(dataloader, model, loss_fn):
@@ -82,7 +81,6 @@ if __name__ == "__main__":
     logger.addHandler(console_handler)
     logger.addHandler(file_handler)
 
-    # Define the dataset
     dataset = DEAPDataset(
         io_path=f'./tmp_out/examples_tsception/deap',
         root_path='./tmp_in/data_preprocessed_python',
@@ -103,9 +101,7 @@ if __name__ == "__main__":
             transforms.Binary(5.0),
         ]))
 
-    # Split dataset into train and test
     k_fold = KFoldTrialPerSubject(n_splits=10, split_path=f'./tmp_out/examples_tsception/split', shuffle=True)
-
     device = "cuda" if torch.cuda.is_available() else "cpu"
     loss_fn = nn.CrossEntropyLoss()
     batch_size = 64
@@ -113,7 +109,6 @@ if __name__ == "__main__":
     test_accs = []
     test_losses = []
 
-    # Train and test
     for i, (train_dataset, test_dataset) in enumerate(k_fold.split(dataset)):
 
         model = TSCeption(num_classes=2,
@@ -124,8 +119,6 @@ if __name__ == "__main__":
                           hid_channels=32,
                           dropout=0.5).to(device)
         optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
-
-        # Train
         train_dataset, val_dataset = train_test_split_dataset(train_dataset,
                                                               test_size=0.2,
                                                               split_path=f'./tmp_out/examples_tsception/split{i}',
@@ -133,7 +126,7 @@ if __name__ == "__main__":
         train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
         val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=True)
 
-        epochs = 500
+        epochs = 50
         best_val_acc = 0.0
         for t in range(epochs):
             train_loss = train(train_loader, model, loss_fn, optimizer)
@@ -143,7 +136,6 @@ if __name__ == "__main__":
                 best_val_acc = val_acc
                 torch.save(model.state_dict(), f'./tmp_out/examples_tsception/model{i}.pt')
 
-        # Test
         test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
 
         model.load_state_dict(torch.load(f'./tmp_out/examples_tsception/model{i}.pt'))
@@ -154,5 +146,4 @@ if __name__ == "__main__":
         test_accs.append(test_acc)
         test_losses.append(test_loss)
 
-    # Print results
     logger.info(f"Test Error: \n Accuracy: {100*np.mean(test_accs):>0.1f}%, Avg loss: {np.mean(test_losses):>8f}")

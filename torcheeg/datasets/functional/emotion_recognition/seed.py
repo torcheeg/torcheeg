@@ -35,7 +35,7 @@ def transform_producer(file_name: str, root_path: str, chunk_size: int, overlap:
         trail_meta_info = {
             'subject': subject,
             'trail_id': trial_id,
-            'emotion': labels[int(trial_id.split('_')[-1][3:]) - 1],
+            'emotion': int(labels[int(trial_id.split('_')[-1][3:]) - 1]),
             'date': date
         }
 

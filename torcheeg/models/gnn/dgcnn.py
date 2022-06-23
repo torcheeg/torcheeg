@@ -100,7 +100,7 @@ class DGCNN(nn.Module):
 
         dataset = SEEDDataset(io_path=f'./seed',
                               root_path='./Preprocessed_EEG',
-                              offline_transform=transforms.BandDifferentialEntropy({
+                              offline_transform=transforms.BandDifferentialEntropy(band_dict={
                                   "delta": [1, 4],
                                   "theta": [4, 8],
                                   "alpha": [8, 14],
@@ -112,7 +112,7 @@ class DGCNN(nn.Module):
                               ]),
                               label_transform=transforms.Compose([
                                   transforms.Select(['emotion']),
-                                  transforms.Lambda(x: x + 1)
+                                  transforms.Lambda(lambda x: x + 1)
                               ]))
         model = DGCNN(in_channels=5, num_electrodes=62, hid_channels=32, num_layers=2, num_classes=2)
 

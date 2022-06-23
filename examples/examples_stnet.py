@@ -11,6 +11,7 @@ from torcheeg.datasets import DEAPDataset
 from torcheeg.datasets.constants.emotion_recognition.deap import \
     DEAP_CHANNEL_LOCATION_DICT
 from torcheeg.model_selection import KFoldPerSubject, train_test_split_dataset
+from torcheeg.model_selection.k_fold_dataset import KFoldDataset
 from torcheeg.models import CCNN
 
 
@@ -70,22 +71,20 @@ def valid(dataloader, model, loss_fn):
 if __name__ == "__main__":
     seed_everything(42)
 
-    os.makedirs("./tmp_out/examples_ccnn", exist_ok=True)
+    os.makedirs("./tmp_out/examples_stnet", exist_ok=True)
 
     logger = logging.getLogger('examples_tsception')
     logger.setLevel(logging.DEBUG)
     console_handler = logging.StreamHandler()
-    file_handler = logging.FileHandler('./tmp_out/examples_ccnn/examples_tsception.log')
+    file_handler = logging.FileHandler('./tmp_out/examples_stnet/examples_tsception.log')
     logger.addHandler(console_handler)
     logger.addHandler(file_handler)
 
-    dataset = DEAPDataset(io_path=f'./tmp_out/examples_ccnn/deap',
+    dataset = DEAPDataset(io_path=f'./tmp_out/examples_stnet/deap',
                           root_path='./tmp_in/data_preprocessed_python',
-                          offline_transform=transforms.Compose([
-                              transforms.BandDifferentialEntropy(apply_to_baseline=True),
-                              transforms.BaselineRemoval(),
-                              transforms.ToGrid(DEAP_CHANNEL_LOCATION_DICT)
-                          ]),
+                          offline_transform=transforms.Compose(
+                              [transforms.BaselineRemoval(),
+                               transforms.ToGrid(DEAP_CHANNEL_LOCATION_DICT)]),
                           online_transform=transforms.ToTensor(),
                           label_transform=transforms.Compose([
                               transforms.Select('valence'),
@@ -93,7 +92,7 @@ if __name__ == "__main__":
                           ]),
                           num_worker=8)
 
-    k_fold = KFoldPerSubject(n_splits=10, split_path=f'./tmp_out/examples_ccnn/split', shuffle=True)
+    k_fold = KFoldDataset(n_splits=5, split_path=f'./tmp_out/examples_stnet/split', shuffle=True)
     device = "cuda" if torch.cuda.is_available() else "cpu"
     loss_fn = nn.CrossEntropyLoss()
     batch_size = 64
@@ -103,12 +102,12 @@ if __name__ == "__main__":
 
     for i, (train_dataset, test_dataset) in enumerate(k_fold.split(dataset)):
 
-        model = CCNN(num_classes=2, in_channels=4, grid_size=(9, 9)).to(device)
-        optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)  # official: weight_decay=5e-1
+        model = CCNN(num_classes=2, in_channels=128, grid_size=(9, 9)).to(device)
+        optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
 
         train_dataset, val_dataset = train_test_split_dataset(train_dataset,
                                                               test_size=0.2,
-                                                              split_path=f'./tmp_out/examples_ccnn/split{i}',
+                                                              split_path=f'./tmp_out/examples_stnet/split{i}',
                                                               shuffle=True)
         train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
         val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=True)
@@ -121,11 +120,11 @@ if __name__ == "__main__":
 
             if val_acc > best_val_acc:
                 best_val_acc = val_acc
-                torch.save(model.state_dict(), f'./tmp_out/examples_ccnn/model{i}.pt')
+                torch.save(model.state_dict(), f'./tmp_out/examples_stnet/model{i}.pt')
 
         test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
 
-        model.load_state_dict(torch.load(f'./tmp_out/examples_ccnn/model{i}.pt'))
+        model.load_state_dict(torch.load(f'./tmp_out/examples_stnet/model{i}.pt'))
         test_acc, test_loss = valid(test_loader, model, loss_fn)
 
         logger.info(f"Test Error {i}: \n Accuracy: {(100*test_acc):>0.1f}%, Avg loss: {test_loss:>8f}")

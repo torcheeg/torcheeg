@@ -104,7 +104,7 @@ if __name__ == "__main__":
                           online_transform=transforms.ToG(SEED_ADJACENCY_MATRIX),
                           label_transform=transforms.Compose([
                               transforms.Select('emotion'),
-                              transforms.Lambda(lambda x: x + 1),
+                              transforms.Lambda(lambda x: int(x) + 1),
                           ]),
                           num_worker=8)
 

@@ -14,7 +14,7 @@ class Lambda(BaseTransform):
         >>> 2
 
     Args:
-        targets (list): What data to transform via the lambda function.
+        targets (list): What data to transform via the Lambda. (default: :obj:`['eeg', 'baseline', 'y']`)
         lambd (Callable): Lambda/function to be used for transform.
 
     .. automethod:: __call__

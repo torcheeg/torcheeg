@@ -33,7 +33,7 @@ def seed_dataset_factory(num_worker):
                           online_transform=transforms.ToG(SEED_ADJACENCY_MATRIX),
                           label_transform=transforms.Compose([
                               transforms.Select('emotion'),
-                              transforms.Lambda(lambda x: x + 1),
+                              transforms.Lambda(lambda x: int(x) + 1),
                           ]),
                           num_worker=num_worker)
     return dataset
