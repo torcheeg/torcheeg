@@ -1,7 +1,7 @@
 import os
 import re
 from copy import copy
-from typing import List, Tuple, Union
+from typing import List, Tuple, Union, Dict
 
 import pandas as pd
 from sklearn import model_selection
@@ -177,3 +177,27 @@ class KFoldPerSubjectGroupbyTrial:
                 test_dataset.info = test_info
 
                 yield train_dataset, test_dataset
+
+    @property
+    def repr_body(self) -> Dict:
+        return {
+            'n_splits': self.n_splits,
+            'shuffle': self.shuffle,
+            'random_state': self.random_state,
+            'split_path': self.split_path
+        }
+
+    def __repr__(self) -> str:
+        # init info
+        format_string = self.__class__.__name__ + '('
+        for i, (k, v) in enumerate(self.repr_body.items()):
+            # line end
+            if i:
+                format_string += ', '
+            # str param
+            if isinstance(v, str):
+                format_string += f"{k}='{v}'"
+            else:
+                format_string += f"{k}={v}"
+        format_string += ')'
+        return format_string

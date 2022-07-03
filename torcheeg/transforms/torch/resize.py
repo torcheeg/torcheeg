@@ -47,7 +47,7 @@ class Resize(EEGTransform):
         return super().__call__(*args, eeg=eeg, baseline=baseline, **kwargs)
 
     def apply(self, eeg: torch.Tensor, **kwargs) -> torch.Tensor:
-        assert eeg.dim() == 3, f'The module only allows to input a 3-d tensor, but the input has dimension {eeg.dim()}'
+        assert eeg.dim() == 3, f'The Resize only allows to input a 3-d tensor, but the input has dimension {eeg.dim()}'
 
         eeg = eeg.unsqueeze(0)
 

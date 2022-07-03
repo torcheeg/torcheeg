@@ -7,7 +7,7 @@ class BaselineRemoval(EEGTransform):
     r'''
     A transform method to subtract the baseline signal (the signal recorded before the emotional stimulus), the nosie signal is removed from the emotional signal unrelated to the emotional stimulus.
     
-    TorchEEG recommends using this class in online_transform for higher processing speed. Even though, this class is also supported in offline_transform. Usually, the baseline needs the same transformation as the experimental signal, please add :obj`apply_to_baseline=True` to all transforms before this operation to ensure that the transformation is performed on the baseline signal
+    TorchEEG recommends using this class in online_transform for higher processing speed. Even though, this class is also supported in offline_transform. Usually, the baseline needs the same transformation as the experimental signal, please add :obj:`apply_to_baseline=True` to all transforms before this operation to ensure that the transformation is performed on the baseline signal
 
     .. code-block:: python
 

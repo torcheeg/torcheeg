@@ -4,8 +4,10 @@ __version__ = '1.0.7'
 URL = 'https://github.com/tczhangzhi/torcheeg'
 
 install_requires = [
-    'tqdm>=4.64.0', 'numpy>=1.21.5', 'pandas>=1.3.5', 'scipy>=1.7.3', 'scikit-learn>=1.0.2', 'lmdb>=1.3.0',
-    'einops>=0.4.1', 'torch_geometric>=2.0.3', 'mne>=1.0.3', 'xmltodict>=0.13.0', 'networkx>=2.6.3'
+    'tqdm>=4.64.0', 'numpy>=1.21.5', 'pandas>=1.3.5', 'scipy>=1.7.3',
+    'scikit-learn>=1.0.2', 'lmdb>=1.3.0', 'einops>=0.4.1',
+    'torch_geometric>=2.0.3', 'mne>=1.0.3', 'xmltodict>=0.13.0',
+    'networkx>=2.6.3', 'pywt>=1.3.0'
 ]
 
 test_requires = ['pytest>=7.1.2']

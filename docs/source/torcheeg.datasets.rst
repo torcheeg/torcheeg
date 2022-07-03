@@ -25,3 +25,8 @@ MAHNOBDataset
 ---------------------------------------------------------
 
 .. autoclass:: torcheeg.datasets.MAHNOBDataset
+
+M3CVDataset
+---------------------------------------------------------
+
+.. autoclass:: torcheeg.datasets.M3CVDataset

@@ -10,3 +10,4 @@ from .split_groupby_trial import *
 from .split_cross_trial import *
 from .split_per_subject_groupby_trial import *
 from .split_per_subject_cross_trial import *
+from .subcategory import *

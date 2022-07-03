@@ -18,3 +18,4 @@ einops
 torch_geometric
 xmltodict
 networkx
+pywt

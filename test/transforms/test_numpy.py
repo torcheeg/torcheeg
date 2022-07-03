@@ -1,11 +1,19 @@
 import unittest
 
 import numpy as np
-from torcheeg.transforms import ToGrid, ToInterpolatedGrid, To2d, MeanStdNormalize, MinMaxNormalize, BandDifferentialEntropy, BandPowerSpectralDensity, BandMeanAbsoluteDeviation, BandKurtosis, BandSkewness, Concatenate, PickElectrode
+from torcheeg.transforms import ToGrid, ToInterpolatedGrid, To2d, MeanStdNormalize, MinMaxNormalize, BandDifferentialEntropy, BandPowerSpectralDensity, BandMeanAbsoluteDeviation, BandKurtosis, BandSkewness, Concatenate, PickElectrode, CWTSpectrum
 from torcheeg.datasets.constants import DEAP_CHANNEL_LOCATION_DICT, DEAP_CHANNEL_LIST
 
 
 class TestNumpyTransforms(unittest.TestCase):
+    def test_cwt_spectrum(self):
+        eeg = np.random.randn(32, 1000)
+        transformed_eeg = CWTSpectrum()(eeg=eeg)
+        self.assertEqual(transformed_eeg['eeg'].shape, (32, 128, 1000))
+
+        transformed_eeg = CWTSpectrum(contourf=True)(eeg=eeg)
+        self.assertEqual(transformed_eeg['eeg'].shape, (32, 480, 640, 4))
+
     def test_pick_electrode(self):
         eeg = np.random.randn(32, 128)
         transformed_eeg = PickElectrode([1, 2])(eeg=eeg)

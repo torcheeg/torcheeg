@@ -1,7 +1,7 @@
 import os
 import re
 from copy import copy
-from typing import Tuple, Union
+from typing import Tuple, Union, Dict
 
 import pandas as pd
 from sklearn import model_selection
@@ -12,7 +12,7 @@ class KFold:
     r'''
     A tool class for k-fold cross-validations, to divide the training set and the test set. One of the most commonly used data partitioning methods, where the data set is divided into k subsets, with one subset being retained as the test set and the remaining k-1 being used as training data. In most of the literature, K is chosen as 5 or 10 according to the size of the data set.
 
-    :obj:`KFold` devides subsets without grouping. It means that during random sampling, adjacent signal samples may be assigned to the training set and the test set, respectively. When random sampling is not used, some subjects are not included in the training set. If you think these situations shouldn't happen, consider using :obj:`KFoldPerSubjectGroupbyTrial` or :obj`KFoldGroupbyTrial`.
+    :obj:`KFold` devides subsets without grouping. It means that during random sampling, adjacent signal samples may be assigned to the training set and the test set, respectively. When random sampling is not used, some subjects are not included in the training set. If you think these situations shouldn't happen, consider using :obj:`KFoldPerSubjectGroupbyTrial` or :obj:`KFoldGroupbyTrial`.
 
     .. image:: _static/KFold.png
         :height: 50px
@@ -96,10 +96,34 @@ class KFold:
             test_info = pd.read_csv(
                 os.path.join(self.split_path, f'test_fold_{fold_id}.csv'))
 
-            trian_dataset = copy(dataset)
-            trian_dataset.info = train_info
+            train_dataset = copy(dataset)
+            train_dataset.info = train_info
 
             test_dataset = copy(dataset)
             test_dataset.info = test_info
 
-            yield trian_dataset, test_dataset
+            yield train_dataset, test_dataset
+
+    @property
+    def repr_body(self) -> Dict:
+        return {
+            'n_splits': self.n_splits,
+            'shuffle': self.shuffle,
+            'random_state': self.random_state,
+            'split_path': self.split_path
+        }
+
+    def __repr__(self) -> str:
+        # init info
+        format_string = self.__class__.__name__ + '('
+        for i, (k, v) in enumerate(self.repr_body.items()):
+            # line end
+            if i:
+                format_string += ', '
+            # str param
+            if isinstance(v, str):
+                format_string += f"{k}='{v}'"
+            else:
+                format_string += f"{k}={v}"
+        format_string += ')'
+        return format_string

@@ -18,7 +18,7 @@ class Compose(BaseTransform):
         transform(eeg=torch.randn(128, 9, 9))['eeg'].shape
         >>> (128, 64, 64)
 
-    :obj`Compose` supports transformers with different data dependencies. The above example combines multiple torch-based transformers, the following example shows a sequence of numpy-based transformer.
+    :obj:`Compose` supports transformers with different data dependencies. The above example combines multiple torch-based transformers, the following example shows a sequence of numpy-based transformer.
 
     .. code-block:: python
 

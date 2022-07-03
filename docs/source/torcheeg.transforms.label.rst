@@ -15,3 +15,8 @@ transforms.BinariesToCategory
 ----------------------------------------
 
 .. autoclass:: torcheeg.transforms.BinariesToCategory
+
+transforms.StringToInt
+----------------------------------------
+
+.. autoclass:: torcheeg.transforms.StringToInt

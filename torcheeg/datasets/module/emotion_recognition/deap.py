@@ -1,7 +1,7 @@
-from typing import Callable, Union, Tuple, Dict
+from typing import Callable, Dict, Tuple, Union
 
-from ..base_dataset import BaseDataset
 from ...functional.emotion_recognition.deap import deap_constructor
+from ..base_dataset import BaseDataset
 
 
 class DEAPDataset(BaseDataset):
@@ -82,7 +82,24 @@ class DEAPDataset(BaseDataset):
         # coresponding baseline signal (torch_geometric.data.Data),
         # label (int)
 
-    In particular, TorchEEG utilizes the producer-consumer model to allow multi-process data preprocessing. If your data preprocessing is time consuming, consider increasing :obj:`num_worker` for higher speedup.
+    In particular, TorchEEG utilizes the producer-consumer model to allow multi-process data preprocessing. If your data preprocessing is time consuming, consider increasing :obj:`num_worker` for higher speedup. If running under Windows, please use the proper idiom in the main module:
+
+    .. code-block:: python
+        if __name__ == '__main__':
+            dataset = DEAPDataset(io_path=f'./deap',
+                              root_path='./data_preprocessed_python',
+                              online_transform=transforms.Compose([
+                                  transforms.ToG(DEAP_ADJACENCY_MATRIX)
+                              ]),
+                              label_transform=transforms.Compose([
+                                  transforms.Select('arousal'),
+                                  transforms.Binary(5.0)
+                              ]),
+                              num_worker=4)
+            print(dataset[0])
+            # EEG signal (torch_geometric.data.Data),
+            # coresponding baseline signal (torch_geometric.data.Data),
+            # label (int)
 
     Args:
         root_path (str): Downloaded data files in pickled python/numpy (unzipped data_preprocessed_python.zip) formats (default: :obj:`'./data_preprocessed_python'`)
@@ -95,7 +112,7 @@ class DEAPDataset(BaseDataset):
         offline_transform (Callable, optional): The usage is the same as :obj:`online_transform`, but executed before generating IO intermediate results. (default: :obj:`None`)
         label_transform (Callable, optional): The transformation of the label. The input is an information dictionary, and the ouput is used as the third value of each element in the dataset. (default: :obj:`None`)
         io_path (str): The path to generated unified data IO, cached as an intermediate result. (default: :obj:`./io/deap`)
-        num_worker (str): How many subprocesses to use for data processing. (default: :obj:`1`)
+        num_worker (str): How many subprocesses to use for data processing. (default: :obj:`0`)
         verbose (bool): Whether to display logs during processing, such as progress bars, etc. (default: :obj:`True`)
         cache_size (int): Maximum size database may grow to; used to size the memory mapping. If database grows larger than ``map_size``, an exception will be raised and the user must close and reopen. (default: :obj:`64 * 1024 * 1024 * 1024`)
     
@@ -111,7 +128,7 @@ class DEAPDataset(BaseDataset):
                  offline_transform: Union[None, Callable] = None,
                  label_transform: Union[None, Callable] = None,
                  io_path: str = './io/deap',
-                 num_worker: int = 1,
+                 num_worker: int = 0,
                  verbose: bool = True,
                  cache_size: int = 64 * 1024 * 1024 * 1024):
         deap_constructor(root_path=root_path,

@@ -13,13 +13,14 @@ from torcheeg.datasets.functional import (amigos_constructor, deap_constructor,
 
 class TestEmotionRecognitionDataset(unittest.TestCase):
     def setUp(self):
-        shutil.rmtree('./tmp_out/')
-        os.mkdir('./tmp_out/')
+        # shutil.rmtree('./tmp_out/')
+        # os.mkdir('./tmp_out/')
+        ...
 
     def test_mahnob_constructor(self):
         io_path = f'./tmp_out/mahnob_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
         root_path = './tmp_in/Sessions'
-        mahnob_constructor(io_path=io_path, root_path=root_path, num_worker=4)
+        mahnob_constructor(io_path=io_path, root_path=root_path, num_worker=0)
 
     def test_mahnob_dataset(self):
         io_path = f'./tmp_out/mahnob_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
@@ -43,7 +44,7 @@ class TestEmotionRecognitionDataset(unittest.TestCase):
     def test_amigos_constructor(self):
         io_path = f'./tmp_out/amigos_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
         root_path = './tmp_in/data_preprocessed'
-        amigos_constructor(io_path=io_path, root_path=root_path, num_worker=4)
+        amigos_constructor(io_path=io_path, root_path=root_path, num_worker=0)
 
     def test_amigos_dataset(self):
         io_path = f'./tmp_out/amigos_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
@@ -70,7 +71,7 @@ class TestEmotionRecognitionDataset(unittest.TestCase):
         deap_constructor(io_path=io_path,
                          root_path=root_path,
                          transform=transforms.BandDifferentialEntropy(),
-                         num_worker=4)
+                         num_worker=0)
 
     def test_deap_dataset(self):
         io_path = f'./tmp_out/deap_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
@@ -120,7 +121,7 @@ class TestEmotionRecognitionDataset(unittest.TestCase):
         io_path = f'./tmp_out/dreamer_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
         mat_path = './tmp_in/DREAMER.mat'
 
-        dreamer_constructor(io_path=io_path, mat_path=mat_path, num_worker=4)
+        dreamer_constructor(io_path=io_path, mat_path=mat_path, num_worker=0)
 
     def test_dreamer_dataset(self):
         io_path = f'./tmp_out/dreamer_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
@@ -141,7 +142,7 @@ class TestEmotionRecognitionDataset(unittest.TestCase):
         seed_constructor(io_path=io_path,
                          root_path=root_path,
                          transform=transforms.BandDifferentialEntropy(),
-                         num_worker=9)
+                         num_worker=0)
 
     def test_seed_dataset(self):
         io_path = f'./tmp_out/seed_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'

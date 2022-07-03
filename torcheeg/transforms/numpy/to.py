@@ -40,7 +40,7 @@ class To2d(EEGTransform):
 
 class ToGrid(EEGTransform):
     r'''
-    A transform method to project the EEG signals of different channels onto the grid according to the electrode positions to form a 3D EEG signal representation with the size of [number of electrodes, width of grid, height of grid]. For the electrode position information, please refer to constants grouped by dataset:
+    A transform method to project the EEG signals of different channels onto the grid according to the electrode positions to form a 3D EEG signal representation with the size of [number of data points, width of grid, height of grid]. For the electrode position information, please refer to constants grouped by dataset:
 
     - datasets.constants.emotion_recognition.deap.DEAP_CHANNEL_LOCATION_DICT
     - datasets.constants.emotion_recognition.dreamer.DREAMER_CHANNEL_LOCATION_DICT
@@ -64,6 +64,13 @@ class ToGrid(EEGTransform):
                  apply_to_baseline: bool = False):
         super(ToGrid, self).__init__(apply_to_baseline=apply_to_baseline)
         self.channel_location_dict = channel_location_dict
+        loc_x_list = []
+        loc_y_list = []
+        for _, (loc_x, loc_y) in channel_location_dict.items():
+            loc_x_list.append(loc_x)
+            loc_y_list.append(loc_y)
+        self.height = max(loc_y_list) + 1
+        self.width = max(loc_x_list) + 1
 
     def __call__(self,
                  *args,
@@ -76,13 +83,13 @@ class ToGrid(EEGTransform):
             baseline (torch.Tensor, optional) : The corresponding baseline signal, if apply_to_baseline is set to True and baseline is passed, the baseline signal will be transformed with the same way as the experimental signal.
 
         Returns:
-            np.ndarray: The projected results with the shape of [number of electrodes, width of grid, height of grid].
+            np.ndarray: The projected results with the shape of [number of data points, width of grid, height of grid].
         '''
         return super().__call__(*args, eeg=eeg, baseline=baseline, **kwargs)
 
     def apply(self, eeg: np.ndarray, **kwargs) -> np.ndarray:
         # electronode eeg timestep
-        outputs = np.zeros([9, 9, eeg.shape[-1]])
+        outputs = np.zeros([self.width, self.height, eeg.shape[-1]])
         # 9 eeg 9 eeg timestep
         for i, (loc_x, loc_y) in enumerate(self.channel_location_dict.values()):
             outputs[loc_x][loc_y] = eeg[i]
@@ -99,7 +106,7 @@ class ToGrid(EEGTransform):
 
 class ToInterpolatedGrid(EEGTransform):
     r'''
-    A transform method to project the EEG signals of different channels onto the grid according to the electrode positions to form a 3D EEG signal representation with the size of [number of electrodes, width of grid, height of grid]. For the electrode position information, please refer to constants grouped by dataset:
+    A transform method to project the EEG signals of different channels onto the grid according to the electrode positions to form a 3D EEG signal representation with the size of [number of data points, width of grid, height of grid]. For the electrode position information, please refer to constants grouped by dataset:
 
     - datasets.constants.emotion_recognition.deap.DEAP_CHANNEL_LOCATION_DICT
     - datasets.constants.emotion_recognition.dreamer.DREAMER_CHANNEL_LOCATION_DICT
@@ -146,7 +153,7 @@ class ToInterpolatedGrid(EEGTransform):
             baseline (torch.Tensor, optional) : The corresponding baseline signal, if apply_to_baseline is set to True and baseline is passed, the baseline signal will be transformed with the same way as the experimental signal.
             
         Returns:
-            np.ndarray: The projected results with the shape of [number of electrodes, width of grid, height of grid].
+            np.ndarray: The projected results with the shape of [number of data points, width of grid, height of grid].
         '''
         return super().__call__(*args, eeg=eeg, baseline=baseline, **kwargs)
 

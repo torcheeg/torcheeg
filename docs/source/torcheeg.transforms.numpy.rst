@@ -1,6 +1,11 @@
 Numpy-based Transforms
 =================================
 
+transforms.CWTSpectrum
+----------------------------------------
+
+.. autoclass:: torcheeg.transforms.CWTSpectrum
+
 transforms.BandDifferentialEntropy
 ----------------------------------------
 
@@ -60,3 +65,4 @@ transforms.Concatenate
 --------------------------------------
 
 .. autoclass:: torcheeg.transforms.Concatenate
+    

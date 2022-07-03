@@ -36,9 +36,9 @@ according to the system, CUDA version and other information:
 
    # please refer to https://pytorch.org/get-started/previous-versions/
    # e.g. CPU version
-   pip install torch==1.10.1+cpu -f https://download.pytorch.org/whl/torch_stable.html
+   pip install torch==1.11.0+cpu torchvision==0.12.0+cpu torchaudio==0.11.0 --extra-index-url https://download.pytorch.org/whl/cpu
    # e.g. GPU version
-   pip install torch==1.10.1+cu102 -f https://download.pytorch.org/whl/torch_stable.html
+   pip install torch==1.11.0+cu102 torchvision==0.12.0+cu102 torchaudio==0.11.0 --extra-index-url https://download.pytorch.org/whl/cu102
 
 TorchEEG provides algorithms related to graph convolution. This part of
 the implementation relies on PyG. TorchEEG recommends users to manually

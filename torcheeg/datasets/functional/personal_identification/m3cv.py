@@ -1,8 +1,10 @@
 import os
 from functools import partial
-from multiprocessing import Manager, Pool, Process, Queue, set_start_method
+from multiprocessing import Manager, Pool, Process, Queue
 from typing import Callable, List, Union
 
+import numpy as np
+import pandas as pd
 import scipy.io as scio
 from torcheeg.io import EEGSignalIO, MetaInfoIO
 from tqdm import tqdm
@@ -10,53 +12,44 @@ from tqdm import tqdm
 MAX_QUEUE_SIZE = 1024
 
 
-def transform_producer(file_name: str, root_path: str, chunk_size: int,
+def transform_producer(df: pd.DataFrame, root_path: str, chunk_size: int,
                        overlap: int, channel_num: int,
                        transform: Union[List[Callable], Callable, None],
                        write_info_fn: Callable, queue: Queue):
-    subject = int(
-        os.path.basename(file_name).split('.')[0].split('_')[0])  # subject (15)
-    date = int(
-        os.path.basename(file_name).split('.')[0].split('_')[1])  # period (3)
-
-    samples = scio.loadmat(os.path.join(root_path, file_name),
-                           verify_compressed_data_integrity=False
-                           )  # trial (15), channel(62), timestep(n*200)
-    # label file
-    labels = scio.loadmat(os.path.join(root_path, 'label.mat'),
-                          verify_compressed_data_integrity=False)['label'][0]
-
-    trial_ids = [key for key in samples.keys() if 'eeg' in key]
 
     # calculate moving step
     step = chunk_size - overlap
-
     write_pointer = 0
-    # loop for each trial
-    for trial_id in trial_ids:
-        # extract baseline signals
-        trial_samples = samples[trial_id]  # channel(62), timestep(n*200)
 
-        # record the common meta info
-        trial_meta_info = {
-            'subject_id': subject,
-            'trial_id': trial_id,
-            'emotion': int(labels[int(trial_id.split('_')[-1][3:]) - 1]),
-            'date': date
+    start_epoch = None
+
+    for _, epoch_info in df.iterrows():
+        epoch_meta_info = {
+            'epoch_id': epoch_info['EpochID'],
+            'subject_id': epoch_info['SubjectID'],
+            'session': epoch_info['Session'],
+            'task': epoch_info['Task'],
+            'usage': epoch_info['Usage'],
         }
+
+        epoch_id = epoch_meta_info['epoch_id']
+
+        if start_epoch is None:
+            start_epoch = epoch_id
+
+        samples = scio.loadmat(os.path.join(root_path, epoch_id))['epoch_data']
 
         # extract experimental signals
         start_at = 0
         end_at = chunk_size
-
-        while end_at <= trial_samples.shape[1]:
-            clip_sample = trial_samples[:channel_num, start_at:end_at]
-
+        while end_at <= samples.shape[1]:
+            clip_sample = samples[:channel_num, start_at:end_at]
             t_eeg = clip_sample
+
             if not transform is None:
                 t_eeg = transform(eeg=clip_sample)['eeg']
 
-            clip_id = f'{file_name}_{write_pointer}'
+            clip_id = f'after{start_epoch}_{write_pointer}'
 
             queue.put({'eeg': t_eeg, 'key': clip_id})
             write_pointer += 1
@@ -67,9 +60,9 @@ def transform_producer(file_name: str, root_path: str, chunk_size: int,
                 'end_at': end_at,
                 'clip_id': clip_id
             }
-            record_info.update(trial_meta_info)
-            write_info_fn(record_info)
 
+            record_info.update(epoch_meta_info)
+            write_info_fn(record_info)
             start_at = start_at + step
             end_at = start_at + chunk_size
 
@@ -95,15 +88,16 @@ class SingleProcessingQueue:
         self.write_eeg_fn(eeg, key)
 
 
-def seed_constructor(root_path: str = './Preprocessed_EEG',
-                     chunk_size: int = 200,
+def m3cv_constructor(root_path: str = './aistudio',
+                     subset: str = 'Enrollment',
+                     chunk_size: int = 1000,
                      overlap: int = 0,
-                     channel_num: int = 62,
+                     channel_num: int = 65,
                      transform: Union[None, Callable] = None,
-                     io_path: str = './io/seed',
+                     io_path: str = './io/m3cv',
                      num_worker: int = 0,
                      verbose: bool = True,
-                     cache_size: int = 64 * 1024 * 1024 * 1024) -> None:
+                     cache_size: int = 1024 * 1024 * 1024 * 1024) -> None:
     # init IO
     meta_info_io_path = os.path.join(io_path, 'info.csv')
     eeg_signal_io_path = os.path.join(io_path, 'eeg')
@@ -114,21 +108,20 @@ def seed_constructor(root_path: str = './Preprocessed_EEG',
         )
         return
 
-    meta_info_io_path = os.path.join(io_path, 'info.csv')
-    eeg_signal_io_path = os.path.join(io_path, 'eeg')
+    os.makedirs(io_path, exist_ok=True)
 
     info_io = MetaInfoIO(meta_info_io_path)
     eeg_io = EEGSignalIO(eeg_signal_io_path, cache_size=cache_size)
 
     # loop to access the dataset files
-    file_list = os.listdir(root_path)
-    skip_set = ['label.mat', 'readme.txt']
-    file_list = [f for f in file_list if f not in skip_set]
+    df = pd.read_csv(os.path.join(root_path, f'{subset}_Info.csv'))
+    df_list_num = len(df) // 60
+    df_list = np.array_split(df, df_list_num)
 
     if verbose:
         # show process bar
-        pbar = tqdm(total=len(file_list))
-        pbar.set_description("[SEED]")
+        pbar = tqdm(total=len(df_list))
+        pbar.set_description("[M3CV]")
 
     if num_worker > 1:
         manager = Manager()
@@ -139,7 +132,7 @@ def seed_constructor(root_path: str = './Preprocessed_EEG',
         io_consumer_process.start()
 
         partial_mp_fn = partial(transform_producer,
-                                root_path=root_path,
+                                root_path=os.path.join(root_path, subset),
                                 chunk_size=chunk_size,
                                 overlap=overlap,
                                 channel_num=channel_num,
@@ -147,7 +140,7 @@ def seed_constructor(root_path: str = './Preprocessed_EEG',
                                 write_info_fn=info_io.write_info,
                                 queue=queue)
 
-        for _ in Pool(num_worker).imap(partial_mp_fn, file_list):
+        for _ in Pool(num_worker).imap(partial_mp_fn, df_list):
             if verbose:
                 pbar.update(1)
 
@@ -155,11 +148,10 @@ def seed_constructor(root_path: str = './Preprocessed_EEG',
 
         io_consumer_process.join()
         io_consumer_process.close()
-
     else:
-        for file_name in file_list:
-            transform_producer(file_name=file_name,
-                               root_path=root_path,
+        for df in df_list:
+            transform_producer(df=df,
+                               root_path=os.path.join(root_path, subset),
                                chunk_size=chunk_size,
                                overlap=overlap,
                                channel_num=channel_num,

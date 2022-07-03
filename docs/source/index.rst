@@ -43,6 +43,7 @@ Transformers.
    torcheeg.io
    torcheeg.model_selection
    torcheeg.models
+   torcheeg.losses
    torcheeg.transforms
    torcheeg.utils
 
