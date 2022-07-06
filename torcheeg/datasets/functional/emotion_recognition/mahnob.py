@@ -37,7 +37,7 @@ def transform_producer(file_name: str, root_path: str, chunk_size: int,
         return
 
     trial_meta_info = {
-        'subject_id': label_info['subject_id']['@id'],
+        'subject_id': label_info['subject']['@id'],
         'trial_id': label_info['@mediaFile'],
         'duration': float(label_info['@cutLenSec'])
     }
