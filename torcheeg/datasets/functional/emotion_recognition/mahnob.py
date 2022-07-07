@@ -106,9 +106,6 @@ def transform_producer(file_name: str, root_path: str, chunk_size: int,
             trial_meta_info['baseline_id'] = trial_base_id
 
         clip_id = f'{file_name}_{write_pointer}'
-        while True:
-            if queue.not_full():
-                break
         queue.put({'eeg': t_eeg, 'key': clip_id})
         write_pointer += 1
 
