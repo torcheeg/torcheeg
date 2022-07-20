@@ -52,7 +52,7 @@ class BandDifferentialEntropy(BandTransform):
     .. code-block:: python
 
         transform = BandDifferentialEntropy()
-        transform(eeg=torch.randn(32, 128))['eeg'].shape
+        transform(eeg=np.random.randn(32, 128))['eeg'].shape
         >>> (32, 4)
 
     Args:
@@ -71,7 +71,7 @@ class BandDifferentialEntropy(BandTransform):
         r'''
         Args:
             eeg (np.ndarray): The input EEG signals in shape of [number of electrodes, number of data points].
-            baseline (torch.Tensor, optional) : The corresponding baseline signal, if apply_to_baseline is set to True and baseline is passed, the baseline signal will be transformed with the same way as the experimental signal.
+            baseline (np.ndarray, optional) : The corresponding baseline signal, if apply_to_baseline is set to True and baseline is passed, the baseline signal will be transformed with the same way as the experimental signal.
         Returns:
             np.ndarray[number of electrodes, number of subbands]: The differential entropy of several subbands for all electrodes.
         '''
@@ -87,7 +87,7 @@ class BandPowerSpectralDensity(EEGTransform):
     .. code-block:: python
 
         transform = BandPowerSpectralDensity()
-        transform(eeg=torch.randn(32, 128))['eeg'].shape
+        transform(eeg=np.random.randn(32, 128))['eeg'].shape
         >>> (32, 4)
 
     Args:
@@ -138,7 +138,7 @@ class BandPowerSpectralDensity(EEGTransform):
         r'''
         Args:
             eeg (np.ndarray): The input EEG signals in shape of [number of electrodes, number of data points].
-            baseline (torch.Tensor, optional) : The corresponding baseline signal, if apply_to_baseline is set to True and baseline is passed, the baseline signal will be transformed with the same way as the experimental signal.
+            baseline (np.ndarray, optional) : The corresponding baseline signal, if apply_to_baseline is set to True and baseline is passed, the baseline signal will be transformed with the same way as the experimental signal.
         Returns:
             np.ndarray[number of electrodes, number of subbands]: The power spectral density of several subbands for all electrodes.
         '''
@@ -160,7 +160,7 @@ class BandMeanAbsoluteDeviation(BandTransform):
     .. code-block:: python
 
         transform = BandMeanAbsoluteDeviation()
-        transform(eeg=torch.randn(32, 128))['eeg'].shape
+        transform(eeg=np.random.randn(32, 128))['eeg'].shape
         >>> (32, 4)
 
     Args:
@@ -178,7 +178,7 @@ class BandMeanAbsoluteDeviation(BandTransform):
         r'''
         Args:
             eeg (np.ndarray): The input EEG signals in shape of [number of electrodes, number of data points].
-            baseline (torch.Tensor, optional) : The corresponding baseline signal, if apply_to_baseline is set to True and baseline is passed, the baseline signal will be transformed with the same way as the experimental signal.
+            baseline (np.ndarray, optional) : The corresponding baseline signal, if apply_to_baseline is set to True and baseline is passed, the baseline signal will be transformed with the same way as the experimental signal.
         Returns:
             np.ndarray[number of electrodes, number of subbands]: The mean absolute deviation of several subbands for all electrodes.
         '''
@@ -195,7 +195,7 @@ class BandKurtosis(BandTransform):
     .. code-block:: python
 
         transform = BandKurtosis()
-        transform(eeg=torch.randn(32, 128))['eeg'].shape
+        transform(eeg=np.random.randn(32, 128))['eeg'].shape
         >>> (32, 4)
 
     Args:
@@ -213,7 +213,7 @@ class BandKurtosis(BandTransform):
         r'''
         Args:
             eeg (np.ndarray): The input EEG signals in shape of [number of electrodes, number of data points].
-            baseline (torch.Tensor, optional) : The corresponding baseline signal, if apply_to_baseline is set to True and baseline is passed, the baseline signal will be transformed with the same way as the experimental signal.
+            baseline (np.ndarray, optional) : The corresponding baseline signal, if apply_to_baseline is set to True and baseline is passed, the baseline signal will be transformed with the same way as the experimental signal.
         Returns:
             np.ndarray[number of electrodes, number of subbands]: The kurtosis of several subbands for all electrodes.
         '''
@@ -242,7 +242,7 @@ class BandSkewness(BandTransform):
     .. code-block:: python
 
         transform = BandSkewness()
-        transform(eeg=torch.randn(32, 128))['eeg'].shape
+        transform(eeg=np.random.randn(32, 128))['eeg'].shape
         >>> (32, 4)
 
     Args:
@@ -260,7 +260,7 @@ class BandSkewness(BandTransform):
         r'''
         Args:
             eeg (np.ndarray): The input EEG signals in shape of [number of electrodes, number of data points].
-            baseline (torch.Tensor, optional) : The corresponding baseline signal, if apply_to_baseline is set to True and baseline is passed, the baseline signal will be transformed with the same way as the experimental signal.
+            baseline (np.ndarray, optional) : The corresponding baseline signal, if apply_to_baseline is set to True and baseline is passed, the baseline signal will be transformed with the same way as the experimental signal.
         Returns:
             np.ndarray[number of electrodes, number of subbands]: The skewness of several subbands for all electrodes.
         '''

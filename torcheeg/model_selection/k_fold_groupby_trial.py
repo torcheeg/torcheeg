@@ -105,7 +105,9 @@ class KFoldGroupbyTrial:
         def indice_file_to_fold_id(indice_file):
             return int(re.findall(r'fold_(\d*).csv', indice_file)[0])
 
-        return list(set(map(indice_file_to_fold_id, indice_files)))
+        fold_ids = list(set(map(indice_file_to_fold_id, indice_files)))
+        fold_ids.sort()
+        return fold_ids
 
     def split(self, dataset: BaseDataset) -> Tuple[BaseDataset, BaseDataset]:
         if not os.path.exists(self.split_path):

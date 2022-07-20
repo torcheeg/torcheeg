@@ -5,17 +5,17 @@ import unittest
 
 from torcheeg import transforms
 from torcheeg.datasets import (AMIGOSDataset, DEAPDataset, DREAMERDataset,
-                               MAHNOBDataset, SEEDDataset)
+                               MAHNOBDataset, SEEDDataset, BCI2022Dataset)
 from torcheeg.datasets.functional import (amigos_constructor, deap_constructor,
                                           dreamer_constructor,
-                                          mahnob_constructor, seed_constructor)
+                                          mahnob_constructor, seed_constructor,
+                                          bci2022_constructor)
 
 
 class TestEmotionRecognitionDataset(unittest.TestCase):
     def setUp(self):
-        # shutil.rmtree('./tmp_out/')
-        # os.mkdir('./tmp_out/')
-        ...
+        shutil.rmtree('./tmp_out/')
+        os.mkdir('./tmp_out/')
 
     def test_mahnob_constructor(self):
         io_path = f'./tmp_out/mahnob_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
@@ -163,6 +163,33 @@ class TestEmotionRecognitionDataset(unittest.TestCase):
         self.assertEqual(first_item[0].shape, (62, 4))
         last_item = dataset[152729]
         self.assertEqual(last_item[0].shape, (62, 4))
+
+    def test_bci2022_constructor(self):
+        io_path = f'./tmp_out/bci2022_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
+        root_path = './tmp_in/TrainSet'
+
+        bci2022_constructor(io_path=io_path,
+                            root_path=root_path,
+                            transform=transforms.BandDifferentialEntropy(),
+                            num_worker=9)
+
+    def test_bci2022_dataset(self):
+        io_path = f'./tmp_out/bci2022_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
+        root_path = './tmp_in/TrainSet'
+
+        dataset = BCI2022Dataset(
+            io_path=io_path,
+            root_path=root_path,
+            offline_transform=transforms.BandDifferentialEntropy(),
+            label_transform=transforms.Select('emotion'),
+            channel_num=30,
+            num_worker=9)
+
+        self.assertEqual(len(dataset), 146812)
+        first_item = dataset[0]
+        self.assertEqual(first_item[0].shape, (30, 4))
+        last_item = dataset[146811]
+        self.assertEqual(last_item[0].shape, (30, 4))
 
 
 if __name__ == '__main__':

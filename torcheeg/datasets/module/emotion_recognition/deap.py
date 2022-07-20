@@ -85,6 +85,7 @@ class DEAPDataset(BaseDataset):
     In particular, TorchEEG utilizes the producer-consumer model to allow multi-process data preprocessing. If your data preprocessing is time consuming, consider increasing :obj:`num_worker` for higher speedup. If running under Windows, please use the proper idiom in the main module:
 
     .. code-block:: python
+    
         if __name__ == '__main__':
             dataset = DEAPDataset(io_path=f'./deap',
                               root_path='./data_preprocessed_python',

@@ -9,14 +9,7 @@ from ..base_transform import EEGTransform
 
 
 class CWTSpectrum(EEGTransform):
-    def __init__(self,
-                 sampling_rate: int = 250,
-                 wavelet: str = 'morl',
-                 total_scale: int = 128,
-                 contourf: bool = False,
-                 apply_to_baseline: bool = False):
-        super(CWTSpectrum, self).__init__(apply_to_baseline=apply_to_baseline)
-        r'''
+    r'''
         A transform method to convert EEG signals of each channel into spectrograms using wavelet transform.
 
         .. code-block:: python
@@ -53,8 +46,14 @@ class CWTSpectrum(EEGTransform):
             apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (defualt: :obj:`False`)
         
         .. automethod:: __call__
-        '''
-
+    '''
+    def __init__(self,
+                 sampling_rate: int = 250,
+                 wavelet: str = 'morl',
+                 total_scale: int = 128,
+                 contourf: bool = False,
+                 apply_to_baseline: bool = False):
+        super(CWTSpectrum, self).__init__(apply_to_baseline=apply_to_baseline)
         self.sampling_rate = sampling_rate
         self.wavelet = wavelet
         self.total_scale = total_scale
@@ -72,7 +71,7 @@ class CWTSpectrum(EEGTransform):
         r'''
         Args:
             eeg (np.ndarray): The input EEG signals in shape of [number of electrodes, number of data points].
-            baseline (torch.Tensor, optional) : The corresponding baseline signal, if apply_to_baseline is set to True and baseline is passed, the baseline signal will be transformed with the same way as the experimental signal.
+            baseline (np.ndarray, optional) : The corresponding baseline signal, if apply_to_baseline is set to True and baseline is passed, the baseline signal will be transformed with the same way as the experimental signal.
         Returns:
             np.ndarray[number of electrodes, ...]: The spectrograms based on the wavelet transform for all electrodes. If contourf=False, the output shape is [number of electrodes, total_scale, number of data points]. Otherwise, the output shape is [number of electrodes, height of image, width of image of image, 4], where 4 represents the four channels of the image colors.
         '''

@@ -72,7 +72,9 @@ class LeaveOneSubjectOut:
         def indice_file_to_subject(indice_file):
             return re.findall(r'subject_(\w*).csv', indice_file)[0]
 
-        return list(set(map(indice_file_to_subject, indice_files)))
+        subjects = list(set(map(indice_file_to_subject, indice_files)))
+        subjects.sort()
+        return subjects
 
     def split(self, dataset: BaseDataset) -> Tuple[BaseDataset, BaseDataset]:
         if not os.path.exists(self.split_path):

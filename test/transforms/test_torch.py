@@ -75,11 +75,6 @@ class TestTorchTransforms(unittest.TestCase):
         transformed_eeg = RandomSignFlip(p=1.0)(eeg=eeg)
         self.assertEqual(tuple(transformed_eeg['eeg'].shape), (32, 128))
 
-    def test_random_flip(self):
-        eeg = torch.randn(32, 128)
-        transformed_eeg = RandomFlip(p=1.0, dim=-1)(eeg=eeg)
-        self.assertEqual(tuple(transformed_eeg['eeg'].shape), (32, 128))
-
     def test_random_shift(self):
         eeg = torch.randn(32, 128)
         transformed_eeg = RandomShift(p=1.0, dim=-1, shift_min=8, shift_max=24)(eeg=eeg)

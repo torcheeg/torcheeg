@@ -19,7 +19,7 @@ class PickElectrode(EEGTransform):
              'F4', 'F8', 'FC6', 'FC2',
              'C4', 'T8', 'CP6', 'CP2',
              'P4', 'P8', 'PO4', 'O2'], DEAP_CHANNEL_LIST))
-        transform(eeg=torch.randn(32, 128))['eeg'].shape
+        transform(eeg=np.random.randn(32, 128))['eeg'].shape
         >>> (28, 128)
 
     Args:
@@ -40,7 +40,7 @@ class PickElectrode(EEGTransform):
         r'''
         Args:
             eeg (np.ndarray): The input EEG signals in shape of [number of electrodes, number of data points].
-            baseline (torch.Tensor, optional) : The corresponding baseline signal, if apply_to_baseline is set to True and baseline is passed, the baseline signal will be transformed with the same way as the experimental signal.
+            baseline (np.ndarray, optional) : The corresponding baseline signal, if apply_to_baseline is set to True and baseline is passed, the baseline signal will be transformed with the same way as the experimental signal.
 
         Returns:
             np.ndarray: The output signals with the shape of [number of picked electrodes, number of data points].

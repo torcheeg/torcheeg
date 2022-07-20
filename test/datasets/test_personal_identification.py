@@ -7,11 +7,10 @@ from torcheeg.datasets import M3CVDataset
 from torcheeg.datasets.functional import m3cv_constructor
 
 
-class TestEmotionRecognitionDataset(unittest.TestCase):
+class TestPersonalIdentificationDataset(unittest.TestCase):
     def setUp(self):
-        # shutil.rmtree('./tmp_out/')
-        # os.mkdir('./tmp_out/')
-        ...
+        shutil.rmtree('./tmp_out/')
+        os.mkdir('./tmp_out/')
 
     def test_m3cv_constructor(self):
         io_path = f'./tmp_out/m3cv_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'

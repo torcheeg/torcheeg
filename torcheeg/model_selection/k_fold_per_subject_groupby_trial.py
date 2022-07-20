@@ -129,7 +129,9 @@ class KFoldPerSubjectGroupbyTrial:
             return re.findall(r'subject_(\w*)_fold_(\d*).csv',
                               indice_file)[0][0]
 
-        return list(set(map(indice_file_to_subject, indice_files)))
+        subjects = list(set(map(indice_file_to_subject, indice_files)))
+        subjects.sort()
+        return subjects
 
     @property
     def fold_ids(self) -> List:
@@ -139,7 +141,9 @@ class KFoldPerSubjectGroupbyTrial:
             return int(
                 re.findall(r'subject_(\w*)_fold_(\d*).csv', indice_file)[0][1])
 
-        return list(set(map(indice_file_to_fold_id, indice_files)))
+        fold_ids = list(set(map(indice_file_to_fold_id, indice_files)))
+        fold_ids.sort()
+        return fold_ids
 
     def split(
             self,

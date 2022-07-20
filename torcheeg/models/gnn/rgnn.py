@@ -113,7 +113,7 @@ class RGNN(torch.nn.Module):
         model = RGNN(adj=torch.Tensor(SEED_STANDARD_ADJACENCY_MATRIX),
                      in_channels=4,
                      num_electrodes=62,
-                     hid_channels=32,å
+                     hid_channels=32,
                      num_layers=2,
                      num_classes=2,
                      dropout=0.7,

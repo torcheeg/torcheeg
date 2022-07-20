@@ -26,6 +26,11 @@ MAHNOBDataset
 
 .. autoclass:: torcheeg.datasets.MAHNOBDataset
 
+BCI2022Dataset
+---------------------------------------------------------
+
+.. autoclass:: torcheeg.datasets.BCI2022Dataset
+
 M3CVDataset
 ---------------------------------------------------------
 

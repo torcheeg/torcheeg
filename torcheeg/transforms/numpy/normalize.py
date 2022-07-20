@@ -13,12 +13,12 @@ class MeanStdNormalize(EEGTransform):
 
         transform = MeanStdNormalize(axis=0)
         # normalize along the first dimension (electrode dimension)
-        transform(eeg=torch.randn(32, 128))['eeg'].shape
+        transform(eeg=np.random.randn(32, 128))['eeg'].shape
         >>> (32, 128)
 
         transform = MeanStdNormalize(axis=1)
         # normalize along the second dimension (temproal dimension)
-        transform(eeg=torch.randn(32, 128))['eeg'].shape
+        transform(eeg=np.random.randn(32, 128))['eeg'].shape
         >>> (32, 128)
 
     Args:
@@ -48,7 +48,7 @@ class MeanStdNormalize(EEGTransform):
         r'''
         Args:
             eeg (np.ndarray): The input EEG signals or features.
-            baseline (torch.Tensor, optional) : The corresponding baseline signal, if apply_to_baseline is set to True and baseline is passed, the baseline signal will be transformed with the same way as the experimental signal.
+            baseline (np.ndarray, optional) : The corresponding baseline signal, if apply_to_baseline is set to True and baseline is passed, the baseline signal will be transformed with the same way as the experimental signal.
 
         Returns:
             np.ndarray: The normalized results.
@@ -63,9 +63,17 @@ class MeanStdNormalize(EEGTransform):
             else:
                 mean = eeg.mean(axis=self.axis, keepdims=True)
                 std = eeg.std(axis=self.axis, keepdims=True)
-        elif not self.axis is None:
-            shape = [-1] * len(eeg.shape)
-            shape[self.axis] = 1
+        else:
+            if self.axis is None:
+                axis = 1
+            else:
+                axis = self.axis
+            assert len(self.mean) == eeg.shape[
+                axis], f'The given normalized axis has {eeg.shape[axis]} dimensions, which does not match the given mean\'s dimension {len(self.mean)}.'
+            assert len(self.std) == eeg.shape[
+                axis], f'The given normalized axis has {eeg.shape[axis]} dimensions, which does not match the given std\'s dimension {len(self.std)}.'
+            shape = [1] * len(eeg.shape)
+            shape[axis] = -1
             mean = self.mean.reshape(*shape)
             std = self.std.reshape(*shape)
         return (eeg - mean) / std
@@ -78,6 +86,7 @@ class MeanStdNormalize(EEGTransform):
             'axis': self.axis
         })
 
+
 class MinMaxNormalize(EEGTransform):
     r'''
     Perform min-max normalization on the input data. This class allows the user to define the dimension of normalization and the used statistic.
@@ -86,12 +95,12 @@ class MinMaxNormalize(EEGTransform):
 
         transform = MinMaxNormalize(axis=0)
         # normalize along the first dimension (electrode dimension)
-        transform(eeg=torch.randn(32, 128))['eeg'].shape
+        transform(eeg=np.random.randn(32, 128))['eeg'].shape
         >>> (32, 128)
 
         transform = MinMaxNormalize(axis=1)
         # normalize along the second dimension (temproal dimension)
-        transform(eeg=torch.randn(32, 128))['eeg'].shape
+        transform(eeg=np.random.randn(32, 128))['eeg'].shape
         >>> (32, 128)
 
     Args:
@@ -121,7 +130,7 @@ class MinMaxNormalize(EEGTransform):
         r'''
         Args:
             eeg (np.ndarray): The input EEG signals or features.
-            baseline (torch.Tensor, optional) : The corresponding baseline signal, if apply_to_baseline is set to True and baseline is passed, the baseline signal will be transformed with the same way as the experimental signal.
+            baseline (np.ndarray, optional) : The corresponding baseline signal, if apply_to_baseline is set to True and baseline is passed, the baseline signal will be transformed with the same way as the experimental signal.
             
         Returns:
             np.ndarray: The normalized results.
@@ -136,14 +145,22 @@ class MinMaxNormalize(EEGTransform):
             else:
                 min = eeg.min(axis=self.axis, keepdims=True)
                 max = eeg.max(axis=self.axis, keepdims=True)
-        elif not self.axis is None:
-            shape = [-1] * len(eeg.shape)
-            shape[self.axis] = 1
+        else:
+            if self.axis is None:
+                axis = 1
+            else:
+                axis = self.axis
+            assert len(self.min) == eeg.shape[
+                axis], f'The given normalized axis has {eeg.shape[axis]} dimensions, which does not match the given min\'s dimension {len(self.min)}.'
+            assert len(self.max) == eeg.shape[
+                axis], f'The given normalized axis has {eeg.shape[axis]} dimensions, which does not match the given max\'s dimension {len(self.max)}.'
+            shape = [1] * len(eeg.shape)
+            shape[axis] = -1
             min = self.min.reshape(*shape)
             max = self.max.reshape(*shape)
 
         return (eeg - min) / (max - min)
-    
+
     @property
     def repr_body(self) -> Dict:
         return dict(super().repr_body, **{

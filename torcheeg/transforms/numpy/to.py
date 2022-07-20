@@ -14,7 +14,7 @@ class To2d(EEGTransform):
     .. code-block:: python
 
         transform = To2d()
-        transform(eeg=torch.randn(32, 128))['eeg'].shape
+        transform(eeg=np.random.randn(32, 128))['eeg'].shape
         >>> (1, 32, 128)
 
     .. automethod:: __call__
@@ -27,7 +27,7 @@ class To2d(EEGTransform):
         r'''
         Args:
             eeg (np.ndarray): The input EEG signals in shape of [number of electrodes, number of data points].
-            baseline (torch.Tensor, optional) : The corresponding baseline signal, if apply_to_baseline is set to True and baseline is passed, the baseline signal will be transformed with the same way as the experimental signal.
+            baseline (np.ndarray, optional) : The corresponding baseline signal, if apply_to_baseline is set to True and baseline is passed, the baseline signal will be transformed with the same way as the experimental signal.
 
         Returns:
             np.ndarray: The transformed results with the shape of [1, number of electrodes, number of data points].
@@ -50,7 +50,7 @@ class ToGrid(EEGTransform):
     .. code-block:: python
 
         transform = ToGrid(DEAP_CHANNEL_LOCATION_DICT)
-        transform(eeg=torch.randn(32, 128))['eeg'].shape
+        transform(eeg=np.random.randn(32, 128))['eeg'].shape
         >>> (128, 9, 9)
 
     Args:
@@ -80,7 +80,7 @@ class ToGrid(EEGTransform):
         r'''
         Args:
             eeg (np.ndarray): The input EEG signals in shape of [number of electrodes, number of data points].
-            baseline (torch.Tensor, optional) : The corresponding baseline signal, if apply_to_baseline is set to True and baseline is passed, the baseline signal will be transformed with the same way as the experimental signal.
+            baseline (np.ndarray, optional) : The corresponding baseline signal, if apply_to_baseline is set to True and baseline is passed, the baseline signal will be transformed with the same way as the experimental signal.
 
         Returns:
             np.ndarray: The projected results with the shape of [number of data points, width of grid, height of grid].
@@ -116,7 +116,7 @@ class ToInterpolatedGrid(EEGTransform):
     .. code-block:: python
     
         transform = ToInterpolatedGrid(DEAP_CHANNEL_LOCATION_DICT)
-        transform(eeg=torch.randn(32, 128))['eeg'].shape
+        transform(eeg=np.random.randn(32, 128))['eeg'].shape
         >>> (128, 9, 9)
 
     Especially, missing values on the grid are supplemented using cubic interpolation
@@ -150,7 +150,7 @@ class ToInterpolatedGrid(EEGTransform):
         r'''
         Args:
             eeg (np.ndarray): The input EEG signals in shape of [number of electrodes, number of data points].
-            baseline (torch.Tensor, optional) : The corresponding baseline signal, if apply_to_baseline is set to True and baseline is passed, the baseline signal will be transformed with the same way as the experimental signal.
+            baseline (np.ndarray, optional) : The corresponding baseline signal, if apply_to_baseline is set to True and baseline is passed, the baseline signal will be transformed with the same way as the experimental signal.
             
         Returns:
             np.ndarray: The projected results with the shape of [number of data points, width of grid, height of grid].

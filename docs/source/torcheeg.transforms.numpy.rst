@@ -61,8 +61,17 @@ transforms.ToInterpolatedGrid
 
 .. autoclass:: torcheeg.transforms.ToInterpolatedGrid
 
+transforms.ARRCoefficient
+--------------------------------------
+
+.. autoclass:: torcheeg.transforms.ARRCoefficient
+
 transforms.Concatenate
 --------------------------------------
 
 .. autoclass:: torcheeg.transforms.Concatenate
-    
+
+transforms.ChunkConcatenate
+--------------------------------------
+
+.. autoclass:: torcheeg.transforms.ChunkConcatenate
