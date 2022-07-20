@@ -28,7 +28,7 @@ class BCI2022Dataset(BaseDataset):
         + ...
 
     - TrainSet_second_batch
-    
+
         + sub55
         + sub57
         + sub59

@@ -15,7 +15,7 @@ class Concatenate(EEGTransform):
             BandDifferentialEntropy(),
             BandMeanAbsoluteDeviation()
         ])
-        transform(eeg=torch.randn(32, 128))['eeg'].shape
+        transform(eeg=np.random.randn(32, 128))['eeg'].shape
         >>> (32, 8)
 
     Args:
@@ -74,7 +74,7 @@ class ChunkConcatenate(EEGTransform):
         ],
         chunk_size=250,
         overlap=0)
-        transform(eeg=torch.randn(64, 1000))['eeg'].shape
+        transform(eeg=np.random.randn(64, 1000))['eeg'].shape
         >>> (64, 32)
 
     TorchEEG allows feature fusion at multiple scales:
@@ -94,7 +94,7 @@ class ChunkConcatenate(EEGTransform):
             overlap=0),  # 2 chunk * 4-dim feature
             BandDifferentialEntropy()  # 1 chunk * 4-dim feature
         ])
-        transform(eeg=torch.randn(64, 1000))['eeg'].shape
+        transform(eeg=np.random.randn(64, 1000))['eeg'].shape
         >>> (64, 28) # 4 * 4 + 2 * 4 + 1 * 4
 
     Args:
