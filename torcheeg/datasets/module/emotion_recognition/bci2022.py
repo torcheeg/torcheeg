@@ -21,11 +21,14 @@ class BCI2022Dataset(BaseDataset):
     In order to use this dataset, the download folder :obj:`TrainSet` is required, containing the following files:
     
     - TrainSet_first_batch
+
         + sub1
         + sub10
         + sub11
         + ...
+
     - TrainSet_second_batch
+    
         + sub55
         + sub57
         + sub59
