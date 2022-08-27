@@ -191,11 +191,11 @@ class ToDynamicG(EEGTransform):
 
             func = self.edge_func_list[self.edge_func]
 
-        node_number = len(eeg)
-        adj = np.zeros((node_number, node_number))
+        num_node = len(eeg)
+        adj = np.zeros((num_node, num_node))
 
-        for i in range(node_number):
-            for j in range(node_number):
+        for i in range(num_node):
+            for j in range(num_node):
                 adj[i][j] = func(eeg[i], eeg[j], **self.kwargs)
 
         return adj

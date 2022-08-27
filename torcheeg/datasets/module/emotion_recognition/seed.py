@@ -16,7 +16,7 @@ class SEEDDataset(BaseDataset):
     - Reference: Zheng W L, Lu B L. Investigating critical frequency bands and channels for EEG-based emotion recognition with deep neural networks[J]. IEEE Transactions on Autonomous Mental Development, 2015, 7(3): 162-175.
     - Stimulus: 15 four-minute long film clips from six Chinese movies.
     - Signals: Electroencephalogram (62 channels at 200Hz) of 15 subjects, and eye movement data of 12 subjects. Each subject conducts the experiment three times, with an interval of about one week, totally 15 people x 3 times = 45
-    - Rating: positive (-1), negative (0), and neutral (1).
+    - Rating: positive (1), negative (-1), and neutral (0).
 
     In order to use this dataset, the download folder :obj:`data_preprocessed_python` is required, containing the following files:
     
@@ -72,7 +72,7 @@ class SEEDDataset(BaseDataset):
         dataset = SEEDDataset(io_path=f'./seed',
                               root_path='./Preprocessed_EEG',
                               online_transform=transforms.Compose([
-                                  transforms.ToG(SEED_ADJACENCY_MATRIX)
+                                  transforms.pyg.ToG(SEED_ADJACENCY_MATRIX)
                               ]),
                               label_transform=transforms.Compose([
                                   transforms.Select(['emotion']),
@@ -91,7 +91,7 @@ class SEEDDataset(BaseDataset):
             dataset = SEEDDataset(io_path=f'./seed',
                               root_path='./Preprocessed_EEG',
                               online_transform=transforms.Compose([
-                                  transforms.ToG(SEED_ADJACENCY_MATRIX)
+                                  transforms.pyg.ToG(SEED_ADJACENCY_MATRIX)
                               ]),
                               label_transform=transforms.Compose([
                                   transforms.Select(['emotion']),
@@ -107,7 +107,7 @@ class SEEDDataset(BaseDataset):
         root_path (str): Downloaded data files in matlab (unzipped Preprocessed_EEG.zip) formats (default: :obj:`'./Preprocessed_EEG'`)
         chunk_size (int): Number of data points included in each EEG chunk as training or test samples. (default: :obj:`200`)
         overlap (int): The number of overlapping data points between different chunks when dividing EEG chunks. (default: :obj:`0`)
-        channel_num (int): Number of channels used, of which the first 62 channels are EEG signals. (default: :obj:`62`)
+        num_channel (int): Number of channels used, of which the first 62 channels are EEG signals. (default: :obj:`62`)
         online_transform (Callable, optional): The transformation of the EEG signals and baseline EEG signals. The input is a :obj:`np.ndarray`, and the ouput is used as the first and second value of each element in the dataset. (default: :obj:`None`)
         offline_transform (Callable, optional): The usage is the same as :obj:`online_transform`, but executed before generating IO intermediate results. (default: :obj:`None`)
         label_transform (Callable, optional): The transformation of the label. The input is an information dictionary, and the ouput is used as the third value of each element in the dataset. (default: :obj:`None`)
@@ -123,7 +123,7 @@ class SEEDDataset(BaseDataset):
                  root_path: str = './Preprocessed_EEG',
                  chunk_size: int = 200,
                  overlap: int = 0,
-                 channel_num: int = 62,
+                 num_channel: int = 62,
                  online_transform: Union[None, Callable] = None,
                  offline_transform: Union[None, Callable] = None,
                  label_transform: Union[None, Callable] = None,
@@ -134,7 +134,7 @@ class SEEDDataset(BaseDataset):
         seed_constructor(root_path=root_path,
                          chunk_size=chunk_size,
                          overlap=overlap,
-                         channel_num=channel_num,
+                         num_channel=num_channel,
                          transform=offline_transform,
                          io_path=io_path,
                          num_worker=num_worker,
@@ -145,7 +145,7 @@ class SEEDDataset(BaseDataset):
         self.root_path = root_path
         self.chunk_size = chunk_size
         self.overlap = overlap
-        self.channel_num = channel_num
+        self.num_channel = num_channel
         self.online_transform = online_transform
         self.offline_transform = offline_transform
         self.label_transform = label_transform
@@ -177,7 +177,7 @@ class SEEDDataset(BaseDataset):
                 'root_path': self.root_path,
                 'chunk_size': self.chunk_size,
                 'overlap': self.overlap,
-                'channel_num': self.channel_num,
+                'num_channel': self.num_channel,
                 'online_transform': self.online_transform,
                 'offline_transform': self.offline_transform,
                 'label_transform': self.label_transform,

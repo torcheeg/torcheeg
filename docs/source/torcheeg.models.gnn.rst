@@ -9,10 +9,18 @@ torcheeg.models.DGCNN
    :undoc-members:
    :show-inheritance:
 
-torcheeg.models.RGNN
+torcheeg.models.pyg.RGNN
 -------------------------------
 
-.. autoclass:: torcheeg.models.RGNN
+.. autoclass:: torcheeg.models.pyg.RGNN
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+torcheeg.models.pyg.GIN
+-------------------------------
+
+.. autoclass:: torcheeg.models.pyg.GIN
    :members:
    :undoc-members:
    :show-inheritance:

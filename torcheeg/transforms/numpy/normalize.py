@@ -1,4 +1,4 @@
-from typing import Union, Dict
+from typing import Union, Dict, List
 
 import numpy as np
 
@@ -139,25 +139,37 @@ class MinMaxNormalize(EEGTransform):
 
     def apply(self, eeg: np.ndarray, **kwargs) -> np.ndarray:
         if (self.min is None) or (self.max is None):
+            # if not given min/max
             if self.axis is None:
+                # calc overall min/max
                 min = eeg.min()
                 max = eeg.max()
             else:
+                # calc axis min/max
                 min = eeg.min(axis=self.axis, keepdims=True)
                 max = eeg.max(axis=self.axis, keepdims=True)
         else:
             if self.axis is None:
-                axis = 1
+                # given overall min/max
+                assert isinstance(self.min, float) and isinstance(
+                    self.max, float
+                ), f'The given normalized axis is None, which requires a float number as min/max to normalize the samples, but get {type(self.min)} and {type(self.max)}.'
+
+                min = self.min
+                max = self.max
             else:
+                # given axis min/max
                 axis = self.axis
-            assert len(self.min) == eeg.shape[
-                axis], f'The given normalized axis has {eeg.shape[axis]} dimensions, which does not match the given min\'s dimension {len(self.min)}.'
-            assert len(self.max) == eeg.shape[
-                axis], f'The given normalized axis has {eeg.shape[axis]} dimensions, which does not match the given max\'s dimension {len(self.max)}.'
-            shape = [1] * len(eeg.shape)
-            shape[axis] = -1
-            min = self.min.reshape(*shape)
-            max = self.max.reshape(*shape)
+
+                assert len(self.min) == eeg.shape[
+                    axis], f'The given normalized axis has {eeg.shape[axis]} dimensions, which does not match the given min\'s dimension {len(self.min)}.'
+                assert len(self.max) == eeg.shape[
+                    axis], f'The given normalized axis has {eeg.shape[axis]} dimensions, which does not match the given max\'s dimension {len(self.max)}.'
+
+                shape = [1] * len(eeg.shape)
+                shape[axis] = -1
+                min = self.min.reshape(*shape)
+                max = self.max.reshape(*shape)
 
         return (eeg - min) / (max - min)
 

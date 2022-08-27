@@ -30,7 +30,7 @@ def seed_dataset_factory(num_worker):
     dataset = SEEDDataset(io_path=f'./tmp_out/examples_dataset_runtime/seed_{num_worker}',
                           root_path='./tmp_in/Preprocessed_EEG',
                           offline_transform=transforms.BandDifferentialEntropy(),
-                          online_transform=transforms.ToG(SEED_ADJACENCY_MATRIX),
+                          online_transform=transforms.pyg.ToG(SEED_ADJACENCY_MATRIX),
                           label_transform=transforms.Compose([
                               transforms.Select('emotion'),
                               transforms.Lambda(lambda x: int(x) + 1),

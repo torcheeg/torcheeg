@@ -51,9 +51,48 @@ class Binary(LabelTransform):
 
     @property
     def repr_body(self) -> Dict:
-        return dict(super().repr_body, **{
-            'threshold': self.threshold
-        })
+        return dict(super().repr_body, **{'threshold': self.threshold})
+
+
+class BinaryOneVSRest(LabelTransform):
+    r'''
+    Binarize the label following the fashion of the one-vs-rest strategy. When label is the specified positive category label, the label is set to 1, when the label is any other category label, the label is set to 0.
+    
+    .. code-block:: python
+
+        transform = BinaryOneVSRest(positive=1)
+        transform(y=2)['y']
+        >>> 0
+
+    :obj:`Binary` allows simultaneous binarization using the same threshold for multiple labels.
+
+    .. code-block:: python
+
+        transform = BinaryOneVSRest(positive=1)
+        transform(y=[1, 2])['y']
+        >>> [1, 0]
+
+    Args:
+        positive (int): The specified positive category label.
+
+    .. automethod:: __call__
+    '''
+    def __init__(self, positive: int):
+        super(BinaryOneVSRest, self).__init__()
+        self.positive = positive
+
+    def apply(self, y: Union[int, float, List], **kwargs) -> Union[int, List]:
+        assert isinstance(
+            y, (int, float, list)
+        ), f'The transform Binary only accepts label list or item (int or float) as input, but obtain {type(y)} as input.'
+        if isinstance(y, list):
+            return [int(l == self.positive) for l in y]
+        return int(y == self.positive)
+
+    @property
+    def repr_body(self) -> Dict:
+        return dict(super().repr_body, **{'positive': self.positive})
+
 
 class BinariesToCategory(LabelTransform):
     r'''

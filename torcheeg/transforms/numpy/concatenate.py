@@ -19,16 +19,19 @@ class Concatenate(EEGTransform):
         >>> (32, 8)
 
     Args:
-        transforms (list, tuple): a sequence of transforms
+        transforms (list, tuple): a sequence of transforms.
+        axis (int): The axis along which the arrays will be joined. If axis is None, arrays are flattened before use (defualt: :obj:`-1`).
         apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (defualt: :obj:`False`)
     
     .. automethod:: __call__
     '''
     def __init__(self,
                  transforms: Sequence[Callable],
+                 axis: int = -1,
                  apply_to_baseline: bool = False):
         super(Concatenate, self).__init__(apply_to_baseline=apply_to_baseline)
         self.transforms = transforms
+        self.axis = axis
 
     def __call__(self,
                  *args,
@@ -49,7 +52,7 @@ class Concatenate(EEGTransform):
         out = []
         for t in self.transforms:
             out.append(t.apply(eeg, **kwargs))
-        return np.concatenate(out, axis=-1)
+        return np.concatenate(out, axis=self.axis)
 
     def __repr__(self) -> str:
         format_string = self.__class__.__name__ + '('

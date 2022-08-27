@@ -16,7 +16,7 @@ class BCI2022Dataset(BaseDataset):
     - Reference: Please refer to the downloaded URL.
     - Stimulus: video clips.
     - Signals: Electroencephalogram (30 channels at 250Hz) and two channels of left/right mastoid signals from 80 subjects.
-    - Rating: 28 video clips are annotated in valence and discrete emotion dimensions. The valence is divided into positive (-1), negative (0), and neutral (1). Discrete emotions are divided into anger (0), disgust (1), fear (2), sadness (3), neutral (4), amusement (5), excitation (6), happiness (7), and warmth (8).
+    - Rating: 28 video clips are annotated in valence and discrete emotion dimensions. The valence is divided into positive (1), negative (-1), and neutral (0). Discrete emotions are divided into anger (0), disgust (1), fear (2), sadness (3), neutral (4), amusement (5), excitation (6), happiness (7), and warmth (8).
 
     In order to use this dataset, the download folder :obj:`TrainSet` is required, containing the following files:
     

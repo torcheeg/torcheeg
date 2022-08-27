@@ -7,8 +7,9 @@ def format_channel_location_dict(channel_list, location_list):
     location_list = np.array(location_list)
     output = {}
     for channel in channel_list:
-        location = (np.argwhere(location_list == channel)[0]).tolist()
-        output[channel] = location
+        if len(np.argwhere(location_list == channel)):
+            location = (np.argwhere(location_list == channel)[0]).tolist()
+            output[channel] = location
     return output
 
 

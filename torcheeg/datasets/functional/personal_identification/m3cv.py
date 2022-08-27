@@ -13,8 +13,8 @@ MAX_QUEUE_SIZE = 1024
 
 
 def transform_producer(df: pd.DataFrame, root_path: str, chunk_size: int,
-                       overlap: int, channel_num: int,
-                       transform: Union[List[Callable], Callable, None],
+                       overlap: int, num_channel: int,
+                       transform: Union[Callable, None],
                        write_info_fn: Callable, queue: Queue):
 
     # calculate moving step
@@ -43,7 +43,7 @@ def transform_producer(df: pd.DataFrame, root_path: str, chunk_size: int,
         start_at = 0
         end_at = chunk_size
         while end_at <= samples.shape[1]:
-            clip_sample = samples[:channel_num, start_at:end_at]
+            clip_sample = samples[:num_channel, start_at:end_at]
             t_eeg = clip_sample
 
             if not transform is None:
@@ -92,7 +92,7 @@ def m3cv_constructor(root_path: str = './aistudio',
                      subset: str = 'Enrollment',
                      chunk_size: int = 1000,
                      overlap: int = 0,
-                     channel_num: int = 65,
+                     num_channel: int = 65,
                      transform: Union[None, Callable] = None,
                      io_path: str = './io/m3cv',
                      num_worker: int = 0,
@@ -135,7 +135,7 @@ def m3cv_constructor(root_path: str = './aistudio',
                                 root_path=os.path.join(root_path, subset),
                                 chunk_size=chunk_size,
                                 overlap=overlap,
-                                channel_num=channel_num,
+                                num_channel=num_channel,
                                 transform=transform,
                                 write_info_fn=info_io.write_info,
                                 queue=queue)
@@ -154,7 +154,7 @@ def m3cv_constructor(root_path: str = './aistudio',
                                root_path=os.path.join(root_path, subset),
                                chunk_size=chunk_size,
                                overlap=overlap,
-                               channel_num=channel_num,
+                               num_channel=num_channel,
                                transform=transform,
                                write_info_fn=info_io.write_info,
                                queue=SingleProcessingQueue(eeg_io.write_eeg))

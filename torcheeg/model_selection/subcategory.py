@@ -68,7 +68,7 @@ class Subcategory:
         val_cv = Subcategory(split_path='./split_val')
         val_dataset = M3CVDataset(io_path=f'./m3cv',
                               root_path='./aistudio',
-                              subset='Calibration', channel_num=65,
+                              subset='Calibration', num_channel=65,
                               online_transform=transforms.Compose(
                                   [transforms.To2d(),
                                    transforms.ToTensor()]),

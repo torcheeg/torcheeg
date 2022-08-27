@@ -85,7 +85,7 @@ if __name__ == "__main__":
         io_path=f'./tmp_out/examples_tsception/deap',
         root_path='./tmp_in/data_preprocessed_python',
         chunk_size=512,
-        baseline_num=1,
+        num_baseline=1,
         baseline_chunk_size=512,
         offline_transform=transforms.Compose([
             transforms.PickElectrode(

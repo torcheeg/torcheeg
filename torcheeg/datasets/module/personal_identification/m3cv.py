@@ -68,7 +68,7 @@ class M3CVDataset(BaseDataset):
         dataset = M3CVDataset(io_path=f'./m3cv',
                               root_path='./aistudio',
                               online_transform=transforms.Compose([
-                                  transforms.ToG(M3CV_ADJACENCY_MATRIX)
+                                  transforms.pyg.ToG(M3CV_ADJACENCY_MATRIX)
                               ]),
                               label_transform=transforms.Compose([
                                   transforms.Select('SubjectID'),
@@ -87,7 +87,7 @@ class M3CVDataset(BaseDataset):
             dataset = M3CVDataset(io_path=f'./m3cv',
                               root_path='./aistudio',
                               online_transform=transforms.Compose([
-                                  transforms.ToG(M3CV_ADJACENCY_MATRIX)
+                                  transforms.pyg.ToG(M3CV_ADJACENCY_MATRIX)
                               ]),
                               label_transform=transforms.Compose([
                                   transforms.Select('SubjectID'),
@@ -104,7 +104,7 @@ class M3CVDataset(BaseDataset):
         subset (str): In the competition, the M3CV dataset is splited into the Enrollment set, Calibration set, and Testing set. Please specify the subset to use, options include Enrollment, Calibration and Testing. (default: :obj:`'Enrollment'`)
         chunk_size (int): Number of data points included in each EEG chunk as training or test samples. (default: :obj:`1000`)
         overlap (int): The number of overlapping data points between different chunks when dividing EEG chunks. (default: :obj:`0`)
-        channel_num (int): Number of channels used, of which the first 32 channels are EEG signals. (default: :obj:`64`)
+        num_channel (int): Number of channels used, of which the first 32 channels are EEG signals. (default: :obj:`64`)
         online_transform (Callable, optional): The transformation of the EEG signals and baseline EEG signals. The input is a :obj:`np.ndarray`, and the ouput is used as the first and second value of each element in the dataset. (default: :obj:`None`)
         offline_transform (Callable, optional): The usage is the same as :obj:`online_transform`, but executed before generating IO intermediate results. (default: :obj:`None`)
         label_transform (Callable, optional): The transformation of the label. The input is an information dictionary, and the ouput is used as the third value of each element in the dataset. (default: :obj:`None`)
@@ -119,7 +119,7 @@ class M3CVDataset(BaseDataset):
                  subset: str = 'Enrollment',
                  chunk_size: int = 1000,
                  overlap: int = 0,
-                 channel_num: int = 64,
+                 num_channel: int = 64,
                  online_transform: Union[None, Callable] = None,
                  offline_transform: Union[None, Callable] = None,
                  label_transform: Union[None, Callable] = None,
@@ -131,7 +131,7 @@ class M3CVDataset(BaseDataset):
                          subset=subset,
                          chunk_size=chunk_size,
                          overlap=overlap,
-                         channel_num=channel_num,
+                         num_channel=num_channel,
                          transform=offline_transform,
                          io_path=io_path,
                          num_worker=num_worker,
@@ -143,7 +143,7 @@ class M3CVDataset(BaseDataset):
         self.subset = subset
         self.chunk_size = chunk_size
         self.overlap = overlap
-        self.channel_num = channel_num
+        self.num_channel = num_channel
         self.online_transform = online_transform
         self.offline_transform = offline_transform
         self.label_transform = label_transform
@@ -180,7 +180,7 @@ class M3CVDataset(BaseDataset):
                 'subset': self.subset,
                 'chunk_size': self.chunk_size,
                 'overlap': self.overlap,
-                'channel_num': self.channel_num,
+                'num_channel': self.num_channel,
                 'online_transform': self.online_transform,
                 'offline_transform': self.offline_transform,
                 'label_transform': self.label_transform,

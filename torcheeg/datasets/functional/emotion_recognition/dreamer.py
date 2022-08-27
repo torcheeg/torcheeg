@@ -10,9 +10,9 @@ MAX_QUEUE_SIZE = 1024
 
 
 def transform_producer(subject: int, trial_len: int, mat_data: any,
-                       chunk_size: int, overlap: int, channel_num: int,
-                       baseline_num: int, baseline_chunk_size: int,
-                       transform: Union[List[Callable], Callable, None],
+                       chunk_size: int, overlap: int, num_channel: int,
+                       num_baseline: int, baseline_chunk_size: int,
+                       transform: Union[Callable, None],
                        write_info_fn: Callable, queue: Queue):
     # calculate moving step
     step = chunk_size - overlap
@@ -23,12 +23,12 @@ def transform_producer(subject: int, trial_len: int, mat_data: any,
         # extract baseline signals
         trial_baseline_sample = mat_data['DREAMER'][0, 0]['Data'][
             0, subject]['EEG'][0, 0]['baseline'][0, 0][trial_id, 0]
-        trial_baseline_sample = trial_baseline_sample[:, :channel_num].swapaxes(
+        trial_baseline_sample = trial_baseline_sample[:, :num_channel].swapaxes(
             1, 0)  # channel(14), timestep(61*128)
-        trial_baseline_sample = trial_baseline_sample[:, :baseline_num *
+        trial_baseline_sample = trial_baseline_sample[:, :num_baseline *
                                                       baseline_chunk_size].reshape(
-                                                          channel_num,
-                                                          baseline_num,
+                                                          num_channel,
+                                                          num_baseline,
                                                           baseline_chunk_size
                                                       ).mean(
                                                           axis=1
@@ -50,7 +50,7 @@ def transform_producer(subject: int, trial_len: int, mat_data: any,
 
         trial_samples = mat_data['DREAMER'][0, 0]['Data'][0, subject]['EEG'][
             0, 0]['stimuli'][0, 0][trial_id, 0]
-        trial_samples = trial_samples[:, :channel_num].swapaxes(
+        trial_samples = trial_samples[:, :num_channel].swapaxes(
             1, 0)  # channel(14), timestep(n*128)
 
         while end_at <= trial_samples.shape[1]:
@@ -113,8 +113,8 @@ class SingleProcessingQueue:
 def dreamer_constructor(mat_path: str = './DREAMER.mat',
                         chunk_size: int = 128,
                         overlap: int = 0,
-                        channel_num: int = 14,
-                        baseline_num: int = 61,
+                        num_channel: int = 14,
+                        num_baseline: int = 61,
                         baseline_chunk_size: int = 128,
                         transform: Union[None, Callable] = None,
                         io_path: str = './io/dreamer',
@@ -163,8 +163,8 @@ def dreamer_constructor(mat_path: str = './DREAMER.mat',
                                 mat_data=mat_data,
                                 chunk_size=chunk_size,
                                 overlap=overlap,
-                                channel_num=channel_num,
-                                baseline_num=baseline_num,
+                                num_channel=num_channel,
+                                num_baseline=num_baseline,
                                 baseline_chunk_size=baseline_chunk_size,
                                 transform=transform,
                                 write_info_fn=info_io.write_info,
@@ -186,8 +186,8 @@ def dreamer_constructor(mat_path: str = './DREAMER.mat',
                                mat_data=mat_data,
                                chunk_size=chunk_size,
                                overlap=overlap,
-                               channel_num=channel_num,
-                               baseline_num=baseline_num,
+                               num_channel=num_channel,
+                               num_baseline=num_baseline,
                                baseline_chunk_size=baseline_chunk_size,
                                transform=transform,
                                write_info_fn=info_io.write_info,

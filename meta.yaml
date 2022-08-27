@@ -1,0 +1,30 @@
+{% set version = "1.0.9" %}
+
+package:
+  name: torcheeg
+  version: {{ version }}
+
+build:
+  noarch: generic
+
+requirements:
+  run:
+    - tqdm
+    - numpy
+    - pandas
+    - scipy
+    - scikit-learn
+    - lmdb
+    - einops
+    - mne
+    - xmltodict
+    - networkx
+    - pywt
+    - spectrum
+
+about:
+  home: https://github.com/tczhangzhi/torcheeg
+  license: MIT
+  summary: 'TorchEEG is a library built on PyTorch for EEG signal analysis.'
+  description: |
+    TorchEEG is a library built on PyTorch for EEG signal analysis. TorchEEG aims to provide a plug-and-play EEG analysis tool, so that researchers can quickly reproduce EEG analysis work and start new EEG analysis research without paying attention to technical details unrelated to the research focus.

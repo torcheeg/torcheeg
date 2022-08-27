@@ -1,8 +1,8 @@
 import unittest
 
 import torch
-
-from torcheeg.models import TSCeption, EEGNet, STNet, MTCNN, FBCCNN, CCNN
+from torcheeg.models import (CCNN, FBCCNN, MSRN, MTCNN, EEGNet, FBCNet, STNet,
+                             TSCeption)
 
 
 class TestCNN(unittest.TestCase):
@@ -44,7 +44,10 @@ class TestCNN(unittest.TestCase):
 
     def test_stnet(self):
         eeg = torch.randn(1, 128, 9, 9)
-        model = STNet(num_classes=2, in_channels=128, grid_size=(9, 9), dropout=0.2)
+        model = STNet(num_classes=2,
+                      in_channels=128,
+                      grid_size=(9, 9),
+                      dropout=0.2)
         pred = model(eeg)
         self.assertEqual(tuple(pred.shape), (1, 2))
 
@@ -53,9 +56,23 @@ class TestCNN(unittest.TestCase):
         pred = model(eeg)
         self.assertEqual(tuple(pred.shape), (1, 2))
 
+    def test_msrn(self):
+        eeg = torch.randn(2, 4, 32, 32)
+        model = MSRN(num_classes=2, in_channels=4)
+        pred = model(eeg)
+        self.assertEqual(tuple(pred.shape), (2, 2))
+
+        eeg = eeg.cuda()
+        model = model.cuda()
+        pred = model(eeg)
+        self.assertEqual(tuple(pred.shape), (2, 2))
+
     def test_mtcnn(self):
         eeg = torch.randn(1, 8, 8, 9)
-        model = MTCNN(num_classes=2, in_channels=8, grid_size=(8, 9), dropout=0.2)
+        model = MTCNN(num_classes=2,
+                      in_channels=8,
+                      grid_size=(8, 9),
+                      dropout=0.2)
         pred = model(eeg)
         self.assertEqual(tuple(pred[0].shape), (1, 2))
         self.assertEqual(tuple(pred[1].shape), (1, 2))
@@ -69,6 +86,21 @@ class TestCNN(unittest.TestCase):
     def test_fbccnn(self):
         eeg = torch.randn(1, 4, 9, 9)
         model = FBCCNN(num_classes=2, in_channels=4, grid_size=(9, 9))
+        pred = model(eeg)
+        self.assertEqual(tuple(pred.shape), (1, 2))
+
+        eeg = eeg.cuda()
+        model = model.cuda()
+        pred = model(eeg)
+        self.assertEqual(tuple(pred.shape), (1, 2))
+
+    def test_fbcnet(self):
+        eeg = torch.randn(1, 4, 32, 512)
+        model = FBCNet(num_classes=2,
+                       num_electrodes=32,
+                       chunk_size=512,
+                       in_channels=4,
+                       num_S=32)
         pred = model(eeg)
         self.assertEqual(tuple(pred.shape), (1, 2))
 

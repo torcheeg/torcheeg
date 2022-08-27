@@ -1,6 +1,6 @@
 import unittest
 
-from torcheeg.transforms import Select, Binary, BinariesToCategory, StringToInt
+from torcheeg.transforms import Select, Binary, BinariesToCategory, StringToInt, BinaryOneVSRest, FixCategory
 
 
 class TestLabelTransforms(unittest.TestCase):
@@ -31,6 +31,15 @@ class TestLabelTransforms(unittest.TestCase):
 
         self.assertEqual(transform(y=['None', 'sub001'])['y'], [0, 1])
         self.assertEqual(transform(y=['sub001', '4'])['y'], [1, 4])
+
+    def test_binary_one_vs_rest(self):
+        self.assertEqual(BinaryOneVSRest(positive=1)(y=1)['y'], 1)
+        self.assertEqual(BinaryOneVSRest(positive=1)(y=2)['y'], 0)
+        self.assertEqual(BinaryOneVSRest(positive=1)(y=[1, 2])['y'], [1, 0])
+
+    def test_fix_category(self):
+        self.assertEqual(FixCategory(value=0)(y=3)['y'], 0)
+        self.assertEqual(FixCategory(value=[0, 1])(y=[1, 2])['y'], [0, 1])
 
 
 if __name__ == '__main__':

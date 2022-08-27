@@ -42,7 +42,7 @@ class Resize(EEGTransform):
             baseline (torch.Tensor, optional) : The corresponding baseline signal, if apply_to_baseline is set to True and baseline is passed, the baseline signal will be transformed with the same way as the experimental signal.
 
         Returns:
-            torch.Tensor[new height of grid, new width of grid, number of subbands]: The scaled EEG signal at the saptial dimension.
+            torch.Tensor[new height of grid, new width of grid, number of sub-bands]: The scaled EEG signal at the saptial dimension.
         '''
         return super().__call__(*args, eeg=eeg, baseline=baseline, **kwargs)
 

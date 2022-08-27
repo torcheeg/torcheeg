@@ -5,3 +5,5 @@ from .pick import *
 from .to import *
 from .spectrum import *
 from .coefficient import *
+from .correlation import *
+from .band_pyeeg import *

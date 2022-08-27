@@ -13,6 +13,18 @@ torcheeg.models.FBCCNN
 .. autoclass:: torcheeg.models.FBCCNN
    :members: forward
 
+torcheeg.models.FBCNet
+---------------------------------
+
+.. autoclass:: torcheeg.models.FBCNet
+   :members: forward
+
+torcheeg.models.MSRN
+---------------------------------
+
+.. autoclass:: torcheeg.models.MSRN
+   :members: forward
+
 torcheeg.models.MTCNN
 --------------------------------
 

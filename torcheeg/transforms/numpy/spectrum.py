@@ -129,3 +129,40 @@ class CWTSpectrum(EEGTransform):
                 'total_scale': self.total_scale,
                 'contourf': self.contourf
             })
+
+
+class DWTDecomposition(EEGTransform):
+    r'''    
+        Splitting the EEG signal from each electrode into two functions using wavelet decomposition.
+
+        .. code-block:: python
+
+            transform = DWTDecomposition()
+            transform(eeg=np.random.randn(32, 1000))['eeg'].shape
+            >>> (32, 500)
+
+        Args:
+            apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (defualt: :obj:`False`)
+        
+        .. automethod:: __call__
+    '''
+    def __init__(self, apply_to_baseline: bool = False):
+        super(DWTDecomposition,
+              self).__init__(apply_to_baseline=apply_to_baseline)
+
+    def __call__(self,
+                 *args,
+                 eeg: np.ndarray,
+                 baseline: Union[np.ndarray, None] = None,
+                 **kwargs) -> Dict[str, np.ndarray]:
+        r'''
+        Args:
+            eeg (np.ndarray): The input EEG signals in shape of [number of electrodes, number of data points].
+            baseline (np.ndarray, optional) : The corresponding baseline signal, if apply_to_baseline is set to True and baseline is passed, the baseline signal will be transformed with the same way as the experimental signal.
+        Returns:
+            np.ndarray[number of electrodes, 2, number of data points / 2]: EEG signal after wavelet decomposition, where 2 corresponds to the two functions of the wavelet decomposition, and number of data points / 2 represents the length of each component
+        '''
+        return super().__call__(*args, eeg=eeg, baseline=baseline, **kwargs)
+
+    def apply(self, eeg: np.ndarray, **kwargs) -> np.ndarray:
+        return np.stack(pywt.dwt(eeg, 'haar'), axis=0)

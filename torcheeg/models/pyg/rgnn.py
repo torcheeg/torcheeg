@@ -104,7 +104,7 @@ class RGNN(torch.nn.Module):
         dataset = SEEDDataset(io_path=f'./seed',
                               root_path='./Preprocessed_EEG',
                               offline_transform=transforms.BandDifferentialEntropy(),
-                              online_transform=transforms.ToG(SEED_STANDARD_ADJACENCY_MATRIX),
+                              online_transform=transforms.pyg.ToG(SEED_STANDARD_ADJACENCY_MATRIX),
                               label_transform=transforms.Compose([
                                   transforms.Select('emotion'),
                                   transforms.Lambda(lambda x: int(x) + 1),
@@ -160,7 +160,7 @@ class RGNN(torch.nn.Module):
     def forward(self, data: Batch) -> torch.Tensor:
         r'''
         Args:
-            x (torch_geometric.data.Batch): EEG signal representation, the ideal input shape is :obj:`[n, 62, 4]`. Here, :obj:`n` corresponds to the batch size, :obj:`62` corresponds to :obj:`num_electrodes`, and :obj:`4` corresponds to :obj:`in_channels`.
+            data (torch_geometric.data.Batch): EEG signal representation, the ideal input shape of data.x is :obj:`[n, 62, 4]`. Here, :obj:`n` corresponds to the batch size, :obj:`62` corresponds to the number of electrodes, and :obj:`4` corresponds to :obj:`in_channels`.
 
         Returns:
             torch.Tensor[number of sample, number of classes]: the predicted probability that the samples belong to the classes.

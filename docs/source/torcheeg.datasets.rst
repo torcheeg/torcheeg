@@ -35,3 +35,8 @@ M3CVDataset
 ---------------------------------------------------------
 
 .. autoclass:: torcheeg.datasets.M3CVDataset
+
+TSUBenckmarkDataset
+---------------------------------------------------------
+
+.. autoclass:: torcheeg.datasets.TSUBenckmarkDataset

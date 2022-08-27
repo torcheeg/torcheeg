@@ -9,7 +9,7 @@ from torch.utils.data.dataloader import DataLoader
 from torcheeg import transforms
 from torcheeg.datasets import SEEDDataset
 from torcheeg.model_selection import LeaveOneSubjectOut, train_test_split
-from torcheeg.models import DGCNN
+from torcheeg.models.pyg import DGCNN
 
 
 def seed_everything(seed):

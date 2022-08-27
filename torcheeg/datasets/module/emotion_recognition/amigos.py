@@ -72,7 +72,7 @@ class AMIGOSDataset(BaseDataset):
         dataset = AMIGOSDataset(io_path=f'./amigos',
                               root_path='./data_preprocessed',
                               online_transform=transforms.Compose([
-                                  transforms.ToG(AMIGOS_ADJACENCY_MATRIX)
+                                  transforms.pyg.ToG(AMIGOS_ADJACENCY_MATRIX)
                               ]),
                               label_transform=transforms.Compose([
                                   transforms.Select('valence'),
@@ -91,7 +91,7 @@ class AMIGOSDataset(BaseDataset):
             dataset = AMIGOSDataset(io_path=f'./amigos',
                                     root_path='./data_preprocessed',
                                     online_transform=transforms.Compose([
-                                        transforms.ToG(AMIGOS_ADJACENCY_MATRIX)
+                                        transforms.pyg.ToG(AMIGOS_ADJACENCY_MATRIX)
                                     ]),
                                     label_transform=transforms.Compose([
                                         transforms.Select('valence'),
@@ -107,10 +107,10 @@ class AMIGOSDataset(BaseDataset):
         root_path (str): Downloaded data files in matlab (unzipped data_preprocessed.zip) formats (default: :obj:`'./data_preprocessed'`)
         chunk_size (int): Number of data points included in each EEG chunk as training or test samples. (default: :obj:`128`)
         overlap (int): The number of overlapping data points between different chunks when dividing EEG chunks. (default: :obj:`0`)
-        channel_num (int): Number of channels used, of which the first 14 channels are EEG signals. (default: :obj:`14`)
-        trial_num (int): Number of trials used, of which the first 16 trials are conducted with short videos and the last 4 trials are conducted with long videos. If set to -1, all trials are used. (default: :obj:`16`)
+        num_channel (int): Number of channels used, of which the first 14 channels are EEG signals. (default: :obj:`14`)
+        num_trial (int): Number of trials used, of which the first 16 trials are conducted with short videos and the last 4 trials are conducted with long videos. If set to -1, all trials are used. (default: :obj:`16`)
         skipped_subjects (int): The participant ID to be removed because there are some invalid data in the preprocessed version. (default: :obj:`[9, 12, 21, 22, 23, 24, 33]`)
-        baseline_num (int): Number of baseline signal chunks used. (default: :obj:`5`)
+        num_baseline (int): Number of baseline signal chunks used. (default: :obj:`5`)
         baseline_chunk_size (int): Number of data points included in each baseline signal chunk. The baseline signal in the AMIGOS dataset has a total of 640 data points. (default: :obj:`128`)
         online_transform (Callable, optional): The transformation of the EEG signals and baseline EEG signals. The input is a :obj:`np.ndarray`, and the ouput is used as the first and second value of each element in the dataset. (default: :obj:`None`)
         offline_transform (Callable, optional): The usage is the same as :obj:`online_transform`, but executed before generating IO intermediate results. (default: :obj:`None`)
@@ -128,10 +128,10 @@ class AMIGOSDataset(BaseDataset):
                  root_path: str = './data_preprocessed',
                  chunk_size: int = 128,
                  overlap: int = 0,
-                 channel_num: int = 14,
-                 trial_num: int = 16,
+                 num_channel: int = 14,
+                 num_trial: int = 16,
                  skipped_subjects: List[int] = [9, 12, 21, 22, 23, 24, 33],
-                 baseline_num: int = 5,
+                 num_baseline: int = 5,
                  baseline_chunk_size: int = 128,
                  online_transform: Union[None, Callable] = None,
                  offline_transform: Union[None, Callable] = None,
@@ -143,10 +143,10 @@ class AMIGOSDataset(BaseDataset):
         amigos_constructor(root_path=root_path,
                            chunk_size=chunk_size,
                            overlap=overlap,
-                           channel_num=channel_num,
-                           trial_num=trial_num,
+                           num_channel=num_channel,
+                           num_trial=num_trial,
                            skipped_subjects=skipped_subjects,
-                           baseline_num=baseline_num,
+                           num_baseline=num_baseline,
                            baseline_chunk_size=baseline_chunk_size,
                            transform=offline_transform,
                            io_path=io_path,
@@ -158,10 +158,10 @@ class AMIGOSDataset(BaseDataset):
         self.root_path = root_path
         self.chunk_size = chunk_size
         self.overlap = overlap
-        self.channel_num = channel_num
-        self.trial_num = trial_num
+        self.num_channel = num_channel
+        self.num_trial = num_trial
         self.skipped_subjects = skipped_subjects
-        self.baseline_num = baseline_num
+        self.num_baseline = num_baseline
         self.baseline_chunk_size = baseline_chunk_size
         self.online_transform = online_transform
         self.offline_transform = offline_transform
@@ -196,10 +196,10 @@ class AMIGOSDataset(BaseDataset):
                 'root_path': self.root_path,
                 'chunk_size': self.chunk_size,
                 'overlap': self.overlap,
-                'channel_num': self.channel_num,
-                'trial_num': self.trial_num,
+                'num_channel': self.num_channel,
+                'num_trial': self.num_trial,
                 'skipped_subjects': self.skipped_subjects,
-                'baseline_num': self.baseline_num,
+                'num_baseline': self.num_baseline,
                 'baseline_chunk_size': self.baseline_chunk_size,
                 'online_transform': self.online_transform,
                 'offline_transform': self.offline_transform,

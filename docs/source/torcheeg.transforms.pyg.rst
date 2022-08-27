@@ -1,10 +1,10 @@
 PyG-based Transforms
 ===============================
 
-transforms.ToG
+transforms.pyg.ToG
 ----------------------------------------
-.. autoclass:: torcheeg.transforms.ToG
+.. autoclass:: torcheeg.transforms.pyg.ToG
 
-transforms.ToDynamicG
+transforms.pyg.ToDynamicG
 ----------------------------------------
-.. autoclass:: torcheeg.transforms.ToDynamicG
+.. autoclass:: torcheeg.transforms.pyg.ToDynamicG

@@ -1,7 +1,7 @@
 import os
 import re
 from functools import partial
-from multiprocessing import Manager, Pool, Process, Queue, set_start_method
+from multiprocessing import Manager, Pool, Process, Queue
 from typing import Callable, List, Union
 
 import scipy.io as scio
@@ -12,10 +12,10 @@ MAX_QUEUE_SIZE = 1024
 
 
 def transform_producer(file_name: str, root_path: str, chunk_size: int,
-                       overlap: int, channel_num: int, trial_num: int,
-                       skipped_subjects: List, baseline_num: int,
-                       baseline_chunk_size: int,
-                       transform: Union[List[Callable], Callable, None],
+                       overlap: int, num_channel: int, num_trial: int,
+                       skipped_subjects: List, num_baseline: int,
+                       baseline_chunk_size: int, transform: Union[Callable,
+                                                                  None],
                        write_info_fn: Callable, queue: Queue):
     subject = int(re.findall(r'Data_Preprocessed_P(\d*).mat',
                              file_name)[0])  # subject (40)
@@ -37,8 +37,8 @@ def transform_producer(file_name: str, root_path: str, chunk_size: int,
     write_pointer = 0
 
     max_len = len(samples)
-    if not (trial_num <= 0):
-        max_len = min(len(samples), trial_num)
+    if not (num_trial <= 0):
+        max_len = min(len(samples), num_trial)
 
     # loop for each trial
     for trial_id in range(max_len):
@@ -67,19 +67,19 @@ def transform_producer(file_name: str, root_path: str, chunk_size: int,
 
         # extract baseline signals
         trial_baseline_sample = trial_samples[:baseline_chunk_size *
-                                              baseline_num, :
-                                              channel_num]  # timestep(5*128), channel(14)
+                                              num_baseline, :
+                                              num_channel]  # timestep(5*128), channel(14)
         trial_baseline_sample = trial_baseline_sample.reshape(
-            baseline_num, baseline_chunk_size,
-            channel_num).mean(axis=0).swapaxes(1,
+            num_baseline, baseline_chunk_size,
+            num_channel).mean(axis=0).swapaxes(1,
                                                0)  # channel(14), timestep(128)
 
         # extract experimental signals
-        start_at = baseline_chunk_size * baseline_num
+        start_at = baseline_chunk_size * num_baseline
         end_at = start_at + chunk_size
 
         while end_at <= trial_samples.shape[0]:
-            clip_sample = trial_samples[start_at:end_at, :channel_num].swapaxes(
+            clip_sample = trial_samples[start_at:end_at, :num_channel].swapaxes(
                 1, 0)
 
             t_eeg = clip_sample
@@ -137,12 +137,12 @@ class SingleProcessingQueue:
 def amigos_constructor(root_path: str = './data_preprocessed',
                        chunk_size: int = 128,
                        overlap: int = 0,
-                       channel_num: int = 14,
-                       trial_num: int = 16,
+                       num_channel: int = 14,
+                       num_trial: int = 16,
                        skipped_subjects: List[int] = [
                            9, 12, 21, 22, 23, 24, 33
                        ],
-                       baseline_num: int = 5,
+                       num_baseline: int = 5,
                        baseline_chunk_size: int = 128,
                        transform: Union[None, Callable] = None,
                        io_path: str = './io/amigos',
@@ -180,10 +180,10 @@ def amigos_constructor(root_path: str = './data_preprocessed',
                                 root_path=root_path,
                                 chunk_size=chunk_size,
                                 overlap=overlap,
-                                channel_num=channel_num,
-                                trial_num=trial_num,
+                                num_channel=num_channel,
+                                num_trial=num_trial,
                                 skipped_subjects=skipped_subjects,
-                                baseline_num=baseline_num,
+                                num_baseline=num_baseline,
                                 baseline_chunk_size=baseline_chunk_size,
                                 transform=transform,
                                 write_info_fn=info_io.write_info,
@@ -209,10 +209,10 @@ def amigos_constructor(root_path: str = './data_preprocessed',
                                root_path=root_path,
                                chunk_size=chunk_size,
                                overlap=overlap,
-                               channel_num=channel_num,
-                               trial_num=trial_num,
+                               num_channel=num_channel,
+                               num_trial=num_trial,
                                skipped_subjects=skipped_subjects,
-                               baseline_num=baseline_num,
+                               num_baseline=num_baseline,
                                baseline_chunk_size=baseline_chunk_size,
                                transform=transform,
                                write_info_fn=info_io.write_info,

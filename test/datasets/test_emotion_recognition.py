@@ -8,8 +8,7 @@ from torcheeg.datasets import (AMIGOSDataset, DEAPDataset, DREAMERDataset,
                                MAHNOBDataset, SEEDDataset, BCI2022Dataset)
 from torcheeg.datasets.functional import (amigos_constructor, deap_constructor,
                                           dreamer_constructor,
-                                          mahnob_constructor, seed_constructor,
-                                          bci2022_constructor)
+                                          mahnob_constructor, seed_constructor)
 
 
 class TestEmotionRecognitionDataset(unittest.TestCase):
@@ -52,7 +51,7 @@ class TestEmotionRecognitionDataset(unittest.TestCase):
 
         dataset = AMIGOSDataset(io_path=io_path,
                                 root_path=root_path,
-                                trial_num=16,
+                                num_trial=16,
                                 label_transform=transforms.Compose([
                                     transforms.Select('valence'),
                                     transforms.Binary(5.0),

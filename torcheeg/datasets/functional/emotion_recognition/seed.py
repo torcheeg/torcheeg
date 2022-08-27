@@ -11,8 +11,8 @@ MAX_QUEUE_SIZE = 1024
 
 
 def transform_producer(file_name: str, root_path: str, chunk_size: int,
-                       overlap: int, channel_num: int,
-                       transform: Union[List[Callable], Callable, None],
+                       overlap: int, num_channel: int,
+                       transform: Union[Callable, None],
                        write_info_fn: Callable, queue: Queue):
     subject = int(
         os.path.basename(file_name).split('.')[0].split('_')[0])  # subject (15)
@@ -50,7 +50,7 @@ def transform_producer(file_name: str, root_path: str, chunk_size: int,
         end_at = chunk_size
 
         while end_at <= trial_samples.shape[1]:
-            clip_sample = trial_samples[:channel_num, start_at:end_at]
+            clip_sample = trial_samples[:num_channel, start_at:end_at]
 
             t_eeg = clip_sample
             if not transform is None:
@@ -98,7 +98,7 @@ class SingleProcessingQueue:
 def seed_constructor(root_path: str = './Preprocessed_EEG',
                      chunk_size: int = 200,
                      overlap: int = 0,
-                     channel_num: int = 62,
+                     num_channel: int = 62,
                      transform: Union[None, Callable] = None,
                      io_path: str = './io/seed',
                      num_worker: int = 0,
@@ -113,6 +113,8 @@ def seed_constructor(root_path: str = './Preprocessed_EEG',
             f'The target folder already exists, if you need to regenerate the database IO, please delete the path {io_path}.'
         )
         return
+
+    os.makedirs(io_path, exist_ok=True)
 
     meta_info_io_path = os.path.join(io_path, 'info.csv')
     eeg_signal_io_path = os.path.join(io_path, 'eeg')
@@ -142,7 +144,7 @@ def seed_constructor(root_path: str = './Preprocessed_EEG',
                                 root_path=root_path,
                                 chunk_size=chunk_size,
                                 overlap=overlap,
-                                channel_num=channel_num,
+                                num_channel=num_channel,
                                 transform=transform,
                                 write_info_fn=info_io.write_info,
                                 queue=queue)
@@ -162,7 +164,7 @@ def seed_constructor(root_path: str = './Preprocessed_EEG',
                                root_path=root_path,
                                chunk_size=chunk_size,
                                overlap=overlap,
-                               channel_num=channel_num,
+                               num_channel=num_channel,
                                transform=transform,
                                write_info_fn=info_io.write_info,
                                queue=SingleProcessingQueue(eeg_io.write_eeg))

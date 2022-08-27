@@ -64,13 +64,15 @@ class ToGrid(EEGTransform):
                  apply_to_baseline: bool = False):
         super(ToGrid, self).__init__(apply_to_baseline=apply_to_baseline)
         self.channel_location_dict = channel_location_dict
+
         loc_x_list = []
         loc_y_list = []
-        for _, (loc_x, loc_y) in channel_location_dict.items():
+        for _, (loc_y, loc_x) in channel_location_dict.items():
             loc_x_list.append(loc_x)
             loc_y_list.append(loc_y)
-        self.height = max(loc_y_list) + 1
+
         self.width = max(loc_x_list) + 1
+        self.height = max(loc_y_list) + 1
 
     def __call__(self,
                  *args,
@@ -89,10 +91,10 @@ class ToGrid(EEGTransform):
 
     def apply(self, eeg: np.ndarray, **kwargs) -> np.ndarray:
         # electronode eeg timestep
-        outputs = np.zeros([self.width, self.height, eeg.shape[-1]])
+        outputs = np.zeros([self.height, self.width, eeg.shape[-1]])
         # 9 eeg 9 eeg timestep
-        for i, (loc_x, loc_y) in enumerate(self.channel_location_dict.values()):
-            outputs[loc_x][loc_y] = eeg[i]
+        for i, (loc_y, loc_x) in enumerate(self.channel_location_dict.values()):
+            outputs[loc_y][loc_x] = eeg[i]
 
         outputs = outputs.transpose(2, 0, 1)
         # timestep eeg 9 eeg 9
@@ -134,13 +136,24 @@ class ToInterpolatedGrid(EEGTransform):
               self).__init__(apply_to_baseline=apply_to_baseline)
         self.channel_location_dict = channel_location_dict
         self.location_array = np.array(list(channel_location_dict.values()))
-        grid_x, grid_y = np.mgrid[
+
+        loc_x_list = []
+        loc_y_list = []
+        for _, (loc_y, loc_x) in channel_location_dict.items():
+            loc_x_list.append(loc_x)
+            loc_y_list.append(loc_y)
+
+        self.width = max(loc_x_list) + 1
+        self.height = max(loc_y_list) + 1
+
+        grid_y, grid_x = np.mgrid[
             min(self.location_array[:, 0]):max(self.location_array[:,
-                                                                   0]):9 * 1j,
+                                                                   0]):self.height * 1j,
             min(self.location_array[:, 1]):max(self.location_array[:,
-                                                                   1]):9 * 1j, ]
-        self.grid_x = grid_x
+                                                                   1]):self.width * 1j, ]
         self.grid_y = grid_y
+        self.grid_x = grid_x
+        
 
     def __call__(self,
                  *args,
@@ -162,10 +175,11 @@ class ToInterpolatedGrid(EEGTransform):
         eeg = eeg.transpose(1, 0)
         # timestep eeg channel
         outputs = []
-        for timestep_split_x in eeg:
+
+        for timestep_split_y in eeg:
             outputs.append(
                 griddata(self.location_array,
-                         timestep_split_x, (self.grid_x, self.grid_y),
+                         timestep_split_y, (self.grid_x, self.grid_y),
                          method='cubic',
                          fill_value=0))
         outputs = np.array(outputs)

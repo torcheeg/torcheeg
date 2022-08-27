@@ -4,7 +4,7 @@ https://data.pyg.org/whl/torch-1.9.0%2Bcpu/torch_sparse-0.6.10-cp38-cp38-linux_x
 mne
 Sphinx >= 3.0.0
 docutils
-pylons-sphinx-themes >= 1.0.8.post1
+pylons-sphinx-themes
 pylons_sphinx_latesturl
 repoze.sphinx.autointerface
 sphinxcontrib-autoprogram

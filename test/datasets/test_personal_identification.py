@@ -35,7 +35,7 @@ class TestPersonalIdentificationDataset(unittest.TestCase):
         io_path = f'./tmp_out/m3cv_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
         dataset = M3CVDataset(io_path=io_path,
                               root_path=root_path,
-                              subset='Testing', channel_num=65,
+                              subset='Testing', num_channel=65,
                               num_worker=9)
 
         self.assertEqual(len(dataset), 52942)
@@ -47,7 +47,7 @@ class TestPersonalIdentificationDataset(unittest.TestCase):
         io_path = f'./tmp_out/m3cv_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
         dataset = M3CVDataset(io_path=io_path,
                               root_path=root_path,
-                              subset='Calibration', channel_num=65,
+                              subset='Calibration', num_channel=65,
                               num_worker=9)
 
         self.assertEqual(len(dataset), 6070)

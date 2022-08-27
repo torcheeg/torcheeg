@@ -11,7 +11,8 @@ from ..base_transform import EEGTransform
 
 class RandomEEGTransform(EEGTransform):
     def __init__(self, p: float = 0.5, apply_to_baseline: bool = False):
-        super(RandomEEGTransform, self).__init__(apply_to_baseline=apply_to_baseline)
+        super(RandomEEGTransform,
+              self).__init__(apply_to_baseline=apply_to_baseline)
         self.p = p
 
     def apply(self, eeg: torch.Tensor, **kwargs) -> torch.Tensor:
@@ -45,8 +46,13 @@ class RandomNoise(RandomEEGTransform):
 
     .. automethod:: __call__
     '''
-    def __init__(self, mean: float = 0.0, std: float = 1.0, p: float = 0.5, apply_to_baseline: bool = False):
-        super(RandomNoise, self).__init__(p=p, apply_to_baseline=apply_to_baseline)
+    def __init__(self,
+                 mean: float = 0.0,
+                 std: float = 1.0,
+                 p: float = 0.5,
+                 apply_to_baseline: bool = False):
+        super(RandomNoise, self).__init__(p=p,
+                                          apply_to_baseline=apply_to_baseline)
         self.mean = mean
         self.std = std
 
@@ -92,8 +98,12 @@ class RandomMask(RandomEEGTransform):
 
     .. automethod:: __call__
     '''
-    def __init__(self, ratio: float = 0.5, p: float = 0.5, apply_to_baseline: bool = False):
-        super(RandomMask, self).__init__(p=p, apply_to_baseline=apply_to_baseline)
+    def __init__(self,
+                 ratio: float = 0.5,
+                 p: float = 0.5,
+                 apply_to_baseline: bool = False):
+        super(RandomMask, self).__init__(p=p,
+                                         apply_to_baseline=apply_to_baseline)
         self.ratio = ratio
 
     def __call__(self,
@@ -147,8 +157,13 @@ class RandomWindowSlice(RandomEEGTransform):
 
     .. automethod:: __call__
     '''
-    def __init__(self, window_size: int = 120, series_dim: int = -1, p: float = 0.5, apply_to_baseline: bool = False):
-        super(RandomWindowSlice, self).__init__(p=p, apply_to_baseline=apply_to_baseline)
+    def __init__(self,
+                 window_size: int = 120,
+                 series_dim: int = -1,
+                 p: float = 0.5,
+                 apply_to_baseline: bool = False):
+        super(RandomWindowSlice,
+              self).__init__(p=p, apply_to_baseline=apply_to_baseline)
         self.window_size = window_size
         self.series_dim = series_dim
 
@@ -178,7 +193,8 @@ class RandomWindowSlice(RandomEEGTransform):
             return eeg
 
         assert -len(eeg.shape) <= self.series_dim < len(
-            eeg.shape), f'series_dim should be in range of [{- len(eeg.shape)}, {len(eeg.shape)}).'
+            eeg.shape
+        ), f'series_dim should be in range of [{- len(eeg.shape)}, {len(eeg.shape)}).'
 
         if self.series_dim < 0:
             self.series_dim = len(eeg.shape) + self.series_dim
@@ -190,21 +206,28 @@ class RandomWindowSlice(RandomEEGTransform):
             eeg = eeg.transpose(transpose_dims)
 
         if len(eeg.shape) == 2:
-            starts = np.random.randint(low=0, high=eeg.shape[-1] - self.window_size, size=(eeg.shape[0])).astype(int)
+            starts = np.random.randint(low=0,
+                                       high=eeg.shape[-1] - self.window_size,
+                                       size=(eeg.shape[0])).astype(int)
         else:
-            starts = np.random.randint(low=0, high=eeg.shape[-1] - self.window_size,
-                                       size=(eeg.shape[0], eeg.shape[1])).astype(int)
+            starts = np.random.randint(low=0,
+                                       high=eeg.shape[-1] - self.window_size,
+                                       size=(eeg.shape[0],
+                                             eeg.shape[1])).astype(int)
         ends = (self.window_size + starts).astype(int)
 
         new_eeg = np.zeros_like(eeg)
         for i, eeg_i in enumerate(eeg):
             if len(eeg.shape) == 3:
                 for j, eeg_i_j in enumerate(eeg_i):
-                    new_eeg[i][j] = np.interp(np.linspace(0, self.window_size, num=eeg.shape[-1]),
-                                              np.arange(self.window_size), eeg_i_j[starts[i][j]:ends[i][j]]).T
+                    new_eeg[i][j] = np.interp(
+                        np.linspace(0, self.window_size, num=eeg.shape[-1]),
+                        np.arange(self.window_size),
+                        eeg_i_j[starts[i][j]:ends[i][j]]).T
             else:
-                new_eeg[i] = np.interp(np.linspace(0, self.window_size, num=eeg.shape[-1]), np.arange(self.window_size),
-                                       eeg_i[starts[i]:ends[i]]).T
+                new_eeg[i] = np.interp(
+                    np.linspace(0, self.window_size, num=eeg.shape[-1]),
+                    np.arange(self.window_size), eeg_i[starts[i]:ends[i]]).T
 
         if self.series_dim != (len(eeg.shape) - 1):
             undo_transpose_dims = [0] * len(eeg.shape)
@@ -216,7 +239,11 @@ class RandomWindowSlice(RandomEEGTransform):
 
     @property
     def repr_body(self) -> Dict:
-        return dict(super().repr_body, **{'window_size': self.window_size, 'series_dim': self.series_dim})
+        return dict(
+            super().repr_body, **{
+                'window_size': self.window_size,
+                'series_dim': self.series_dim
+            })
 
 
 class RandomWindowWarp(RandomEEGTransform):
@@ -252,7 +279,8 @@ class RandomWindowWarp(RandomEEGTransform):
                  series_dim: int = -1,
                  p: float = 0.5,
                  apply_to_baseline: bool = False):
-        super(RandomWindowWarp, self).__init__(p=p, apply_to_baseline=apply_to_baseline)
+        super(RandomWindowWarp,
+              self).__init__(p=p, apply_to_baseline=apply_to_baseline)
         self.window_size = window_size
         self.warp_size = warp_size
         self.series_dim = series_dim
@@ -290,10 +318,14 @@ class RandomWindowWarp(RandomEEGTransform):
 
         window_steps = np.arange(self.window_size)
         if len(eeg.shape) == 2:
-            starts = np.random.randint(low=0, high=eeg.shape[-1] - self.window_size, size=(eeg.shape[0])).astype(int)
+            starts = np.random.randint(low=0,
+                                       high=eeg.shape[-1] - self.window_size,
+                                       size=(eeg.shape[0])).astype(int)
         else:
-            starts = np.random.randint(low=0, high=eeg.shape[-1] - self.window_size,
-                                       size=(eeg.shape[0], eeg.shape[1])).astype(int)
+            starts = np.random.randint(low=0,
+                                       high=eeg.shape[-1] - self.window_size,
+                                       size=(eeg.shape[0],
+                                             eeg.shape[1])).astype(int)
         ends = (self.window_size + starts).astype(int)
 
         new_eeg = np.zeros_like(eeg)
@@ -301,20 +333,27 @@ class RandomWindowWarp(RandomEEGTransform):
             if len(eeg.shape) == 3:
                 for j, eeg_i_j in enumerate(eeg_i):
                     start_seg = eeg_i_j[:starts[i][j]]
-                    window_seg = np.interp(np.linspace(0, self.window_size - 1, num=self.warp_size), window_steps,
-                                           eeg_i_j[starts[i][j]:ends[i][j]])
+                    window_seg = np.interp(
+                        np.linspace(0, self.window_size - 1,
+                                    num=self.warp_size), window_steps,
+                        eeg_i_j[starts[i][j]:ends[i][j]])
                     end_seg = eeg_i_j[ends[i][j]:]
                     warped = np.concatenate((start_seg, window_seg, end_seg))
-                    new_eeg[i][j] = np.interp(np.arange(eeg.shape[-1]),
-                                              np.linspace(0, eeg.shape[-1] - 1., num=warped.size), warped).T
+                    new_eeg[i][j] = np.interp(
+                        np.arange(eeg.shape[-1]),
+                        np.linspace(0, eeg.shape[-1] - 1., num=warped.size),
+                        warped).T
             else:
                 start_seg = eeg_i[:starts[i]]
-                window_seg = np.interp(np.linspace(0, self.window_size - 1, num=self.warp_size), window_steps,
-                                       eeg_i[starts[i]:ends[i]])
+                window_seg = np.interp(
+                    np.linspace(0, self.window_size - 1, num=self.warp_size),
+                    window_steps, eeg_i[starts[i]:ends[i]])
                 end_seg = eeg_i[ends[i]:]
                 warped = np.concatenate((start_seg, window_seg, end_seg))
-                new_eeg[i] = np.interp(np.arange(eeg.shape[-1]), np.linspace(0, eeg.shape[-1] - 1., num=warped.size),
-                                       warped).T
+                new_eeg[i] = np.interp(
+                    np.arange(eeg.shape[-1]),
+                    np.linspace(0, eeg.shape[-1] - 1., num=warped.size),
+                    warped).T
 
         if self.series_dim != (len(eeg.shape) - 1):
             undo_transpose_dims = [0] * len(eeg.shape)
@@ -326,11 +365,12 @@ class RandomWindowWarp(RandomEEGTransform):
 
     @property
     def repr_body(self) -> Dict:
-        return dict(super().repr_body, **{
-            'window_size': self.window_size,
-            'warp_size': self.warp_size,
-            'series_dim': self.series_dim
-        })
+        return dict(
+            super().repr_body, **{
+                'window_size': self.window_size,
+                'warp_size': self.warp_size,
+                'series_dim': self.series_dim
+            })
 
 
 class RandomPCANoise(RandomEEGTransform):
@@ -368,7 +408,8 @@ class RandomPCANoise(RandomEEGTransform):
                  series_dim: int = -1,
                  p: float = 0.5,
                  apply_to_baseline: bool = False):
-        super(RandomPCANoise, self).__init__(p=p, apply_to_baseline=apply_to_baseline)
+        super(RandomPCANoise,
+              self).__init__(p=p, apply_to_baseline=apply_to_baseline)
         self.mean = mean
         self.std = std
         self.n_components = n_components
@@ -411,11 +452,17 @@ class RandomPCANoise(RandomEEGTransform):
         for i, eeg_i in enumerate(eeg):
             if len(eeg.shape) == 3:
                 for j, eeg_i_j in enumerate(eeg_i):
-                    coeffs = np.random.normal(loc=self.mean, scale=self.std, size=pca.n_components) * variances
-                    new_eeg[i][j] = eeg_i_j + (components * coeffs.reshape((pca.n_components, -1))).sum(axis=0)
+                    coeffs = np.random.normal(loc=self.mean,
+                                              scale=self.std,
+                                              size=pca.n_components) * variances
+                    new_eeg[i][j] = eeg_i_j + (components * coeffs.reshape(
+                        (pca.n_components, -1))).sum(axis=0)
             else:
-                coeffs = np.random.normal(loc=self.mean, scale=self.std, size=pca.n_components) * variances
-                new_eeg[i] = eeg_i + (components * coeffs.reshape((pca.n_components, -1))).sum(axis=0)
+                coeffs = np.random.normal(loc=self.mean,
+                                          scale=self.std,
+                                          size=pca.n_components) * variances
+                new_eeg[i] = eeg_i + (components * coeffs.reshape(
+                    (pca.n_components, -1))).sum(axis=0)
 
         if self.series_dim != (len(eeg.shape) - 1):
             undo_transpose_dims = [0] * len(eeg.shape)
@@ -458,7 +505,8 @@ class RandomFlip(RandomEEGTransform):
     .. automethod:: __call__
     '''
     def __init__(self, dim=-1, p: float = 0.5, apply_to_baseline: bool = False):
-        super(RandomFlip, self).__init__(p=p, apply_to_baseline=apply_to_baseline)
+        super(RandomFlip, self).__init__(p=p,
+                                         apply_to_baseline=apply_to_baseline)
         self.dim = dim
 
     def __call__(self,
@@ -501,7 +549,8 @@ class RandomSignFlip(RandomEEGTransform):
     .. automethod:: __call__
     '''
     def __init__(self, p: float = 0.5, apply_to_baseline: bool = False):
-        super(RandomSignFlip, self).__init__(p=p, apply_to_baseline=apply_to_baseline)
+        super(RandomSignFlip,
+              self).__init__(p=p, apply_to_baseline=apply_to_baseline)
 
     def __call__(self,
                  *args,
@@ -547,7 +596,8 @@ class RandomShift(RandomEEGTransform):
                  shift_max: int = 12,
                  dim: int = -1,
                  apply_to_baseline: bool = False):
-        super(RandomShift, self).__init__(p=p, apply_to_baseline=apply_to_baseline)
+        super(RandomShift, self).__init__(p=p,
+                                          apply_to_baseline=apply_to_baseline)
         self.shift_min = shift_min
         self.shift_max = shift_max
         self.dim = dim
@@ -568,12 +618,19 @@ class RandomShift(RandomEEGTransform):
         return super().__call__(*args, eeg=eeg, baseline=baseline, **kwargs)
 
     def random_apply(self, eeg: torch.Tensor, **kwargs) -> torch.Tensor:
-        shift = torch.randint(low=self.shift_min, high=self.shift_max, size=(1, ))
+        shift = torch.randint(low=self.shift_min,
+                              high=self.shift_max,
+                              size=(1, ))
         return torch.roll(eeg, shifts=shift.item(), dims=self.dim)
 
     @property
     def repr_body(self) -> Dict:
-        return dict(super().repr_body, **{'shift_min': self.shift_min, 'shift_max': self.shift_max, 'dim': self.dim})
+        return dict(
+            super().repr_body, **{
+                'shift_min': self.shift_min,
+                'shift_max': self.shift_max,
+                'dim': self.dim
+            })
 
 
 class RandomChannelShuffle(RandomEEGTransform):
@@ -593,7 +650,8 @@ class RandomChannelShuffle(RandomEEGTransform):
     .. automethod:: __call__
     '''
     def __init__(self, p: float = 0.5, apply_to_baseline: bool = False):
-        super(RandomChannelShuffle, self).__init__(p=p, apply_to_baseline=apply_to_baseline)
+        super(RandomChannelShuffle,
+              self).__init__(p=p, apply_to_baseline=apply_to_baseline)
 
     def __call__(self,
                  *args,
@@ -614,6 +672,77 @@ class RandomChannelShuffle(RandomEEGTransform):
         idx_list = np.arange(len(eeg))
         np.random.shuffle(idx_list)
         return eeg[idx_list]
+
+
+class RandomHemisphereChannelShuffle(RandomEEGTransform):
+    '''
+    Apply a shuffle with a specified probability on a single hemisphere (either left or right), after which the order of the channels is randomly shuffled.
+    
+    .. code-block:: python
+
+        transform = RandomChannelShuffle(location_list=M3CV_LOCATION_LIST,
+                                         channel_location_dict=M3CV_CHANNEL_LOCATION_DICT)
+        transform(eeg=torch.randn(32, 128))['eeg'].shape
+        >>> (32, 128)
+
+    Args:
+        p (float): Probability of applying random mask on EEG signal samples. Should be between 0.0 and 1.0, where 0.0 means no mask is applied to every sample and 1.0 means that masks are applied to every sample. (defualt: :obj:`0.5`)
+        apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (defualt: :obj:`False`)
+
+    .. automethod:: __call__
+    '''
+    def __init__(self,
+                 location_list,
+                 channel_location_dict,
+                 p: float = 0.5,
+                 apply_to_baseline: bool = False):
+        super(RandomHemisphereChannelShuffle,
+              self).__init__(p=p, apply_to_baseline=apply_to_baseline)
+        self.location_list = location_list
+        self.channel_location_dict = channel_location_dict
+
+        width = len(location_list[0])
+        left_channel_list = []
+        right_channel_list = []
+        for i, (loc_y, loc_x) in enumerate(channel_location_dict.values()):
+            if loc_x < width // 2:
+                left_channel_list.append(i)
+            if loc_y > width // 2:
+                right_channel_list.append(i)
+        self.left_channel_list = left_channel_list
+        self.right_channel_list = right_channel_list
+
+    def __call__(self,
+                 *args,
+                 eeg: torch.Tensor,
+                 baseline: Union[torch.Tensor, None] = None,
+                 **kwargs) -> Dict[str, torch.Tensor]:
+        r'''
+        Args:
+            eeg (torch.Tensor): The input EEG signal.
+            baseline (torch.Tensor, optional) : The corresponding baseline signal, if apply_to_baseline is set to True and baseline is passed, the baseline signal will be transformed with the same way as the experimental signal.
+
+        Returns:
+            torch.Tensor: The output EEG signal after applying a random channel shuffle.
+        '''
+        return super().__call__(*args, eeg=eeg, baseline=baseline, **kwargs)
+
+    def random_apply(self, eeg: torch.Tensor, **kwargs) -> torch.Tensor:
+        if 0.5 < torch.rand(1):
+            idx_list = self.left_channel_list
+        else:
+            idx_list = self.right_channel_list
+
+        shuffle_idx_list = np.random.permutation(idx_list.copy())
+        eeg[idx_list] = eeg[shuffle_idx_list]
+        return eeg
+
+    @property
+    def repr_body(self) -> Dict:
+        return dict(super().repr_body, **{
+            'location_list': [...],
+            'channel_location_dict': {...}
+        })
 
 
 class RandomFrequencyShift(RandomEEGTransform):
@@ -651,7 +780,8 @@ class RandomFrequencyShift(RandomEEGTransform):
                  shift_max: Union[float, int] = 2.0,
                  series_dim: int = 0,
                  apply_to_baseline: bool = False):
-        super(RandomFrequencyShift, self).__init__(p=p, apply_to_baseline=apply_to_baseline)
+        super(RandomFrequencyShift,
+              self).__init__(p=p, apply_to_baseline=apply_to_baseline)
         self.frequency = frequency
         self.shift_min = shift_min
         self.shift_max = shift_max
@@ -699,7 +829,8 @@ class RandomFrequencyShift(RandomEEGTransform):
 
         analytical = ifft(f * h, dim=-1)
 
-        shift = torch.rand(1) * (self.shift_max - self.shift_min) + self.shift_min
+        shift = torch.rand(1) * (self.shift_max -
+                                 self.shift_min) + self.shift_min
         shifted = analytical * torch.exp(2j * np.pi * shift * t)
 
         shifted = shifted[..., :N_orig].real.float()

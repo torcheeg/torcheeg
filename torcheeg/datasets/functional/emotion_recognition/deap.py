@@ -12,10 +12,10 @@ MAX_QUEUE_SIZE = 1024
 
 
 def transform_producer(file_name: str, root_path: str, chunk_size: int,
-                       overlap: int, channel_num: int, baseline_num: int,
-                       baseline_chunk_size: int,
-                       transform: Union[List[Callable], Callable,
-                                        None], write_info_fn: Callable,
+                       overlap: int, num_channel: int, num_baseline: int,
+                       baseline_chunk_size: int, transform: Union[Callable,
+                                                                  None],
+                       write_info_fn: Callable,
                        label_encoder: preprocessing.LabelEncoder, queue: Queue):
     with open(os.path.join(root_path, file_name), 'rb') as f:
         pkl_data = pkl.load(f, encoding='iso-8859-1')
@@ -32,11 +32,11 @@ def transform_producer(file_name: str, root_path: str, chunk_size: int,
     for trial_id in range(len(samples)):
         # extract baseline signals
         trial_samples = samples[trial_id, :
-                                channel_num]  # channel(32), timestep(63*128)
+                                num_channel]  # channel(32), timestep(63*128)
         trial_baseline_sample = trial_samples[:, :baseline_chunk_size *
-                                              baseline_num]  # channel(32), timestep(3*128)
+                                              num_baseline]  # channel(32), timestep(3*128)
         trial_baseline_sample = trial_baseline_sample.reshape(
-            channel_num, baseline_num,
+            num_channel, num_baseline,
             baseline_chunk_size).mean(axis=1)  # channel(32), timestep(128)
 
         # record the common meta info
@@ -48,7 +48,7 @@ def transform_producer(file_name: str, root_path: str, chunk_size: int,
             trial_meta_info[label_name] = trial_rating[label_idx]
 
         # extract experimental signals
-        start_at = baseline_chunk_size * baseline_num
+        start_at = baseline_chunk_size * num_baseline
         end_at = start_at + chunk_size
 
         while end_at <= trial_samples.shape[1]:
@@ -110,8 +110,8 @@ class SingleProcessingQueue:
 def deap_constructor(root_path: str = './data_preprocessed_python',
                      chunk_size: int = 128,
                      overlap: int = 0,
-                     channel_num: int = 32,
-                     baseline_num: int = 3,
+                     num_channel: int = 32,
+                     num_baseline: int = 3,
                      baseline_chunk_size: int = 128,
                      transform: Union[None, Callable] = None,
                      io_path: str = './io/deap',
@@ -157,8 +157,8 @@ def deap_constructor(root_path: str = './data_preprocessed_python',
                                 root_path=root_path,
                                 chunk_size=chunk_size,
                                 overlap=overlap,
-                                channel_num=channel_num,
-                                baseline_num=baseline_num,
+                                num_channel=num_channel,
+                                num_baseline=num_baseline,
                                 baseline_chunk_size=baseline_chunk_size,
                                 transform=transform,
                                 write_info_fn=info_io.write_info,
@@ -179,8 +179,8 @@ def deap_constructor(root_path: str = './data_preprocessed_python',
                                root_path=root_path,
                                chunk_size=chunk_size,
                                overlap=overlap,
-                               channel_num=channel_num,
-                               baseline_num=baseline_num,
+                               num_channel=num_channel,
+                               num_baseline=num_baseline,
                                baseline_chunk_size=baseline_chunk_size,
                                transform=transform,
                                write_info_fn=info_io.write_info,

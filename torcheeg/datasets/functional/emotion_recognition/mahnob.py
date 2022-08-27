@@ -14,10 +14,9 @@ MAX_QUEUE_SIZE = 1024
 
 
 def transform_producer(file_name: str, root_path: str, chunk_size: int,
-                       sampling_rate: int, overlap: int, channel_num: int,
-                       baseline_num: int, baseline_chunk_size: int,
-                       trial_sample_num: int, transform: Union[List[Callable],
-                                                               Callable, None],
+                       sampling_rate: int, overlap: int, num_channel: int,
+                       num_baseline: int, baseline_chunk_size: int,
+                       num_trial_sample: int, transform: Union[Callable, None],
                        write_info_fn: Callable, queue: Queue):
     trial_dir = os.path.join(root_path, file_name)
 
@@ -56,7 +55,7 @@ def transform_producer(file_name: str, root_path: str, chunk_size: int,
     raw.set_montage(montage, on_missing='ignore')
 
     # pick channels
-    raw.pick_channels(raw.ch_names[:channel_num])
+    raw.pick_channels(raw.ch_names[:num_channel])
 
     start_samp, end_samp = events[0][0] + 1, events[1][0] - 1
 
@@ -66,10 +65,10 @@ def transform_producer(file_name: str, root_path: str, chunk_size: int,
 
     trial_baseline_sample = trial_baseline_raw.to_data_frame().to_numpy(
     )[:, 1:].swapaxes(1, 0)  # channel(32), timestep(30 * 128)
-    trial_baseline_sample = trial_baseline_sample[:, :baseline_num *
+    trial_baseline_sample = trial_baseline_sample[:, :num_baseline *
                                                   baseline_chunk_size]
     trial_baseline_sample = trial_baseline_sample.reshape(
-        channel_num, baseline_num,
+        num_channel, num_baseline,
         baseline_chunk_size).mean(axis=1)  # channel(32), timestep(128)
 
     # extract experimental signals
@@ -84,8 +83,8 @@ def transform_producer(file_name: str, root_path: str, chunk_size: int,
     end_at = start_at + chunk_size
 
     max_len = trial_samples.shape[1]
-    if not (trial_sample_num <= 0):
-        max_len = min(trial_sample_num * chunk_size, trial_samples.shape[1])
+    if not (num_trial_sample <= 0):
+        max_len = min(num_trial_sample * chunk_size, trial_samples.shape[1])
 
     while end_at <= max_len:
         clip_sample = trial_samples[:, start_at:end_at]
@@ -146,10 +145,10 @@ def mahnob_constructor(root_path: str = './Sessions',
                        chunk_size: int = 128,
                        sampling_rate: int = 128,
                        overlap: int = 0,
-                       channel_num: int = 32,
-                       baseline_num: int = 30,
+                       num_channel: int = 32,
+                       num_baseline: int = 30,
                        baseline_chunk_size: int = 128,
-                       trial_sample_num: int = 30,
+                       num_trial_sample: int = 30,
                        transform: Union[None, Callable] = None,
                        io_path: str = './io/mahnob',
                        num_worker: int = 0,
@@ -191,10 +190,10 @@ def mahnob_constructor(root_path: str = './Sessions',
                                 chunk_size=chunk_size,
                                 sampling_rate=sampling_rate,
                                 overlap=overlap,
-                                channel_num=channel_num,
-                                baseline_num=baseline_num,
+                                num_channel=num_channel,
+                                num_baseline=num_baseline,
                                 baseline_chunk_size=baseline_chunk_size,
-                                trial_sample_num=trial_sample_num,
+                                num_trial_sample=num_trial_sample,
                                 transform=transform,
                                 write_info_fn=info_io.write_info,
                                 queue=queue)
@@ -215,10 +214,10 @@ def mahnob_constructor(root_path: str = './Sessions',
                                chunk_size=chunk_size,
                                sampling_rate=sampling_rate,
                                overlap=overlap,
-                               channel_num=channel_num,
-                               baseline_num=baseline_num,
+                               num_channel=num_channel,
+                               num_baseline=num_baseline,
                                baseline_chunk_size=baseline_chunk_size,
-                               trial_sample_num=trial_sample_num,
+                               num_trial_sample=num_trial_sample,
                                transform=transform,
                                write_info_fn=info_io.write_info,
                                queue=SingleProcessingQueue(eeg_io.write_eeg))

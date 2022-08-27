@@ -31,6 +31,80 @@ transforms.BandSkewness
 
 .. autoclass:: torcheeg.transforms.BandSkewness
 
+transforms.DWTDecomposition
+----------------------------------------
+
+.. autoclass:: torcheeg.transforms.DWTDecomposition
+
+transforms.BandApproximateEntropy
+----------------------------------------
+
+.. autoclass:: torcheeg.transforms.BandApproximateEntropy
+
+transforms.BandSampleEntropy
+----------------------------------------
+
+.. autoclass:: torcheeg.transforms.BandSampleEntropy
+
+
+transforms.BandSVDEntropy
+----------------------------------------
+
+.. autoclass:: torcheeg.transforms.BandSVDEntropy
+
+
+transforms.BandDetrendedFluctuationAnalysis
+----------------------------------------
+
+.. autoclass:: torcheeg.transforms.BandDetrendedFluctuationAnalysis
+
+
+transforms.BandHiguchiFractalDimension
+----------------------------------------
+
+.. autoclass:: torcheeg.transforms.BandHiguchiFractalDimension
+
+
+transforms.BandHjorth
+----------------------------------------
+
+.. autoclass:: torcheeg.transforms.BandHjorth
+
+
+transforms.BandHurst
+----------------------------------------
+
+.. autoclass:: torcheeg.transforms.BandHurst
+
+
+transforms.BandPetrosianFractalDimension
+----------------------------------------
+
+.. autoclass:: torcheeg.transforms.BandPetrosianFractalDimension
+
+
+transforms.BandBinPower
+----------------------------------------
+
+.. autoclass:: torcheeg.transforms.BandBinPower
+
+
+transforms.BandSpectralEntropy
+----------------------------------------
+
+.. autoclass:: torcheeg.transforms.BandSpectralEntropy
+
+
+transforms.PearsonCorrelation
+----------------------------------------
+
+.. autoclass:: torcheeg.transforms.PearsonCorrelation
+
+transforms.PhaseLockingCorrelation
+----------------------------------------
+
+.. autoclass:: torcheeg.transforms.PhaseLockingCorrelation
+
 transforms.MeanStdNormalize
 --------------------------------------
 
