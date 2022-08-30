@@ -86,11 +86,8 @@ TorchEEG provides plugins related to graph algorithms for converting EEG
 in datasets into graph structures and analyzing them using graph neural
 networks. This part of the implementation relies on PyG.
 
-   If you do not use graph-related algorithms, you can skip this part of
-   the installation.
-
-TorchEEG recommends users to manually install PyG to avoid possible
-errors:
+If you do not use graph-related algorithms, you can skip this part of
+the installation.
 
 .. code:: shell
 
