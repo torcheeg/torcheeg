@@ -19,7 +19,6 @@ def train_test_split(dataset: BaseDataset,
     :obj:`train_test_split` devides the training set and the test set without grouping. It means that during random sampling, adjacent signal samples may be assigned to the training set and the test set, respectively. When random sampling is not used, some subjects are not included in the training set. If you think these situations shouldn't happen, consider using :obj:`train_test_split_per_subject_groupby_trial` or :obj:`train_test_split_groupby_trial`.
 
     .. image:: _static/train_test_split.png
-        :height: 50px
         :alt: The schematic diagram of train_test_split
         :align: center
 

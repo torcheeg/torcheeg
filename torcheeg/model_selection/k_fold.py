@@ -15,7 +15,6 @@ class KFold:
     :obj:`KFold` devides subsets without grouping. It means that during random sampling, adjacent signal samples may be assigned to the training set and the test set, respectively. When random sampling is not used, some subjects are not included in the training set. If you think these situations shouldn't happen, consider using :obj:`KFoldPerSubjectGroupbyTrial` or :obj:`KFoldGroupbyTrial`.
 
     .. image:: _static/KFold.png
-        :height: 50px
         :alt: The schematic diagram of KFold
         :align: center
 

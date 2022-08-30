@@ -20,7 +20,6 @@ def train_test_split_cross_trial(
     :obj:`train_test_split_cross_trial` devides training set and the test set at the dimension of each trial. For example, when :obj:`test_size=0.2`, the first 80% of samples of each trial are used for training, and the last 20% of samples are used for testing. It is more consistent with real applications and can test the generalization of the model to a certain extent.
 
     .. image:: _static/train_test_split_cross_trial.png
-        :height: 120px
         :alt: The schematic diagram of train_test_split_cross_trial
         :align: center
 

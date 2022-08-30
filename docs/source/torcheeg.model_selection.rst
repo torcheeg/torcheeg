@@ -11,6 +11,11 @@ KFoldPerSubject
 
 .. autoclass:: torcheeg.model_selection.KFoldPerSubject
 
+KFoldCrossSubject
+-------------------------------------------------
+
+.. autoclass:: torcheeg.model_selection.KFoldCrossSubject
+
 KFoldGroupbyTrial
 -------------------------------------------------
 
@@ -35,6 +40,12 @@ LeaveOneSubjectOut
 -------------------------------------------------
 
 .. autoclass:: torcheeg.model_selection.LeaveOneSubjectOut
+
+
+Subcategory
+-------------------------------------------------
+
+.. autoclass:: torcheeg.model_selection.Subcategory
 
 train_test_split
 -----------------------------------------------

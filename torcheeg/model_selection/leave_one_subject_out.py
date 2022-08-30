@@ -12,7 +12,6 @@ class LeaveOneSubjectOut:
     A tool class for leave-one-subject-out cross-validations, to divide the training set and the test set, commonly used to study model performance in the case of subject independent experiments. During each fold, experiments require testing on one subject and training on the other subjects.
 
     .. image:: _static/LeaveOneSubjectOut.png
-        :height: 120px
         :alt: The schematic diagram of LeaveOneSubjectOut
         :align: center
 

@@ -1,0 +1,1 @@
+from .coral import CoralTrainer, CoralTrainerInterface

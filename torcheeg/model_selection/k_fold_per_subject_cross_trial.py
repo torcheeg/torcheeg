@@ -13,7 +13,6 @@ class KFoldPerSubjectCrossTrial:
     A tool class for k-fold cross-validations, to divide the training set and the test set, commonly used to study model performance in the case of subject dependent experiments. Experiments were performed separately for each subject, where the data set is divided into k subsets of trials, with one subset trials being retained as the test set and the remaining k-1 subset trials being used as training data. In most of the literature, K is chosen as 5 or 10 according to the size of the data set.
 
     .. image:: _static/KFoldPerSubjectCrossTrial.png
-        :height: 70px
         :alt: The schematic diagram of KFoldPerSubjectCrossTrial
         :align: center
 

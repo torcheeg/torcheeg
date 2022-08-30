@@ -1,28 +1,26 @@
 import os
 import re
 from copy import copy
-from typing import List, Tuple, Union, Dict
+from typing import Tuple, Union, Dict
 
 import pandas as pd
 from sklearn import model_selection
 from torcheeg.datasets.module.base_dataset import BaseDataset
 
 
-class KFoldGroupbyTrial:
+class KFoldCrossSubject:
     r'''
-    A tool class for k-fold cross-validations, to divide the training set and the test set. A variant of :obj:`KFold`, where the data set is divided into k subsets at the dimension of trials, with one subset being retained as the test set and the remaining k-1 being used as training data. In most of the literature, K is chosen as 5 or 10 according to the size of the data set.
+    A tool class for k-fold cross-validations, to divide the training set and the test set. One of the most commonly used data partitioning methods, where the data set is divided into k subsets of subjects, with one subset subjects being retained as the test set and the remaining k-1 subset subjects being used as training data. In most of the literature, K is chosen as 5 or 10 according to the size of the data set.
 
-    :obj:`KFoldGroupbyTrial` devides subsets at the dimension of trials. Take the first partition with :obj:`k=5` as an example, the first 80% of samples of each trial are used for training, and the last 20% of samples are used for testing. It is more consistent with real applications and can test the generalization of the model to a certain extent.
-
-    .. image:: _static/KFoldGroupbyTrial.png
-        :alt: The schematic diagram of KFoldGroupbyTrial
+    .. image:: _static/KFoldCrossSubject.png
+        :alt: The schematic diagram of KFoldCrossSubject
         :align: center
 
     |
 
     .. code-block:: python
 
-        cv = KFoldGroupbyTrial(n_splits=5, shuffle=False, split_path='./split')
+        cv = KFoldCrossSubject(n_splits=5, shuffle=True, split_path='./split')
         dataset = DEAPDataset(io_path=f'./deap',
                               root_path='./data_preprocessed_python',
                               online_transform=transforms.Compose([
@@ -49,8 +47,8 @@ class KFoldGroupbyTrial:
     def __init__(self,
                  n_splits: int = 5,
                  shuffle: bool = False,
-                 random_state: Union[float, None] = None,
-                 split_path: str = './split/k_fold_trial'):
+                 random_state: Union[None, int] = None,
+                 split_path: str = './split/k_fold_dataset'):
         self.n_splits = n_splits
         self.shuffle = shuffle
         self.random_state = random_state
@@ -61,44 +59,34 @@ class KFoldGroupbyTrial:
                                             random_state=random_state)
 
     def split_info_constructor(self, info: pd.DataFrame) -> None:
-        subjects = list(set(info['subject_id']))
+        subject_ids = list(set(info['subject_id']))
 
-        train_infos = {}
-        test_infos = {}
+        for fold_id, (train_subject_ids, test_subject_ids) in enumerate(
+                self.k_fold.split(subject_ids)):
 
-        for subject in subjects:
-            subject_info = info[info['subject_id'] == subject]
+            if len(train_subject_ids) == 0 or len(test_subject_ids) == 0:
+                raise ValueError(
+                    f'The number of training or testing subjects is zero.')
 
-            trial_ids = list(set(subject_info['trial_id']))
-            for trial_id in trial_ids:
-                trial_info = subject_info[subject_info['trial_id'] == trial_id]
+            train_info = []
+            for train_subject_id in train_subject_ids:
+                train_info.append(info[info['subject_id'] == train_subject_id])
+            train_info = pd.concat(train_info, ignore_index=True)
 
-                for i, (train_index,
-                        test_index) in enumerate(self.k_fold.split(trial_info)):
-                    train_info = trial_info.iloc[train_index]
-                    test_info = trial_info.iloc[test_index]
+            test_info = []
+            for test_subject_id in test_subject_ids:
+                test_info.append(info[info['subject_id'] == test_subject_id])
+            test_info = pd.concat(test_info, ignore_index=True)
 
-                    if not i in train_infos:
-                        train_infos[i] = []
-
-                    if not i in test_infos:
-                        test_infos[i] = []
-
-                    train_infos[i].append(train_info)
-                    test_infos[i].append(test_info)
-
-        for i in train_infos.keys():
-            train_info = pd.concat(train_infos[i], ignore_index=True)
-            test_info = pd.concat(test_infos[i], ignore_index=True)
             train_info.to_csv(os.path.join(self.split_path,
-                                           f'train_fold_{i}.csv'),
+                                           f'train_fold_{fold_id}.csv'),
                               index=False)
             test_info.to_csv(os.path.join(self.split_path,
-                                          f'test_fold_{i}.csv'),
+                                          f'test_fold_{fold_id}.csv'),
                              index=False)
 
     @property
-    def fold_ids(self) -> List:
+    def fold_ids(self):
         indice_files = list(os.listdir(self.split_path))
 
         def indice_file_to_fold_id(indice_file):

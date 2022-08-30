@@ -12,6 +12,8 @@
 #
 import os
 import sys
+import pytorch_sphinx_theme
+
 sys.path.insert(0, os.path.abspath('../../'))
 
 import torcheeg
@@ -26,7 +28,6 @@ copyright = f'{datetime.datetime.now().year}, {author}'
 # The full version, including alpha/beta/rc tags
 release = '1.0.9'
 
-
 # -- General configuration ---------------------------------------------------
 
 # Add any Sphinx extension module names here, as strings. They can be
@@ -38,7 +39,7 @@ extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.autosummary',
     'sphinx.ext.intersphinx',
-    'sphinx.ext.viewcode',
+    'sphinx.ext.viewcode'
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -49,13 +50,13 @@ templates_path = ['_templates']
 # This pattern also affects html_static_path and html_extra_path.
 exclude_patterns = []
 
-
 # -- Options for HTML output -------------------------------------------------
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = 'sphinx_rtd_theme'
+html_theme = 'pytorch_sphinx_theme'
+html_theme_path = [pytorch_sphinx_theme.get_html_theme_path()]
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
@@ -67,15 +68,18 @@ html_logo = '_static/torcheeg_logo_light.svg'
 html_css_files = ['custom.css']
 
 html_theme_options = {
-    'logo_only': True,
-    'display_version': True,
+    "collapse_navigation": False,
+    "display_version": True,
+    "logo_only": True,
+    "pytorch_project": "docs",
+    "navigation_with_keys": True
 }
 
 html_context = {
-  'display_github': True,
-  'github_user': 'tczhangzhi',
-  'github_repo': 'torcheeg',
-  'github_version': 'main/docs/',
+    'display_github': True,
+    'github_user': 'tczhangzhi',
+    'github_repo': 'torcheeg',
+    'github_version': 'main/docs/',
 }
 
 html_favicon = '_static/favicon.ico'

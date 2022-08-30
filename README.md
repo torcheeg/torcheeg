@@ -69,8 +69,6 @@ TorchEEG provides plugins related to graph algorithms for converting EEG in data
 
 > If you do not use graph-related algorithms, you can skip this part of the installation.
 
-TorchEEG recommends users to manually install PyG to avoid possible errors:
-
 ```bash
 # Conda
 # please refer to https://pytorch-geometric.readthedocås.io/en/latest/notes/installation.html

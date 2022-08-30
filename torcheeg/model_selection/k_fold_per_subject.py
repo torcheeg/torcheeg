@@ -13,7 +13,6 @@ class KFoldPerSubject:
     A tool class for k-fold cross-validations, to divide the training set and the test set, commonly used to study model performance in the case of subject dependent experiments. Experiments were performed separately for each subject, where the data of the subject is divided into k subsets, with one subset being retained as the test set and the remaining k-1 being used as training data. In most of the literature, K is chosen as 5 or 10 according to the size of the data set.
 
     .. image:: _static/KFoldPerSubject.png
-        :height: 50px
         :alt: The schematic diagram of KFoldPerSubject
         :align: center
 
