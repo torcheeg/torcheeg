@@ -17,15 +17,7 @@ class TestSubcategory(unittest.TestCase):
         io_path = f'./tmp_out/m3cv_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
         root_path = './tmp_in/aistudio'
 
-        dataset = M3CVDataset(io_path=io_path,
-                              root_path=root_path,
-                              online_transform=transforms.Compose(
-                                  [transforms.To2d(),
-                                   transforms.ToTensor()]),
-                              label_transform=transforms.Compose([
-                                  transforms.Select('subject_id'),
-                                  transforms.StringToInt()
-                              ]))
+        dataset = M3CVDataset(io_path=io_path, root_path=root_path)
 
         split_path = f'./tmp_out/split_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
         cv = Subcategory(split_path=split_path)

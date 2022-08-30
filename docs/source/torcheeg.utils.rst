@@ -29,4 +29,4 @@ plot_2d_tensor
 plot_graph
 -----------------------------------------------------------
 
-.. autofunction:: torcheeg.utils.plot_graph
+.. autofunction:: torcheeg.utils.pyg.plot_graph

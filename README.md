@@ -2,6 +2,8 @@
 [pypi-url]: https://pypi.python.org/pypi/torcheeg
 [docs-image]: https://readthedocs.org/projects/torcheeg/badge/?version=latest
 [docs-url]: https://torcheeg.readthedocs.io/en/latest/?badge=latest
+[pepy-image]: https://pepy.tech/badge/torcheeg
+[pepy-url]: https://pepy.tech/project/torcheeg
 
 ![TorchEEG Logo](https://github.com/tczhangzhi/torcheeg/blob/main/docs/source/_static/torcheeg_logo_dark.png)
 
@@ -9,6 +11,7 @@
 
 [![PyPI Version][pypi-image]][pypi-url]
 [![Docs Status][docs-image]][docs-url]
+[![Downloads][pepy-image]][pepy-url]
 
 **[Documentation](https://torcheeg.readthedocs.io/)** | **[TorchEEG Examples](https://github.com/tczhangzhi/torcheeg/tree/main/examples)**
 
@@ -20,7 +23,15 @@ TorchEEG specifies a unified data input-output format (IO) and implement commonl
 
 TorchEEG depends on PyTorch, please complete the installation of PyTorch according to the system, CUDA version and other information:
 
-```shell
+```bash
+# Conda
+# please refer to https://pytorch.org/get-started/locally/
+# e.g. CPU version
+conda install pytorch==1.11.0 torchvision torchaudio cpuonly -c pytorch
+# e.g. GPU version
+conda install pytorch==1.11.0 torchvision torchaudio cudatoolkit=11.3 -c pytorch
+
+# Pip
 # please refer to https://pytorch.org/get-started/previous-versions/
 # e.g. CPU version
 pip install torch==1.11.0+cpu torchvision==0.12.0+cpu torchaudio==0.11.0 --extra-index-url https://download.pytorch.org/whl/cpu
@@ -28,21 +39,19 @@ pip install torch==1.11.0+cpu torchvision==0.12.0+cpu torchaudio==0.11.0 --extra
 pip install torch==1.11.0+cu102 torchvision==0.12.0+cu102 torchaudio==0.11.0 --extra-index-url https://download.pytorch.org/whl/cu102
 ```
 
-TorchEEG provides algorithms related to graph convolution. This part of the implementation relies on PyG. TorchEEG recommends users to manually install PyG to avoid possible errors:
+### Anaconda
 
-```shell
-# please refer to https://pytorch-geometric.readthedocs.io/en/latest/notes/installation.html
-# e.g. CPU version
-pip install torch-scatter torch-sparse torch-cluster torch-spline-conv torch-geometric -f https://data.pyg.org/whl/torch-1.11.0+cpu.html
-# e.g. GPU version
-pip install torch-scatter torch-sparse torch-cluster torch-spline-conv torch-geometric -f https://data.pyg.org/whl/torch-1.11.0+cu102.html
+Since version v1.0.9, torcheeg supports installing with conda! You can simply install TorchEEG using Anaconda, just run the following command:
+
+```bash
+conda install -c tczhangzhi -c conda-forge torcheeg
 ```
 
 ### Pip
 
 TorchEEG allows pip-based installation, please use the following command:
 
-```shell
+```bash
 pip install torcheeg
 ```
 
@@ -50,8 +59,29 @@ pip install torcheeg
 
 In case you want to experiment with the latest TorchEEG features which are not fully released yet, please run the following command to install from the main branch on github:
 
-```shell
+```bash
 pip install git+https://github.com/tczhangzhi/torcheeg.git
+```
+
+### Plugin
+
+TorchEEG provides plugins related to graph algorithms for converting EEG in datasets into graph structures and analyzing them using graph neural networks. This part of the implementation relies on PyG.
+
+> If you do not use graph-related algorithms, you can skip this part of the installation.
+
+TorchEEG recommends users to manually install PyG to avoid possible errors:
+
+```bash
+# Conda
+# please refer to https://pytorch-geometric.readthedocås.io/en/latest/notes/installation.html
+conda install pyg -c pyg
+
+# Pip
+# please refer to https://pytorch-geometric.readthedocs.io/en/latest/notes/installation.html
+# e.g. CPU version
+pip install torch-scatter torch-sparse torch-cluster torch-spline-conv torch-geometric -f https://data.pyg.org/whl/torch-1.11.0+cpu.html
+# e.g. GPU version
+pip install torch-scatter torch-sparse torch-cluster torch-spline-conv torch-geometric -f https://data.pyg.org/whl/torch-1.11.0+cu102.html
 ```
 
 ## More About TorchEEG
@@ -263,16 +293,6 @@ For more specific usage of each module, please refer to [the documentation]((htt
 TorchEEG is currently in beta; Please let us know if you encounter a bug by filing an issue. We also appreciate all contributions.
 
 If you would like to contribute new datasets, deep learning methods, and extensions to the core, please first open an issue and then send a PR. If you are planning to contribute back bug fixes, please do so without any further discussion.
-
-## About Us
-
-The following authors provide long-term support for this project. If you notice anything in the project that is not as expected, please do not hesitate to contact us.
-
-[Zhi ZHANG](mailto:tczhangzhi@gmail.com): received the M.Eng. degree at the College of Computer Science and Software Engineering from Shenzhen University, China, in 2021. He is currently with the Hong Kong Polytechnic University as a PhD candidate. His research interests mainly include graph convolutional networks, abnormal event detection, and EEG analysis.
-
-[Sheng-hua ZHONG](mailto:csshzhong@szu.edu.cn): received the Ph.D. degree from the Department of Computing, The Hong Kong Polytechnic University in 2013. Currently, she is an Associate Professor in College of Computer Science & Software Engineering at Shenzhen University. Her research interests include multimedia content analysis and brain science.
-
-[Yan LIU](mailto:csyliu@comp.polyu.edu.hk): is the director of cognitive computing lab and the group leader of artificial intelligence and robotics AIR research group. She obtained Ph.D. degree in computer Science from Columbia University in the US. In 2005, she joined The Hong Kong Polytechnic University, Hong Kong, where she is currently an Associate Professor with the Department of Computing. Her research interests span a wide range of topics, ranging from brain modeling and cognitive computing, image/video retrieval, computer music to machine learning and pattern recognition.
 
 ## License
 

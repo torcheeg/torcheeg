@@ -32,7 +32,8 @@ class TestSSVEPDataset(unittest.TestCase):
 
         dataset = TSUBenckmarkDataset(io_path=io_path,
                                       root_path=root_path,
-                                      num_worker=9)
+                                      online_transform=transforms.ToTensor(),
+                                      num_worker=4)
 
         self.assertEqual(len(dataset), 50400)
         first_item = dataset[0]
@@ -46,7 +47,8 @@ class TestSSVEPDataset(unittest.TestCase):
 
         dataset = TSUBenckmarkDataset(io_path=io_path,
                                       root_path=root_path,
-                                      num_worker=9)
+                                      online_transform=transforms.ToTensor(),
+                                      num_worker=4)
 
         io_path = f'./tmp_out/tsu_benchmark_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
         dataset = TSUBenckmarkDataset.from_existing(dataset, io_path)
@@ -59,7 +61,10 @@ class TestSSVEPDataset(unittest.TestCase):
 
         io_path = f'./tmp_out/tsu_benchmark_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
         dataset = TSUBenckmarkDataset.from_existing(
-            dataset, io_path, offline_transform=transforms.MeanStdNormalize())
+            dataset,
+            io_path,
+            offline_transform=transforms.MeanStdNormalize(),
+            online_transform=transforms.ToTensor())
 
         self.assertEqual(len(dataset), 50400)
         first_item = dataset[0]
@@ -73,7 +78,8 @@ class TestSSVEPDataset(unittest.TestCase):
 
         dataset = TSUBenckmarkDataset(io_path=io_path,
                                       root_path=root_path,
-                                      num_worker=9)
+                                      online_transform=transforms.ToTensor(),
+                                      num_worker=4)
 
         io_path = f'./tmp_out/tsu_benchmark_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
 
@@ -83,7 +89,9 @@ class TestSSVEPDataset(unittest.TestCase):
             reduce_fn=mean_reduce,
             reduce_by='trial_id',
             chunk_size_for_worker=10,
-            num_worker=2)
+            num_worker=2,
+            online_transform=transforms.ToTensor()
+        )
 
         self.assertEqual(len(dataset), 40)
         first_item = dataset[0]

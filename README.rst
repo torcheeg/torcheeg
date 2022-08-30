@@ -1,7 +1,7 @@
 TorchEEG
 ========
 
-|PyPI Version| |Docs Status|
+|PyPI Version| |Docs Status| |Downloads|
 
 `Documentation <https://torcheeg.readthedocs.io/>`__ \| `TorchEEG
 Examples <https://github.com/tczhangzhi/torcheeg/tree/main/examples>`__
@@ -34,23 +34,29 @@ according to the system, CUDA version and other information:
 
 .. code:: shell
 
+   # Conda
+   # please refer to https://pytorch.org/get-started/locally/
+   # e.g. CPU version
+   conda install pytorch==1.11.0 torchvision torchaudio cpuonly -c pytorch
+   # e.g. GPU version
+   conda install pytorch==1.11.0 torchvision torchaudio cudatoolkit=11.3 -c pytorch
+
+   # Pip
    # please refer to https://pytorch.org/get-started/previous-versions/
    # e.g. CPU version
    pip install torch==1.11.0+cpu torchvision==0.12.0+cpu torchaudio==0.11.0 --extra-index-url https://download.pytorch.org/whl/cpu
    # e.g. GPU version
    pip install torch==1.11.0+cu102 torchvision==0.12.0+cu102 torchaudio==0.11.0 --extra-index-url https://download.pytorch.org/whl/cu102
 
-TorchEEG provides algorithms related to graph convolution. This part of
-the implementation relies on PyG. TorchEEG recommends users to manually
-install PyG to avoid possible errors:
+Anaconda
+~~~~~~~~
+
+Since version v1.0.9, torcheeg supports installing with conda! You can
+simply install TorchEEG using Anaconda, just run the following command:
 
 .. code:: shell
 
-   # please refer to https://pytorch-geometric.readthedocs.io/en/latest/notes/installation.html
-   # e.g. CPU version
-   pip install torch-scatter torch-sparse torch-cluster torch-spline-conv torch-geometric -f https://data.pyg.org/whl/torch-1.11.0+cpu.html
-   # e.g. GPU version
-   pip install torch-scatter torch-sparse torch-cluster torch-spline-conv torch-geometric -f https://data.pyg.org/whl/torch-1.11.0+cu102.html
+   conda install -c tczhangzhi -c conda-forge torcheeg
 
 Pip
 ~~~
@@ -72,6 +78,32 @@ from the main branch on github:
 .. code:: shell
 
    pip install git+https://github.com/tczhangzhi/torcheeg.git
+
+Plugin
+~~~~~~
+
+TorchEEG provides plugins related to graph algorithms for converting EEG
+in datasets into graph structures and analyzing them using graph neural
+networks. This part of the implementation relies on PyG.
+
+   If you do not use graph-related algorithms, you can skip this part of
+   the installation.
+
+TorchEEG recommends users to manually install PyG to avoid possible
+errors:
+
+.. code:: shell
+
+   # Conda
+   # please refer to https://pytorch-geometric.readthedocs.io/en/latest/notes/installation.html
+   conda install pyg -c pyg
+
+   # Pip
+   # please refer to https://pytorch-geometric.readthedocs.io/en/latest/notes/installation.html
+   # e.g. CPU version
+   pip install torch-scatter torch-sparse torch-cluster torch-spline-conv torch-geometric -f https://data.pyg.org/whl/torch-1.11.0+cpu.html
+   # e.g. GPU version
+   pip install torch-scatter torch-sparse torch-cluster torch-spline-conv torch-geometric -f https://data.pyg.org/whl/torch-1.11.0+cu102.html
 
 More About TorchEEG
 -------------------
@@ -251,7 +283,7 @@ computationally intensive operation, we also recommend setting multi-CPU
 parallelism for offline_transform, e.g., set ``num_worker`` to 4.
 
 ``online_transform`` is used to transform samples on the fly. Please use
-``online_transform`` if you don’t want to wait for the preprocessing of
+``online_transform`` if you don't want to wait for the preprocessing of
 the entire dataset (suitable for scenarios where new ``transform``
 algorithms are designed) or expect data transformation with randomness
 each time a sample is indexed.
@@ -407,37 +439,6 @@ extensions to the core, please first open an issue and then send a PR.
 If you are planning to contribute back bug fixes, please do so without
 any further discussion.
 
-About Us
---------
-
-The following authors provide long-term support for this project. If you
-notice anything in the project that is not as expected, please do not
-hesitate to contact us.
-
-`Zhi ZHANG <mailto:tczhangzhi@gmail.com>`__: received the M.Eng. degree
-at the College of Computer Science and Software Engineering from
-Shenzhen University, China, in 2021. He is currently with the Hong Kong
-Polytechnic University as a PhD candidate. His research interests mainly
-include graph convolutional networks, abnormal event detection, and EEG
-analysis.
-
-`Sheng-hua ZHONG <mailto:csshzhong@szu.edu.cn>`__: received the
-Ph.D. degree from the Department of Computing, The Hong Kong Polytechnic
-University in 2013. Currently, she is an Associate Professor in College
-of Computer Science & Software Engineering at Shenzhen University. Her
-research interests include multimedia content analysis and brain
-science.
-
-`Yan LIU <mailto:csyliu@comp.polyu.edu.hk>`__: is the director of
-cognitive computing lab and the group leader of artificial intelligence
-and robotics AIR research group. She obtained Ph.D. degree in computer
-Science from Columbia University in the US. In 2005, she joined The Hong
-Kong Polytechnic University, Hong Kong, where she is currently an
-Associate Professor with the Department of Computing. Her research
-interests span a wide range of topics, ranging from brain modeling and
-cognitive computing, image/video retrieval, computer music to machine
-learning and pattern recognition.
-
 License
 -------
 
@@ -449,3 +450,5 @@ file.
    :target: https://pypi.python.org/pypi/torcheeg
 .. |Docs Status| image:: https://readthedocs.org/projects/torcheeg/badge/?version=latest
    :target: https://torcheeg.readthedocs.io/en/latest/?badge=latest
+.. |Downloads| image:: https://pepy.tech/badge/torcheeg
+   :target: https://pepy.tech/project/torcheeg

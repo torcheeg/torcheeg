@@ -8,7 +8,8 @@ from torcheeg.datasets import (AMIGOSDataset, DEAPDataset, DREAMERDataset,
                                MAHNOBDataset, SEEDDataset, BCI2022Dataset)
 from torcheeg.datasets.functional import (amigos_constructor, deap_constructor,
                                           dreamer_constructor,
-                                          mahnob_constructor, seed_constructor)
+                                          mahnob_constructor, seed_constructor,
+                                          bci2022_constructor)
 
 
 class TestEmotionRecognitionDataset(unittest.TestCase):
@@ -52,11 +53,12 @@ class TestEmotionRecognitionDataset(unittest.TestCase):
         dataset = AMIGOSDataset(io_path=io_path,
                                 root_path=root_path,
                                 num_trial=16,
+                                online_transform=transforms.ToTensor(),
                                 label_transform=transforms.Compose([
                                     transforms.Select('valence'),
                                     transforms.Binary(5.0),
                                 ]),
-                                num_worker=9)
+                                num_worker=4)
 
         self.assertEqual(len(dataset), 45474)
         first_item = dataset[0]
@@ -67,54 +69,26 @@ class TestEmotionRecognitionDataset(unittest.TestCase):
     def test_deap_constructor(self):
         io_path = f'./tmp_out/deap_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
         root_path = './tmp_in/data_preprocessed_python'
-        deap_constructor(io_path=io_path,
-                         root_path=root_path,
-                         transform=transforms.BandDifferentialEntropy(),
-                         num_worker=0)
+        deap_constructor(io_path=io_path, root_path=root_path, num_worker=0)
 
     def test_deap_dataset(self):
         io_path = f'./tmp_out/deap_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
         root_path = './tmp_in/data_preprocessed_python'
 
-        dataset = DEAPDataset(
-            io_path=io_path,
-            root_path=root_path,
-            offline_transform=transforms.BandDifferentialEntropy(),
-            label_transform=transforms.Compose([
-                transforms.Select('valence'),
-                transforms.Binary(5.0),
-            ]),
-            num_worker=4)
+        dataset = DEAPDataset(io_path=io_path,
+                              root_path=root_path,
+                              online_transform=transforms.ToTensor(),
+                              label_transform=transforms.Compose([
+                                  transforms.Select('valence'),
+                                  transforms.Binary(5.0),
+                              ]),
+                              num_worker=4)
         self.assertEqual(len(dataset), 76800)
         self.assertEqual(len(dataset.eeg_io), 78080)
         first_item = dataset[0]
-        self.assertEqual(first_item[0].shape, (32, 4))
+        self.assertEqual(first_item[0].shape, (32, 128))
         last_item = dataset[76799]
-        self.assertEqual(last_item[0].shape, (32, 4))
-
-    def test_deap_dataset_transforms(self):
-        io_path = f'./tmp_out/deap_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
-        root_path = './tmp_in/data_preprocessed_python'
-
-        dataset = DEAPDataset(
-            io_path=io_path,
-            root_path=root_path,
-            offline_transform=transforms.BandDifferentialEntropy(
-                apply_to_baseline=True),
-            online_transform=transforms.Compose(
-                [transforms.BaselineRemoval(),
-                 transforms.ToTensor()]),
-            label_transform=transforms.Compose([
-                transforms.Select('valence'),
-                transforms.Binary(5.0),
-            ]),
-            num_worker=4)
-        self.assertEqual(len(dataset), 76800)
-        self.assertEqual(len(dataset.eeg_io), 78080)
-        first_item = dataset[0]
-        self.assertEqual(first_item[0].shape, (32, 4))
-        last_item = dataset[76799]
-        self.assertEqual(last_item[0].shape, (32, 4))
+        self.assertEqual(last_item[0].shape, (32, 128))
 
     def test_dreamer_constructor(self):
         io_path = f'./tmp_out/dreamer_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
@@ -126,7 +100,14 @@ class TestEmotionRecognitionDataset(unittest.TestCase):
         io_path = f'./tmp_out/dreamer_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
         mat_path = './tmp_in/DREAMER.mat'
 
-        dataset = DREAMERDataset(io_path=io_path, mat_path=mat_path)
+        dataset = DREAMERDataset(io_path=io_path,
+                                 mat_path=mat_path,
+                                 online_transform=transforms.ToTensor(),
+                                 label_transform=transforms.Compose([
+                                     transforms.Select('valence'),
+                                     transforms.Binary(3.0),
+                                 ]),
+                                 num_worker=4)
 
         self.assertEqual(len(dataset), 85744)
         first_item = dataset[0]
@@ -138,57 +119,49 @@ class TestEmotionRecognitionDataset(unittest.TestCase):
         io_path = f'./tmp_out/seed_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
         root_path = './tmp_in/Preprocessed_EEG'
 
-        seed_constructor(io_path=io_path,
-                         root_path=root_path,
-                         transform=transforms.BandDifferentialEntropy(),
-                         num_worker=0)
+        seed_constructor(io_path=io_path, root_path=root_path, num_worker=0)
 
     def test_seed_dataset(self):
         io_path = f'./tmp_out/seed_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
         root_path = './tmp_in/Preprocessed_EEG'
 
-        dataset = SEEDDataset(
-            io_path=io_path,
-            root_path=root_path,
-            offline_transform=transforms.BandDifferentialEntropy(),
-            label_transform=transforms.Compose([
-                transforms.Select('emotion'),
-                transforms.Lambda(lambda x: int(x) + 1),
-            ]),
-            num_worker=9)
+        dataset = SEEDDataset(io_path=io_path,
+                              root_path=root_path,
+                              online_transform=transforms.ToTensor(),
+                              label_transform=transforms.Compose([
+                                  transforms.Select('emotion'),
+                                  transforms.Lambda(lambda x: int(x) + 1),
+                              ]),
+                              num_worker=4)
 
         self.assertEqual(len(dataset), 152730)
         first_item = dataset[0]
-        self.assertEqual(first_item[0].shape, (62, 4))
+        self.assertEqual(first_item[0].shape, (62, 200))
         last_item = dataset[152729]
-        self.assertEqual(last_item[0].shape, (62, 4))
+        self.assertEqual(last_item[0].shape, (62, 200))
 
     def test_bci2022_constructor(self):
         io_path = f'./tmp_out/bci2022_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
         root_path = './tmp_in/TrainSet'
 
-        bci2022_constructor(io_path=io_path,
-                            root_path=root_path,
-                            transform=transforms.BandDifferentialEntropy(),
-                            num_worker=9)
+        bci2022_constructor(io_path=io_path, root_path=root_path, num_worker=0)
 
     def test_bci2022_dataset(self):
         io_path = f'./tmp_out/bci2022_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
         root_path = './tmp_in/TrainSet'
 
-        dataset = BCI2022Dataset(
-            io_path=io_path,
-            root_path=root_path,
-            offline_transform=transforms.BandDifferentialEntropy(),
-            label_transform=transforms.Select('emotion'),
-            channel_num=30,
-            num_worker=9)
+        dataset = BCI2022Dataset(io_path=io_path,
+                                 root_path=root_path,
+                                 online_transform=transforms.ToTensor(),
+                                 label_transform=transforms.Select('emotion'),
+                                 channel_num=30,
+                                 num_worker=4)
 
         self.assertEqual(len(dataset), 146812)
         first_item = dataset[0]
-        self.assertEqual(first_item[0].shape, (30, 4))
+        self.assertEqual(first_item[0].shape, (30, 250))
         last_item = dataset[146811]
-        self.assertEqual(last_item[0].shape, (30, 4))
+        self.assertEqual(last_item[0].shape, (30, 250))
 
 
 if __name__ == '__main__':

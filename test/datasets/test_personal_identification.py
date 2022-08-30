@@ -3,6 +3,7 @@ import random
 import shutil
 import unittest
 
+from torcheeg import transforms
 from torcheeg.datasets import M3CVDataset
 from torcheeg.datasets.functional import m3cv_constructor
 
@@ -24,7 +25,9 @@ class TestPersonalIdentificationDataset(unittest.TestCase):
         dataset = M3CVDataset(io_path=io_path,
                               root_path=root_path,
                               subset='Enrollment',
-                              num_worker=9)
+                              online_transform=transforms.ToTensor(),
+                              num_channel=65,
+                              num_worker=4)
 
         self.assertEqual(len(dataset), 57851)
         first_item = dataset[0]
@@ -35,8 +38,10 @@ class TestPersonalIdentificationDataset(unittest.TestCase):
         io_path = f'./tmp_out/m3cv_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
         dataset = M3CVDataset(io_path=io_path,
                               root_path=root_path,
-                              subset='Testing', num_channel=65,
-                              num_worker=9)
+                              subset='Testing',
+                              online_transform=transforms.ToTensor(),
+                              num_channel=65,
+                              num_worker=4)
 
         self.assertEqual(len(dataset), 52942)
         first_item = dataset[0]
@@ -47,8 +52,10 @@ class TestPersonalIdentificationDataset(unittest.TestCase):
         io_path = f'./tmp_out/m3cv_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
         dataset = M3CVDataset(io_path=io_path,
                               root_path=root_path,
-                              subset='Calibration', num_channel=65,
-                              num_worker=9)
+                              subset='Calibration',
+                              online_transform=transforms.ToTensor(),
+                              num_channel=65,
+                              num_worker=4)
 
         self.assertEqual(len(dataset), 6070)
         first_item = dataset[0]

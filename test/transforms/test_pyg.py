@@ -4,7 +4,7 @@ import numpy as np
 import torch
 from torch_geometric.data import Data
 from torcheeg.datasets.constants import DEAP_ADJACENCY_MATRIX
-from torcheeg.transforms import ToDynamicG, ToG
+from torcheeg.transforms.pyg import ToDynamicG, ToG
 
 
 class TestPyGTransforms(unittest.TestCase):

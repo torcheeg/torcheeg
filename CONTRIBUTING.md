@@ -46,7 +46,7 @@ python -m unittest discover test/
 
 or test individual files via:
 
-```shell
+```bash
 cd torcheeg
 
 export PYTHONPATH=./
@@ -54,7 +54,36 @@ export PYTHONPATH=./
 python test/transforms/test_numpy.py
 ```
 
-## Building Documentation
+## Building
+
+For local tests for pip installs, please run:
+
+```bash
+pip install .
+```
+
+If everything is as expected, keep running the following lines to build the package and upload it to PyPI:
+
+```bash
+python setup.py sdist
+twine upload dist/torcheeg-x.x.x.tar.gz
+```
+
+For local testing of conda installations, please run:
+
+```bash
+conda build . -c conda-forge
+conda install --use-local PATH/TO/torcheeg-x.x.x-0.tar.bz2
+```
+
+If everything is as expected, keep running the following lines to build the package and upload it to anaconda:
+
+```bash
+
+conda install anaconda-client
+anaconda login
+anaconda upload PATH/TO/torcheeg-x.x.x-0.tar.bz2
+```
 
 To build the documentation, please run:
 

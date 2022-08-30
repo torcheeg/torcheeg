@@ -1,26 +1,35 @@
+{% set name = "TorchEEG" %}
 {% set version = "1.0.9" %}
 
 package:
-  name: torcheeg
-  version: {{ version }}
+  name: "{{ name|lower }}"
+  version: "{{ version }}"
+
+source:
+  path: .
 
 build:
-  noarch: generic
+  number: 0
+  noarch: python
+  script: "python -m pip install . --no-deps --ignore-installed -vv"
 
 requirements:
+  build:
+    - python
   run:
-    - tqdm
-    - numpy
-    - pandas
-    - scipy
-    - scikit-learn
-    - lmdb
-    - einops
-    - mne
-    - xmltodict
-    - networkx
-    - pywt
-    - spectrum
+    - python
+    - tqdm>=4.64.0
+    - numpy>=1.21.5
+    - pandas>=1.3.5
+    - scipy>=1.7.3
+    - scikit-learn>=1.0.2
+    - python-lmdb>=1.3.0
+    - einops>=0.4.1
+    - mne-base>=1.0.3
+    - xmltodict>=0.13.0
+    - networkx>=2.6.3
+    - PyWavelets>=1.3.0
+    - spectrum>=0.8.1
 
 about:
   home: https://github.com/tczhangzhi/torcheeg
