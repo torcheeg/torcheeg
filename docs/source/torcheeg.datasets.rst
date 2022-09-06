@@ -1,6 +1,11 @@
 torcheeg.datasets
 =========================
 
+.. contents:: The packaged benchmark dataset implementation provides a multi-process preprocessing interface.
+    :depth: 2
+    :local:
+    :backlinks: top
+
 DEAPDataset
 ---------------------------------------------------------
 

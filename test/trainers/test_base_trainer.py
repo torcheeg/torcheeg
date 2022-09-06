@@ -46,7 +46,7 @@ class TestBaseTrainer(unittest.TestCase):
 
         self.assertTrue(score <= 1)
 
-        trainer = BaseTrainer(model, device='cuda')
+        trainer = BaseTrainer(model, device=torch.device('cuda'))
         trainer.fit(train_loader, val_loader)
         score = trainer.score(test_loader)
 

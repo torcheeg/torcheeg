@@ -43,6 +43,7 @@ Transformers.
    torcheeg.model_selection
    torcheeg.models
    torcheeg.transforms
+   torcheeg.trainers
    torcheeg.utils
 
 .. toctree::

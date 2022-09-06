@@ -40,7 +40,6 @@ def plot_raw_topomap(tensor: torch.Tensor,
         # If using jupyter, the output image will be drawn on notebooks.
 
     .. image:: _static/plot_raw_topomap.png
-        :width: 400px
         :alt: The output image of plot_raw_topomap
         :align: center
 
@@ -98,7 +97,6 @@ def plot_feature_topomap(tensor: torch.Tensor,
         # If using jupyter, the output image will be drawn on notebooks.
 
     .. image:: _static/plot_feature_topomap.png
-        :width: 400px
         :alt: The output image of plot_feature_topomap
         :align: center
 
@@ -158,7 +156,6 @@ def plot_signal(tensor: torch.Tensor,
         # If using jupyter, the output image will be drawn on notebooks.
 
     .. image:: _static/plot_signal.png
-        :width: 400px
         :alt: The output image of plot_signal
         :align: center
 
@@ -198,7 +195,6 @@ def plot_3d_tensor(tensor: torch.Tensor,
         # If using jupyter, the output image will be drawn on notebooks.
 
     .. image:: _static/plot_3d_tensor.png
-        :width: 200px
         :alt: The output image of plot_3d_tensor
         :align: center
 
@@ -244,7 +240,6 @@ def plot_2d_tensor(tensor: torch.Tensor,
         # If using jupyter, the output image will be drawn on notebooks.
 
     .. image:: _static/plot_2d_tensor.png
-        :width: 200px
         :alt: The output image of plot_2d_tensor
         :align: center
 

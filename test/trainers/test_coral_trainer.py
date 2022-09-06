@@ -50,7 +50,9 @@ class TestCoralTrainer(unittest.TestCase):
         print(score)
         self.assertTrue(score <= 1)
 
-        trainer = CoralTrainer(extractor, classifier, device='cuda')
+        trainer = CoralTrainer(extractor,
+                               classifier,
+                               device=torch.device('cuda'))
         trainer.fit(source_loader, target_loader, val_loader)
         score = trainer.score(test_loader)
         print(score)

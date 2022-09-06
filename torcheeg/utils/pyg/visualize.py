@@ -39,7 +39,6 @@ def plot_graph(data: Data,
         # If using jupyter, the output image will be drawn on notebooks.
 
     .. image:: _static/plot_graph.png
-        :width: 300px
         :alt: The output image of plot_graph
         :align: center
 

@@ -1,6 +1,11 @@
 torcheeg.utils
 ===================
 
+.. contents:: Extensive utility functions for visualizing data of different structures for debugging and display.
+    :depth: 2
+    :local:
+    :backlinks: top
+
 plot_raw_topomap
 -----------------------------------------------
 

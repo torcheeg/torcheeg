@@ -99,10 +99,15 @@ To build the documentation, please run:
 
 .. code:: bash
 
+   pip install -e git+https://github.com/pytorch/pytorch_sphinx_theme.git#egg=pytorch_sphinx_theme
+
    cd docs
 
    make clean
    sphinx-autobuild source build/html
+
+   cd ..
+   rm -rf src # remove pytorch_sphinx_theme
 
 In general, the documentation is available to view by opening
 ``127.0.0.1:8000``.

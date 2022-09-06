@@ -85,10 +85,15 @@ anaconda upload PATH/TO/torcheeg-x.x.x-0.tar.bz2
 To build the documentation, please run:
 
 ```bash
+pip install -e git+https://github.com/pytorch/pytorch_sphinx_theme.git#egg=pytorch_sphinx_theme
+
 cd docs
 
 make clean
 sphinx-autobuild source build/html
+
+cd ..
+rm -rf src # remove pytorch_sphinx_theme
 ```
 
 In general, the documentation is available to view by opening `127.0.0.1:8000`.
