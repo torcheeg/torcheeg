@@ -10,15 +10,15 @@ from ..base_trainer import BaseTrainerInterface
 from ..utils import AverageMeter
 
 
-class CoralTrainerInterface(BaseTrainerInterface):
+class DDCTrainerInterface(BaseTrainerInterface):
     r'''
-    The individual differences and nonstationary of EEG signals make it difficult for deep learning models trained on the training set of subjects to correctly classify test samples from unseen subjects, since the training set and test set come from different data distributions. Domain adaptation is used to address the problem of distribution drift between training and test sets and thus achieves good performance in subject-independent (cross-subject) scenarios. This class supports the implementation of CORrelation ALignment (CORAL) for deep domain adaptation.
+    The individual differences and nonstationary of EEG signals make it difficult for deep learning models trained on the training set of subjects to correctly classify test samples from unseen subjects, since the training set and test set come from different data distributions. Domain adaptation is used to address the problem of distribution drift between training and test sets and thus achieves good performance in subject-independent (cross-subject) scenarios. This class supports the implementation of Deep Domain Confusion (DDC) for deep domain adaptation.
 
-    NOTE: CORAL belongs to unsupervised domain adaptation methods, which only use labeled source and unlabeled target data. This means that the target dataset does not have to return labels.
+    NOTE: DDC belongs to unsupervised domain adaptation methods, which only use labeled source and unlabeled target data. This means that the target dataset does not have to return labels.
 
-    - Paper: Sun B, Saenko K. Deep coral: Correlation alignment for deep domain adaptation[C]//European conference on computer vision. Springer, Cham, 2016: 443-450.
-    - URL: https://link.springer.com/chapter/10.1007/978-3-319-49409-8_35
-    - Related Project: https://github.com/adapt-python/adapt/blob/master/adapt/feature_based/_deepcoral.py
+    - Paper: Tzeng E, Hoffman J, Zhang N, et al. Deep domain confusion: Maximizing for domain invariance[J]. arXiv preprint arXiv:1412.3474, 2014.
+    - URL: https://arxiv.org/abs/1412.3474
+    - Related Project: https://github.com/syorami/DDC-transfer-learning/blob/master/DDC.py
 
     The interface contains the following implementations:
 
@@ -42,7 +42,7 @@ class CoralTrainerInterface(BaseTrainerInterface):
 
     .. code-block:: python
 
-        class CoralTrainer(CoralTrainerInterface):
+        class DDCTrainer(DDCTrainerInterface):
             def before_training_epoch(self, epoch_id: int, num_epochs: int):
                 print("Do something here.")
                 print(f"Epoch {epoch_id}\n-------------------------------")
@@ -53,7 +53,7 @@ class CoralTrainerInterface(BaseTrainerInterface):
 
     .. code-block:: python
 
-        class CoralTrainer(CoralTrainerInterface):
+        class DDCTrainer(DDCTrainerInterface):
             def before_training_epoch(self, epoch_id: int, num_epochs: int):
                 print("Do something here.")
                 super().before_training_epoch(epoch_id, num_epochs)
@@ -70,11 +70,6 @@ class CoralTrainerInterface(BaseTrainerInterface):
         self.extractor.train()
         self.classifier.train()
 
-        if self.match_mean:
-            match_mean = 1.0
-        else:
-            match_mean = 0.0
-
         self.optimizer.zero_grad()
 
         X_source = source_loader[0].to(self.device)
@@ -85,38 +80,14 @@ class CoralTrainerInterface(BaseTrainerInterface):
         y_source_pred = self.classifier(X_source_feat)
         X_target_feat = self.extractor(X_target)
 
-        batch_size = X_source.shape[0]
-
         # Compute the loss value
-        factor_1 = 1. / (batch_size - 1. + np.finfo(np.float32).eps)
-        factor_2 = 1. / batch_size
-
-        sum_source = X_source_feat.sum(dim=0)
-        sum_source_row = sum_source.reshape(1, -1)
-        sum_source_col = sum_source.reshape(-1, 1)
-        cov_source = factor_1 * (
-            torch.matmul(torch.transpose(X_source_feat), X_source_feat) -
-            factor_2 * torch.matmul(sum_source_col, sum_source_row))
-
-        sum_target = X_target_feat.sum(dim=0)
-        sum_target_row = sum_target.reshape(1, -1)
-        sum_target_col = sum_target.reshape(-1, 1)
-        cov_target = factor_1 * (
-            torch.matmul(torch.transpose(X_target_feat), X_target_feat) -
-            factor_2 * torch.matmul(sum_target_col, sum_target_row))
-
-        mean_source = X_source_feat.mean(dim=0)
-        mean_target = X_target_feat.mean(dim=0)
-
         task_loss = self.loss_fn(y_source, y_source_pred)
-        disc_loss_cov = 0.25 * torch.pow(cov_source - cov_target, 2)
-        disc_loss_mean = torch.pow(mean_source - mean_target, 2)
+        delta = X_source_feat - X_target_feat
+        mmd = torch.mm(delta, torch.transpose(delta, 0, 1))
+        mmd_mean = mmd.mean()
+        mmd_loss = self.lambd * mmd_mean
 
-        disc_loss_cov = disc_loss_cov.mean()
-        disc_loss_mean = disc_loss_mean.mean()
-        disc_loss = self.lambd * (disc_loss_cov + match_mean * disc_loss_mean)
-
-        loss = task_loss + disc_loss
+        loss = task_loss + mmd_loss
 
         # Backpropagation
         loss.backward()
@@ -203,24 +174,23 @@ class CoralTrainerInterface(BaseTrainerInterface):
             'optimizer': torch.optim.Optimizer,
             'loss_fn': nn.Module,
             'device': torch.device,
-            'match_mean': bool,
             'lambd': float
         }
 
 
-class CoralTrainer(CoralTrainerInterface):
+class DDCTrainer(DDCTrainerInterface):
     r'''
-    The individual differences and nonstationary of EEG signals make it difficult for deep learning models trained on the training set of subjects to correctly classify test samples from unseen subjects, since the training set and test set come from different data distributions. Domain adaptation is used to address the problem of distribution drift between training and test sets and thus achieves good performance in subject-independent (cross-subject) scenarios. This class supports the implementation of CORrelation ALignment (CORAL) for deep domain adaptation.
+    The individual differences and nonstationary of EEG signals make it difficult for deep learning models trained on the training set of subjects to correctly classify test samples from unseen subjects, since the training set and test set come from different data distributions. Domain adaptation is used to address the problem of distribution drift between training and test sets and thus achieves good performance in subject-independent (cross-subject) scenarios. This class supports the implementation of Deep Domain Confusion (DDC) for deep domain adaptation.
 
-    NOTE: CORAL belongs to unsupervised domain adaptation methods, which only use labeled source and unlabeled target data. This means that the target dataset does not have to return labels.
+    NOTE: DDC belongs to unsupervised domain adaptation methods, which only use labeled source and unlabeled target data. This means that the target dataset does not have to return labels.
 
-    - Paper: Sun B, Saenko K. Deep coral: Correlation alignment for deep domain adaptation[C]//European conference on computer vision. Springer, Cham, 2016: 443-450.
-    - URL: https://link.springer.com/chapter/10.1007/978-3-030-04239-4_39
-    - Related Project: https://github.com/adapt-python/adapt/blob/master/adapt/feature_based/_deepcoral.py
+    - Paper: Tzeng E, Hoffman J, Zhang N, et al. Deep domain confusion: Maximizing for domain invariance[J]. arXiv preprint arXiv:1412.3474, 2014.
+    - URL: https://arxiv.org/abs/1412.3474
+    - Related Project: https://github.com/syorami/DDC-transfer-learning/blob/master/DDC.py
 
     .. code-block:: python
 
-        trainer = CoralTrainer(extractor, classifier)
+        trainer = DDCTrainer(extractor, classifier)
         trainer.fit(source_loader, target_loader, val_loader)
         score = trainer.score(test_loader)
 
@@ -241,7 +211,7 @@ class CoralTrainer(CoralTrainerInterface):
 
     .. code-block:: python
 
-        class CoralTrainer(CoralTrainerInterface):
+        class DDCTrainer(DDCTrainerInterface):
             def before_training_epoch(self, epoch_id: int, num_epochs: int):
                 print("Do something here.")
                 print(f"Epoch {epoch_id}\n-------------------------------")
@@ -252,7 +222,7 @@ class CoralTrainer(CoralTrainerInterface):
 
     .. code-block:: python
 
-        class CoralTrainer(CoralTrainerInterface):
+        class DDCTrainer(DDCTrainerInterface):
             def before_training_epoch(self, epoch_id: int, num_epochs: int):
                 print("Do something here.")
                 super().before_training_epoch(epoch_id, num_epochs)
@@ -260,8 +230,7 @@ class CoralTrainer(CoralTrainerInterface):
     Args:
         extractor (nn.Module): The feature extraction model, learning the feature representation of EEG signal by forcing the correlation matrixes of source and target data close.
         classifier (nn.Module): The classification model, learning the classification task with source labeled data based on the feature of the feature extraction model. The dimension of its output should be equal to the number of categories in the dataset. The output layer does not need to have a softmax activation function.
-        lambd (float): The weight of CORAL loss to trade-off between the classification loss and CORAL loss. (defualt: :obj:`1.0`)
-        match_mean (bool): Weither to match the means of the source domain and target domain samples. If :obj:`False`, only the second moment is matched. (defualt: :obj:`False`)
+        lambd (float): The weight of DDC loss to trade-off between the classification loss and DDC loss. (defualt: :obj:`1.0`)
         lr (float): The learning rate. (defualt: :obj:`0.0001`)
         weight_decay: (float): The weight decay (L2 penalty). (defualt: :obj:`0.0`)
         device: (torch.device or str): The device on which the model and data is or will be allocated. (defualt: :obj:`False`)
@@ -272,16 +241,14 @@ class CoralTrainer(CoralTrainerInterface):
     def __init__(self,
                  extractor: nn.Module,
                  classifier: nn.Module,
-                 match_mean: bool = True,
                  lambd: float = 1.0,
                  lr: float = 1e-4,
                  weight_decay: float = 0.0,
                  device=torch.device('cpu')):
-        super(CoralTrainer, self).__init__()
+        super(DDCTrainer, self).__init__()
 
         self.extractor = extractor
         self.classifier = classifier
-        self.match_mean = match_mean
         self.lambd = lambd
 
         self.optimizer = torch.optim.Adam(chain(extractor.parameters(),

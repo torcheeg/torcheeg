@@ -27,3 +27,23 @@ trainers.CoralTrainer
 ----------------------------------------
 
 .. autoclass:: torcheeg.trainers.CoralTrainer
+
+trainers.DDCTrainerInterface
+----------------------------------------
+
+.. autoclass:: torcheeg.trainers.DDCTrainerInterface
+
+trainers.DDCTrainer
+----------------------------------------
+
+.. autoclass:: torcheeg.trainers.DDCTrainer
+
+trainers.DANNTrainerInterface
+----------------------------------------
+
+.. autoclass:: torcheeg.trainers.DANNTrainerInterface
+
+trainers.DANNTrainer
+----------------------------------------
+
+.. autoclass:: torcheeg.trainers.DANNTrainer
