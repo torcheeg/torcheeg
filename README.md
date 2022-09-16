@@ -4,16 +4,17 @@
 [docs-url]: https://torcheeg.readthedocs.io/en/latest/?badge=latest
 [pepy-image]: https://pepy.tech/badge/torcheeg
 [pepy-url]: https://pepy.tech/project/torcheeg
+[gitter-image]: https://badges.gitter.im/torcheeg/community.svg
+[gitter-url]: https://gitter.im/torcheeg/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge
 
 ![TorchEEG Logo](https://github.com/tczhangzhi/torcheeg/blob/main/docs/source/_static/torcheeg_logo_dark.png)
 
 --------------------------------------------------------------------------------
 
-[![Join the chat at https://gitter.im/torcheeg/community](https://badges.gitter.im/torcheeg/community.svg)](https://gitter.im/torcheeg/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-
 [![PyPI Version][pypi-image]][pypi-url]
 [![Docs Status][docs-image]][docs-url]
 [![Downloads][pepy-image]][pepy-url]
+[![Join the Chat][gitter-image]][gitter-url]
 
 **[Documentation](https://torcheeg.readthedocs.io/)** | **[TorchEEG Examples](https://github.com/tczhangzhi/torcheeg/tree/main/examples)**
 

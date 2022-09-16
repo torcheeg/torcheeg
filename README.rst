@@ -1,7 +1,7 @@
 TorchEEG
 ========
 
-|PyPI Version| |Docs Status| |Downloads|
+|PyPI Version| |Docs Status| |Downloads| |Join the Chat|
 
 `Documentation <https://torcheeg.readthedocs.io/>`__ \| `TorchEEG
 Examples <https://github.com/tczhangzhi/torcheeg/tree/main/examples>`__
@@ -449,3 +449,5 @@ file.
    :target: https://torcheeg.readthedocs.io/en/latest/?badge=latest
 .. |Downloads| image:: https://pepy.tech/badge/torcheeg
    :target: https://pepy.tech/project/torcheeg
+.. |Join the Chat| image:: https://badges.gitter.im/torcheeg/community.svg
+   :target: https://gitter.im/torcheeg/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge
