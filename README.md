@@ -9,6 +9,8 @@
 
 --------------------------------------------------------------------------------
 
+[![Join the chat at https://gitter.im/torcheeg/community](https://badges.gitter.im/torcheeg/community.svg)](https://gitter.im/torcheeg/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 [![PyPI Version][pypi-image]][pypi-url]
 [![Docs Status][docs-image]][docs-url]
 [![Downloads][pepy-image]][pepy-url]
