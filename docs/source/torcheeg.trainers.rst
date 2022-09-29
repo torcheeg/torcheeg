@@ -8,40 +8,25 @@ torcheeg.trainers
 
 .. currentmodule:: torcheeg.transforms
 
-trainers.BaseTrainerInterface
+trainers.BasicTrainer
 ----------------------------------------
 
-.. autoclass:: torcheeg.trainers.BaseTrainerInterface
+.. autoclass:: torcheeg.trainers.BasicTrainer
 
-trainers.BaseTrainer
+trainers.ClassificationTrainer
 ----------------------------------------
 
-.. autoclass:: torcheeg.trainers.BaseTrainer
+.. autoclass:: torcheeg.trainers.ClassificationTrainer
 
-trainers.CoralTrainerInterface
+trainers.CORALTrainer
 ----------------------------------------
 
-.. autoclass:: torcheeg.trainers.CoralTrainerInterface
-
-trainers.CoralTrainer
-----------------------------------------
-
-.. autoclass:: torcheeg.trainers.CoralTrainer
-
-trainers.DDCTrainerInterface
-----------------------------------------
-
-.. autoclass:: torcheeg.trainers.DDCTrainerInterface
+.. autoclass:: torcheeg.trainers.CORALTrainer
 
 trainers.DDCTrainer
 ----------------------------------------
 
 .. autoclass:: torcheeg.trainers.DDCTrainer
-
-trainers.DANNTrainerInterface
-----------------------------------------
-
-.. autoclass:: torcheeg.trainers.DANNTrainerInterface
 
 trainers.DANNTrainer
 ----------------------------------------

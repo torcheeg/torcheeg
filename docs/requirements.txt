@@ -8,6 +8,7 @@ pylons-sphinx-themes
 pylons_sphinx_latesturl
 repoze.sphinx.autointerface
 sphinxcontrib-autoprogram
+torchmetrics
 tqdm
 numpy
 pandas
