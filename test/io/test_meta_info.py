@@ -42,8 +42,8 @@ class TestMetaInfoIO(unittest.TestCase):
         io = MetaInfoIO(cache_path=io_cache_path)
 
         info = {'subject_id': 0, 'clip_id': 1, 'baseline_id': 0, 'valence': 0, 'arousal': 0}
-        io_info_idx = io.write_info(info)
-        io_info = io.read_info(io_info_idx)
+        io_info_index = io.write_info(info)
+        io_info = io.read_info(io_info_index)
         for key in info.keys():
             self.assertEqual(io_info[key], info[key])
 

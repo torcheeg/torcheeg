@@ -213,7 +213,7 @@ def bci2022_constructor(root_path: str = './2022EmotionPublic/TrainSet/',
     info_io = MetaInfoIO(meta_info_io_path)
     eeg_io = EEGSignalIO(eeg_signal_io_path, cache_size=cache_size)
 
-    for train_set_batch_idx, train_set_batch in enumerate(
+    for train_set_batch_index, train_set_batch in enumerate(
         ['TrainSet_first_batch', 'TrainSet_second_batch']):
         # loop to access the first batch files
         file_list = os.listdir(os.path.join(root_path, train_set_batch))
@@ -221,7 +221,7 @@ def bci2022_constructor(root_path: str = './2022EmotionPublic/TrainSet/',
         if verbose:
             # show process bar
             pbar = tqdm(total=len(file_list))
-            pbar.set_description(f"[BCI2022 BATCH {train_set_batch_idx+1}/2]")
+            pbar.set_description(f"[BCI2022 BATCH {train_set_batch_index+1}/2]")
 
         if num_worker > 1:
             manager = Manager()

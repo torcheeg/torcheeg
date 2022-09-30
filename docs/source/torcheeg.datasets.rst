@@ -6,42 +6,51 @@ torcheeg.datasets
     :local:
     :backlinks: top
 
-DEAPDataset
+.. currentmodule:: torcheeg.datasets
+
+Emotion Recognition Datasets
+----------------------------------
+
+.. autosummary::
+    :toctree: generated
+    :nosignatures:
+    :template: datasettemplate.rst
+
+    DEAPDataset
+    DREAMERDataset
+    SEEDDataset
+    AMIGOSDataset
+    MAHNOBDataset
+    BCI2022Dataset
+
+Personal Identification Datasets
+----------------------------------
+
+.. autosummary::
+    :toctree: generated
+    :nosignatures:
+    :template: datasettemplate.rst
+
+    M3CVDataset
+
+
+Steady-state Visual Evoked Potential Datasets
 ---------------------------------------------------------
 
-.. autoclass:: torcheeg.datasets.DEAPDataset
+.. autosummary::
+    :toctree: generated
+    :nosignatures:
+    :template: datasettemplate.rst
 
-DREAMERDataset
-------------------------------------------------------------
+    TSUBenckmarkDataset
 
-.. autoclass:: torcheeg.datasets.DREAMERDataset
-
-SEEDDataset
+Customized Datasets
 ---------------------------------------------------------
 
-.. autoclass:: torcheeg.datasets.SEEDDataset
+.. autosummary::
+    :toctree: generated
+    :nosignatures:
+    :template: datasettemplate.rst
 
-AMIGOSDataset
----------------------------------------------------------
-
-.. autoclass:: torcheeg.datasets.AMIGOSDataset
-
-MAHNOBDataset
----------------------------------------------------------
-
-.. autoclass:: torcheeg.datasets.MAHNOBDataset
-
-BCI2022Dataset
----------------------------------------------------------
-
-.. autoclass:: torcheeg.datasets.BCI2022Dataset
-
-M3CVDataset
----------------------------------------------------------
-
-.. autoclass:: torcheeg.datasets.M3CVDataset
-
-TSUBenckmarkDataset
----------------------------------------------------------
-
-.. autoclass:: torcheeg.datasets.TSUBenckmarkDataset
+    NumpyDataset
+    MNEDataset

@@ -63,9 +63,9 @@ class ToG(EEGTransform):
         if not self.top_k is None:
             rows = []
             for row in adj:
-                vals, idx = row.topk(self.top_k)
+                vals, index = row.topk(self.top_k)
                 topk = torch.zeros_like(row)
-                topk[idx] = vals
+                topk[index] = vals
                 rows.append(topk)
             adj = torch.stack(rows)
 
@@ -212,9 +212,9 @@ class ToDynamicG(EEGTransform):
         if not self.top_k is None:
             rows = []
             for row in adj:
-                vals, idx = row.topk(self.top_k)
+                vals, index = row.topk(self.top_k)
                 topk = torch.zeros_like(row)
-                topk[idx] = vals
+                topk[index] = vals
                 rows.append(topk)
             adj = torch.stack(rows)
 

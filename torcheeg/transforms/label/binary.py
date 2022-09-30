@@ -1,4 +1,6 @@
-from typing import List, Union, Dict
+from typing import Dict, List, Union
+
+import numpy as np
 
 from ..base_transform import LabelTransform
 
@@ -42,9 +44,6 @@ class Binary(LabelTransform):
         return super().__call__(*args, y=y, **kwargs)
 
     def apply(self, y: Union[int, float, List], **kwargs) -> Union[int, List]:
-        assert isinstance(
-            y, (int, float, list)
-        ), f'The transform Binary only accepts label list or item (int or float) as input, but obtain {type(y)} as input.'
         if isinstance(y, list):
             return [int(l >= self.threshold) for l in y]
         return int(y >= self.threshold)

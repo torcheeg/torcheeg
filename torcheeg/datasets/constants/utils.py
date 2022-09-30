@@ -20,14 +20,14 @@ def format_adj_matrix_from_adj_list(channel_list: List, adj_list: List) -> List[
     for start_node_name in adj_list:
         if not start_node_name in channel_list:
             continue
-        start_node_idx = node_map[start_node_name]
+        start_node_index = node_map[start_node_name]
         end_node_list = adj_list[start_node_name]
 
         for end_node_name in end_node_list:
             if not end_node_name in node_map:
                 continue
-            end_node_idx = node_map[end_node_name]
-            adj_matrix[start_node_idx][end_node_idx] = 1
+            end_node_index = node_map[end_node_name]
+            adj_matrix[start_node_index][end_node_index] = 1
 
     return adj_matrix.tolist()
 

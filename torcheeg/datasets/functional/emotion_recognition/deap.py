@@ -43,9 +43,9 @@ def transform_producer(file_name: str, root_path: str, chunk_size: int,
         trial_meta_info = {'subject_id': subject_id, 'trial_id': trial_id}
         trial_rating = labels[trial_id]
 
-        for label_idx, label_name in enumerate(
+        for label_index, label_name in enumerate(
             ['valence', 'arousal', 'dominance', 'liking']):
-            trial_meta_info[label_name] = trial_rating[label_idx]
+            trial_meta_info[label_name] = trial_rating[label_index]
 
         # extract experimental signals
         start_at = baseline_chunk_size * num_baseline

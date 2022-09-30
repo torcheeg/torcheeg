@@ -669,9 +669,9 @@ class RandomChannelShuffle(RandomEEGTransform):
         return super().__call__(*args, eeg=eeg, baseline=baseline, **kwargs)
 
     def random_apply(self, eeg: torch.Tensor, **kwargs) -> torch.Tensor:
-        idx_list = np.arange(len(eeg))
-        np.random.shuffle(idx_list)
-        return eeg[idx_list]
+        index_list = np.arange(len(eeg))
+        np.random.shuffle(index_list)
+        return eeg[index_list]
 
 
 class RandomHemisphereChannelShuffle(RandomEEGTransform):
@@ -729,12 +729,12 @@ class RandomHemisphereChannelShuffle(RandomEEGTransform):
 
     def random_apply(self, eeg: torch.Tensor, **kwargs) -> torch.Tensor:
         if 0.5 < torch.rand(1):
-            idx_list = self.left_channel_list
+            index_list = self.left_channel_list
         else:
-            idx_list = self.right_channel_list
+            index_list = self.right_channel_list
 
-        shuffle_idx_list = np.random.permutation(idx_list.copy())
-        eeg[idx_list] = eeg[shuffle_idx_list]
+        shuffle_index_list = np.random.permutation(index_list.copy())
+        eeg[index_list] = eeg[shuffle_index_list]
         return eeg
 
     @property

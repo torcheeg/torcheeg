@@ -58,12 +58,12 @@ def transform_producer(file_name: str, root_path: str, chunk_size: int,
                 )
             continue
 
-        for label_idx, label_name in enumerate([
+        for label_index, label_name in enumerate([
                 'arousal', 'valence', 'dominance', 'liking', 'familiarity',
                 'neutral', 'disgust', 'happiness', 'surprise', 'anger', 'fear',
                 'sadness'
         ]):
-            trial_meta_info[label_name] = trial_rating[label_idx]
+            trial_meta_info[label_name] = trial_rating[label_index]
 
         # extract baseline signals
         trial_baseline_sample = trial_samples[:baseline_chunk_size *

@@ -36,8 +36,8 @@ class DREAMERDataset(BaseDataset):
                                   transforms.Binary(3.0),
                               ]))
         print(dataset[0])
-        # EEG signal (torch.Tensor[128, 9, 9]),
-        # coresponding baseline signal (torch.Tensor[128, 9, 9]),
+        # EEG signal (torch.Tensor[4, 9, 9]),
+        # coresponding baseline signal (torch.Tensor[4, 9, 9]),
         # label (int)
 
     Another example dataset for CNN-based methods:
