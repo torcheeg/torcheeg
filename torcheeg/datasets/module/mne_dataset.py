@@ -8,13 +8,13 @@ from .base_dataset import BaseDataset
 
 class MNEDataset(BaseDataset):
     r'''
-    A generic EEG analysis dataset that allows creating datasets from :obj:`MNE.Epochs`, and caches the generated results in a unified input and output format (IO). It is generally used to support custom datasets or datasets not yet provided by TorchEEG.
+    A generic EEG analysis dataset that allows creating datasets from :obj:`mne.Epochs`, and caches the generated results in a unified input and output format (IO). It is generally used to support custom datasets or datasets not yet provided by TorchEEG.
 
-    :obj:`MNEDataset` allows a list of :obj:`MNE.Epochs` and the corresponding description dictionary as input, and divides the signals in :obj:`MNE.Epochs` into several segments according to the configuration information provided by the user. These segments will be annotated by the description dictionary elements and the event type annotated in :obj:`MNE.Epochs`. Here is an example case shows the use of :obj:`MNEDataset`:
+    :obj:`MNEDataset` allows a list of :obj:`mne.Epochs` and the corresponding description dictionary as input, and divides the signals in :obj:`mne.Epochs` into several segments according to the configuration information provided by the user. These segments will be annotated by the description dictionary elements and the event type annotated in :obj:`mne.Epochs`. Here is an example case shows the use of :obj:`MNEDataset`:
 
     .. code-block:: python
-    
-        # subject index and run index of MNE.Epochs
+
+        # subject index and run index of mne.Epochs
         metadata_list = [{
             'subject': 1,
             'run': 3
@@ -67,7 +67,7 @@ class MNEDataset(BaseDataset):
     .. code-block:: python
     
         if __name__ == '__main__':
-            # subject index and run index of MNE.Epochs
+            # subject index and run index of mne.Epochs
             metadata_list = [{
                 'subject': 1,
                 'run': 3
@@ -116,8 +116,8 @@ class MNEDataset(BaseDataset):
             # label (int)
 
     Args:
-        epochs_list (list): A list of :obj:`MNE.Epochs`. :obj:`MNEDataset` will divide the signals in :obj:`MNE.Epochs` into several segments according to the :obj:`chunk_size` and :obj:`overlap` information provided by the user. The divided segments will be transformed and cached in a unified input and output format (IO) for accessing.
-        metadata_list (list): A list of dictionaries of the same length as :obj:`epochs_list`. Each of these dictionaries is annotated with meta-information about :obj:`MNE.Epochs`, such as subject index, experimental dates, etc. These annotated meta-information will be added to the element corresponding to :obj:`MNE.Epochs` for use as labels for the sample.
+        epochs_list (list): A list of :obj:`mne.Epochs`. :obj:`MNEDataset` will divide the signals in :obj:`mne.Epochs` into several segments according to the :obj:`chunk_size` and :obj:`overlap` information provided by the user. The divided segments will be transformed and cached in a unified input and output format (IO) for accessing.
+        metadata_list (list): A list of dictionaries of the same length as :obj:`epochs_list`. Each of these dictionaries is annotated with meta-information about :obj:`mne.Epochs`, such as subject index, experimental dates, etc. These annotated meta-information will be added to the element corresponding to :obj:`mne.Epochs` for use as labels for the sample.
         chunk_size (int): Number of data points included in each EEG chunk as training or test samples. If set to -1, the EEG signal is not segmented, and the length of the chunk is the length of the event. (default: :obj:`-1`)
         overlap (int): The number of overlapping data points between different chunks when dividing EEG chunks. (default: :obj:`0`)
         num_channel (int): Number of channels used. If set to -1, all electrodes are used (default: :obj:`-1`)

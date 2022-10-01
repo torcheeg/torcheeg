@@ -113,7 +113,7 @@ def mne_constructor(epochs_list: List[mne.Epochs],
 
     assert len(epochs_list) == len(
         metadata_list
-    ), f'The number of MNE.Epochs {len(epochs_list)} does not match the number of metadata {len(metadata_list)}.'
+    ), f'The number of mne.Epochs {len(epochs_list)} does not match the number of metadata {len(metadata_list)}.'
 
     # init IO
     meta_info_io_path = os.path.join(io_path, 'info.csv')

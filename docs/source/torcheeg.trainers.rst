@@ -32,3 +32,8 @@ trainers.DANNTrainer
 ----------------------------------------
 
 .. autoclass:: torcheeg.trainers.DANNTrainer
+
+trainers.GANTrainer
+----------------------------------------
+
+.. autoclass:: torcheeg.trainers.GANTrainer

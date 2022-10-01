@@ -42,7 +42,7 @@ class BaselineRemoval(EEGTransform):
             return eeg
 
         assert kwargs[
-            'baseline'].shape == eeg.shape, 'The baseline needs to change to the same shape as the input signal, please check if the `transform` is correct.'
+            'baseline'].shape == eeg.shape, f'The shape of baseline signals ({kwargs["baseline"].shape}) need to be consistent with the input signal ({eeg.shape}). Did you forget to add apply_to_baseline=True to the transforms before BaselineRemoval so that these transforms are applied to the baseline signal simultaneously?'
         return eeg - kwargs['baseline']
 
     @property

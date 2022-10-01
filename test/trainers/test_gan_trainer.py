@@ -5,7 +5,7 @@ import torch
 import torch.nn as nn
 from torch.utils.data import Dataset
 from torch.utils.data.dataloader import DataLoader
-from torcheeg.trainers import BaseTrainer
+from torcheeg.trainers import GANTrainer
 
 
 class DummyDataset(Dataset):
@@ -22,13 +22,15 @@ class DummyDataset(Dataset):
 class DummyModel(nn.Module):
     def __init__(self, in_channels=120, out_channels=2):
         super().__init__()
+        self.in_channels = in_channels
+        self.out_channels = out_channels
         self.fc = nn.Linear(in_channels, out_channels)
 
     def forward(self, x):
         return self.fc(x)
 
 
-class TestBaseTrainer(unittest.TestCase):
+class TestGANTrainer(unittest.TestCase):
     def test_base_trainer(self):
         train_dataset = DummyDataset()
         val_dataset = DummyDataset()
@@ -38,19 +40,16 @@ class TestBaseTrainer(unittest.TestCase):
         val_loader = DataLoader(val_dataset, batch_size=1)
         test_loader = DataLoader(test_dataset, batch_size=1)
 
-        model = DummyModel()
+        generator = DummyModel(10, 120)
+        discriminator = DummyModel(120, 1)
 
-        trainer = BaseTrainer(model)
+        trainer = GANTrainer(generator, discriminator)
         trainer.fit(train_loader, val_loader)
-        score = trainer.score(test_loader)
+        trainer.test(test_loader)
 
-        self.assertTrue(score <= 1)
-
-        trainer = BaseTrainer(model, device=torch.device('cuda'))
+        trainer = GANTrainer(generator, discriminator, device_ids=[0])
         trainer.fit(train_loader, val_loader)
-        score = trainer.score(test_loader)
-
-        self.assertTrue(score <= 1)
+        trainer.test(test_loader)
 
 
 if __name__ == '__main__':

@@ -5,7 +5,7 @@ import torch
 import torch.nn as nn
 from torch.utils.data import Dataset
 from torch.utils.data.dataloader import DataLoader
-from torcheeg.trainers import CoralTrainer, DDCTrainer, DANNTrainer
+from torcheeg.trainers import CORALTrainer, DDCTrainer, DANNTrainer
 
 
 class DummyDataset(Dataset):
@@ -22,6 +22,8 @@ class DummyDataset(Dataset):
 class DummyModel(nn.Module):
     def __init__(self, in_channels=120, out_channels=2):
         super().__init__()
+        self.in_channels = in_channels
+        self.out_channels = out_channels
         self.fc = nn.Linear(in_channels, out_channels)
 
     def forward(self, x):
@@ -43,17 +45,15 @@ class TestDomainAdaptionTrainer(unittest.TestCase):
         extractor = DummyModel(120, 10)
         classifier = DummyModel(10, 2)
 
-        trainer = CoralTrainer(extractor, classifier)
+        trainer = CORALTrainer(extractor, classifier)
         trainer.fit(source_loader, target_loader, val_loader)
-        score = trainer.score(test_loader)
-        self.assertTrue(score <= 1)
+        trainer.test(test_loader)
 
-        trainer = CoralTrainer(extractor,
+        trainer = CORALTrainer(extractor,
                                classifier,
-                               device=torch.device('cuda'))
+                               device_ids=[0])
         trainer.fit(source_loader, target_loader, val_loader)
-        score = trainer.score(test_loader)
-        self.assertTrue(score <= 1)
+        trainer.test(test_loader)
     
     def test_ddc_trainer(self):
         source_dataset = DummyDataset()
@@ -71,15 +71,13 @@ class TestDomainAdaptionTrainer(unittest.TestCase):
 
         trainer = DDCTrainer(extractor, classifier)
         trainer.fit(source_loader, target_loader, val_loader)
-        score = trainer.score(test_loader)
-        self.assertTrue(score <= 1)
+        trainer.test(test_loader)
 
         trainer = DDCTrainer(extractor,
                                classifier,
-                               device=torch.device('cuda'))
+                               device_ids=[0])
         trainer.fit(source_loader, target_loader, val_loader)
-        score = trainer.score(test_loader)
-        self.assertTrue(score <= 1)
+        trainer.test(test_loader)
 
     def test_dann_trainer(self):
         source_dataset = DummyDataset()
@@ -98,16 +96,14 @@ class TestDomainAdaptionTrainer(unittest.TestCase):
 
         trainer = DANNTrainer(extractor, classifier, domain_classifier)
         trainer.fit(source_loader, target_loader, val_loader)
-        score = trainer.score(test_loader)
-        self.assertTrue(score <= 1)
+        trainer.test(test_loader)
 
         trainer = DANNTrainer(extractor,
                                classifier,
                                domain_classifier,
-                               device=torch.device('cuda'))
+                               device_ids=[0])
         trainer.fit(source_loader, target_loader, val_loader)
-        score = trainer.score(test_loader)
-        self.assertTrue(score <= 1)
+        trainer.test(test_loader)
 
 
 if __name__ == '__main__':
