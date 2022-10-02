@@ -54,8 +54,8 @@ class MetaInfoIO:
         Returns:
             int: The index of written EEG description in the table.
         '''
-        require_head = os.path.getsize(self.cache_path) == 0
         with open(self.cache_path, 'a+') as f:
+            require_head = os.path.getsize(self.cache_path) == 0
             writer = csv.DictWriter(f, fieldnames=list(obj.keys()))
             if require_head:
                 writer.writeheader()

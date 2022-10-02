@@ -90,21 +90,33 @@ class ToGrid(EEGTransform):
         return super().__call__(*args, eeg=eeg, baseline=baseline, **kwargs)
 
     def apply(self, eeg: np.ndarray, **kwargs) -> np.ndarray:
-        # electronode eeg timestep
+        # num_electrodes x timestep
         outputs = np.zeros([self.height, self.width, eeg.shape[-1]])
-        # 9 eeg 9 eeg timestep
+        # 9 x 9 x timestep
         for i, (loc_y, loc_x) in enumerate(self.channel_location_dict.values()):
             outputs[loc_y][loc_x] = eeg[i]
 
         outputs = outputs.transpose(2, 0, 1)
-        # timestep eeg 9 eeg 9
+        # timestep x 9 x 9
         return outputs
+
+    def reverse(self, eeg: np.ndarray, **kwargs) -> np.ndarray:
+        # timestep x 9 x 9
+        eeg = eeg.transpose(1, 2, 0)
+        # 9 x 9 x timestep
+        num_electrodes = len(self.channel_location_dict)
+        outputs = np.zeros([num_electrodes, eeg.shape[2]])
+        for i, (x, y) in enumerate(self.channel_location_dict.values()):
+            outputs[i] = eeg[x][y]
+        # num_electrodes x timestep
+        return {
+            'eeg': outputs
+        }
 
     @property
     def repr_body(self) -> Dict:
-        return dict(super().repr_body, **{
-            'channel_location_dict': {...}
-        })
+        return dict(super().repr_body, **{'channel_location_dict': {...}})
+
 
 class ToInterpolatedGrid(EEGTransform):
     r'''
@@ -147,13 +159,14 @@ class ToInterpolatedGrid(EEGTransform):
         self.height = max(loc_y_list) + 1
 
         grid_y, grid_x = np.mgrid[
-            min(self.location_array[:, 0]):max(self.location_array[:,
-                                                                   0]):self.height * 1j,
-            min(self.location_array[:, 1]):max(self.location_array[:,
-                                                                   1]):self.width * 1j, ]
+            min(self.location_array[:, 0]):max(self.location_array[:, 0]
+                                               ):self.height * 1j,
+            min(self.location_array[:,
+                                    1]):max(self.location_array[:,
+                                                                1]):self.width *
+            1j, ]
         self.grid_y = grid_y
         self.grid_x = grid_x
-        
 
     def __call__(self,
                  *args,
@@ -185,8 +198,19 @@ class ToInterpolatedGrid(EEGTransform):
         outputs = np.array(outputs)
         return outputs
 
+    def reverse(self, eeg: np.ndarray, **kwargs) -> np.ndarray:
+        # timestep x 9 x 9
+        eeg = eeg.transpose(1, 2, 0)
+        # 9 x 9 x timestep
+        num_electrodes = len(self.channel_location_dict)
+        outputs = np.zeros([num_electrodes, eeg.shape[2]])
+        for i, (x, y) in enumerate(self.channel_location_dict.values()):
+            outputs[i] = eeg[x][y]
+        # num_electrodes x timestep
+        return {
+            'eeg': outputs
+        }
+        
     @property
     def repr_body(self) -> Dict:
-        return dict(super().repr_body, **{
-            'channel_location_dict': {...}
-        })
+        return dict(super().repr_body, **{'channel_location_dict': {...}})

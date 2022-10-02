@@ -37,3 +37,8 @@ trainers.GANTrainer
 ----------------------------------------
 
 .. autoclass:: torcheeg.trainers.GANTrainer
+
+trainers.VAETrainer
+----------------------------------------
+
+.. autoclass:: torcheeg.trainers.VAETrainer

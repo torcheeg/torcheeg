@@ -4,18 +4,19 @@ from typing import List, Tuple
 import torch
 import torch.nn as nn
 import torchmetrics
+from itertools import chain
 from torch.utils.data import DataLoader
 
 from .basic_trainer import BasicTrainer
 
 
-class GANTrainer(BasicTrainer):
+class VAETrainer(BasicTrainer):
     r'''
     A generic trainer class for EEG classification.
 
     .. code-block:: python
 
-        trainer = GANTrainer(generator, discriminator)
+        trainer = VAETrainer(generator, discriminator)
         trainer.fit(train_loader, val_loader)
         trainer.test(test_loader)
 
@@ -41,7 +42,7 @@ class GANTrainer(BasicTrainer):
 
     .. code-block:: python
 
-        class MyGANTrainer(GANTrainer):
+        class MyVAETrainer(VAETrainer):
             def before_training_epoch(self, epoch_id: int, num_epochs: int):
                 # Do something here.
                 super().before_training_epoch(epoch_id, num_epochs)
@@ -50,7 +51,7 @@ class GANTrainer(BasicTrainer):
     
     .. code-block:: python
 
-        trainer = GANTrainer(generator, discriminator, device_ids=[1, 2, 7])
+        trainer = VAETrainer(generator, discriminator, device_ids=[1, 2, 7])
         trainer.fit(train_loader, val_loader)
         trainer.test(test_loader)
 
@@ -69,11 +70,11 @@ class GANTrainer(BasicTrainer):
     Here, :obj:`nproc_per_node` is the number of GPUs you specify.
 
     Args:
-        generator (nn.Module): The generator model for EEG signal generation, whose inputs are Gaussian distributed random vectors, outputs are generated EEG signals. The dimensions of the input vector should be defined on the :obj:`in_channel` attribute. The output layer does not need to have a softmax activation function.
-        discriminator (nn.Module): The discriminator model to determine whether the EEG signal is real or generated, and the dimension of its output should be equal to the one (i.e., the score to distinguish the real and the fake). The output layer does not need to have a sigmoid activation function.
-        generator_lr (float): The learning rate of the generator. (defualt: :obj:`0.0001`)
-        discriminator_lr (float): The learning rate of the discriminator. (defualt: :obj:`0.0001`)
+        encoder (nn.Module): The encoder, whose inputs are EEG signals, outputs are two batches of vectors of the same dimension, representing the mean and variance estimated in the reparameterization trick.
+        decoder (nn.Module): The decoder generating EEG signals from hidden variables encoded by the encoder. The dimensions of the input vector should be defined on the :obj:`in_channel` attribute.
+        lr (float): The learning rate. (defualt: :obj:`0.0001`)
         weight_decay: (float): The weight decay (L2 penalty). (defualt: :obj:`0.0`)
+        beta: (float): The weight of the KL divergence in the loss function. Please refer to betaVAE. (defualt: :obj:`1.0`)
         device_ids (list): Use cpu if the list is empty. If the list contains indices of multiple GPUs, it needs to be launched with :obj:`torch.distributed.launch` or :obj:`torchrun`. (defualt: :obj:`[]`)
         ddp_sync_bn (bool): Whether to replace batch normalization in network structure with cross-GPU synchronized batch normalization. Only valid when the length of :obj:`device_ids` is greater than one. (defualt: :obj:`True`)
         ddp_replace_sampler (bool): Whether to replace sampler in dataloader with :obj:`DistributedSampler`. Only valid when the length of :obj:`device_ids` is greater than one. (defualt: :obj:`True`)
@@ -85,172 +86,159 @@ class GANTrainer(BasicTrainer):
     .. automethod:: sample
     '''
     def __init__(self,
-                 generator: nn.Module,
-                 discriminator: nn.Module,
-                 generator_lr: float = 1e-4,
-                 discriminator_lr: float = 1e-4,
+                 encoder: nn.Module,
+                 decoder: nn.Module,
+                 lr: float = 1e-4,
                  weight_decay: float = 0.0,
+                 beta: float = 1.0,
                  device_ids: List[int] = [],
                  ddp_sync_bn: bool = True,
                  ddp_replace_sampler: bool = True,
                  ddp_val: bool = True,
                  ddp_test: bool = True):
-        super(GANTrainer,
+        super(VAETrainer,
               self).__init__(modules={
-                  'generator': generator,
-                  'discriminator': discriminator,
+                  'encoder': encoder,
+                  'decoder': decoder,
               },
                              device_ids=device_ids,
                              ddp_sync_bn=ddp_sync_bn,
                              ddp_replace_sampler=ddp_replace_sampler,
                              ddp_val=ddp_val,
                              ddp_test=ddp_test)
-        self.generator_lr = generator_lr
-        self.discriminator_lr = discriminator_lr
+        self.lr = lr
         self.weight_decay = weight_decay
+        self.beta = beta
 
-        self.generator_optimizer = torch.optim.Adam(generator.parameters(),
-                                                    lr=generator_lr,
-                                                    weight_decay=weight_decay)
-        self.discriminator_optimizer = torch.optim.Adam(
-            discriminator.parameters(),
-            lr=discriminator_lr,
-            weight_decay=weight_decay)
+        self.optimizer = torch.optim.Adam(chain(encoder.parameters(),
+                                                decoder.parameters()),
+                                          lr=lr,
+                                          weight_decay=weight_decay)
 
-        self.loss_fn = nn.BCEWithLogitsLoss()
+        self.loss_fn = nn.MSELoss()
         # init metric
-        self.train_g_loss = torchmetrics.MeanMetric().to(self.device)
-        self.train_d_loss = torchmetrics.MeanMetric().to(self.device)
-        self.val_g_loss = torchmetrics.MeanMetric().to(self.device)
-        self.val_d_loss = torchmetrics.MeanMetric().to(self.device)
-        self.test_g_loss = torchmetrics.MeanMetric().to(self.device)
-        self.test_d_loss = torchmetrics.MeanMetric().to(self.device)
+        self.train_rec_loss = torchmetrics.MeanMetric().to(self.device)
+        self.train_kld_loss = torchmetrics.MeanMetric().to(self.device)
+        self.val_rec_loss = torchmetrics.MeanMetric().to(self.device)
+        self.val_kld_loss = torchmetrics.MeanMetric().to(self.device)
+        self.test_rec_loss = torchmetrics.MeanMetric().to(self.device)
+        self.test_kld_loss = torchmetrics.MeanMetric().to(self.device)
 
     def before_training_epoch(self, epoch_id: int, num_epochs: int):
         self.log(f"Epoch {epoch_id}\n-------------------------------")
 
+    def reparameterize(self, mu: torch.Tensor,
+                       logvar: torch.Tensor) -> torch.Tensor:
+        std = torch.exp(0.5 * logvar)
+        eps = torch.randn_like(std)
+        return eps * std + mu
+
     def on_training_step(self, train_batch: Tuple, batch_id: int,
                          num_batches: int):
-        self.train_g_loss.reset()
-        self.train_d_loss.reset()
+        self.train_rec_loss.reset()
+        self.train_kld_loss.reset()
 
         X = train_batch[0].to(self.device)
         y = train_batch[1].to(self.device)
 
-        # backpropagation for generator
-        valid = torch.ones((X.shape[0], 1), device=self.device)
-        fake = torch.zeros((X.shape[0], 1), device=self.device)
+        self.optimizer.zero_grad()
 
-        self.generator_optimizer.zero_grad()
+        try:
+            mu, log_var = self.modules['encoder'](X)
+        except:
+            raise RuntimeError(
+                'The output of the encoder should be two batches of vectors of the same dimension, representing the mean and variance estimated in the reparameterization trick!'
+            )
 
-        assert hasattr(
-            self.modules['generator'], 'in_channels'
-        ), 'The generator must have the property in_channels to generate a batch of latent codes for the corresponding dimension.'
+        z = self.reparameterize(mu, log_var)
+        rec_X = self.modules['decoder'](z)
 
-        z = torch.normal(mean=0,
-                         std=1,
-                         size=(X.shape[0],
-                               self.modules['generator'].in_channels)).to(self.device)
-        gen_X = self.modules['generator'](z)
-        g_loss = self.loss_fn(self.modules['discriminator'](gen_X), valid)
+        rec_loss = self.loss_fn(rec_X, X)
+        kld_loss = torch.mean(
+            -0.5 * torch.sum(1 + log_var - mu**2 - log_var.exp(), dim=1), dim=0)
 
-        g_loss.backward()
-        self.generator_optimizer.step()
+        # Bias correction term accounting for the minibatch samples from the dataset. It is necessary when small batch-sizes are used, which can lead to a large variance in the KLD value. Some other studies use latent dimension/the input dimension instead.
+        loss = rec_loss + self.beta * (1 / num_batches) * kld_loss
 
-        # backpropagation for discriminator
-        self.discriminator_optimizer.zero_grad()
-
-        real_loss = self.loss_fn(self.modules['discriminator'](X), valid)
-        fake_loss = self.loss_fn(self.modules['discriminator'](gen_X.detach()),
-                                 fake)
-        d_loss = (real_loss + fake_loss) / 2
-
-        d_loss.backward()
-        self.discriminator_optimizer.step()
+        loss.backward()
+        self.optimizer.step()
 
         # log five times
         log_step = math.ceil(num_batches / 5)
         if batch_id % log_step == 0:
-            self.train_g_loss.update(g_loss)
-            self.train_d_loss.update(d_loss)
+            self.train_rec_loss.update(rec_loss)
+            self.train_kld_loss.update(kld_loss)
 
-            train_g_loss = self.train_g_loss.compute()
-            train_d_loss = self.train_d_loss.compute()
+            train_rec_loss = self.train_rec_loss.compute()
+            train_kld_loss = self.train_kld_loss.compute()
 
             # if not distributed, world_size is 1
             batch_id = batch_id * self.world_size
             num_batches = num_batches * self.world_size
             if self.is_main:
                 self.log(
-                    f"g_loss: {train_g_loss:>8f}, d_loss: {train_d_loss:>8f} [{batch_id:>5d}/{num_batches:>5d}]"
+                    f"rec_loss: {train_rec_loss:>8f}, kld_loss: {train_kld_loss:>8f} [{batch_id:>5d}/{num_batches:>5d}]"
                 )
 
     def before_validation_epoch(self, epoch_id: int, num_epochs: int):
-        self.val_g_loss.reset()
-        self.val_d_loss.reset()
+        self.val_rec_loss.reset()
+        self.val_kld_loss.reset()
 
     def on_validation_step(self, val_batch: Tuple, batch_id: int,
                            num_batches: int):
         X = val_batch[0].to(self.device)
         y = val_batch[1].to(self.device)
 
-        valid = torch.ones((X.shape[0], 1), device=self.device)
-        fake = torch.zeros((X.shape[0], 1), device=self.device)
+        try:
+            mu, log_var = self.modules['encoder'](X)
+        except:
+            raise RuntimeError(
+                'The output of the encoder should be two batches of vectors of the same dimension, representing the mean and variance estimated in the reparameterization trick!'
+            )
+        z = self.reparameterize(mu, log_var)
+        rec_X = self.modules['decoder'](z)
 
-        # for g_loss
-        z = torch.normal(mean=0,
-                         std=1,
-                         size=(X.shape[0],
-                               self.modules['generator'].in_channels)).to(self.device)
-        gen_X = self.modules['generator'](z)
-        g_loss = self.loss_fn(self.modules['discriminator'](gen_X), valid)
+        rec_loss = self.loss_fn(rec_X, X)
+        kld_loss = torch.mean(
+            -0.5 * torch.sum(1 + log_var - mu**2 - log_var.exp(), dim=1), dim=0)
 
-        # for d_loss
-        real_loss = self.loss_fn(self.modules['discriminator'](X), valid)
-        fake_loss = self.loss_fn(self.modules['discriminator'](gen_X.detach()),
-                                 fake)
-        d_loss = (real_loss + fake_loss) / 2
-
-        self.val_g_loss.update(g_loss)
-        self.val_d_loss.update(d_loss)
+        self.val_rec_loss.update(rec_loss)
+        self.val_kld_loss.update(kld_loss)
 
     def after_validation_epoch(self, epoch_id: int, num_epochs: int):
-        val_g_loss = self.val_g_loss.compute()
-        val_d_loss = self.val_d_loss.compute()
-        self.log(f"\ng_loss: {val_g_loss:>8f}, d_loss: {val_d_loss:>8f}")
+        val_rec_loss = self.val_rec_loss.compute()
+        val_kld_loss = self.val_kld_loss.compute()
+        self.log(f"\ng_loss: {val_rec_loss:>8f}, d_loss: {val_kld_loss:>8f}")
 
     def before_test_epoch(self):
-        self.test_g_loss.reset()
-        self.test_d_loss.reset()
+        self.test_rec_loss.reset()
+        self.test_kld_loss.reset()
 
     def on_test_step(self, test_batch: Tuple, batch_id: int, num_batches: int):
         X = test_batch[0].to(self.device)
         y = test_batch[1].to(self.device)
 
-        valid = torch.ones((X.shape[0], 1), device=self.device)
-        fake = torch.zeros((X.shape[0], 1), device=self.device)
+        try:
+            mu, log_var = self.modules['encoder'](X)
+        except:
+            raise RuntimeError(
+                'The output of the encoder should be two batches of vectors of the same dimension, representing the mean and variance estimated in the reparameterization trick!'
+            )
+        z = self.reparameterize(mu, log_var)
+        rec_X = self.modules['decoder'](z)
 
-        # for g_loss
-        z = torch.normal(mean=0,
-                         std=1,
-                         size=(X.shape[0],
-                               self.modules['generator'].in_channels)).to(self.device)
-        gen_X = self.modules['generator'](z)
-        g_loss = self.loss_fn(self.modules['discriminator'](gen_X), valid)
+        rec_loss = self.loss_fn(rec_X, X)
+        kld_loss = torch.mean(
+            -0.5 * torch.sum(1 + log_var - mu**2 - log_var.exp(), dim=1), dim=0)
 
-        # for d_loss
-        real_loss = self.loss_fn(self.modules['discriminator'](X), valid)
-        fake_loss = self.loss_fn(self.modules['discriminator'](gen_X.detach()),
-                                 fake)
-        d_loss = (real_loss + fake_loss) / 2
-
-        self.test_g_loss.update(g_loss)
-        self.test_d_loss.update(d_loss)
+        self.test_rec_loss.update(rec_loss)
+        self.test_kld_loss.update(kld_loss)
 
     def after_test_epoch(self):
-        test_g_loss = self.test_g_loss.compute()
-        test_d_loss = self.test_d_loss.compute()
-        self.log(f"\ng_loss: {test_g_loss:>8f}, d_loss: {test_d_loss:>8f}")
+        test_rec_loss = self.test_rec_loss.compute()
+        test_kld_loss = self.test_kld_loss.compute()
+        self.log(
+            f"\nrec_loss: {test_rec_loss:>8f}, kld_loss: {test_kld_loss:>8f}")
 
     def test(self, test_loader: DataLoader):
         r'''
@@ -277,8 +265,7 @@ class GANTrainer(BasicTrainer):
                     val_loader=val_loader,
                     num_epochs=num_epochs)
 
-    def sample(self,
-               num_samples:int) -> torch.Tensor:
+    def sample(self, num_samples: int) -> torch.Tensor:
         """
         Samples from the latent space and return generated results.
 
@@ -288,8 +275,8 @@ class GANTrainer(BasicTrainer):
         Returns:
             torch.Tensor: the generated samples.
         """
-        self.modules['generator'].eval()
+        self.modules['decoder'].eval()
         with torch.no_grad():
             z = torch.randn(num_samples,
-                            self.modules['generator'].in_channels).to(self.device)
-            return self.modules['generator'](z)
+                            self.modules['decoder'].in_channels).to(self.device)
+            return self.modules['decoder'](z)
