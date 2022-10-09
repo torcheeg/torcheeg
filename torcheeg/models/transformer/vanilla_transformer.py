@@ -1,66 +1,9 @@
 from typing import Tuple
 
-import numpy as np
 import torch
-from einops import rearrange
+from einops import rearrange, repeat
 from einops.layers.torch import Rearrange
 from torch import nn
-
-
-def pair(t):
-    return t if isinstance(t, tuple) else (t, t)
-
-
-# https://github.com/tatp22/multidim-positional-encoding/blob/master/positional_encodings/torch_encodings.py
-
-
-def get_emb(sin_inp):
-    emb = torch.stack((sin_inp.sin(), sin_inp.cos()), dim=-1)
-    return torch.flatten(emb, -2, -1)
-
-
-class PositionEmbedding3D(nn.Module):
-    def __init__(self, in_channels, temporature: float = 10000.0):
-        super(PositionEmbedding3D, self).__init__()
-        self.in_channels = in_channels
-        self.temporature = temporature
-
-        in_channels = int(np.ceil(in_channels / 6) * 2)
-        if in_channels % 2:
-            in_channels += 1
-        self.in_channels = in_channels
-        inv_freq = 1.0 / (temporature**(
-            torch.arange(0, in_channels, 2).float() / in_channels))
-        self.register_buffer("inv_freq", inv_freq)
-        self.cached_penc = None
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        if len(x.shape) != 5:
-            raise RuntimeError("The input must be five-dimensional to perform thres-dimensional position embedding!")
-
-        if self.cached_penc is not None and self.cached_penc.shape == x.shape:
-            return self.cached_penc
-
-        self.cached_penc = None
-        batch_size, a, b, c, orig_ch = x.shape
-        pos_a = torch.arange(a, device=x.device).type(self.inv_freq.type())
-        pos_b = torch.arange(b, device=x.device).type(self.inv_freq.type())
-        pos_c = torch.arange(c, device=x.device).type(self.inv_freq.type())
-        sin_inp_a = torch.einsum("i,j->ij", pos_a, self.inv_freq)
-        sin_inp_b = torch.einsum("i,j->ij", pos_b, self.inv_freq)
-        sin_inp_c = torch.einsum("i,j->ij", pos_c, self.inv_freq)
-        emb_a = get_emb(sin_inp_a).unsqueeze(1).unsqueeze(1)
-        emb_b = get_emb(sin_inp_b).unsqueeze(1)
-        emb_c = get_emb(sin_inp_c)
-        emb = torch.zeros((a, b, c, self.in_channels * 3),
-                          device=x.device).type(x.type())
-        emb[:, :, :, :self.in_channels] = emb_a
-        emb[:, :, :, self.in_channels:2 * self.in_channels] = emb_b
-        emb[:, :, :, 2 * self.in_channels:] = emb_c
-
-        self.cached_penc = emb[None, :, :, :, :orig_ch].repeat(
-            batch_size, 1, 1, 1, 1)
-        return self.cached_penc
 
 
 class FeedForward(nn.Module):
@@ -130,7 +73,7 @@ class Transformer(nn.Module):
         return x
 
 
-class SimpleViT(nn.Module):
+class VanillaTransformer(nn.Module):
     r'''
     A Simple and Effective Vision Transformer (SimpleViT). The authors of Vision Transformer (ViT) present a few minor modifications and dramatically improve the performance of plain ViT models. For more details, please refer to the following information. 
 
@@ -146,16 +89,7 @@ class SimpleViT(nn.Module):
 
         dataset = DEAPDataset(io_path=f'./deap',
                     root_path='./data_preprocessed_python',
-                    offline_transform=transforms.Compose([
-                        transforms.BandDifferentialEntropy({
-                            "delta": [1, 4],
-                            "theta": [4, 8],
-                            "alpha": [8, 14],
-                            "beta": [14, 31],
-                            "gamma": [31, 49]
-                        }),
-                        transforms.ToGrid(DEAP_CHANNEL_LOCATION_DICT)
-                    ]),
+                    offline_transform=transforms.To2d(),
                     online_transform=transforms.Compose([
                         transforms.ToTensor(),
                     ]),
@@ -163,9 +97,9 @@ class SimpleViT(nn.Module):
                         transforms.Select('valence'),
                         transforms.Binary(5.0),
                     ]))
-        model = SimpleViT(in_channels=5,
-                            grid_size=(9, 9),
-                            patch_size=(3, 3),
+        model = VanillaTransformer(chunk_size=128,
+                            num_electrodes=32,
+                            patch_size=32,
                             hid_channels=32,
                             depth=3,
                             heads=4,
@@ -174,7 +108,7 @@ class SimpleViT(nn.Module):
                             num_classes=2)
 
     Args:
-        in_channels (int): The feature dimension of each electrode. (defualt: :obj:`5`)
+        chunk_size (int): Number of data points included in each EEG chunk. (defualt: :obj:`128`)
         grid_size (tuple): Spatial dimensions of grid-like EEG representation. (defualt: :obj:`(9, 9)`)
         patch_size (tuple): The size (resolution) of each input patch. (defualt: :obj:`(3, 3)`)
         hid_channels (int): The feature dimension of embeded patch. (defualt: :obj:`32`)
@@ -185,33 +119,27 @@ class SimpleViT(nn.Module):
         num_classes (int): The number of classes to predict. (defualt: :obj:`2`)
     '''
     def __init__(self,
+                 num_electrodes: int = 32,
                  chunk_size: int = 128,
-                 grid_size: Tuple[int, int] = (9, 9),
                  t_patch_size: int = 32,
-                 s_patch_size: Tuple[int, int] = (3, 3),
                  hid_channels: int = 32,
                  depth: int = 3,
                  heads: int = 4,
                  head_channels: int = 8,
                  mlp_channels: int = 64,
                  num_classes: int = 2):
-        super(SimpleViT, self).__init__()
-        grid_height, grid_width = pair(grid_size)
-        patch_height, patch_width = pair(s_patch_size)
+        super(VanillaTransformer, self).__init__()
 
-        assert grid_height % patch_height == 0 and grid_width % patch_width == 0, f'EEG grid size {grid_size} must be divisible by the spatial patch size {s_patch_size}.'
-        assert chunk_size % t_patch_size == 0, f'EEG chunk size {chunk_size} must be divisible by the temporal patch size {t_patch_size}.'
-
-        patch_channels = t_patch_size * patch_height * patch_width
+        assert chunk_size % t_patch_size == 0, f'EEG chunk size {chunk_size} must be divisible by the patch size {t_patch_size}.'
 
         self.to_patch_embedding = nn.Sequential(
-            Rearrange('b (c p0) (h p1) (w p2) -> b c h w (p1 p2 p0)',
-                      p0=t_patch_size,
-                      p1=patch_height,
-                      p2=patch_width),
-            nn.Linear(patch_channels, hid_channels),
+            Rearrange('b c (w p) -> b (c w) p', p=t_patch_size),
+            nn.Linear(t_patch_size, hid_channels),
         )
-        self.position_embedding = PositionEmbedding3D(hid_channels)
+        num_patches = num_electrodes * (chunk_size // t_patch_size)
+        self.pos_embedding = nn.Parameter(
+            torch.randn(1, num_patches + 1, hid_channels))
+        self.cls_token = nn.Parameter(torch.randn(1, 1, hid_channels))
 
         self.transformer = Transformer(hid_channels, depth, heads,
                                        head_channels, mlp_channels)
@@ -222,15 +150,19 @@ class SimpleViT(nn.Module):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         r'''
         Args:
-            x (torch.Tensor): EEG signal representation, the ideal input shape is :obj:`[n, 5, 9, 9]`. Here, :obj:`n` corresponds to the batch size, :obj:`5` corresponds to :obj:`in_channels`, and :obj:`(9, 9)` corresponds to :obj:`grid_size`.
+            x (torch.Tensor): EEG signal representation, the ideal input shape is :obj:`[n, 1, num_electrodes, chunk_size]`. Here, :obj:`n` corresponds to the batch size.
 
         Returns:
             torch.Tensor[number of sample, number of classes]: the predicted probability that the samples belong to the classes.
         '''
-        b, *_ = x.shape
         x = self.to_patch_embedding(x)
-        pe = self.position_embedding(x)
-        x = rearrange(x + pe, 'b ... d -> b (...) d')
+
+        b, n, _ = x.shape
+
+        cls_tokens = repeat(self.cls_token, '1 1 d -> b 1 d', b=b)
+        x = torch.cat((cls_tokens, x), dim=1)
+
+        x += self.pos_embedding[:, :(n + 1)]
 
         x = self.transformer(x)
         x = x.mean(dim=1)
@@ -238,9 +170,13 @@ class SimpleViT(nn.Module):
         return self.linear_head(x)
 
 
-# mock_eeg = torch.randn(1, 128, 9, 9)
-# mock_model = SimpleViT(chunk_size=128,
-#                        t_patch_size=32,
-#                        s_patch_size=(3, 3),
-#                        num_classes=2)
+# mock_eeg = torch.randn(1, 32, 128)
+# mock_model = VanillaTransformer(chunk_size=128,
+#                                 patch_size=32,
+#                                 hid_channels=32,
+#                                 depth=3,
+#                                 heads=4,
+#                                 head_channels=64,
+#                                 mlp_channels=64,
+#                                 num_classes=2)
 # print(mock_model(mock_eeg).shape)

@@ -61,26 +61,26 @@ class STNet(nn.Module):
                         transforms.Select('valence'),
                         transforms.Binary(5.0),
                     ]))
-        model = STNet(num_classes=2, in_channels=4, grid_size=(9, 9), dropout=0.2)
+        model = STNet(num_classes=2, chunk_size=128, grid_size=(9, 9), dropout=0.2)
 
     Args:
-        in_channels (int): The dimension of each electrode. (defualt: :obj:`128`)
+        chunk_size (int): Number of data points included in each EEG chunk, i.e., :math:`T` in the paper. (defualt: :obj:`128`)
         grid_size (tuple): Spatial dimensions of grid-like EEG representation. (defualt: :obj:`(9, 9)`)
         num_classes (int): The number of classes to predict. (defualt: :obj:`2`)
         dropout (float): Probability of an element to be zeroed in the dropout layers. (defualt: :obj:`0.2`)
     '''
     def __init__(self,
-                 in_channels: int = 128,
+                 chunk_size: int = 128,
                  grid_size: Tuple[int, int] = (9, 9),
                  num_classes: int = 2,
                  dropout: float = 0.2):
         super(STNet, self).__init__()
         self.num_classes = num_classes
-        self.in_channels = in_channels
+        self.chunk_size = chunk_size
         self.dropout = dropout
         self.grid_size = grid_size
 
-        self.layer1 = nn.Conv2d(in_channels, 256, kernel_size=3, stride=1, padding=1, bias=True)
+        self.layer1 = nn.Conv2d(chunk_size, 256, kernel_size=3, stride=1, padding=1, bias=True)
         self.layer2 = nn.Conv2d(256, 128, kernel_size=5, stride=1, padding=2, bias=True)
         self.layer3 = nn.Conv2d(128, 64, kernel_size=5, stride=1, padding=2, bias=True)
         self.layer4 = SeparableConv2d(64, 32, kernel_size=5, stride=1, padding=2, bias=True)
@@ -94,7 +94,7 @@ class STNet(nn.Module):
     @property
     def feature_dim(self):
         with torch.no_grad():
-            mock_eeg = torch.zeros(1, self.in_channels, *self.grid_size)
+            mock_eeg = torch.zeros(1, self.chunk_size, *self.grid_size)
 
             mock_eeg = self.layer1(mock_eeg)
             mock_eeg = self.drop_selu(mock_eeg)
@@ -113,7 +113,7 @@ class STNet(nn.Module):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         r'''
         Args:
-            x (torch.Tensor): EEG signal representation, the ideal input shape is :obj:`[n, 128, 9, 9]`. Here, :obj:`n` corresponds to the batch size, :obj:`128` corresponds to :obj:`in_channels`, and :obj:`(9, 9)` corresponds to :obj:`grid_size`.
+            x (torch.Tensor): EEG signal representation, the ideal input shape is :obj:`[n, 128, 9, 9]`. Here, :obj:`n` corresponds to the batch size, :obj:`128` corresponds to :obj:`chunk_size`, and :obj:`(9, 9)` corresponds to :obj:`grid_size`.
 
         Returns:
             torch.Tensor[number of sample, number of classes]: the predicted probability that the samples belong to the classes.

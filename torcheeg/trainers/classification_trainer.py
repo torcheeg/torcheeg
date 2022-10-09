@@ -2,6 +2,7 @@ import math
 from typing import List, Tuple
 
 import torch
+import numpy as np
 import torch.nn as nn
 import torchmetrics
 from torch.utils.data import DataLoader

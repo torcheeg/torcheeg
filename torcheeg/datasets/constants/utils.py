@@ -3,6 +3,21 @@ import numpy as np
 from typing import List, Tuple, Dict
 
 
+def format_region_channel_list(channel_list, region_list):
+    output = []
+    for region in region_list:
+        region_channel_index_list = []
+        for region_channel in region:
+            try:
+                channel_index = channel_list.index(region_channel)
+            except:
+                continue
+            region_channel_index_list.append(channel_index)
+        if len(region_channel_index_list) > 0:
+            output.append(region_channel_index_list)
+    return output
+
+
 def format_channel_location_dict(channel_list, location_list):
     location_list = np.array(location_list)
     output = {}
@@ -13,7 +28,8 @@ def format_channel_location_dict(channel_list, location_list):
     return output
 
 
-def format_adj_matrix_from_adj_list(channel_list: List, adj_list: List) -> List[List]:
+def format_adj_matrix_from_adj_list(channel_list: List,
+                                    adj_list: List) -> List[List]:
     node_map = {k: i for i, k in enumerate(channel_list)}
     adj_matrix = np.zeros((len(channel_list), len(channel_list)))
 
@@ -32,14 +48,17 @@ def format_adj_matrix_from_adj_list(channel_list: List, adj_list: List) -> List[
     return adj_matrix.tolist()
 
 
-DEFAULT_GLOBAL_CHANNEL_LIST = [('FP1', 'FP2'), ('AF3', 'AF4'), ('F5', 'F6'), ('FC5', 'FC6'), ('C5', 'C6'),
-                               ('CP5', 'CP6'), ('P5', 'P6'), ('PO5', 'PO6'), ('O1', 'O2')]
+DEFAULT_GLOBAL_CHANNEL_LIST = [('FP1', 'FP2'), ('AF3', 'AF4'), ('F5', 'F6'),
+                               ('FC5', 'FC6'), ('C5', 'C6'), ('CP5', 'CP6'),
+                               ('P5', 'P6'), ('PO5', 'PO6'), ('O1', 'O2')]
 
 
-def format_adj_matrix_from_standard(channel_list: List,
-                                    standard_channel_location_dict: Dict,
-                                    delta: float = 0.00056,
-                                    global_channel_list: List[Tuple[str]] = DEFAULT_GLOBAL_CHANNEL_LIST) -> List[List]:
+def format_adj_matrix_from_standard(
+    channel_list: List,
+    standard_channel_location_dict: Dict,
+    delta: float = 0.00056,
+    global_channel_list: List[Tuple[str]] = DEFAULT_GLOBAL_CHANNEL_LIST
+) -> List[List]:
     r'''
     Creates an adjacency matrix based on the relative positions of electrodes in a standard system, allowing the addition of global electrode links to connect non-adjacent but symmetrical electrodes.
 
@@ -62,12 +81,15 @@ def format_adj_matrix_from_standard(channel_list: List,
         for end_node_name in channel_list:
             if not end_node_name in standard_channel_location_dict:
                 continue
-            start_node_pos = np.array(standard_channel_location_dict[start_node_name])
-            end_node_pos = np.array(standard_channel_location_dict[end_node_name])
+            start_node_pos = np.array(
+                standard_channel_location_dict[start_node_name])
+            end_node_pos = np.array(
+                standard_channel_location_dict[end_node_name])
             edge_weight = np.linalg.norm(start_node_pos - end_node_pos)
             edge_weight = min(1.0, delta / (edge_weight**2 + 1e-6))
 
-            adj_matrix[node_map[start_node_name]][node_map[end_node_name]] = edge_weight
+            adj_matrix[node_map[start_node_name]][
+                node_map[end_node_name]] = edge_weight
 
     for start_node_name, end_node_name in global_channel_list:
         if (not start_node_name in node_map) or (not end_node_name in node_map):

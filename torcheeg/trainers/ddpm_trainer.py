@@ -249,22 +249,22 @@ class DDPMTrainer(BasicTrainer):
         """
         self.modules['unet'].eval()
         with torch.no_grad():
-            x = torch.randn((num_samples, *sample_size)).to(self.device)
+            samples = torch.randn((num_samples, *sample_size)).to(self.device)
             for i in reversed(range(1, self.beta_timesteps)):
                 t = (torch.ones(
                     num_samples, dtype=torch.long, device=self.device) * i)
-                noise_pred = self.modules['unet'](x, t)
+                noise_pred = self.modules['unet'](samples, t)
 
                 alpha = self.alpha[t][:, None, None, None]
                 alpha_hat = self.alpha_hat[t][:, None, None, None]
                 beta = self.beta[t][:, None, None, None]
 
                 if i > 1:
-                    noise = torch.randn_like(x)
+                    noise = torch.randn_like(samples)
                 else:
-                    noise = torch.zeros_like(x)
+                    noise = torch.zeros_like(samples)
 
-                x = 1 / torch.sqrt(alpha) * (x - (
+                samples = 1 / torch.sqrt(alpha) * (samples - (
                     (1 - alpha) / (torch.sqrt(1 - alpha_hat))) * noise_pred
                                              ) + torch.sqrt(beta) * noise
-            return x
+            return samples

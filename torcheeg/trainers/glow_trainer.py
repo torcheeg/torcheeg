@@ -88,6 +88,8 @@ class GlowTrainer(BasicTrainer):
     def __init__(self,
                  glow: nn.Module,
                  lr: float = 1e-4,
+                 grad_norm_clip: float = 50.0,
+                 loss_scale: float = 1e-3,
                  device_ids: List[int] = [],
                  ddp_sync_bn: bool = True,
                  ddp_replace_sampler: bool = True,
@@ -101,7 +103,8 @@ class GlowTrainer(BasicTrainer):
                              ddp_val=ddp_val,
                              ddp_test=ddp_test)
         self.lr = lr
-
+        self.loss_scale = loss_scale
+        self.grad_norm_clip = grad_norm_clip
         self.optimizer = torch.optim.Adam(glow.parameters(), lr=lr)
 
         # init metric
@@ -127,18 +130,20 @@ class GlowTrainer(BasicTrainer):
 
         self.optimizer.zero_grad()
 
-        zs, logdet = self.modules['glow'].forward(X)
-
-        log_prob_list = []
-        for z in zs:
-            log_prob = self.log_prob(z)
-            log_prob_list.append(log_prob.sum([1, 2, 3]))
-
-        log_prob_loss = -(sum(log_prob_list) + logdet)
-        log_prob_loss /= (math.log(2) * X[0].numel())
+        log_p_sum, logdet = self.modules['glow'].forward(X)
+        log_prob_loss = 1.0 - self.loss_scale * (log_p_sum + logdet)
+        
         loss = log_prob_loss.mean(0)
 
-        loss.backward()
+        try:
+            loss.backward()  # svd_cuda: For ... is zero, singular U.
+        except Exception as e:
+            self.log('[WARNING] svd_cuda: Find zero items, singular U.')
+            return
+
+        nn.utils.clip_grad_norm_(self.modules['glow'].parameters(),
+                                 self.grad_norm_clip)
+
         self.optimizer.step()
 
         # log five times
@@ -164,15 +169,9 @@ class GlowTrainer(BasicTrainer):
         X = val_batch[0].to(self.device)
         y = val_batch[1].to(self.device)
 
-        zs, logdet = self.modules['glow'].forward(X)
-
-        log_prob_list = []
-        for z in zs:
-            log_prob = self.log_prob(z)
-            log_prob_list.append(log_prob.sum([1, 2, 3]))
-
-        log_prob_loss = -(sum(log_prob_list) + logdet)
-        log_prob_loss /= (math.log(2) * X[0].numel())
+        log_p_sum, logdet = self.modules['glow'].forward(X)
+        log_prob_loss = 1.0 - self.loss_scale * (log_p_sum + logdet)
+        
         loss = log_prob_loss.mean(0)
 
         self.val_loss.update(loss)
@@ -188,15 +187,9 @@ class GlowTrainer(BasicTrainer):
         X = test_batch[0].to(self.device)
         y = test_batch[1].to(self.device)
 
-        zs, logdet = self.modules['glow'].forward(X)
-
-        log_prob_list = []
-        for z in zs:
-            log_prob = self.log_prob(z)
-            log_prob_list.append(log_prob.sum([1, 2, 3]))
-
-        log_prob_loss = -(sum(log_prob_list) + logdet)
-        log_prob_loss /= (math.log(2) * X[0].numel())
+        log_p_sum, logdet = self.modules['glow'].forward(X)
+        log_prob_loss = 1.0 - self.loss_scale * (log_p_sum + logdet)
+        
         loss = log_prob_loss.mean(0)
 
         self.test_loss.update(loss)
@@ -230,7 +223,9 @@ class GlowTrainer(BasicTrainer):
                     val_loader=val_loader,
                     num_epochs=num_epochs)
 
-    def sample(self, num_samples: int, z_std: float = 0.6) -> torch.Tensor:
+    def sample(self,
+               num_samples: int,
+               temperature: float) -> torch.Tensor:
         """
         Samples from the latent space and return generated results.
 
@@ -242,6 +237,7 @@ class GlowTrainer(BasicTrainer):
         """
         self.modules['glow'].eval()
         with torch.no_grad():
-            samples, _ = self.modules['glow'].inverse(batch_size=num_samples,
-                                                      z_std=z_std)
+            z = self.modules['glow'].sample_z(num_samples=num_samples,
+                                              temperature=temperature)
+            samples = self.modules['glow'].reverse(z)
             return samples

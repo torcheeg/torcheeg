@@ -39,7 +39,7 @@ class SEEDDataset(BaseDataset):
                               online_transform=transforms.ToTensor(),
                               label_transform=transforms.Compose([
                                   transforms.Select(['emotion']),
-                                  transforms.Lambda(x: x + 1)
+                                  transforms.Lambda(lambda x: x + 1)
                               ]))
         print(dataset[0])
         # EEG signal (torch.Tensor[4, 9, 9]),

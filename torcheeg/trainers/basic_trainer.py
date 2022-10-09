@@ -332,6 +332,9 @@ class BasicTrainer:
             self.modules[k].load_state_dict(state_dict[k], strict=strict)
 
     def save_state_dict(self, save_path):
+        if not os.path.exists(os.path.dirname(save_path)):
+            os.makedirs(os.path.dirname(save_path))
+
         if self.is_main:
             state_dict = {}
             for k, m in self.modules.items():

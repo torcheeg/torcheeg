@@ -118,7 +118,7 @@ class FBCNet(nn.Module):
 
     Args:
         num_electrodes (int): The number of electrodes. (defualt: :obj:`28`)
-        chunk_size (int): Number of data points included in each EEG chunk as training or test samples. (default: :obj:`1000`)
+        chunk_size (int): Number of data points included in each EEG chunk. (default: :obj:`1000`)
         in_channels (int): The number of channels of the signal corresponding to each electrode. If the original signal is used as input, in_channels is set to 1; if the original signal is split into multiple sub-bands, in_channels is set to the number of bands. (defualt: :obj:`9`)
         num_S (int): The number of spatial convolution block. (defualt: :obj:`32`)
         num_classes (int): The number of classes to predict. (defualt: :obj:`2`)

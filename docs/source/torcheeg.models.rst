@@ -19,7 +19,6 @@ Convolutional Neural Networks
    EEGNet
    FBCCNN
    FBCNet
-   MSRN
    MTCNN
    STNet
    TSCeption

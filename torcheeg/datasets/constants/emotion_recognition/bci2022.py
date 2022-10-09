@@ -1,5 +1,9 @@
-from ..utils import format_adj_matrix_from_standard, format_channel_location_dict, format_adj_matrix_from_adj_list
+from ..region_1020 import (FRONTAL_REGION_LIST, GENERAL_REGION_LIST,
+                           HEMISPHERE_REGION_LIST)
 from ..standard_1020 import STANDARD_1020_CHANNEL_LOCATION_DICT
+from ..utils import (format_adj_matrix_from_adj_list,
+                     format_adj_matrix_from_standard,
+                     format_channel_location_dict, format_region_channel_list)
 
 BCI2022_CHANNEL_LIST = [
     'FP1', 'FP2', 'FZ', 'F3', 'F4', 'F7', 'F8', 'FC1', 'FC2', 'FC5', 'FC6',
@@ -57,3 +61,10 @@ BCI2022_ADJACENCY_MATRIX = format_adj_matrix_from_adj_list(
 
 BCI2022_STANDARD_ADJACENCY_MATRIX = format_adj_matrix_from_standard(
     BCI2022_CHANNEL_LIST, STANDARD_1020_CHANNEL_LOCATION_DICT)
+
+BCI2022_GENERAL_REGION_LIST = format_region_channel_list(
+    BCI2022_CHANNEL_LIST, GENERAL_REGION_LIST)
+BCI2022_FRONTAL_REGION_LIST = format_region_channel_list(
+    BCI2022_CHANNEL_LIST, FRONTAL_REGION_LIST)
+BCI2022_HEMISPHERE_REGION_LIST = format_region_channel_list(
+    BCI2022_CHANNEL_LIST, HEMISPHERE_REGION_LIST)

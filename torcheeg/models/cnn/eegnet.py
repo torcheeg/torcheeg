@@ -34,7 +34,7 @@ class EEGNet(nn.Module):
                         transforms.Select('valence'),
                         transforms.Binary(5.0),
                     ]))
-        model = EEGNet(in_channels=128,
+        model = EEGNet(chunk_size=128,
                        num_electrodes=32,
                        dropout=0.5,
                        kernel_1=64,
@@ -45,8 +45,8 @@ class EEGNet(nn.Module):
                        num_classes=2)
 
     Args:
-        in_channels (int): The dimension of each electrode, i.e., :math:`T` in the paper. (defualt: :obj:`4`)
-        num_electrodes (int): The number of electrodes, i.e., :math:`C` in the paper. (defualt: :obj:`32`)
+        chunk_size (int): Number of data points included in each EEG chunk, i.e., :math:`T` in the paper. (defualt: :obj:`151`)
+        num_electrodes (int): The number of electrodes, i.e., :math:`C` in the paper. (defualt: :obj:`60`)
         F1 (int): The filter number of block 1, i.e., :math:`F_1` in the paper. (defualt: :obj:`8`)
         F2 (int): The filter number of block 2, i.e., :math:`F_2` in the paper. (defualt: :obj:`16`)
         D (int): The depth multiplier (number of spatial filters), i.e., :math:`D` in the paper. (defualt: :obj:`2`)
@@ -56,7 +56,7 @@ class EEGNet(nn.Module):
         dropout (float): Probability of an element to be zeroed in the dropout layers. (defualt: :obj:`0.25`)
     '''
     def __init__(self,
-                 in_channels: int = 151,
+                 chunk_size: int = 151,
                  num_electrodes: int = 60,
                  F1: int = 8,
                  F2: int = 16,
@@ -69,7 +69,7 @@ class EEGNet(nn.Module):
         self.F1 = F1
         self.F2 = F2
         self.D = D
-        self.in_channels = in_channels
+        self.chunk_size = chunk_size
         self.num_classes = num_classes
         self.num_electrodes = num_electrodes
         self.kernel_1 = kernel_1
@@ -104,7 +104,7 @@ class EEGNet(nn.Module):
     @property
     def feature_dim(self):
         with torch.no_grad():
-            mock_eeg = torch.zeros(1, 1, self.num_electrodes, self.in_channels)
+            mock_eeg = torch.zeros(1, 1, self.num_electrodes, self.chunk_size)
 
             mock_eeg = self.block1(mock_eeg)
             mock_eeg = self.block2(mock_eeg)
@@ -114,7 +114,7 @@ class EEGNet(nn.Module):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         r'''
         Args:
-            x (torch.Tensor): EEG signal representation, the ideal input shape is :obj:`[n, 60, 151]`. Here, :obj:`n` corresponds to the batch size, :obj:`60` corresponds to :obj:`num_electrodes`, and :obj:`151` corresponds to :obj:`in_channels`.
+            x (torch.Tensor): EEG signal representation, the ideal input shape is :obj:`[n, 60, 151]`. Here, :obj:`n` corresponds to the batch size, :obj:`60` corresponds to :obj:`num_electrodes`, and :obj:`151` corresponds to :obj:`chunk_size`.
 
         Returns:
             torch.Tensor[number of sample, number of classes]: the predicted probability that the samples belong to the classes.

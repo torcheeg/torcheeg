@@ -1,5 +1,9 @@
-from ..utils import format_adj_matrix_from_standard, format_channel_location_dict, format_adj_matrix_from_adj_list
+from ..region_1020 import (FRONTAL_REGION_LIST, GENERAL_REGION_LIST,
+                           HEMISPHERE_REGION_LIST)
 from ..standard_1005 import STANDARD_1005_CHANNEL_LOCATION_DICT
+from ..utils import (format_adj_matrix_from_adj_list,
+                     format_adj_matrix_from_standard,
+                     format_channel_location_dict, format_region_channel_list)
 
 M3CV_CHANNEL_LIST = [
     'FP1', 'FP2', 'F3', 'F4', 'C3', 'C4', 'P3', 'P4', 'O1', 'O2', 'F7', 'F8',
@@ -101,3 +105,10 @@ M3CV_ADJACENCY_MATRIX = format_adj_matrix_from_adj_list(M3CV_CHANNEL_LIST,
 
 M3CV_STANDARD_ADJACENCY_MATRIX = format_adj_matrix_from_standard(
     M3CV_CHANNEL_LIST, STANDARD_1005_CHANNEL_LOCATION_DICT)
+
+M3CV_GENERAL_REGION_LIST = format_region_channel_list(M3CV_CHANNEL_LIST,
+                                                      GENERAL_REGION_LIST)
+M3CV_FRONTAL_REGION_LIST = format_region_channel_list(M3CV_CHANNEL_LIST,
+                                                      FRONTAL_REGION_LIST)
+M3CV_HEMISPHERE_REGION_LIST = format_region_channel_list(
+    M3CV_CHANNEL_LIST, HEMISPHERE_REGION_LIST)

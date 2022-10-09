@@ -36,7 +36,7 @@ class CCNN(torch.nn.Module):
         dropout (float): Probability of an element to be zeroed in the dropout layers. (defualt: :obj:`0.25`)
     '''
     def __init__(self, in_channels: int = 4, grid_size: Tuple[int, int] = (9, 9), num_classes: int = 2, dropout: float = 0.5):
-        super().__init__()
+        super(CCNN, self).__init__()
         self.in_channels = in_channels
         self.grid_size = grid_size
         self.num_classes = num_classes

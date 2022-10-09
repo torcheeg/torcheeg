@@ -25,7 +25,7 @@ class TestCNN(unittest.TestCase):
 
     def test_eegnet(self):
         eeg = torch.randn(1, 1, 32, 128)
-        model = EEGNet(in_channels=128,
+        model = EEGNet(chunk_size=128,
                        num_electrodes=32,
                        dropout=0.5,
                        kernel_1=64,
@@ -45,7 +45,7 @@ class TestCNN(unittest.TestCase):
     def test_stnet(self):
         eeg = torch.randn(1, 128, 9, 9)
         model = STNet(num_classes=2,
-                      in_channels=128,
+                      chunk_size=128,
                       grid_size=(9, 9),
                       dropout=0.2)
         pred = model(eeg)
@@ -55,17 +55,6 @@ class TestCNN(unittest.TestCase):
         model = model.cuda()
         pred = model(eeg)
         self.assertEqual(tuple(pred.shape), (1, 2))
-
-    def test_msrn(self):
-        eeg = torch.randn(2, 4, 32, 32)
-        model = MSRN(num_classes=2, in_channels=4)
-        pred = model(eeg)
-        self.assertEqual(tuple(pred.shape), (2, 2))
-
-        eeg = eeg.cuda()
-        model = model.cuda()
-        pred = model(eeg)
-        self.assertEqual(tuple(pred.shape), (2, 2))
 
     def test_mtcnn(self):
         eeg = torch.randn(1, 8, 8, 9)
