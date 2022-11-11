@@ -755,7 +755,7 @@ class RandomFrequencyShift(RandomEEGTransform):
         transform(eeg=torch.randn(32, 128))['eeg'].shape
         >>> (32, 128)
 
-        transform = RandomFrequencyShift(frequency=128, shift_min=4.0)
+        transform = RandomFrequencyShift(sampling_rate=128, shift_min=4.0)
         transform(eeg=torch.randn(1, 32, 128))['eeg'].shape
         >>> (1, 32, 128)
 
@@ -764,7 +764,7 @@ class RandomFrequencyShift(RandomEEGTransform):
         >>> (128, 9, 9)
 
     Args:
-        frequency (int): The sample frequency in Hz. (defualt: :obj:`128`)
+        sampling_rate (int): The original sampling rate in Hz (defualt: :obj:`128`)
         shift_min (float or int): The minimum shift in the random transformation. (defualt: :obj:`-2.0`)
         shift_max (float or int): The maximum shift in random transformation. (defualt: :obj:`2.0`)
         series_dim (int): Dimension of the time series in the input tensor. (defualt: :obj:`-1`)
@@ -775,14 +775,14 @@ class RandomFrequencyShift(RandomEEGTransform):
     '''
     def __init__(self,
                  p: float = 0.5,
-                 frequency: int = 128,
+                 sampling_rate: int = 128,
                  shift_min: Union[float, int] = -2.0,
                  shift_max: Union[float, int] = 2.0,
                  series_dim: int = 0,
                  apply_to_baseline: bool = False):
         super(RandomFrequencyShift,
               self).__init__(p=p, apply_to_baseline=apply_to_baseline)
-        self.frequency = frequency
+        self.sampling_rate = sampling_rate
         self.shift_min = shift_min
         self.shift_max = shift_max
         self.series_dim = series_dim
@@ -798,7 +798,7 @@ class RandomFrequencyShift(RandomEEGTransform):
             baseline (torch.Tensor, optional) : The corresponding baseline signal, if apply_to_baseline is set to True and baseline is passed, the baseline signal will be transformed with the same way as the experimental signal.
 
         Returns:
-            torch.Tensor: The output EEG signal after applying a random frequency shift.
+            torch.Tensor: The output EEG signal after applying a random sampling_rate shift.
         '''
         return super().__call__(*args, eeg=eeg, baseline=baseline, **kwargs)
 
@@ -811,7 +811,7 @@ class RandomFrequencyShift(RandomEEGTransform):
 
         N_orig = eeg.shape[-1]
         N_padded = 2**int(np.ceil(np.log2(np.abs(N_orig))))
-        t = torch.arange(N_padded) / self.frequency
+        t = torch.arange(N_padded) / self.sampling_rate
         padded = pad(eeg, (0, N_padded - N_orig))
 
         if torch.is_complex(eeg):
@@ -847,7 +847,7 @@ class RandomFrequencyShift(RandomEEGTransform):
     def repr_body(self) -> Dict:
         return dict(
             super().repr_body, **{
-                'frequency': self.frequency,
+                'sampling_rate': self.sampling_rate,
                 'shift_min': self.shift_min,
                 'shift_max': self.shift_max,
                 'series_dim': self.series_dim

@@ -67,9 +67,8 @@ class LeaveOneSubjectOut:
     @property
     def subjects(self) -> List:
         indice_files = list(os.listdir(self.split_path))
-
         def indice_file_to_subject(indice_file):
-            return re.findall(r'subject_(\w*).csv', indice_file)[0]
+            return re.findall(r'subject_(.*).csv', indice_file)[0]
 
         subjects = list(set(map(indice_file_to_subject, indice_files)))
         subjects.sort()

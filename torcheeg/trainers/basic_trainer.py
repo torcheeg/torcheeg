@@ -226,7 +226,8 @@ class BasicTrainer:
     def fit(self,
             train_loader: DataLoader,
             val_loader: DataLoader,
-            num_epochs: int = 1):
+            num_epochs: int = 1,
+            **kwargs):
         r'''
         Args:
             train_loader (DataLoader): Iterable DataLoader for traversing the training data batch (torch.utils.data.dataloader.DataLoader, torch_geometric.loader.DataLoader, etc).
@@ -249,16 +250,17 @@ class BasicTrainer:
                 self.modules[k].train()
 
             # hook
-            self.before_training_epoch(t + 1, num_epochs)
+            self.before_training_epoch(t + 1, num_epochs, **kwargs)
             for batch_id, train_batch in enumerate(train_loader):
                 # hook
-                self.before_training_step(batch_id, num_batches)
+                self.before_training_step(batch_id, num_batches, **kwargs)
                 # hook
-                self.on_training_step(train_batch, batch_id, num_batches)
+                self.on_training_step(train_batch, batch_id, num_batches,
+                                      **kwargs)
                 # hook
-                self.after_training_step(batch_id, num_batches)
+                self.after_training_step(batch_id, num_batches, **kwargs)
             # hook
-            self.after_training_epoch(t + 1, num_epochs)
+            self.after_training_epoch(t + 1, num_epochs, **kwargs)
 
             # set model to val mode
             for k, m in self.modules.items():
@@ -266,21 +268,22 @@ class BasicTrainer:
 
             num_batches = len(val_loader)
             # hook
-            self.before_validation_epoch(t + 1, num_epochs)
+            self.before_validation_epoch(t + 1, num_epochs, **kwargs)
             with torch.no_grad():
                 for batch_id, val_batch in enumerate(val_loader):
                     # hook
-                    self.before_validation_step(batch_id, num_batches)
+                    self.before_validation_step(batch_id, num_batches, **kwargs)
                     # hook
-                    self.on_validation_step(val_batch, batch_id, num_batches)
+                    self.on_validation_step(val_batch, batch_id, num_batches,
+                                            **kwargs)
                     # hook
-                    self.after_validation_step(batch_id, num_batches)
+                    self.after_validation_step(batch_id, num_batches, **kwargs)
                     # hook
-            self.after_validation_epoch(t + 1, num_epochs)
+            self.after_validation_epoch(t + 1, num_epochs, **kwargs)
 
         return self
 
-    def test(self, test_loader: DataLoader):
+    def test(self, test_loader: DataLoader, **kwargs):
         r'''
         Args:
             test_loader (DataLoader): Iterable DataLoader for traversing the test data batch (torch.utils.data.dataloader.DataLoader, torch_geometric.loader.DataLoader, etc).
@@ -291,33 +294,33 @@ class BasicTrainer:
             self.modules[k].eval()
 
         num_batches = len(test_loader)
-        self.before_test_epoch()
+        self.before_test_epoch(**kwargs)
         with torch.no_grad():
             for batch_id, test_batch in enumerate(test_loader):
                 # hook
-                self.before_test_step(batch_id, num_batches)
+                self.before_test_step(batch_id, num_batches, **kwargs)
                 # hook
-                self.on_test_step(test_batch, batch_id, num_batches)
+                self.on_test_step(test_batch, batch_id, num_batches, **kwargs)
                 # hook
-                self.after_test_step(batch_id, num_batches)
-        self.after_test_epoch()
+                self.after_test_step(batch_id, num_batches, **kwargs)
+        self.after_test_epoch(**kwargs)
 
-    def before_test_epoch(self):
+    def before_test_epoch(self, **kwargs):
         # can be overwritten
         ...
 
-    def before_test_step(self, batch_id: int, num_batches: int):
+    def before_test_step(self, batch_id: int, num_batches: int, **kwargs):
         # can be overwritten
         ...
 
-    def on_test_step(self, test_batch: Tuple, batch_id: int, num_batches: int):
+    def on_test_step(self, test_batch: Tuple, batch_id: int, num_batches: int, **kwargs):
         raise NotImplementedError
 
-    def after_test_step(self, batch_id: int, num_batches: int):
+    def after_test_step(self, batch_id: int, num_batches: int, **kwargs):
         # can be overwritten
         ...
 
-    def after_test_epoch(self):
+    def after_test_epoch(self, **kwargs):
         # can be overwritten
         ...
 

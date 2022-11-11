@@ -75,13 +75,13 @@ class Transformer(nn.Module):
 
 class VanillaTransformer(nn.Module):
     r'''
-    A Simple and Effective Vision Transformer (SimpleViT). The authors of Vision Transformer (ViT) present a few minor modifications and dramatically improve the performance of plain ViT models. For more details, please refer to the following information. 
+    A vanilla version of the transformer adapted on EEG analysis. For more details, please refer to the following information. 
 
     It is worth noting that this model is not designed for EEG analysis, but shows good performance and can serve as a good research start.
 
-    - Paper: Beyer L, Zhai X, Kolesnikov A. Better plain ViT baselines for ImageNet-1k[J]. arXiv preprint arXiv:2205.01580, 2022.
-    - URL: https://arxiv.org/abs/2205.01580
-    - Related Project: https://github.com/lucidrains/vit-pytorch
+    - Paper: Vaswani A, Shazeer N, Parmar N, et al. Attention is all you need[J]. Advances in neural information processing systems, 2017, 30.
+    - URL: https://arxiv.org/abs/1706.03762
+    - Related Project: https://github.com/huggingface/transformers
 
     Below is a recommended suite for use in emotion recognition tasks:
 
@@ -150,7 +150,7 @@ class VanillaTransformer(nn.Module):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         r'''
         Args:
-            x (torch.Tensor): EEG signal representation, the ideal input shape is :obj:`[n, 1, num_electrodes, chunk_size]`. Here, :obj:`n` corresponds to the batch size.
+            x (torch.Tensor): EEG signal representation, the ideal input shape is :obj:`[n, 1, 32, 128]`. Here, :obj:`n` corresponds to the batch size, :obj:`32` corresponds to :obj:`num_electrodes`, and :obj:`chunk_size` corresponds to :obj:`chunk_size`.
 
         Returns:
             torch.Tensor[number of sample, number of classes]: the predicted probability that the samples belong to the classes.
@@ -168,15 +168,3 @@ class VanillaTransformer(nn.Module):
         x = x.mean(dim=1)
 
         return self.linear_head(x)
-
-
-# mock_eeg = torch.randn(1, 32, 128)
-# mock_model = VanillaTransformer(chunk_size=128,
-#                                 patch_size=32,
-#                                 hid_channels=32,
-#                                 depth=3,
-#                                 heads=4,
-#                                 head_channels=64,
-#                                 mlp_channels=64,
-#                                 num_classes=2)
-# print(mock_model(mock_eeg).shape)

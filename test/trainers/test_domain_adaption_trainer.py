@@ -5,7 +5,7 @@ import torch
 import torch.nn as nn
 from torch.utils.data import Dataset
 from torch.utils.data.dataloader import DataLoader
-from torcheeg.trainers import CORALTrainer, DDCTrainer, DANNTrainer
+from torcheeg.trainers import CORALTrainer, DDCTrainer, DANNTrainer, DANTrainer, ADATrainer
 
 
 class DummyDataset(Dataset):
@@ -50,6 +50,54 @@ class TestDomainAdaptionTrainer(unittest.TestCase):
         trainer.test(test_loader)
 
         trainer = CORALTrainer(extractor,
+                               classifier,
+                               device_ids=[0])
+        trainer.fit(source_loader, target_loader, val_loader)
+        trainer.test(test_loader)
+    
+    def test_ada_trainer(self):
+        source_dataset = DummyDataset()
+        target_dataset = DummyDataset()
+        val_dataset = DummyDataset()
+        test_dataset = DummyDataset()
+
+        source_loader = DataLoader(source_dataset, batch_size=2)
+        target_loader = DataLoader(target_dataset, batch_size=2)
+        val_loader = DataLoader(val_dataset, batch_size=2)
+        test_loader = DataLoader(test_dataset, batch_size=2)
+
+        extractor = DummyModel(120, 10)
+        classifier = DummyModel(10, 2)
+
+        trainer = ADATrainer(extractor, classifier)
+        trainer.fit(source_loader, target_loader, val_loader)
+        trainer.test(test_loader)
+
+        trainer = ADATrainer(extractor,
+                               classifier,
+                               device_ids=[0])
+        trainer.fit(source_loader, target_loader, val_loader)
+        trainer.test(test_loader)
+
+    def test_dan_trainer(self):
+        source_dataset = DummyDataset()
+        target_dataset = DummyDataset()
+        val_dataset = DummyDataset()
+        test_dataset = DummyDataset()
+
+        source_loader = DataLoader(source_dataset, batch_size=2)
+        target_loader = DataLoader(target_dataset, batch_size=2)
+        val_loader = DataLoader(val_dataset, batch_size=2)
+        test_loader = DataLoader(test_dataset, batch_size=2)
+
+        extractor = DummyModel(120, 10)
+        classifier = DummyModel(10, 2)
+
+        trainer = DANTrainer(extractor, classifier)
+        trainer.fit(source_loader, target_loader, val_loader)
+        trainer.test(test_loader)
+
+        trainer = DANTrainer(extractor,
                                classifier,
                                device_ids=[0])
         trainer.fit(source_loader, target_loader, val_loader)

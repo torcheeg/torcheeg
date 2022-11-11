@@ -18,7 +18,7 @@ class SEEDDataset(BaseDataset):
     - Signals: Electroencephalogram (62 channels at 200Hz) of 15 subjects, and eye movement data of 12 subjects. Each subject conducts the experiment three times, with an interval of about one week, totally 15 people x 3 times = 45
     - Rating: positive (1), negative (-1), and neutral (0).
 
-    In order to use this dataset, the download folder :obj:`data_preprocessed_python` is required, containing the following files:
+    In order to use this dataset, the download folder :obj:`Preprocessed_EEG` is required, containing the following files:
     
     - label.mat
     - readme.txt
@@ -105,12 +105,14 @@ class SEEDDataset(BaseDataset):
 
     Args:
         root_path (str): Downloaded data files in matlab (unzipped Preprocessed_EEG.zip) formats (default: :obj:`'./Preprocessed_EEG'`)
-        chunk_size (int): Number of data points included in each EEG chunk as training or test samples. (default: :obj:`200`)
+        chunk_size (int): Number of data points included in each EEG chunk as training or test samples. If set to -1, the EEG signal of a trial is used as a sample of a chunk. (default: :obj:`200`)
         overlap (int): The number of overlapping data points between different chunks when dividing EEG chunks. (default: :obj:`0`)
         num_channel (int): Number of channels used, of which the first 62 channels are EEG signals. (default: :obj:`62`)
         online_transform (Callable, optional): The transformation of the EEG signals and baseline EEG signals. The input is a :obj:`np.ndarray`, and the ouput is used as the first and second value of each element in the dataset. (default: :obj:`None`)
         offline_transform (Callable, optional): The usage is the same as :obj:`online_transform`, but executed before generating IO intermediate results. (default: :obj:`None`)
         label_transform (Callable, optional): The transformation of the label. The input is an information dictionary, and the ouput is used as the third value of each element in the dataset. (default: :obj:`None`)
+        before_trial (Callable, optional): The hook performed on the trial to which the sample belongs. It is performed before the offline transformation and thus typically used to implement context-dependent sample transformations, such as moving averages, etc. The input of this hook function is a 2D EEG signal with shape (number of electrodes, number of data points), whose ideal output shape is also (number of electrodes, number of data points).
+        after_trial (Callable, optional): The hook performed on the trial to which the sample belongs. It is performed after the offline transformation and thus typically used to implement context-dependent sample transformations, such as moving averages, etc. The input and output of this hook function should be a sequence of dictionaries representing a sequence of EEG samples. Each dictionary contains two key-value pairs, indexed by :obj:`eeg` (the EEG signal matrix) and :obj:`key` (the index in the database) respectively.
         io_path (str): The path to generated unified data IO, cached as an intermediate result. (default: :obj:`./io/seed`)
         num_worker (str): How many subprocesses to use for data processing. (default: :obj:`0`)
         verbose (bool): Whether to display logs during processing, such as progress bars, etc. (default: :obj:`True`)
@@ -127,6 +129,8 @@ class SEEDDataset(BaseDataset):
                  online_transform: Union[None, Callable] = None,
                  offline_transform: Union[None, Callable] = None,
                  label_transform: Union[None, Callable] = None,
+                 before_trial: Union[None, Callable] = None,
+                 after_trial: Union[Callable, None] = None,
                  io_path: str = './io/seed',
                  num_worker: int = 0,
                  verbose: bool = True,
@@ -135,7 +139,9 @@ class SEEDDataset(BaseDataset):
                          chunk_size=chunk_size,
                          overlap=overlap,
                          num_channel=num_channel,
+                         before_trial=before_trial,
                          transform=offline_transform,
+                         after_trial=after_trial,
                          io_path=io_path,
                          num_worker=num_worker,
                          verbose=verbose,
@@ -149,6 +155,8 @@ class SEEDDataset(BaseDataset):
         self.online_transform = online_transform
         self.offline_transform = offline_transform
         self.label_transform = label_transform
+        self.before_trial = before_trial
+        self.after_trial = after_trial
         self.num_worker = num_worker
         self.verbose = verbose
         self.cache_size = cache_size
@@ -181,6 +189,8 @@ class SEEDDataset(BaseDataset):
                 'online_transform': self.online_transform,
                 'offline_transform': self.offline_transform,
                 'label_transform': self.label_transform,
+                'before_trial': self.before_trial,
+                'after_trial': self.after_trial,
                 'num_worker': self.num_worker,
                 'verbose': self.verbose,
                 'cache_size': self.cache_size

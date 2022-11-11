@@ -14,7 +14,10 @@ MAX_QUEUE_SIZE = 1024
 def transform_producer(file_name: str, root_path: str, chunk_size: int,
                        overlap: int, num_channel: int, num_trial: int,
                        skipped_subjects: List, num_baseline: int,
-                       baseline_chunk_size: int, transform: Union[Callable,
+                       baseline_chunk_size: int, before_trial: Union[Callable,
+                                                                     None],
+                       transform: Union[Callable,
+                                        None], after_trial: Union[Callable,
                                                                   None],
                        write_info_fn: Callable, queue: Queue):
     subject = int(re.findall(r'Data_Preprocessed_P(\d*).mat',
@@ -31,9 +34,6 @@ def transform_producer(file_name: str, root_path: str, chunk_size: int,
     labels = data['labels_selfassessment'][
         0]  # trial (20), label of different dimensions ((1, 12))
 
-    # calculate moving step
-    step = chunk_size - overlap
-
     write_pointer = 0
 
     max_len = len(samples)
@@ -43,7 +43,7 @@ def transform_producer(file_name: str, root_path: str, chunk_size: int,
     # loop for each trial
     for trial_id in range(max_len):
         # extract baseline signals
-        trial_samples = samples[trial_id]  # timestep(n*128), channel(17)
+        trial_samples = samples[trial_id]
 
         # record the common meta info
         trial_meta_info = {'subject_id': subject, 'trial_id': trial_id}
@@ -58,6 +58,11 @@ def transform_producer(file_name: str, root_path: str, chunk_size: int,
                 )
             continue
 
+        trial_samples = trial_samples.swapaxes(
+            1, 0)  # channel(17), timestep(n*128)
+        if before_trial:
+            trial_samples = before_trial(trial_samples)
+
         for label_index, label_name in enumerate([
                 'arousal', 'valence', 'dominance', 'liking', 'familiarity',
                 'neutral', 'disgust', 'happiness', 'surprise', 'anger', 'fear',
@@ -66,21 +71,26 @@ def transform_producer(file_name: str, root_path: str, chunk_size: int,
             trial_meta_info[label_name] = trial_rating[label_index]
 
         # extract baseline signals
-        trial_baseline_sample = trial_samples[:baseline_chunk_size *
-                                              num_baseline, :
-                                              num_channel]  # timestep(5*128), channel(14)
+        trial_baseline_sample = trial_samples[:num_channel, :
+                                              baseline_chunk_size *
+                                              num_baseline]  # channel(14), timestep(5*128)
         trial_baseline_sample = trial_baseline_sample.reshape(
-            num_baseline, baseline_chunk_size,
-            num_channel).mean(axis=0).swapaxes(1,
-                                               0)  # channel(14), timestep(128)
+            num_channel, num_baseline,
+            baseline_chunk_size).mean(axis=1)  # channel(14), timestep(128)
 
-        # extract experimental signals
+        trial_queue = []
+
         start_at = baseline_chunk_size * num_baseline
-        end_at = start_at + chunk_size
+        if chunk_size <= 0:
+            chunk_size = trial_samples.shape[1] - start_at
 
-        while end_at <= trial_samples.shape[0]:
-            clip_sample = trial_samples[start_at:end_at, :num_channel].swapaxes(
-                1, 0)
+        # chunk with chunk size
+        end_at = start_at + chunk_size
+        # calculate moving step
+        step = chunk_size - overlap
+
+        while end_at <= trial_samples.shape[1]:
+            clip_sample = trial_samples[:num_channel, start_at:end_at]
 
             t_eeg = clip_sample
             t_baseline = trial_baseline_sample
@@ -97,7 +107,10 @@ def transform_producer(file_name: str, root_path: str, chunk_size: int,
                 trial_meta_info['baseline_id'] = trial_base_id
 
             clip_id = f'{file_name}_{write_pointer}'
-            queue.put({'eeg': t_eeg, 'key': clip_id})
+            if after_trial:
+                trial_queue.append({'eeg': t_eeg, 'key': clip_id})
+            else:
+                queue.put({'eeg': t_eeg, 'key': clip_id})
             write_pointer += 1
 
             # record meta info for each signal
@@ -111,6 +124,12 @@ def transform_producer(file_name: str, root_path: str, chunk_size: int,
 
             start_at = start_at + step
             end_at = start_at + chunk_size
+
+        if len(trial_queue) and after_trial:
+            trial_queue = after_trial(trial_queue)
+            for obj in trial_queue:
+                assert 'eeg' in obj and 'key' in obj, 'after_trial must return a list of dictionaries, where each dictionary corresponds to an EEG sample, containing `eeg` and `key` as keys.'
+                queue.put(obj)
 
 
 def io_consumer(write_eeg_fn, queue):
@@ -144,7 +163,9 @@ def amigos_constructor(root_path: str = './data_preprocessed',
                        ],
                        num_baseline: int = 5,
                        baseline_chunk_size: int = 128,
+                       before_trial: Union[None, Callable] = None,
                        transform: Union[None, Callable] = None,
+                       after_trial: Union[Callable, None] = None,
                        io_path: str = './io/amigos',
                        num_worker: int = 0,
                        verbose: bool = True,
@@ -185,7 +206,9 @@ def amigos_constructor(root_path: str = './data_preprocessed',
                                 skipped_subjects=skipped_subjects,
                                 num_baseline=num_baseline,
                                 baseline_chunk_size=baseline_chunk_size,
+                                before_trial=before_trial,
                                 transform=transform,
+                                after_trial=after_trial,
                                 write_info_fn=info_io.write_info,
                                 queue=queue)
 
@@ -214,7 +237,9 @@ def amigos_constructor(root_path: str = './data_preprocessed',
                                skipped_subjects=skipped_subjects,
                                num_baseline=num_baseline,
                                baseline_chunk_size=baseline_chunk_size,
+                               before_trial=before_trial,
                                transform=transform,
+                               after_trial=after_trial,
                                write_info_fn=info_io.write_info,
                                queue=SingleProcessingQueue(eeg_io.write_eeg))
             if verbose:

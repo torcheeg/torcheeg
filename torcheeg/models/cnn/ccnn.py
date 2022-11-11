@@ -4,7 +4,7 @@ import torch
 import torch.nn as nn
 
 
-class CCNN(torch.nn.Module):
+class CCNN(nn.Module):
     r'''
     Continuous Convolutional Neural Network (CCNN). For more details, please refer to the following information.
 

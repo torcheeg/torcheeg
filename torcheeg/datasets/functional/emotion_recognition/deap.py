@@ -1,10 +1,9 @@
 import os
 import pickle as pkl
 from functools import partial
-from multiprocessing import Manager, Pool, Process, Queue, set_start_method
-from typing import Callable, List, Union
+from multiprocessing import Manager, Pool, Process, Queue
+from typing import Callable, Union
 
-from sklearn import preprocessing
 from torcheeg.io import EEGSignalIO, MetaInfoIO
 from tqdm import tqdm
 
@@ -13,26 +12,29 @@ MAX_QUEUE_SIZE = 1024
 
 def transform_producer(file_name: str, root_path: str, chunk_size: int,
                        overlap: int, num_channel: int, num_baseline: int,
-                       baseline_chunk_size: int, transform: Union[Callable,
+                       baseline_chunk_size: int, before_trial: Union[Callable,
+                                                                     None],
+                       transform: Union[Callable,
+                                        None], after_trial: Union[Callable,
                                                                   None],
-                       write_info_fn: Callable,
-                       label_encoder: preprocessing.LabelEncoder, queue: Queue):
+                       write_info_fn: Callable, queue: Queue):
     with open(os.path.join(root_path, file_name), 'rb') as f:
         pkl_data = pkl.load(f, encoding='iso-8859-1')
 
     samples = pkl_data['data']  # trial(40), channel(32), timestep(63*128)
     labels = pkl_data['labels']
-    subject_id = label_encoder.transform([file_name])[0]
-
-    # calculate moving step
-    step = chunk_size - overlap
+    subject_id = file_name
 
     write_pointer = 0
     # loop for each trial
     for trial_id in range(len(samples)):
         # extract baseline signals
+
         trial_samples = samples[trial_id, :
                                 num_channel]  # channel(32), timestep(63*128)
+        if before_trial:
+            trial_samples = before_trial(trial_samples)
+
         trial_baseline_sample = trial_samples[:, :baseline_chunk_size *
                                               num_baseline]  # channel(32), timestep(3*128)
         trial_baseline_sample = trial_baseline_sample.reshape(
@@ -47,10 +49,16 @@ def transform_producer(file_name: str, root_path: str, chunk_size: int,
             ['valence', 'arousal', 'dominance', 'liking']):
             trial_meta_info[label_name] = trial_rating[label_index]
 
-        # extract experimental signals
         start_at = baseline_chunk_size * num_baseline
-        end_at = start_at + chunk_size
+        if chunk_size <= 0:
+            chunk_size = trial_samples.shape[1] - start_at
 
+        # chunk with chunk size
+        end_at = start_at + chunk_size
+        # calculate moving step
+        step = chunk_size - overlap
+
+        trial_queue = []
         while end_at <= trial_samples.shape[1]:
             clip_sample = trial_samples[:, start_at:end_at]
 
@@ -70,7 +78,10 @@ def transform_producer(file_name: str, root_path: str, chunk_size: int,
                 trial_meta_info['baseline_id'] = trial_base_id
 
             clip_id = f'{file_name}_{write_pointer}'
-            queue.put({'eeg': t_eeg, 'key': clip_id})
+            if after_trial:
+                trial_queue.append({'eeg': t_eeg, 'key': clip_id})
+            else:
+                queue.put({'eeg': t_eeg, 'key': clip_id})
             write_pointer += 1
 
             # record meta info for each signal
@@ -84,6 +95,12 @@ def transform_producer(file_name: str, root_path: str, chunk_size: int,
 
             start_at = start_at + step
             end_at = start_at + chunk_size
+
+        if len(trial_queue) and after_trial:
+            trial_queue = after_trial(trial_queue)
+            for obj in trial_queue:
+                assert 'eeg' in obj and 'key' in obj, 'after_trial must return a list of dictionaries, where each dictionary corresponds to an EEG sample, containing `eeg` and `key` as keys.'
+                queue.put(obj)
 
 
 def io_consumer(write_eeg_fn, queue):
@@ -113,7 +130,9 @@ def deap_constructor(root_path: str = './data_preprocessed_python',
                      num_channel: int = 32,
                      num_baseline: int = 3,
                      baseline_chunk_size: int = 128,
+                     before_trial: Union[None, Callable] = None,
                      transform: Union[None, Callable] = None,
+                     after_trial: Union[Callable, None] = None,
                      io_path: str = './io/deap',
                      num_worker: int = 0,
                      verbose: bool = True,
@@ -141,10 +160,6 @@ def deap_constructor(root_path: str = './data_preprocessed_python',
         pbar = tqdm(total=len(file_list))
         pbar.set_description("[DEAP]")
 
-    # label subject files
-    label_encoder = preprocessing.LabelEncoder()
-    label_encoder.fit(file_list)
-
     if num_worker > 1:
         manager = Manager()
         queue = manager.Queue(maxsize=MAX_QUEUE_SIZE)
@@ -160,9 +175,10 @@ def deap_constructor(root_path: str = './data_preprocessed_python',
                                 num_channel=num_channel,
                                 num_baseline=num_baseline,
                                 baseline_chunk_size=baseline_chunk_size,
+                                before_trial=before_trial,
                                 transform=transform,
+                                after_trial=after_trial,
                                 write_info_fn=info_io.write_info,
-                                label_encoder=label_encoder,
                                 queue=queue)
 
         for _ in Pool(num_worker).imap(partial_mp_fn, file_list):
@@ -182,9 +198,10 @@ def deap_constructor(root_path: str = './data_preprocessed_python',
                                num_channel=num_channel,
                                num_baseline=num_baseline,
                                baseline_chunk_size=baseline_chunk_size,
+                               before_trial=before_trial,
                                transform=transform,
+                               after_trial=after_trial,
                                write_info_fn=info_io.write_info,
-                               label_encoder=label_encoder,
                                queue=SingleProcessingQueue(eeg_io.write_eeg))
             if verbose:
                 pbar.update(1)

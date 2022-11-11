@@ -33,12 +33,42 @@ trainers.DANNTrainer
 
 .. autoclass:: torcheeg.trainers.DANNTrainer
 
+trainers.ADATrainer
+----------------------------------------
+
+.. autoclass:: torcheeg.trainers.ADATrainer
+
 trainers.GANTrainer
 ----------------------------------------
 
 .. autoclass:: torcheeg.trainers.GANTrainer
 
+trainers.CGANTrainer
+----------------------------------------
+
+.. autoclass:: torcheeg.trainers.CGANTrainer
+
 trainers.VAETrainer
 ----------------------------------------
 
 .. autoclass:: torcheeg.trainers.VAETrainer
+
+trainers.CVAETrainer
+----------------------------------------
+
+.. autoclass:: torcheeg.trainers.CVAETrainer
+
+trainers.DDPMTrainer
+----------------------------------------
+
+.. autoclass:: torcheeg.trainers.DDPMTrainer
+
+trainers.CDDPMTrainer
+----------------------------------------
+
+.. autoclass:: torcheeg.trainers.CDDPMTrainer
+
+trainers.GlowTrainer
+----------------------------------------
+
+.. autoclass:: torcheeg.trainers.GlowTrainer

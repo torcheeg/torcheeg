@@ -1,7 +1,7 @@
 import os
 from functools import partial
-from multiprocessing import Manager, Pool, Process, Queue, set_start_method
-from typing import Callable, List, Union
+from multiprocessing import Manager, Pool, Process, Queue
+from typing import Callable, Union
 
 import scipy.io as scio
 from torcheeg.io import EEGSignalIO, MetaInfoIO
@@ -12,7 +12,10 @@ MAX_QUEUE_SIZE = 1024
 
 def transform_producer(file_name: str, root_path: str, chunk_size: int,
                        overlap: int, num_channel: int,
-                       transform: Union[Callable, None],
+                       before_trial: Union[None, Callable],
+                       transform: Union[None,
+                                        Callable], after_trial: Union[Callable,
+                                                                      None],
                        write_info_fn: Callable, queue: Queue):
     subject = int(
         os.path.basename(file_name).split('.')[0].split('_')[0])  # subject (15)
@@ -28,14 +31,13 @@ def transform_producer(file_name: str, root_path: str, chunk_size: int,
 
     trial_ids = [key for key in samples.keys() if 'eeg' in key]
 
-    # calculate moving step
-    step = chunk_size - overlap
-
     write_pointer = 0
     # loop for each trial
     for trial_id in trial_ids:
         # extract baseline signals
         trial_samples = samples[trial_id]  # channel(62), timestep(n*200)
+        if before_trial:
+            trial_samples = before_trial(trial_samples)
 
         # record the common meta info
         trial_meta_info = {
@@ -47,8 +49,15 @@ def transform_producer(file_name: str, root_path: str, chunk_size: int,
 
         # extract experimental signals
         start_at = 0
-        end_at = chunk_size
+        if chunk_size <= 0:
+            chunk_size = trial_samples.shape[1] - start_at
 
+        # chunk with chunk size
+        end_at = chunk_size
+        # calculate moving step
+        step = chunk_size - overlap
+
+        trial_queue = []
         while end_at <= trial_samples.shape[1]:
             clip_sample = trial_samples[:num_channel, start_at:end_at]
 
@@ -57,8 +66,10 @@ def transform_producer(file_name: str, root_path: str, chunk_size: int,
                 t_eeg = transform(eeg=clip_sample)['eeg']
 
             clip_id = f'{file_name}_{write_pointer}'
-
-            queue.put({'eeg': t_eeg, 'key': clip_id})
+            if after_trial:
+                trial_queue.append({'eeg': t_eeg, 'key': clip_id})
+            else:
+                queue.put({'eeg': t_eeg, 'key': clip_id})
             write_pointer += 1
 
             # record meta info for each signal
@@ -72,6 +83,12 @@ def transform_producer(file_name: str, root_path: str, chunk_size: int,
 
             start_at = start_at + step
             end_at = start_at + chunk_size
+
+        if len(trial_queue) and after_trial:
+            trial_queue = after_trial(trial_queue)
+            for obj in trial_queue:
+                assert 'eeg' in obj and 'key' in obj, 'after_trial must return a list of dictionaries, where each dictionary corresponds to an EEG sample, containing `eeg` and `key` as keys.'
+                queue.put(obj)
 
 
 def io_consumer(write_eeg_fn, queue):
@@ -99,7 +116,9 @@ def seed_constructor(root_path: str = './Preprocessed_EEG',
                      chunk_size: int = 200,
                      overlap: int = 0,
                      num_channel: int = 62,
+                     before_trial: Union[None, Callable] = None,
                      transform: Union[None, Callable] = None,
+                     after_trial: Union[Callable, None] = None,
                      io_path: str = './io/seed',
                      num_worker: int = 0,
                      verbose: bool = True,
@@ -145,7 +164,9 @@ def seed_constructor(root_path: str = './Preprocessed_EEG',
                                 chunk_size=chunk_size,
                                 overlap=overlap,
                                 num_channel=num_channel,
+                                before_trial=before_trial,
                                 transform=transform,
+                                after_trial=after_trial,
                                 write_info_fn=info_io.write_info,
                                 queue=queue)
 
@@ -165,7 +186,9 @@ def seed_constructor(root_path: str = './Preprocessed_EEG',
                                chunk_size=chunk_size,
                                overlap=overlap,
                                num_channel=num_channel,
+                               before_trial=before_trial,
                                transform=transform,
+                               after_trial=after_trial,
                                write_info_fn=info_io.write_info,
                                queue=SingleProcessingQueue(eeg_io.write_eeg))
             if verbose:

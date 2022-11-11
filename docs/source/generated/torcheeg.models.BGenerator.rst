@@ -3,10 +3,10 @@
 .. currentmodule:: torcheeg.models
 
 
-MSRN
-====
+BGenerator
+==========
 
-.. autoclass:: MSRN
+.. autoclass:: BGenerator
   :members:
   :undoc-members:
   :show-inheritance:

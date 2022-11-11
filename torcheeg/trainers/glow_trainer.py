@@ -1,10 +1,11 @@
 import math
+from itertools import chain
 from typing import List, Tuple
 
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 import torchmetrics
-from itertools import chain
 from torch.utils.data import DataLoader
 
 from .basic_trainer import BasicTrainer
@@ -12,10 +13,22 @@ from .basic_trainer import BasicTrainer
 
 class GlowTrainer(BasicTrainer):
     r'''
-    A generic trainer class for EEG classification.
+    This class implement the training, test, and new EEG inference of normalizing flow-based models. Glow is dedicated to train an encoder that encodes the input as a hidden variable and makes the hidden variable obey the standard normal distribution. By good design, the encoder should be reversible. On this basis, as soon as the encoder is trained, the corresponding decoder can be used to generate samples from a Gaussian distribution according to the inverse operation. In particular, compared with vanilla normalizing flow-based models, the Glow model is a easy-to-use flow-based model that replaces the operation of permutating the channel axes by introducing a 1x1 reversible convolution.
+    
+    Below is a recommended suite for use in EEG generation:
 
     .. code-block:: python
 
+        model = BGlow(in_channels=4)
+        trainer = GlowTrainer(generator, discriminator)
+        trainer.fit(train_loader, val_loader)
+        trainer.test(test_loader)
+
+    Below is a recommended suite for use in conditional EEG generation:
+
+    .. code-block:: python
+
+        model = BGlow(in_channels=4, num_classes=2)
         trainer = GlowTrainer(generator, discriminator)
         trainer.fit(train_loader, val_loader)
         trainer.test(test_loader)
@@ -112,7 +125,7 @@ class GlowTrainer(BasicTrainer):
         self.val_loss = torchmetrics.MeanMetric().to(self.device)
         self.test_loss = torchmetrics.MeanMetric().to(self.device)
 
-    def before_training_epoch(self, epoch_id: int, num_epochs: int):
+    def before_training_epoch(self, epoch_id: int, num_epochs: int, **kwargs):
         self.log(f"Epoch {epoch_id}\n-------------------------------")
 
     def log_prob(self, value, loc=0.0, scale=1.0):
@@ -122,7 +135,7 @@ class GlowTrainer(BasicTrainer):
             math.sqrt(2 * math.pi))
 
     def on_training_step(self, train_batch: Tuple, batch_id: int,
-                         num_batches: int):
+                         num_batches: int, **kwargs):
         self.train_loss.reset()
 
         X = train_batch[0].to(self.device)
@@ -130,10 +143,13 @@ class GlowTrainer(BasicTrainer):
 
         self.optimizer.zero_grad()
 
-        log_p_sum, logdet = self.modules['glow'].forward(X)
-        log_prob_loss = 1.0 - self.loss_scale * (log_p_sum + logdet)
-        
-        loss = log_prob_loss.mean(0)
+        if self.modules['glow'].num_classes > 0:
+            _, nll_loss, y_pred = self.modules['glow'](X, y)
+            cls_loss = F.cross_entropy(y_pred, y)
+            loss = nll_loss.mean() + cls_loss
+        else:
+            _, nll_loss, _ = self.modules['glow'](X)
+            loss = nll_loss.mean()
 
         try:
             loss.backward()  # svd_cuda: For ... is zero, singular U.
@@ -161,56 +177,64 @@ class GlowTrainer(BasicTrainer):
                     f"loss: {train_loss:>8f} [{batch_id:>5d}/{num_batches:>5d}]"
                 )
 
-    def before_validation_epoch(self, epoch_id: int, num_epochs: int):
+    def before_validation_epoch(self, epoch_id: int, num_epochs: int, **kwargs):
         self.val_loss.reset()
 
     def on_validation_step(self, val_batch: Tuple, batch_id: int,
-                           num_batches: int):
+                           num_batches: int, **kwargs):
         X = val_batch[0].to(self.device)
         y = val_batch[1].to(self.device)
 
-        log_p_sum, logdet = self.modules['glow'].forward(X)
-        log_prob_loss = 1.0 - self.loss_scale * (log_p_sum + logdet)
-        
-        loss = log_prob_loss.mean(0)
+        if self.modules['glow'].num_classes > 0:
+            _, nll_loss, y_pred = self.modules['glow'](X, y)
+            cls_loss = F.cross_entropy(y_pred, y)
+            loss = nll_loss.mean() + cls_loss
+        else:
+            _, nll_loss, _ = self.modules['glow'](X)
+            loss = nll_loss.mean()
 
         self.val_loss.update(loss)
 
-    def after_validation_epoch(self, epoch_id: int, num_epochs: int):
+    def after_validation_epoch(self, epoch_id: int, num_epochs: int, **kwargs):
         val_loss = self.val_loss.compute()
         self.log(f"\nloss: {val_loss:>8f}")
 
-    def before_test_epoch(self):
+    def before_test_epoch(self, **kwargs):
         self.test_loss.reset()
 
-    def on_test_step(self, test_batch: Tuple, batch_id: int, num_batches: int):
+    def on_test_step(self, test_batch: Tuple, batch_id: int, num_batches: int,
+                     **kwargs):
         X = test_batch[0].to(self.device)
         y = test_batch[1].to(self.device)
 
-        log_p_sum, logdet = self.modules['glow'].forward(X)
-        log_prob_loss = 1.0 - self.loss_scale * (log_p_sum + logdet)
-        
-        loss = log_prob_loss.mean(0)
+        if self.modules['glow'].num_classes > 0:
+            _, nll_loss, y_pred = self.modules['glow'](X, y)
+            cls_loss = F.cross_entropy(y_pred, y)
+            loss = nll_loss.mean() + cls_loss
+        else:
+            _, nll_loss, _ = self.modules['glow'](X)
+            loss = nll_loss.mean()
 
         self.test_loss.update(loss)
 
-    def after_test_epoch(self):
+    def after_test_epoch(self, **kwargs):
         test_loss = self.test_loss.compute()
         self.log(f"\nloss: {test_loss:>8f}")
 
-    def test(self, test_loader: DataLoader):
+    def test(self, test_loader: DataLoader, **kwargs):
         r'''
         Validate the performance of the model on the test set.
 
         Args:
             test_loader (DataLoader): Iterable DataLoader for traversing the test data batch (torch.utils.data.dataloader.DataLoader, torch_geometric.loader.DataLoader, etc).
         '''
-        super().test(test_loader=test_loader)
+        super().test(test_loader=test_loader, **kwargs)
 
     def fit(self,
             train_loader: DataLoader,
             val_loader: DataLoader,
-            num_epochs: int = 1):
+            num_epochs: int = 1,
+            **kwargs):
         r'''
         Train the model on the training set and use the validation set to validate the results of each round of training.
 
@@ -221,23 +245,36 @@ class GlowTrainer(BasicTrainer):
         '''
         super().fit(train_loader=train_loader,
                     val_loader=val_loader,
-                    num_epochs=num_epochs)
+                    num_epochs=num_epochs,
+                    **kwargs)
 
     def sample(self,
                num_samples: int,
-               temperature: float) -> torch.Tensor:
+               temperature: float = 1.0,
+               labels: torch.Tensor = None) -> torch.Tensor:
         """
         Samples from the latent space and return generated results.
 
         Args:
             num_samples (int): Number of samples.
+            temperature (float): The hyper-parameter, temperature, to sample from gaussian distributions. (defualt: :obj:`1.0`)
+            labels (torch.Tensor): Category labels (int) for a batch of samples The shape should be :obj:`[n,]`. Here, :obj:`n` corresponds to the batch size. If not provided, a batch of randomly generated categories will be used.
 
         Returns:
             torch.Tensor: the generated samples.
         """
+        if labels:
+            assert len(
+                labels
+            ) == num_samples, f'labels ({len(labels)}) should be the same length as num_samples ({num_samples}).'
+            assert isinstance(
+                labels, torch.Tensor
+            ), f'labels should be torch.Tensor instances, the current input is {type(labels)}'
+        else:
+            labels = torch.randint(low=0,
+                                   high=self.modules['glow'].num_classes,
+                                   size=(num_samples, ))
+        labels = labels.long().to(self.device)
         self.modules['glow'].eval()
         with torch.no_grad():
-            z = self.modules['glow'].sample_z(num_samples=num_samples,
-                                              temperature=temperature)
-            samples = self.modules['glow'].reverse(z)
-            return samples
+            return self.modules['glow'](y=labels, temperature=temperature, reverse=True)

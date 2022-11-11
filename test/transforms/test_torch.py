@@ -85,13 +85,13 @@ class TestTorchTransforms(unittest.TestCase):
         transformed_eeg = RandomChannelShuffle(p=1.0)(eeg=eeg)
         self.assertEqual(tuple(transformed_eeg['eeg'].shape), (32, 128))
 
-    def test_random_frequency_shift(self):
+    def test_random_sampling_rate_shift(self):
         eeg = torch.randn(32, 128)
         transformed_eeg = RandomFrequencyShift(p=1.0)(eeg=eeg)
         self.assertEqual(tuple(transformed_eeg['eeg'].shape), (32, 128))
 
         eeg = torch.randn(1, 32, 128)
-        transformed_eeg = RandomFrequencyShift(p=1.0, frequency=128, shift_min=-1.0, shift_max=1.0)(eeg=eeg)
+        transformed_eeg = RandomFrequencyShift(p=1.0, sampling_rate=128, shift_min=-1.0, shift_max=1.0)(eeg=eeg)
         self.assertEqual(tuple(transformed_eeg['eeg'].shape), (1, 32, 128))
 
         eeg = torch.randn(128, 9, 9)

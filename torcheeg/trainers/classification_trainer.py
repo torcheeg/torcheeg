@@ -116,11 +116,11 @@ class ClassificationTrainer(BasicTrainer):
         self.test_loss = torchmetrics.MeanMetric().to(self.device)
         self.test_accuracy = torchmetrics.Accuracy().to(self.device)
 
-    def before_training_epoch(self, epoch_id: int, num_epochs: int):
+    def before_training_epoch(self, epoch_id: int, num_epochs: int, **kwargs):
         self.log(f"Epoch {epoch_id}\n-------------------------------")
 
     def on_training_step(self, train_batch: Tuple, batch_id: int,
-                         num_batches: int):
+                         num_batches: int, **kwargs):
         self.train_accuracy.reset()
         self.train_loss.reset()
 
@@ -153,12 +153,12 @@ class ClassificationTrainer(BasicTrainer):
                     f"loss: {train_loss:>8f}, accuracy: {train_accuracy:>0.1f}% [{batch_id:>5d}/{num_batches:>5d}]"
                 )
 
-    def before_validation_epoch(self, epoch_id: int, num_epochs: int):
+    def before_validation_epoch(self, epoch_id: int, num_epochs: int, **kwargs):
         self.val_accuracy.reset()
         self.val_loss.reset()
 
     def on_validation_step(self, val_batch: Tuple, batch_id: int,
-                           num_batches: int):
+                           num_batches: int, **kwargs):
         X = val_batch[0].to(self.device)
         y = val_batch[1].to(self.device)
 
@@ -167,16 +167,17 @@ class ClassificationTrainer(BasicTrainer):
         self.val_loss.update(self.loss_fn(pred, y))
         self.val_accuracy.update(pred.argmax(1), y)
 
-    def after_validation_epoch(self, epoch_id: int, num_epochs: int):
+    def after_validation_epoch(self, epoch_id: int, num_epochs: int, **kwargs):
         val_accuracy = 100 * self.val_accuracy.compute()
         val_loss = self.val_loss.compute()
         self.log(f"\nloss: {val_loss:>8f}, accuracy: {val_accuracy:>0.1f}%")
 
-    def before_test_epoch(self):
+    def before_test_epoch(self, **kwargs):
         self.test_loss.reset()
         self.test_accuracy.reset()
 
-    def on_test_step(self, test_batch: Tuple, batch_id: int, num_batches: int):
+    def on_test_step(self, test_batch: Tuple, batch_id: int, num_batches: int,
+                     **kwargs):
         X = test_batch[0].to(self.device)
         y = test_batch[1].to(self.device)
         pred = self.modules['model'](X)
@@ -184,22 +185,23 @@ class ClassificationTrainer(BasicTrainer):
         self.test_loss.update(self.loss_fn(pred, y))
         self.test_accuracy.update(pred.argmax(1), y)
 
-    def after_test_epoch(self):
+    def after_test_epoch(self, **kwargs):
         test_accuracy = 100 * self.test_accuracy.compute()
         test_loss = self.test_loss.compute()
         self.log(f"\nloss: {test_loss:>8f}, accuracy: {test_accuracy:>0.1f}%")
 
-    def test(self, test_loader: DataLoader):
+    def test(self, test_loader: DataLoader, **kwargs):
         r'''
         Args:
             test_loader (DataLoader): Iterable DataLoader for traversing the test data batch (torch.utils.data.dataloader.DataLoader, torch_geometric.loader.DataLoader, etc).
         '''
-        super().test(test_loader=test_loader)
+        super().test(test_loader=test_loader, **kwargs)
 
     def fit(self,
             train_loader: DataLoader,
             val_loader: DataLoader,
-            num_epochs: int = 1):
+            num_epochs: int = 1,
+            **kwargs):
         r'''
         Args:
             train_loader (DataLoader): Iterable DataLoader for traversing the training data batch (torch.utils.data.dataloader.DataLoader, torch_geometric.loader.DataLoader, etc).
@@ -207,5 +209,6 @@ class ClassificationTrainer(BasicTrainer):
             num_epochs (int): training epochs. (defualt: :obj:`1`)
         '''
         super().fit(train_loader=train_loader,
-                     val_loader=val_loader,
-                     num_epochs=num_epochs)
+                    val_loader=val_loader,
+                    num_epochs=num_epochs,
+                    **kwargs)

@@ -43,7 +43,7 @@ class TestNumpyDataset(unittest.TestCase):
                                    transforms.Binary(5.0),
                                ]),
                                num_worker=2,
-                               num_samples_per_worker=50)
+                               num_samples_per_trial=50)
         
         self.assertEqual(len(dataset), 100)
         first_item = dataset[0]

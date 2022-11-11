@@ -19,6 +19,9 @@ Emotion Recognition Datasets
     DEAPDataset
     DREAMERDataset
     SEEDDataset
+    SEEDFeatureDataset
+    SEEDIVDataset
+    SEEDIVFeatureDataset
     AMIGOSDataset
     MAHNOBDataset
     BCI2022Dataset
@@ -32,7 +35,6 @@ Personal Identification Datasets
     :template: datasettemplate.rst
 
     M3CVDataset
-
 
 Steady-state Visual Evoked Potential Datasets
 ---------------------------------------------------------

@@ -5,11 +5,14 @@ import unittest
 
 from torcheeg import transforms
 from torcheeg.datasets import (AMIGOSDataset, DEAPDataset, DREAMERDataset,
-                               MAHNOBDataset, SEEDDataset, BCI2022Dataset)
+                               MAHNOBDataset, SEEDDataset, SEEDFeatureDataset,
+                               SEEDIVDataset, SEEDIVFeatureDataset)
 from torcheeg.datasets.functional import (amigos_constructor, deap_constructor,
                                           dreamer_constructor,
                                           mahnob_constructor, seed_constructor,
-                                          bci2022_constructor)
+                                          seed_feature_constructor,
+                                          seed_iv_constructor,
+                                          seed_iv_feature_constructor)
 
 
 class TestEmotionRecognitionDataset(unittest.TestCase):
@@ -140,28 +143,80 @@ class TestEmotionRecognitionDataset(unittest.TestCase):
         last_item = dataset[152729]
         self.assertEqual(last_item[0].shape, (62, 200))
 
-    def test_bci2022_constructor(self):
-        io_path = f'./tmp_out/bci2022_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
-        root_path = './tmp_in/TrainSet'
+    def test_seed_feature_constructor(self):
+        io_path = f'./tmp_out/seed_feature_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
+        root_path = './tmp_in/ExtractedFeatures'
 
-        bci2022_constructor(io_path=io_path, root_path=root_path, num_worker=0)
-
-    def test_bci2022_dataset(self):
-        io_path = f'./tmp_out/bci2022_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
-        root_path = './tmp_in/TrainSet'
-
-        dataset = BCI2022Dataset(io_path=io_path,
+        seed_feature_constructor(io_path=io_path,
                                  root_path=root_path,
-                                 online_transform=transforms.ToTensor(),
-                                 label_transform=transforms.Select('emotion'),
-                                 channel_num=30,
-                                 num_worker=4)
+                                 num_worker=0)
 
-        self.assertEqual(len(dataset), 146812)
+    def test_seed_feature_dataset(self):
+        io_path = f'./tmp_out/seed_feature_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
+        root_path = './tmp_in/ExtractedFeatures'
+
+        dataset = SEEDFeatureDataset(
+            io_path=io_path,
+            root_path=root_path,
+            online_transform=transforms.ToTensor(),
+            label_transform=transforms.Compose([
+                transforms.Select('emotion'),
+                transforms.Lambda(lambda x: int(x) + 1),
+            ]),
+            num_worker=4)
+
+        self.assertEqual(len(dataset), 152730)
         first_item = dataset[0]
-        self.assertEqual(first_item[0].shape, (30, 250))
-        last_item = dataset[146811]
-        self.assertEqual(last_item[0].shape, (30, 250))
+        self.assertEqual(first_item[0].shape, (62, 200))
+        last_item = dataset[152729]
+        self.assertEqual(last_item[0].shape, (62, 200))
+
+    def test_seed_iv_constructor(self):
+        io_path = f'./tmp_out/seed_iv_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
+        root_path = './tmp_in/eeg_raw_data'
+
+        seed_iv_constructor(io_path=io_path, root_path=root_path, num_worker=0)
+
+    def test_seed_iv_dataset(self):
+        io_path = f'./tmp_out/seed_iv_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
+        root_path = './tmp_in/eeg_raw_data'
+
+        dataset = SEEDIVDataset(io_path=io_path,
+                                root_path=root_path,
+                                online_transform=transforms.ToTensor(),
+                                label_transform=transforms.Select('emotion'),
+                                num_worker=4)
+
+        self.assertEqual(len(dataset), 37575)
+        first_item = dataset[0]
+        self.assertEqual(first_item[0].shape, (62, 800))
+        last_item = dataset[37574]
+        self.assertEqual(last_item[0].shape, (62, 800))
+
+    def test_seed_iv_feature_constructor(self):
+        io_path = f'./tmp_out/seed_iv_feature_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
+        root_path = './tmp_in/eeg_feature_smooth'
+
+        seed_iv_feature_constructor(io_path=io_path,
+                                    root_path=root_path,
+                                    num_worker=0)
+
+    def test_seed_iv_feature_dataset(self):
+        io_path = f'./tmp_out/seed_iv_feature_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
+        root_path = './tmp_in/eeg_feature_smooth'
+
+        dataset = SEEDIVFeatureDataset(
+            io_path=io_path,
+            root_path=root_path,
+            online_transform=transforms.ToTensor(),
+            label_transform=transforms.Select('emotion'),
+            num_worker=4)
+
+        self.assertEqual(len(dataset), 37575)
+        first_item = dataset[0]
+        self.assertEqual(first_item[0].shape, (62, 5))
+        last_item = dataset[37574]
+        self.assertEqual(last_item[0].shape, (62, 5))
 
 
 if __name__ == '__main__':

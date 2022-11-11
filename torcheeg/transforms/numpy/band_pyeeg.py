@@ -18,7 +18,7 @@ def butter_bandpass(low_cut, high_cut, fs, order=3):
 
 class BandTransform(EEGTransform):
     def __init__(self,
-                 frequency: int = 128,
+                 sampling_rate: int = 128,
                  order: int = 5,
                  band_dict: Dict[str, Tuple[int, int]] = {
                      "theta": [4, 8],
@@ -28,7 +28,7 @@ class BandTransform(EEGTransform):
                  },
                  apply_to_baseline: bool = False):
         super(BandTransform, self).__init__(apply_to_baseline=apply_to_baseline)
-        self.frequency = frequency
+        self.sampling_rate = sampling_rate
         self.order = order
         self.band_dict = band_dict
 
@@ -39,7 +39,7 @@ class BandTransform(EEGTransform):
             for c in eeg:
                 b, a = butter_bandpass(low,
                                        high,
-                                       fs=self.frequency,
+                                       fs=self.sampling_rate,
                                        order=self.order)
                 c_list.append(self.opt(lfilter(b, a, c)))
             c_list = np.array(c_list)
@@ -53,7 +53,7 @@ class BandTransform(EEGTransform):
     def repr_body(self) -> Dict:
         return dict(
             super().repr_body, **{
-                'frequency': self.frequency,
+                'sampling_rate': self.sampling_rate,
                 'order': self.order,
                 'band_dict': {...}
             })
@@ -94,7 +94,7 @@ class BandApproximateEntropy(BandTransform):
     Args:
         M (int): A positive integer represents the length of each compared run of data. (defualt: :obj:`5`)
         R (float): A positive real number specifies a filtering level. (defualt: :obj:`5`)
-        band_dict: (dict): Band name and the critical frequency or frequencies. By default, the differential entropy of the four sub-bands, theta, alpha, beta and gamma, is calculated. (defualt: :obj:`{...}`)
+        band_dict: (dict): Band name and the critical sampling rate or frequencies. By default, the differential entropy of the four sub-bands, theta, alpha, beta and gamma, is calculated. (defualt: :obj:`{...}`)
         apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (defualt: :obj:`False`)
     
     .. automethod:: __call__
@@ -102,7 +102,7 @@ class BandApproximateEntropy(BandTransform):
     def __init__(self,
                  M: int = 5,
                  R: float = 1.0,
-                 frequency: int = 128,
+                 sampling_rate: int = 128,
                  order: int = 5,
                  band_dict: Dict[str, Tuple[int, int]] = {
                      "theta": [4, 8],
@@ -112,7 +112,7 @@ class BandApproximateEntropy(BandTransform):
                  },
                  apply_to_baseline: bool = False):
         super(BandApproximateEntropy,
-              self).__init__(frequency=frequency,
+              self).__init__(sampling_rate=sampling_rate,
                              order=order,
                              band_dict=band_dict,
                              apply_to_baseline=apply_to_baseline)
@@ -182,7 +182,7 @@ class BandSampleEntropy(BandTransform):
     Args:
         M (int): A positive integer represents the length of each compared run of data. (defualt: :obj:`5`)
         R (float): A positive real number specifies a filtering level. (defualt: :obj:`5`)
-        band_dict: (dict): Band name and the critical frequency or frequencies. By default, the differential entropy of the four sub-bands, theta, alpha, beta and gamma, is calculated. (defualt: :obj:`{...}`)
+        band_dict: (dict): Band name and the critical sampling rate or frequencies. By default, the differential entropy of the four sub-bands, theta, alpha, beta and gamma, is calculated. (defualt: :obj:`{...}`)
         apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (defualt: :obj:`False`)
     
     .. automethod:: __call__
@@ -190,7 +190,7 @@ class BandSampleEntropy(BandTransform):
     def __init__(self,
                  M: int = 5,
                  R: float = 1.0,
-                 frequency: int = 128,
+                 sampling_rate: int = 128,
                  order: int = 5,
                  band_dict: Dict[str, Tuple[int, int]] = {
                      "theta": [4, 8],
@@ -200,7 +200,7 @@ class BandSampleEntropy(BandTransform):
                  },
                  apply_to_baseline: bool = False):
         super(BandSampleEntropy,
-              self).__init__(frequency=frequency,
+              self).__init__(sampling_rate=sampling_rate,
                              order=order,
                              band_dict=band_dict,
                              apply_to_baseline=apply_to_baseline)
@@ -267,7 +267,7 @@ class BandSVDEntropy(BandTransform):
         Tau (int): A positive integer represents the embedding time delay which controls the number of time periods between elements of each of the new column vectors. (defualt: :obj:`1`)
         DE (int): A positive integer represents the ength of the embedding dimension. (defualt: :obj:`1`)
         W (np.ndarray, optional): A list of normalized singular values of the embedding matrix (can be preset for speeding up). (defualt: :obj:`None`)
-        band_dict: (dict): Band name and the critical frequency or frequencies. By default, the differential entropy of the four sub-bands, theta, alpha, beta and gamma, is calculated. (defualt: :obj:`{...}`)
+        band_dict: (dict): Band name and the critical sampling rate or frequencies. By default, the differential entropy of the four sub-bands, theta, alpha, beta and gamma, is calculated. (defualt: :obj:`{...}`)
         apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (defualt: :obj:`False`)
     
     .. automethod:: __call__
@@ -276,7 +276,7 @@ class BandSVDEntropy(BandTransform):
                  Tau: int = 1,
                  DE: int = 1,
                  W: Union[np.ndarray, None] = None,
-                 frequency: int = 128,
+                 sampling_rate: int = 128,
                  order: int = 5,
                  band_dict: Dict[str, Tuple[int, int]] = {
                      "theta": [4, 8],
@@ -286,7 +286,7 @@ class BandSVDEntropy(BandTransform):
                  },
                  apply_to_baseline: bool = False):
         super(BandSVDEntropy,
-              self).__init__(frequency=frequency,
+              self).__init__(sampling_rate=sampling_rate,
                              order=order,
                              band_dict=band_dict,
                              apply_to_baseline=apply_to_baseline)
@@ -345,7 +345,7 @@ class BandDetrendedFluctuationAnalysis(BandTransform):
     Args:
         Ave (float, optional): The average value of the time series. (defualt: :obj:`None`)
         L (List[np.array]): Box sizes to partition/slice/segment the integrated sequence into boxes. At least two boxes are needed, and it should be a list of integers in ascending order. (defualt: :obj:`np.array`)
-        band_dict: (dict): Band name and the critical frequency or frequencies. By default, the differential entropy of the four sub-bands, theta, alpha, beta and gamma, is calculated. (defualt: :obj:`{...}`)
+        band_dict: (dict): Band name and the critical sampling rate or frequencies. By default, the differential entropy of the four sub-bands, theta, alpha, beta and gamma, is calculated. (defualt: :obj:`{...}`)
         apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (defualt: :obj:`False`)
     
     .. automethod:: __call__
@@ -353,7 +353,7 @@ class BandDetrendedFluctuationAnalysis(BandTransform):
     def __init__(self,
                  Ave: Union[float, None] = None,
                  L: Union[np.ndarray, None] = None,
-                 frequency: int = 128,
+                 sampling_rate: int = 128,
                  order: int = 5,
                  band_dict: Dict[str, Tuple[int, int]] = {
                      "theta": [4, 8],
@@ -363,7 +363,7 @@ class BandDetrendedFluctuationAnalysis(BandTransform):
                  },
                  apply_to_baseline: bool = False):
         super(BandDetrendedFluctuationAnalysis,
-              self).__init__(frequency=frequency,
+              self).__init__(sampling_rate=sampling_rate,
                              order=order,
                              band_dict=band_dict,
                              apply_to_baseline=apply_to_baseline)
@@ -447,14 +447,14 @@ class BandHiguchiFractalDimension(BandTransform):
 
     Args:
         K_max (int): The max number of new self-similar time series applying Higuchi's algorithm. (defualt: :obj:`6`)
-        band_dict: (dict): Band name and the critical frequency or frequencies. By default, the differential entropy of the four sub-bands, theta, alpha, beta and gamma, is calculated. (defualt: :obj:`{...}`)
+        band_dict: (dict): Band name and the critical sampling rate or frequencies. By default, the differential entropy of the four sub-bands, theta, alpha, beta and gamma, is calculated. (defualt: :obj:`{...}`)
         apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (defualt: :obj:`False`)
     
     .. automethod:: __call__
     '''
     def __init__(self,
                  K_max: int = 6,
-                 frequency: int = 128,
+                 sampling_rate: int = 128,
                  order: int = 5,
                  band_dict: Dict[str, Tuple[int, int]] = {
                      "theta": [4, 8],
@@ -464,7 +464,7 @@ class BandHiguchiFractalDimension(BandTransform):
                  },
                  apply_to_baseline: bool = False):
         super(BandHiguchiFractalDimension,
-              self).__init__(frequency=frequency,
+              self).__init__(sampling_rate=sampling_rate,
                              order=order,
                              band_dict=band_dict,
                              apply_to_baseline=apply_to_baseline)
@@ -526,7 +526,7 @@ class BandHjorth(BandTransform):
     Args:
         D (np.ndarray, optional): The first order differential sequence of the time series (can be preset for speeding up). (defualt: :obj:`None`)
         mode (str): Options include mobility, complexity, and both, which are used to calculate hjorth mobility, hjorth complexity, and concatenate the two, respectively. (defualt: :obj:`mobility`)
-        band_dict: (dict): Band name and the critical frequency or frequencies. By default, the differential entropy of the four sub-bands, theta, alpha, beta and gamma, is calculated. (defualt: :obj:`{...}`)
+        band_dict: (dict): Band name and the critical sampling rate or frequencies. By default, the differential entropy of the four sub-bands, theta, alpha, beta and gamma, is calculated. (defualt: :obj:`{...}`)
         apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (defualt: :obj:`False`)
     
     .. automethod:: __call__
@@ -534,7 +534,7 @@ class BandHjorth(BandTransform):
     def __init__(self,
                  D: Union[np.ndarray, None] = None,
                  mode: str = 'mobility',
-                 frequency: int = 128,
+                 sampling_rate: int = 128,
                  order: int = 5,
                  band_dict: Dict[str, Tuple[int, int]] = {
                      "theta": [4, 8],
@@ -543,7 +543,7 @@ class BandHjorth(BandTransform):
                      "gamma": [31, 49]
                  },
                  apply_to_baseline: bool = False):
-        super(BandHjorth, self).__init__(frequency=frequency,
+        super(BandHjorth, self).__init__(sampling_rate=sampling_rate,
                                          order=order,
                                          band_dict=band_dict,
                                          apply_to_baseline=apply_to_baseline)
@@ -675,14 +675,14 @@ class BandPetrosianFractalDimension(BandTransform):
 
     Args:
         D (np.ndarray, optional): The first order differential sequence of the time series (can be preset for speeding up). (defualt: :obj:`None`)
-        band_dict: (dict): Band name and the critical frequency or frequencies. By default, the differential entropy of the four sub-bands, theta, alpha, beta and gamma, is calculated. (defualt: :obj:`{...}`)
+        band_dict: (dict): Band name and the critical sampling rate or frequencies. By default, the differential entropy of the four sub-bands, theta, alpha, beta and gamma, is calculated. (defualt: :obj:`{...}`)
         apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (defualt: :obj:`False`)
     
     .. automethod:: __call__
     '''
     def __init__(self,
                  D: Union[np.ndarray, None] = None,
-                 frequency: int = 128,
+                 sampling_rate: int = 128,
                  order: int = 5,
                  band_dict: Dict[str, Tuple[int, int]] = {
                      "theta": [4, 8],
@@ -692,7 +692,7 @@ class BandPetrosianFractalDimension(BandTransform):
                  },
                  apply_to_baseline: bool = False):
         super(BandPetrosianFractalDimension,
-              self).__init__(frequency=frequency,
+              self).__init__(sampling_rate=sampling_rate,
                              order=order,
                              band_dict=band_dict,
                              apply_to_baseline=apply_to_baseline)
@@ -730,7 +730,7 @@ class BandPetrosianFractalDimension(BandTransform):
         return dict(super().repr_body, **{'D': [...]})
 
 
-def bin_power(X, band, frequency):
+def bin_power(X, band, sampling_rate):
     C = np.fft.fft(X)
     C = abs(C)
     power = np.zeros(len(band) - 1)
@@ -738,8 +738,8 @@ def bin_power(X, band, frequency):
         Freq = float(band[Freq_Index])
         Next_Freq = float(band[Freq_Index + 1])
         power[Freq_Index] = sum(
-            C[int(np.floor(Freq / frequency *
-                           len(X))):int(np.floor(Next_Freq / frequency *
+            C[int(np.floor(Freq / sampling_rate *
+                           len(X))):int(np.floor(Next_Freq / sampling_rate *
                                                  len(X)))])
     power_ratio = power / sum(power)
     return power, power_ratio
@@ -762,15 +762,15 @@ class BandBinPower(EEGTransform):
         >>> (32, 4)
 
     Args:
-        frequency (int): The sample frequency in Hz. (defualt: :obj:`128`)
+        sampling_rate (int): The original sampling rate in Hz (defualt: :obj:`128`)
         order (int): The order of the filter. (defualt: :obj:`5`)
-        band_dict: (dict): Band name and the critical frequency or frequencies. By default, the differential entropy of the four sub-bands, theta, alpha, beta and gamma, is calculated. (defualt: :obj:`{...}`)
+        band_dict: (dict): Band name and the critical sampling rate or frequencies. By default, the differential entropy of the four sub-bands, theta, alpha, beta and gamma, is calculated. (defualt: :obj:`{...}`)
         apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (defualt: :obj:`False`)
     
     .. automethod:: __call__
     '''
     def __init__(self,
-                 frequency: int = 128,
+                 sampling_rate: int = 128,
                  order: int = 5,
                  band_dict: Dict[str, Tuple[int, int]] = {
                      "theta": [4, 8],
@@ -780,7 +780,7 @@ class BandBinPower(EEGTransform):
                  },
                  apply_to_baseline: bool = False):
         super(BandBinPower, self).__init__(apply_to_baseline=apply_to_baseline)
-        self.frequency = frequency
+        self.sampling_rate = sampling_rate
         self.order = order
         self.band_dict = band_dict
 
@@ -805,14 +805,14 @@ class BandBinPower(EEGTransform):
         band = sorted(list(set(band_a_b_list)))
         c_list = []
         for c in eeg:
-            c_list.append(bin_power(c, band, self.frequency)[1])
+            c_list.append(bin_power(c, band, self.sampling_rate)[1])
         return np.array(c_list)
 
     @property
     def repr_body(self) -> Dict:
         return dict(
             super().repr_body, **{
-                'frequency': self.frequency,
+                'sampling_rate': self.sampling_rate,
                 'order': self.order,
                 'band_dict': {...},
             })
@@ -836,14 +836,14 @@ class BandSpectralEntropy(EEGTransform):
 
     Args:
         power_ratio (np.ndarray, optional): A list of normalized signal power in the set of sub-bands (can be preset for speeding up). (defualt: :obj:`None`)
-        band_dict: (dict): Band name and the critical frequency or frequencies. By default, the differential entropy of the four sub-bands, theta, alpha, beta and gamma, is calculated. (defualt: :obj:`{...}`)
+        band_dict: (dict): Band name and the critical sampling rate or frequencies. By default, the differential entropy of the four sub-bands, theta, alpha, beta and gamma, is calculated. (defualt: :obj:`{...}`)
         apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (defualt: :obj:`False`)
     
     .. automethod:: __call__
     '''
     def __init__(self,
                  power_ratio: Union[np.ndarray, None] = None,
-                 frequency: int = 128,
+                 sampling_rate: int = 128,
                  order: int = 5,
                  band_dict: Dict[str, Tuple[int, int]] = {
                      "theta": [4, 8],
@@ -855,7 +855,7 @@ class BandSpectralEntropy(EEGTransform):
         super(BandSpectralEntropy,
               self).__init__(apply_to_baseline=apply_to_baseline)
         self.power_ratio = power_ratio
-        self.frequency = frequency
+        self.sampling_rate = sampling_rate
         self.order = order
         self.band_dict = band_dict
 
@@ -881,7 +881,7 @@ class BandSpectralEntropy(EEGTransform):
         c_list = []
         for c in eeg:
             if self.power_ratio is None:
-                power, power_ratio = bin_power(c, band, self.frequency)
+                power, power_ratio = bin_power(c, band, self.sampling_rate)
             else:
                 power_ratio = self.power_ratio
             spectral_entropy = 0
@@ -896,7 +896,7 @@ class BandSpectralEntropy(EEGTransform):
         return dict(
             super().repr_body, **{
                 'power_ratio': [...],
-                'frequency': self.frequency,
+                'sampling_rate': self.sampling_rate,
                 'order': self.order,
                 'band_dict': {...},
             })

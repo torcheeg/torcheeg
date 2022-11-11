@@ -14,7 +14,7 @@ class NumpyDataset(BaseDataset):
 
     .. code-block:: python
 
-        # Mock 100 EEG samples. Each EEG signal contains a signal of length 1 s at a frequency of 128 sampled by 32 electrodes.
+        # Mock 100 EEG samples. Each EEG signal contains a signal of length 1 s at a sampling rate of 128 sampled by 32 electrodes.
         X = np.random.randn(100, 32, 128)
 
         # Mock 100 labels, denoting valence and arousal of subjects during EEG recording.
@@ -33,7 +33,7 @@ class NumpyDataset(BaseDataset):
                                    transforms.Binary(5.0),
                                ]),
                                num_worker=2,
-                               num_samples_per_worker=50)
+                               num_samples_per_trial=50)
         print(dataset[0])
         # EEG signal (torch.Tensor[32, 4]),
         # coresponding baseline signal (torch.Tensor[32, 4]),
@@ -44,7 +44,7 @@ class NumpyDataset(BaseDataset):
     .. code-block:: python
     
         if __name__ == '__main__':
-            # Mock 100 EEG samples. Each EEG signal contains a signal of length 1 s at a frequency of 128 sampled by 32 electrodes.
+            # Mock 100 EEG samples. Each EEG signal contains a signal of length 1 s at a sampling rate of 128 sampled by 32 electrodes.
             X = np.random.randn(100, 32, 128)
 
             # Mock 100 labels, denoting valence and arousal of subjects during EEG recording.
@@ -63,7 +63,7 @@ class NumpyDataset(BaseDataset):
                                     transforms.Binary(5.0),
                                 ]),
                                 num_worker=2,
-                                num_samples_per_worker=50)
+                                num_samples_per_trial=50)
             print(dataset[0])
             # EEG signal (torch.Tensor[32, 4]),
             # coresponding baseline signal (torch.Tensor[32, 4]),
@@ -75,10 +75,12 @@ class NumpyDataset(BaseDataset):
         online_transform (Callable, optional): The transformation of the EEG signals and baseline EEG signals. The input is a :obj:`np.ndarray`, and the ouput is used as the first and second value of each element in the dataset. (default: :obj:`None`)
         offline_transform (Callable, optional): The usage is the same as :obj:`online_transform`, but executed before generating IO intermediate results. (default: :obj:`None`)
         label_transform (Callable, optional): The transformation of the label. The input is an information dictionary, and the ouput is used as the third value of each element in the dataset. (default: :obj:`None`)
+        before_trial (Callable, optional): The hook performed on the trial to which the sample belongs. It is performed before the offline transformation and thus typically used to implement context-dependent sample transformations, such as moving averages, etc. The input and output of this hook function should be a :obj:`np.ndarray`, whose shape is (number of EEG samples per trial, ...).
+        after_trial (Callable, optional): The hook performed on the trial to which the sample belongs. It is performed after the offline transformation and thus typically used to implement context-dependent sample transformations, such as moving averages, etc. The input and output of this hook function should be a sequence of dictionaries representing a sequence of EEG samples. Each dictionary contains two key-value pairs, indexed by :obj:`eeg` (the EEG signal matrix) and :obj:`key` (the index in the database) respectively
         io_path (str): The path to generated unified data IO, cached as an intermediate result. (default: :obj:`./io/deap`)
         num_worker (str): How many subprocesses to use for data processing. (default: :obj:`0`)
         verbose (bool): Whether to display logs during processing, such as progress bars, etc. (default: :obj:`True`)
-        num_samples_per_worker (str): The number of samples processed by each process. Once the specified number of samples are processed, the process will be destroyed and new processes will be created to perform new tasks. (default: :obj:`100`)
+        num_samples_per_trial (str): The number of samples processed by each process. Once the specified number of samples are processed, the process will be destroyed and new processes will be created to perform new tasks. (default: :obj:`100`)
         verbose (bool): Whether to display logs during processing, such as progress bars, etc. (default: :obj:`True`)
         cache_size (int): Maximum size database may grow to; used to size the memory mapping. If database grows larger than ``map_size``, an exception will be raised and the user must close and reopen. (default: :obj:`64 * 1024 * 1024 * 1024`)
     
@@ -89,17 +91,21 @@ class NumpyDataset(BaseDataset):
                  online_transform: Union[None, Callable] = None,
                  offline_transform: Union[None, Callable] = None,
                  label_transform: Union[None, Callable] = None,
+                 before_trial: Union[None, Callable] = None,
+                 after_trial: Union[Callable, None] = None,
                  io_path: str = './io/numpy',
                  num_worker: int = 0,
-                 num_samples_per_worker: int = 100,
+                 num_samples_per_trial: int = 100,
                  verbose: bool = True,
                  cache_size: int = 64 * 1024 * 1024 * 1024):
         numpy_constructor(X=X,
                           y=y,
+                          before_trial=before_trial,
                           transform=offline_transform,
+                          after_trial=after_trial,
                           io_path=io_path,
                           num_worker=num_worker,
-                          num_samples_per_worker=num_samples_per_worker,
+                          num_samples_per_trial=num_samples_per_trial,
                           verbose=verbose,
                           cache_size=cache_size)
         super().__init__(io_path)
@@ -107,8 +113,10 @@ class NumpyDataset(BaseDataset):
         self.online_transform = online_transform
         self.offline_transform = offline_transform
         self.label_transform = label_transform
+        self.before_trial = before_trial
+        self.after_trial = after_trial
         self.num_worker = num_worker
-        self.num_samples_per_worker = num_samples_per_worker
+        self.num_samples_per_trial = num_samples_per_trial
         self.verbose = verbose
         self.cache_size = cache_size
 
@@ -136,8 +144,10 @@ class NumpyDataset(BaseDataset):
                 'online_transform': self.online_transform,
                 'offline_transform': self.offline_transform,
                 'label_transform': self.label_transform,
+                'before_trial': self.before_trial,
+                'after_trial': self.after_trial,
                 'num_worker': self.num_worker,
-                'num_samples_per_worker': self.num_samples_per_worker,
+                'num_samples_per_trial': self.num_samples_per_trial,
                 'verbose': self.verbose,
                 'cache_size': self.cache_size
             })

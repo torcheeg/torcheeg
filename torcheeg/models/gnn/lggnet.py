@@ -108,14 +108,14 @@ class GraphConvolution(Module):
         output = F.relu(torch.matmul(adj, output))
         return output
 
-# https://github.com/yi-ding-cs/LGG
+
 class LGGNet(nn.Module):
     r'''
-    Dynamical Graph Convolutional Neural Networks (DGCNN). For more details, please refer to the following information.
+    DLocal-Global-Graph Networks (LGGNet). For more details, please refer to the following information.
 
-    - Paper: Song T, Zheng W, Song P, et al. EEG emotion recognition using dynamical graph convolutional neural networks[J]. IEEE Transactions on Affective Computing, 2018, 11(3): 532-541.
-    - URL: https://ieeexplore.ieee.org/abstract/document/8320798
-    - Related Project: https://github.com/xueyunlong12589/DGCNN
+    - Paper: Ding Y, Robinson N, Zeng Q, et al. LGGNet: learning from Local-global-graph representations for brain-computer interface[J]. arXiv preprint arXiv:2105.02786, 2021.
+    - URL: https://arxiv.org/abs/2105.02786
+    - Related Project: https://github.com/yi-ding-cs/LGG
 
     Below is a recommended suite for use in emotion recognition tasks:
 
@@ -123,13 +123,10 @@ class LGGNet(nn.Module):
 
         dataset = SEEDDataset(io_path=f'./seed',
                               root_path='./Preprocessed_EEG',
-                              offline_transform=transforms.BandDifferentialEntropy(band_dict={
-                                  "delta": [1, 4],
-                                  "theta": [4, 8],
-                                  "alpha": [8, 14],
-                                  "beta": [14, 31],
-                                  "gamma": [31, 49]
-                              }),
+                              offline_transform=transforms.Compose([
+                                  transforms.MeanStdNormalize(),
+                                  transforms.To2d()
+                              ]),
                               online_transform=transforms.Compose([
                                   transforms.ToTensor()
                               ]),
@@ -137,18 +134,37 @@ class LGGNet(nn.Module):
                                   transforms.Select(['emotion']),
                                   transforms.Lambda(lambda x: x + 1)
                               ]))
-        model = DGCNN(in_channels=5, num_electrodes=62, hid_channels=32, num_layers=2, num_classes=2)
+        model = LGGNet(region_list=SEED_GENERAL_REGION_LIST, chunk_size=128, num_electrodes=32, hid_channels=32, num_classes=2)
+
+    The current built-in :obj:`region_list` includs:
+
+    - torcheeg.datasets.constants.emotion_recognition.amigos.AMIGOS_GENERAL_REGION_LIST
+    - torcheeg.datasets.constants.emotion_recognition.amigos.AMIGOS_FRONTAL_REGION_LIST
+    - torcheeg.datasets.constants.emotion_recognition.amigos.AMIGOS_HEMISPHERE_REGION_LIST
+    - torcheeg.datasets.constants.emotion_recognition.deap.DEAP_GENERAL_REGION_LIST
+    - ...
+    - torcheeg.datasets.constants.emotion_recognition.dreamer.DREAMER_GENERAL_REGION_LIST
+    - ...
+    - torcheeg.datasets.constants.emotion_recognition.mahnob.MAHNOB_GENERAL_REGION_LIST
+    - ...
+    - torcheeg.datasets.constants.emotion_recognition.seed.SEED_GENERAL_REGION_LIST
+    - ...
 
     Args:
-        in_channels (int): The feature dimension of each electrode. (defualt: :obj:`5`)
-        num_electrodes (int): The number of electrodes. (defualt: :obj:`62`)
-        num_layers (int): The number of graph convolutional layers. (defualt: :obj:`2`)
+        region_list (list): The local graph structure defined according to the 10-20 system, where the electrodes are divided into different brain regions.
+        in_channels (int): The feature dimension of each electrode. (defualt: :obj:`1`)
+        num_electrodes (int): The number of electrodes. (defualt: :obj:`32`)
+        chunk_size (int): Number of data points included in each EEG chunk. (default: :obj:`128`)
+        sampling_rate (int): The sampling rate of the EEG signals, i.e., :math:`f_s` in the paper. (defualt: :obj:`128`)
+        num_T (int): The number of multi-scale 1D temporal kernels in the dynamic temporal layer, i.e., :math:`T` kernels in the paper. (defualt: :obj:`64`)
         hid_channels (int): The number of hidden nodes in the first fully connected layer. (defualt: :obj:`32`)
+        dropout (float): Probability of an element to be zeroed in the dropout layers. (defualt: :obj:`0.5`)
+        pool_kernel_size (int): The kernel size of pooling layers in the temporal blocks (defualt: :obj:`16`)
+        pool_stride (int): The stride of pooling layers in the temporal blocks (defualt: :obj:`4`)
         num_classes (int): The number of classes to predict. (defualt: :obj:`2`)
     '''
     def __init__(self,
                  region_list,
-                 num_classes: int = 2,
                  in_channels: int = 1,
                  num_electrodes: int = 32,
                  chunk_size: int = 128,
@@ -157,7 +173,8 @@ class LGGNet(nn.Module):
                  hid_channels: int = 32,
                  dropout: float = 0.5,
                  pool_kernel_size: int = 16,
-                 pool_stride: int = 4):
+                 pool_stride: int = 4,
+                 num_classes: int = 2):
         super(LGGNet, self).__init__()
         self.region_list = region_list
         self.inception_window = [0.5, 0.25, 0.125]
@@ -236,6 +253,13 @@ class LGGNet(nn.Module):
             PowerLayer(kernel_size=pool_kernel_size, stride=pool_stride))
 
     def forward(self, x):
+        r'''
+        Args:
+            x (torch.Tensor): EEG signal representation, the ideal input shape is :obj:`[n, 1, 32, 128]`. Here, :obj:`n` corresponds to the batch size, :obj:`32` corresponds to :obj:`num_electrodes`, and :obj:`chunk_size` corresponds to :obj:`chunk_size`.
+
+        Returns:
+            torch.Tensor[number of sample, number of classes]: the predicted probability that the samples belong to the classes.
+        '''
         t1 = self.t_block1(x)
         t2 = self.t_block2(x)
         t3 = self.t_block3(x)

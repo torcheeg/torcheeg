@@ -94,6 +94,7 @@ class DANNTrainer(ClassificationTrainer):
         classifier (nn.Module): The classification model, learning the classification task with source labeled data based on the feature of the feature extraction model. The dimension of its output should be equal to the number of categories in the dataset. The output layer does not need to have a softmax activation function.
         domain_classifier (nn.Module): The classification model, learning to discriminate between the source and target domains based on the feature of the feature extraction model. The dimension of its output should be equal to the number of categories in the dataset. The output layer does not need to have a softmax activation function or a gradient reverse layer (which is already included in the implementation).
         lambd (float): The weight of DANN loss to trade-off between the classification loss and DANN loss. (defualt: :obj:`1.0`)
+        adaption_factor (bool): Whether to adjust the cross-domain-related loss term using the fitness factor, which was first proposed in DANN but works in many cases. (defualt: :obj:`True`)
         lr (float): The learning rate. (defualt: :obj:`0.0001`)
         weight_decay: (float): The weight decay (L2 penalty). (defualt: :obj:`0.0`)
         device: (torch.device or str): The device on which the model and data is or will be allocated. (defualt: :obj:`False`)
@@ -111,6 +112,7 @@ class DANNTrainer(ClassificationTrainer):
                  classifier: nn.Module,
                  domain_classifier: nn.Module,
                  lambd: float = 1.0,
+                 adaption_factor: bool = False,
                  lr: float = 1e-4,
                  weight_decay: float = 0.0,
                  device_ids: List[int] = [],
@@ -134,6 +136,7 @@ class DANNTrainer(ClassificationTrainer):
         self.lr = lr
         self.weight_decay = weight_decay
         self.lambd = lambd
+        self.adaption_factor = adaption_factor
 
         self.optimizer = torch.optim.Adam(chain(extractor.parameters(),
                                                 classifier.parameters(),
@@ -154,13 +157,10 @@ class DANNTrainer(ClassificationTrainer):
 
     def on_training_step(self, source_loader: DataLoader,
                          target_loader: DataLoader, batch_id: int,
-                         num_batches: int, epoch_id: int, num_epochs: int):
+                         num_batches: int, epoch_id: int, num_epochs: int,
+                         **kwargs):
         self.train_accuracy.reset()
         self.train_loss.reset()
-
-        p = float(batch_id + epoch_id * num_batches) / num_epochs / num_batches
-        alpha = 2. / (1. + np.exp(-10 * p)) - 1
-
         self.optimizer.zero_grad()
 
         X_source = source_loader[0].to(self.device)
@@ -169,11 +169,19 @@ class DANNTrainer(ClassificationTrainer):
 
         X_source_feat = self.modules['extractor'](X_source)
         y_source_pred = self.modules['classifier'](X_source_feat)
-        X_source_rev = GradientReverse.apply(X_source_feat, alpha)
+
+        if self.adaption_factor:
+            p = float(batch_id +
+                      epoch_id * num_batches) / num_epochs / num_batches
+            gamma = 2. / (1. + np.exp(-10 * p)) - 1
+        else:
+            gamma = 1.0
+
+        X_source_rev = GradientReverse.apply(X_source_feat, gamma)
         y_source_disc = self.modules['domain_classifier'](X_source_rev)
 
         X_target_feat = self.modules['extractor'](X_target)
-        X_target_rev = GradientReverse.apply(X_target_feat, alpha)
+        X_target_rev = GradientReverse.apply(X_target_feat, gamma)
         y_target_disc = self.modules['domain_classifier'](X_target_rev)
 
         # Compute the loss value
@@ -188,9 +196,9 @@ class DANNTrainer(ClassificationTrainer):
             torch.ones(len(y_target_disc),
                        dtype=torch.long,
                        device=X_target.device))
-        disc_loss = self.lambd * (disc_loss_source + disc_loss_target)
+        dann_loss = self.lambd * (disc_loss_source + disc_loss_target)
 
-        loss = task_loss + disc_loss
+        loss = task_loss + dann_loss
 
         # Backpropagation
         loss.backward()
@@ -217,7 +225,8 @@ class DANNTrainer(ClassificationTrainer):
             source_loader: DataLoader,
             target_loader: DataLoader,
             val_loader: DataLoader,
-            num_epochs: int = 1):
+            num_epochs: int = 1,
+            **kwargs):
         r'''
         Args:
             source_loader (DataLoader): Iterable DataLoader for traversing the data batch from the source domain (torch.utils.data.dataloader.DataLoader, torch_geometric.loader.DataLoader, etc).
@@ -248,18 +257,19 @@ class DANNTrainer(ClassificationTrainer):
                     cycle(source_loader), target_loader)
 
             # hook
-            self.before_training_epoch(t + 1, num_epochs)
+            self.before_training_epoch(t + 1, num_epochs, **kwargs)
             for batch_id, (cur_source_loader,
                            cur_target_loader) in enumerate(zip_loader):
                 # hook
-                self.before_training_step(batch_id, num_batches)
+                self.before_training_step(batch_id, num_batches, **kwargs)
                 # hook
                 self.on_training_step(cur_source_loader, cur_target_loader,
-                                      batch_id, num_batches, t, num_epochs)
+                                      batch_id, num_batches, t, num_epochs,
+                                      **kwargs)
                 # hook
-                self.after_training_step(batch_id, num_batches)
+                self.after_training_step(batch_id, num_batches, **kwargs)
             # hook
-            self.after_training_epoch(t + 1, num_epochs)
+            self.after_training_epoch(t + 1, num_epochs, **kwargs)
 
             # set model to val mode
             for k, m in self.modules.items():
@@ -267,27 +277,27 @@ class DANNTrainer(ClassificationTrainer):
 
             num_batches = len(val_loader)
             # hook
-            self.before_validation_epoch(t + 1, num_epochs)
+            self.before_validation_epoch(t + 1, num_epochs, **kwargs)
             for batch_id, val_batch in enumerate(val_loader):
                 # hook
-                self.before_validation_step(batch_id, num_batches)
+                self.before_validation_step(batch_id, num_batches, **kwargs)
                 # hook
-                self.validation_step(val_batch, batch_id, num_batches)
+                self.validation_step(val_batch, batch_id, num_batches, **kwargs)
                 # hook
-                self.after_validation_step(batch_id, num_batches)
+                self.after_validation_step(batch_id, num_batches, **kwargs)
                 # hook
-            self.after_validation_epoch(t + 1, num_epochs)
+            self.after_validation_epoch(t + 1, num_epochs, **kwargs)
         return self
 
-    def test(self, test_loader: DataLoader):
+    def test(self, test_loader: DataLoader, **kwargs):
         r'''
         Args:
             test_loader (DataLoader): Iterable DataLoader for traversing the test data batch (torch.utils.data.dataloader.DataLoader, torch_geometric.loader.DataLoader, etc).
         '''
-        super().test(test_loader=test_loader)
+        super().test(test_loader=test_loader, **kwargs)
 
-    def validation_step(self, val_batch: Tuple, batch_id: int,
-                        num_batches: int):
+    def validation_step(self, val_batch: Tuple, batch_id: int, num_batches: int,
+                        **kwargs):
         X = val_batch[0].to(self.device)
         y = val_batch[1].to(self.device)
 
@@ -297,7 +307,8 @@ class DANNTrainer(ClassificationTrainer):
         self.val_loss.update(self.loss_fn(pred, y))
         self.val_accuracy.update(pred.argmax(1), y)
 
-    def on_test_step(self, test_batch: Tuple, batch_id: int, num_batches: int):
+    def on_test_step(self, test_batch: Tuple, batch_id: int, num_batches: int,
+                     **kwargs):
         X = test_batch[0].to(self.device)
         y = test_batch[1].to(self.device)
         feat = self.modules['extractor'](X)

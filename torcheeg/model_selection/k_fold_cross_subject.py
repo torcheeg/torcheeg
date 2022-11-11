@@ -1,8 +1,9 @@
 import os
 import re
 from copy import copy
-from typing import Tuple, Union, Dict
+from typing import Dict, Tuple, Union
 
+import numpy as np
 import pandas as pd
 from sklearn import model_selection
 from torcheeg.datasets.module.base_dataset import BaseDataset
@@ -61,12 +62,19 @@ class KFoldCrossSubject:
     def split_info_constructor(self, info: pd.DataFrame) -> None:
         subject_ids = list(set(info['subject_id']))
 
-        for fold_id, (train_subject_ids, test_subject_ids) in enumerate(
-                self.k_fold.split(subject_ids)):
+        for fold_id, (train_index_subject_ids,
+                      test_index_subject_ids) in enumerate(
+                          self.k_fold.split(subject_ids)):
 
-            if len(train_subject_ids) == 0 or len(test_subject_ids) == 0:
+            if len(train_index_subject_ids) == 0 or len(
+                    test_index_subject_ids) == 0:
                 raise ValueError(
                     f'The number of training or testing subjects is zero.')
+
+            train_subject_ids = np.array(
+                subject_ids)[train_index_subject_ids].tolist()
+            test_subject_ids = np.array(
+                subject_ids)[test_index_subject_ids].tolist()
 
             train_info = []
             for train_subject_id in train_subject_ids:

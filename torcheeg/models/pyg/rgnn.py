@@ -111,32 +111,31 @@ class RGNN(torch.nn.Module):
                               ]),
                               num_worker=8)
         model = RGNN(adj=torch.Tensor(SEED_STANDARD_ADJACENCY_MATRIX),
-                     in_channels=4,
+                     in_channels=5,
                      num_electrodes=62,
                      hid_channels=32,
                      num_layers=2,
-                     num_classes=2,
+                     num_classes=3,
                      dropout=0.7,
-                     beta=0.0,
                      learn_edge_weights=True)
 
     Args:
         adj (torch.Tensor): The adjacency matrix corresponding to the EEG representation, where 1.0 means the node is adjacent and 0.0 means the node is not adjacent. The matrix shape should be [num_electrodes, num_electrodes].
         num_electrodes (int): The number of electrodes. (defualt: :obj:`62`)
-        in_channels (int): The feature dimension of each electrode. (defualt: :obj:`4`)
+        in_channels (int): The feature dimension of each electrode. (defualt: :obj:`5`)
         num_layers (int): The number of graph convolutional layers. (defualt: :obj:`2`)
         hid_channels (int): The number of hidden nodes in the first fully connected layer. (defualt: :obj:`32`)
-        num_classes (int): The number of classes to predict. (defualt: :obj:`2`)
+        num_classes (int): The number of classes to predict. (defualt: :obj:`3`)
         dropout (float): Probability of an element to be zeroed in the dropout layers at the output fully-connected layer. (defualt: :obj:`0.7`)
         learn_edge_weights (bool): Whether to learn a set of parameters to adjust the adjacency matrix. (defualt: :obj:`True`)
     '''
     def __init__(self,
-                 adj: torch.Tensor,
+                 adj: Union[torch.Tensor, list],
                  num_electrodes: int = 62,
-                 in_channels: int = 4,
+                 in_channels: int = 5,
                  num_layers: int = 2,
                  hid_channels: int = 32,
-                 num_classes: int = 2,
+                 num_classes: int = 3,
                  dropout: float = 0.7,
                  learn_edge_weights: bool = True):
 
@@ -151,6 +150,8 @@ class RGNN(torch.nn.Module):
         self.learn_edge_weights = learn_edge_weights
 
         self.xs, self.ys = torch.tril_indices(self.num_electrodes, self.num_electrodes, offset=0)
+        if isinstance(adj, list):
+            adj = torch.tensor(adj)
         adj = adj.reshape(self.num_electrodes, self.num_electrodes)[self.xs, self.ys]  # strict lower triangular values
         self.adj = nn.Parameter(adj, requires_grad=learn_edge_weights)
 

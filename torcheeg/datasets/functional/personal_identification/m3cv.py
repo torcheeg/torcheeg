@@ -14,11 +14,13 @@ MAX_QUEUE_SIZE = 1024
 
 def transform_producer(df: pd.DataFrame, root_path: str, chunk_size: int,
                        overlap: int, num_channel: int,
-                       transform: Union[Callable, None],
+                       before_trial: Union[Callable, None],
+                       transform: Union[Callable,
+                                        None], after_trial: Union[Callable,
+                                                                  None],
                        write_info_fn: Callable, queue: Queue):
 
     # calculate moving step
-    step = chunk_size - overlap
     write_pointer = 0
 
     start_epoch = None
@@ -37,21 +39,33 @@ def transform_producer(df: pd.DataFrame, root_path: str, chunk_size: int,
         if start_epoch is None:
             start_epoch = epoch_id
 
-        samples = scio.loadmat(os.path.join(root_path, epoch_id))['epoch_data']
+        trial_samples = scio.loadmat(os.path.join(root_path,
+                                                  epoch_id))['epoch_data']
+        if before_trial:
+            trial_samples = before_trial(trial_samples)
 
-        # extract experimental signals
         start_at = 0
+        if chunk_size <= 0:
+            chunk_size = trial_samples.shape[1] - start_at
+
+        # chunk with chunk size
         end_at = chunk_size
-        while end_at <= samples.shape[1]:
-            clip_sample = samples[:num_channel, start_at:end_at]
+        # calculate moving step
+        step = chunk_size - overlap
+
+        trial_queue = []
+        while end_at <= trial_samples.shape[1]:
+            clip_sample = trial_samples[:num_channel, start_at:end_at]
             t_eeg = clip_sample
 
             if not transform is None:
                 t_eeg = transform(eeg=clip_sample)['eeg']
 
             clip_id = f'after{start_epoch}_{write_pointer}'
-
-            queue.put({'eeg': t_eeg, 'key': clip_id})
+            if after_trial:
+                trial_queue.append({'eeg': t_eeg, 'key': clip_id})
+            else:
+                queue.put({'eeg': t_eeg, 'key': clip_id})
             write_pointer += 1
 
             # record meta info for each signal
@@ -65,6 +79,12 @@ def transform_producer(df: pd.DataFrame, root_path: str, chunk_size: int,
             write_info_fn(record_info)
             start_at = start_at + step
             end_at = start_at + chunk_size
+
+        if len(trial_queue) and after_trial:
+            trial_queue = after_trial(trial_queue)
+            for obj in trial_queue:
+                assert 'eeg' in obj and 'key' in obj, 'after_trial must return a list of dictionaries, where each dictionary corresponds to an EEG sample, containing `eeg` and `key` as keys.'
+                queue.put(obj)
 
 
 def io_consumer(write_eeg_fn, queue):
@@ -93,7 +113,9 @@ def m3cv_constructor(root_path: str = './aistudio',
                      chunk_size: int = 1000,
                      overlap: int = 0,
                      num_channel: int = 65,
+                     before_trial: Union[None, Callable] = None,
                      transform: Union[None, Callable] = None,
+                     after_trial: Union[Callable, None] = None,
                      io_path: str = './io/m3cv',
                      num_worker: int = 0,
                      verbose: bool = True,
@@ -136,7 +158,9 @@ def m3cv_constructor(root_path: str = './aistudio',
                                 chunk_size=chunk_size,
                                 overlap=overlap,
                                 num_channel=num_channel,
+                                before_trial=before_trial,
                                 transform=transform,
+                                after_trial=after_trial,
                                 write_info_fn=info_io.write_info,
                                 queue=queue)
 
@@ -155,7 +179,9 @@ def m3cv_constructor(root_path: str = './aistudio',
                                chunk_size=chunk_size,
                                overlap=overlap,
                                num_channel=num_channel,
+                               before_trial=before_trial,
                                transform=transform,
+                               after_trial=after_trial,
                                write_info_fn=info_io.write_info,
                                queue=SingleProcessingQueue(eeg_io.write_eeg))
             if verbose:

@@ -139,7 +139,8 @@ class CORALTrainer(ClassificationTrainer):
 
     def on_training_step(self, source_loader: DataLoader,
                          target_loader: DataLoader, batch_id: int,
-                         num_batches: int):
+                         num_batches: int, epoch_id: int, num_epochs: int,
+                         **kwargs):
         self.train_accuracy.reset()
         self.train_loss.reset()
 
@@ -161,35 +162,34 @@ class CORALTrainer(ClassificationTrainer):
         batch_size = X_source.shape[0]
 
         # Compute the loss value
-        factor_1 = 1. / (batch_size - 1. + np.finfo(np.float32).eps)
-        factor_2 = 1. / batch_size
+        batch_size = X_source_feat.shape[1]
 
-        sum_source = X_source_feat.sum(dim=0)
-        sum_source_row = sum_source.reshape(1, -1)
-        sum_source_col = sum_source.reshape(-1, 1)
-        cov_source = factor_1 * (
-            torch.matmul(X_source_feat.T, X_source_feat) -
-            factor_2 * torch.matmul(sum_source_col, sum_source_row))
+        # source covariance
+        X_source_devi = torch.mean(X_source_feat, 1,
+                                   keepdim=True) - X_source_feat
+        X_source_cova = torch.matmul(torch.transpose(X_source_devi, 0, 1),
+                                     X_source_devi)
 
-        sum_target = X_target_feat.sum(dim=0)
-        sum_target_row = sum_target.reshape(1, -1)
-        sum_target_col = sum_target.reshape(-1, 1)
-        cov_target = factor_1 * (
-            torch.matmul(X_target_feat.T, X_target_feat) -
-            factor_2 * torch.matmul(sum_target_col, sum_target_row))
+        # target covariance
+        X_target_devi = torch.mean(X_target_feat, 1,
+                                   keepdim=True) - X_target_feat
+        X_target_cova = torch.matmul(torch.transpose(X_target_devi, 0, 1),
+                                     X_target_devi)
+        # frobenius norm between source and target
+        coral_loss = torch.mean(
+            torch.mul((X_source_cova - X_target_cova),
+                      (X_source_cova - X_target_cova))) / (4 * batch_size * 4)
 
-        mean_source = X_source_feat.mean(dim=0)
-        mean_target = X_target_feat.mean(dim=0)
+        p = float(batch_id + epoch_id * num_batches) / num_epochs / num_batches
+        alpha = 2. / (1. + np.exp(-10 * p)) - 1
 
+        coral_loss = self.lambd * alpha * coral_loss
         task_loss = self.loss_fn(y_source_pred, y_source)
-        disc_loss_cov = 0.25 * torch.pow(cov_source - cov_target, 2)
-        disc_loss_mean = torch.pow(mean_source - mean_target, 2)
 
-        disc_loss_cov = disc_loss_cov.mean()
-        disc_loss_mean = disc_loss_mean.mean()
-        disc_loss = self.lambd * (disc_loss_cov + match_mean * disc_loss_mean)
+        loss = task_loss + coral_loss
 
-        loss = task_loss + disc_loss
+        loss.backward()
+        self.optimizer.step()
 
         # log five times
         log_step = math.ceil(num_batches / 5)
@@ -212,7 +212,8 @@ class CORALTrainer(ClassificationTrainer):
             source_loader: DataLoader,
             target_loader: DataLoader,
             val_loader: DataLoader,
-            num_epochs: int = 1):
+            num_epochs: int = 1,
+            **kwargs):
         r'''
         Args:
             source_loader (DataLoader): Iterable DataLoader for traversing the data batch from the source domain (torch.utils.data.dataloader.DataLoader, torch_geometric.loader.DataLoader, etc).
@@ -243,18 +244,19 @@ class CORALTrainer(ClassificationTrainer):
                     cycle(source_loader), target_loader)
 
             # hook
-            self.before_training_epoch(t + 1, num_epochs)
+            self.before_training_epoch(t + 1, num_epochs, **kwargs)
             for batch_id, (cur_source_loader,
                            cur_target_loader) in enumerate(zip_loader):
                 # hook
-                self.before_training_step(batch_id, num_batches)
+                self.before_training_step(batch_id, num_batches, **kwargs)
                 # hook
                 self.on_training_step(cur_source_loader, cur_target_loader,
-                                      batch_id, num_batches)
+                                      batch_id, num_batches, t, num_epochs,
+                                      **kwargs)
                 # hook
-                self.after_training_step(batch_id, num_batches)
+                self.after_training_step(batch_id, num_batches, **kwargs)
             # hook
-            self.after_training_epoch(t + 1, num_epochs)
+            self.after_training_epoch(t + 1, num_epochs, **kwargs)
 
             # set model to val mode
             for k, m in self.modules.items():
@@ -262,27 +264,28 @@ class CORALTrainer(ClassificationTrainer):
 
             num_batches = len(val_loader)
             # hook
-            self.before_validation_epoch(t + 1, num_epochs)
+            self.before_validation_epoch(t + 1, num_epochs, **kwargs)
             for batch_id, val_batch in enumerate(val_loader):
                 # hook
-                self.before_validation_step(batch_id, num_batches)
+                self.before_validation_step(batch_id, num_batches, **kwargs)
                 # hook
-                self.on_validation_step(val_batch, batch_id, num_batches)
+                self.on_validation_step(val_batch, batch_id, num_batches,
+                                        **kwargs)
                 # hook
-                self.after_validation_step(batch_id, num_batches)
+                self.after_validation_step(batch_id, num_batches, **kwargs)
                 # hook
-            self.after_validation_epoch(t + 1, num_epochs)
+            self.after_validation_epoch(t + 1, num_epochs, **kwargs)
         return self
 
-    def test(self, test_loader: DataLoader):
+    def test(self, test_loader: DataLoader, **kwargs):
         r'''
         Args:
             test_loader (DataLoader): Iterable DataLoader for traversing the test data batch (torch.utils.data.dataloader.DataLoader, torch_geometric.loader.DataLoader, etc).
         '''
-        super().test(test_loader=test_loader)
+        super().test(test_loader=test_loader, **kwargs)
 
     def on_validation_step(self, val_batch: Tuple, batch_id: int,
-                           num_batches: int):
+                           num_batches: int, **kwargs):
         X = val_batch[0].to(self.device)
         y = val_batch[1].to(self.device)
 
@@ -292,10 +295,12 @@ class CORALTrainer(ClassificationTrainer):
         self.val_loss.update(self.loss_fn(pred, y))
         self.val_accuracy.update(pred.argmax(1), y)
 
-    def on_test_step(self, test_batch: Tuple, batch_id: int, num_batches: int):
+    def on_test_step(self, test_batch: Tuple, batch_id: int, num_batches: int,
+                     **kwargs):
         X = test_batch[0].to(self.device)
         y = test_batch[1].to(self.device)
         feat = self.modules['extractor'](X)
         pred = self.modules['classifier'](feat)
+
         self.test_loss.update(self.loss_fn(pred, y))
         self.test_accuracy.update(pred.argmax(1), y)

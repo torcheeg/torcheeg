@@ -58,6 +58,7 @@ class ToGrid(EEGTransform):
         apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (defualt: :obj:`False`)
     
     .. automethod:: __call__
+    .. automethod:: reverse
     '''
     def __init__(self,
                  channel_location_dict: Dict[str, Tuple[int, int]],
@@ -101,6 +102,14 @@ class ToGrid(EEGTransform):
         return outputs
 
     def reverse(self, eeg: np.ndarray, **kwargs) -> np.ndarray:
+        r'''
+        The inverse operation of the converter is used to take out the electrodes on the grid and arrange them in the original order.
+        Args:
+            eeg (np.ndarray): The input EEG signals in shape of [number of data points, width of grid, height of grid].
+
+        Returns:
+            np.ndarray: The revered results with the shape of [number of electrodes, number of data points].
+        '''
         # timestep x 9 x 9
         eeg = eeg.transpose(1, 2, 0)
         # 9 x 9 x timestep
@@ -140,6 +149,7 @@ class ToInterpolatedGrid(EEGTransform):
         apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (defualt: :obj:`False`)
 
     .. automethod:: __call__
+    .. automethod:: reverse
     '''
     def __init__(self,
                  channel_location_dict: Dict[str, Tuple[int, int]],
@@ -199,6 +209,14 @@ class ToInterpolatedGrid(EEGTransform):
         return outputs
 
     def reverse(self, eeg: np.ndarray, **kwargs) -> np.ndarray:
+        r'''
+        The inverse operation of the converter is used to take out the electrodes on the grid and arrange them in the original order.
+        Args:
+            eeg (np.ndarray): The input EEG signals in shape of [number of data points, width of grid, height of grid].
+
+        Returns:
+            np.ndarray: The revered results with the shape of [number of electrodes, number of data points].
+        '''
         # timestep x 9 x 9
         eeg = eeg.transpose(1, 2, 0)
         # 9 x 9 x timestep

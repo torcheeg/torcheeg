@@ -7,3 +7,4 @@ from .spectrum import *
 from .coefficient import *
 from .correlation import *
 from .band_pyeeg import *
+from .downsample import *

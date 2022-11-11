@@ -31,6 +31,11 @@ plot_2d_tensor
 
 .. autofunction:: torcheeg.utils.plot_2d_tensor
 
+plot_adj_connectivity 
+-----------------------------------------------------------
+
+.. autofunction:: torcheeg.utils.plot_adj_connectivity 
+
 plot_graph
 -----------------------------------------------------------
 

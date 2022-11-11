@@ -3,6 +3,7 @@ import re
 from copy import copy
 from typing import List, Tuple, Union, Dict
 
+import numpy as np
 import pandas as pd
 from sklearn import model_selection
 from torcheeg.datasets.module.base_dataset import BaseDataset
@@ -89,12 +90,18 @@ class KFoldPerSubjectCrossTrial:
             subject_info = info[info['subject_id'] == subject]
             trial_ids = list(set(subject_info['trial_id']))
 
-            for fold_id, (train_trial_ids, test_trial_ids) in enumerate(
-                    self.k_fold.split(trial_ids)):
-                if len(train_trial_ids) == 0 or len(test_trial_ids) == 0:
+            for fold_id, (train_index_trial_ids,
+                          test_index_trial_ids) in enumerate(
+                              self.k_fold.split(trial_ids)):
+                if len(train_index_trial_ids) == 0 or len(test_index_trial_ids) == 0:
                     raise ValueError(
                         f'The number of training or testing trials for subject {subject} is zero.'
                     )
+
+                train_trial_ids = np.array(
+                    trial_ids)[train_index_trial_ids].tolist()
+                test_trial_ids = np.array(
+                    trial_ids)[test_index_trial_ids].tolist()
 
                 train_info = []
                 for train_trial_id in train_trial_ids:
@@ -122,7 +129,7 @@ class KFoldPerSubjectCrossTrial:
         indice_files = list(os.listdir(self.split_path))
 
         def indice_file_to_subject(indice_file):
-            return re.findall(r'subject_(\w*)_fold_(\d*).csv',
+            return re.findall(r'subject_(.*)_fold_(\d*).csv',
                               indice_file)[0][0]
 
         subjects = list(set(map(indice_file_to_subject, indice_files)))
@@ -135,7 +142,7 @@ class KFoldPerSubjectCrossTrial:
 
         def indice_file_to_fold_id(indice_file):
             return int(
-                re.findall(r'subject_(\w*)_fold_(\d*).csv', indice_file)[0][1])
+                re.findall(r'subject_(.*)_fold_(\d*).csv', indice_file)[0][1])
 
         fold_ids = list(set(map(indice_file_to_fold_id, indice_files)))
         fold_ids.sort()

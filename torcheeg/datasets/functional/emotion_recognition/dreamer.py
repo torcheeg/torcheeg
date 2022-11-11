@@ -1,8 +1,8 @@
 import os
-from typing import Callable, List, Union
+from typing import Callable, Union
 from functools import partial
 import scipy.io as scio
-from multiprocessing import Manager, Pool, Process, Queue, set_start_method
+from multiprocessing import Manager, Pool, Process, Queue
 from torcheeg.io import EEGSignalIO, MetaInfoIO
 from tqdm import tqdm
 
@@ -12,10 +12,11 @@ MAX_QUEUE_SIZE = 1024
 def transform_producer(subject: int, trial_len: int, mat_data: any,
                        chunk_size: int, overlap: int, num_channel: int,
                        num_baseline: int, baseline_chunk_size: int,
-                       transform: Union[Callable, None],
+                       before_trial: Union[Callable, None],
+                       transform: Union[Callable,
+                                        None], after_trial: Union[Callable,
+                                                                  None],
                        write_info_fn: Callable, queue: Queue):
-    # calculate moving step
-    step = chunk_size - overlap
 
     write_pointer = 0
     # loop for each trial
@@ -44,15 +45,24 @@ def transform_producer(subject: int, trial_len: int, mat_data: any,
         trial_meta_info['dominance'] = mat_data['DREAMER'][0, 0]['Data'][
             0, subject]['ScoreDominance'][0, 0][trial_id, 0]
 
-        # extract experimental signals
-        start_at = 0
-        end_at = chunk_size
-
         trial_samples = mat_data['DREAMER'][0, 0]['Data'][0, subject]['EEG'][
             0, 0]['stimuli'][0, 0][trial_id, 0]
         trial_samples = trial_samples[:, :num_channel].swapaxes(
             1, 0)  # channel(14), timestep(n*128)
 
+        if before_trial:
+            trial_samples = before_trial(trial_samples)
+
+        start_at = 0
+        if chunk_size <= 0:
+            chunk_size = trial_samples.shape[1] - start_at
+
+        # chunk with chunk size
+        end_at = chunk_size
+        # calculate moving step
+        step = chunk_size - overlap
+
+        trial_queue = []
         while end_at <= trial_samples.shape[1]:
             clip_sample = trial_samples[:, start_at:end_at]
 
@@ -72,8 +82,10 @@ def transform_producer(subject: int, trial_len: int, mat_data: any,
                 trial_meta_info['baseline_id'] = trial_base_id
 
             clip_id = f'{subject}_{write_pointer}'
-
-            queue.put({'eeg': t_eeg, 'key': clip_id})
+            if after_trial:
+                trial_queue.append({'eeg': t_eeg, 'key': clip_id})
+            else:
+                queue.put({'eeg': t_eeg, 'key': clip_id})
             write_pointer += 1
 
             # record meta info for each signal
@@ -87,6 +99,12 @@ def transform_producer(subject: int, trial_len: int, mat_data: any,
 
             start_at = start_at + step
             end_at = start_at + chunk_size
+
+        if len(trial_queue) and after_trial:
+            trial_queue = after_trial(trial_queue)
+            for obj in trial_queue:
+                assert 'eeg' in obj and 'key' in obj, 'after_trial must return a list of dictionaries, where each dictionary corresponds to an EEG sample, containing `eeg` and `key` as keys.'
+                queue.put(obj)
 
 
 def io_consumer(write_eeg_fn, queue):
@@ -116,7 +134,9 @@ def dreamer_constructor(mat_path: str = './DREAMER.mat',
                         num_channel: int = 14,
                         num_baseline: int = 61,
                         baseline_chunk_size: int = 128,
+                        before_trial: Union[None, Callable] = None,
                         transform: Union[None, Callable] = None,
+                        after_trial: Union[Callable, None] = None,
                         io_path: str = './io/dreamer',
                         num_worker: int = 0,
                         verbose: bool = True,
@@ -166,7 +186,9 @@ def dreamer_constructor(mat_path: str = './DREAMER.mat',
                                 num_channel=num_channel,
                                 num_baseline=num_baseline,
                                 baseline_chunk_size=baseline_chunk_size,
+                                before_trial=before_trial,
                                 transform=transform,
+                                after_trial=after_trial,
                                 write_info_fn=info_io.write_info,
                                 queue=queue)
 
@@ -189,7 +211,9 @@ def dreamer_constructor(mat_path: str = './DREAMER.mat',
                                num_channel=num_channel,
                                num_baseline=num_baseline,
                                baseline_chunk_size=baseline_chunk_size,
+                               before_trial=before_trial,
                                transform=transform,
+                               after_trial=after_trial,
                                write_info_fn=info_io.write_info,
                                queue=SingleProcessingQueue(eeg_io.write_eeg))
             if verbose:

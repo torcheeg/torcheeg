@@ -1,7 +1,7 @@
 import unittest
 
 import numpy as np
-from torcheeg.transforms import ToGrid, ToInterpolatedGrid, To2d, MeanStdNormalize, MinMaxNormalize, BandSignal, BandDifferentialEntropy, BandPowerSpectralDensity, BandMeanAbsoluteDeviation, BandKurtosis, BandSkewness, Concatenate, ChunkConcatenate, PickElectrode, CWTSpectrum, ARRCoefficient, PearsonCorrelation, PhaseLockingCorrelation, BandApproximateEntropy, BandSampleEntropy, BandSVDEntropy, BandDetrendedFluctuationAnalysis, BandHiguchiFractalDimension, BandHjorth, BandHurst, BandPetrosianFractalDimension, BandBinPower, BandSpectralEntropy, DWTDecomposition
+from torcheeg.transforms import ToGrid, ToInterpolatedGrid, To2d, MeanStdNormalize, MinMaxNormalize, BandSignal, BandDifferentialEntropy, BandPowerSpectralDensity, BandMeanAbsoluteDeviation, BandKurtosis, BandSkewness, Concatenate, MapChunk, PickElectrode, CWTSpectrum, ARRCoefficient, PearsonCorrelation, PhaseLockingCorrelation, BandApproximateEntropy, BandSampleEntropy, BandSVDEntropy, BandDetrendedFluctuationAnalysis, BandHiguchiFractalDimension, BandHjorth, BandHurst, BandPetrosianFractalDimension, BandBinPower, BandSpectralEntropy, DWTDecomposition, Downsample, Compose
 from torcheeg.datasets.constants import DEAP_CHANNEL_LOCATION_DICT, DEAP_CHANNEL_LIST, M3CV_CHANNEL_LOCATION_DICT
 
 
@@ -120,44 +120,35 @@ class TestNumpyTransforms(unittest.TestCase):
 
     def test_concat(self):
         eeg = np.random.randn(32, 128)
-        transformed_eeg = Concatenate([BandSkewness(), BandSkewness()])(eeg=eeg)
+        transformed_eeg = Concatenate([BandSkewness(), BandBinPower()])(eeg=eeg)
         self.assertEqual(transformed_eeg['eeg'].shape, (32, 8))
 
-    def test_chunk_concat(self):
+        transformed_eeg = Concatenate(
+            [Compose([MinMaxNormalize(), BandSkewness()]),
+             BandBinPower()])(eeg=eeg)
+        self.assertEqual(transformed_eeg['eeg'].shape, (32, 8))
+
+    def test_map_chunk(self):
         eeg = np.random.randn(64, 1000)
-        transformed_eeg = ChunkConcatenate(
-            [BandDifferentialEntropy(),
-             BandMeanAbsoluteDeviation()],
-            chunk_size=250,
-            overlap=0)(eeg=eeg)
-        self.assertEqual(transformed_eeg['eeg'].shape, (64, 32))
+        transformed_eeg = MapChunk(BandDifferentialEntropy(),
+                                   chunk_size=250,
+                                   overlap=0)(eeg=eeg)
+        self.assertEqual(transformed_eeg['eeg'].shape, (64, 16))
 
         transformed_eeg = Concatenate([
-            ChunkConcatenate([BandDifferentialEntropy()],
-                             chunk_size=250,
-                             overlap=0),
-            ChunkConcatenate([BandDifferentialEntropy()],
-                             chunk_size=500,
-                             overlap=0),
+            MapChunk(BandDifferentialEntropy(), chunk_size=250, overlap=0),
+            MapChunk(BandDifferentialEntropy(), chunk_size=500, overlap=0),
             BandDifferentialEntropy()
         ])(eeg=eeg)
         self.assertEqual(transformed_eeg['eeg'].shape, (64, 28))
 
         transformed_eeg = Concatenate([
-            ChunkConcatenate(
-                [BandDifferentialEntropy(),
-                 BandPowerSpectralDensity()],
-                chunk_size=250,
-                overlap=0),
-            ChunkConcatenate(
-                [BandDifferentialEntropy(),
-                 BandPowerSpectralDensity()],
-                chunk_size=500,
-                overlap=0),
+            MapChunk(BandDifferentialEntropy(), chunk_size=250, overlap=0),
+            MapChunk(BandDifferentialEntropy(), chunk_size=500, overlap=0),
             BandDifferentialEntropy(),
             BandPowerSpectralDensity()
         ])(eeg=eeg)
-        self.assertEqual(transformed_eeg['eeg'].shape, (64, 56))
+        self.assertEqual(transformed_eeg['eeg'].shape, (64, 32))
 
     def test_pearson_correlation(self):
         eeg = np.random.randn(32, 4)
@@ -218,6 +209,11 @@ class TestNumpyTransforms(unittest.TestCase):
         eeg = np.random.randn(32, 128)
         transformed_eeg = BandSpectralEntropy()(eeg=eeg)
         self.assertEqual(transformed_eeg['eeg'].shape, (32, 1))
+
+    def test_downsample(self):
+        eeg = np.random.randn(32, 128)
+        transformed_eeg = Downsample(num_points=32, axis=-1)(eeg=eeg)
+        self.assertEqual(transformed_eeg['eeg'].shape, (32, 32))
 
 
 if __name__ == '__main__':

@@ -23,6 +23,7 @@ Convolutional Neural Networks
    STNet
    TSCeption
    CCNN
+   SSTEmotionNet
 
 Recurrent Neural Networks
 ----------------------------------
@@ -44,6 +45,7 @@ Graph Neural Networks
    :template: modeltemplate.rst
 
    DGCNN
+   LGGNet
    pyg.RGNN
    pyg.GIN
 
@@ -56,3 +58,49 @@ Transformer
    :template: modeltemplate.rst
 
    SimpleViT
+   ArjunViT
+   VanillaTransformer
+   ViT
+
+Generative Adversarial Network
+----------------------------------
+.. autosummary::
+   :toctree: generated
+   :nosignatures:
+   :template: modeltemplate.rst
+
+   BGenerator
+   BDiscriminator
+   BCGenerator
+   BCDiscriminator
+
+Variational Auto Encoder
+----------------------------------
+.. autosummary::
+   :toctree: generated
+   :nosignatures:
+   :template: modeltemplate.rst
+
+   BEncoder
+   BDecoder
+   BCEncoder
+   BCDecoder
+
+Normalization Flow
+----------------------------------
+.. autosummary::
+   :toctree: generated
+   :nosignatures:
+   :template: modeltemplate.rst
+
+   BGlow
+
+Diffusion Models
+----------------------------------
+.. autosummary::
+   :toctree: generated
+   :nosignatures:
+   :template: modeltemplate.rst
+
+   BUNet
+   BCUNet

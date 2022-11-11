@@ -111,16 +111,18 @@ class MAHNOBDataset(BaseDataset):
 
     Args:
         root_path (str): Downloaded data files in bdf and xml (unzipped Sessions.zip) formats (default: :obj:`'./Sessions'`)
-        chunk_size (int): Number of data points included in each EEG chunk as training or test samples. (default: :obj:`128`)
+        chunk_size (int): Number of data points included in each EEG chunk as training or test samples. If set to -1, the EEG signal of a trial is used as a sample of a chunk. (default: :obj:`128`)
         sampling_rate (int): The number of data points taken over a second. (default: :obj:`128`)
         overlap (int): The number of overlapping data points between different chunks when dividing EEG chunks. (default: :obj:`0`)
         num_channel (int): Number of channels used, of which the first 32 channels are EEG signals. (default: :obj:`32`)
         num_baseline (int): Number of baseline signal chunks used. (default: :obj:`30`)
-        baseline_chunk_size (int): Number of data points included in each baseline signal chunk. The baseline signal in the MAHNOB dataset has a total of 512 (downsampled to sampling_rate) * 30 data points. (default: :obj:`128`)
+        baseline_chunk_size (int): Number of data points included in each baseline signal chunk. The baseline signal in the MAHNOB dataset has a total of 512 (downsampled to 128) * 30 data points. (default: :obj:`128`)
         num_trial_sample (int): Number of samples picked from each trial. If set to -1, all samples in trials are used. (default: :obj:`30`)
         online_transform (Callable, optional): The transformation of the EEG signals and baseline EEG signals. The input is a :obj:`np.ndarray`, and the ouput is used as the first and second value of each element in the dataset. (default: :obj:`None`)
         offline_transform (Callable, optional): The usage is the same as :obj:`online_transform`, but executed before generating IO intermediate results. (default: :obj:`None`)
         label_transform (Callable, optional): The transformation of the label. The input is an information dictionary, and the ouput is used as the third value of each element in the dataset. (default: :obj:`None`)
+        before_trial (Callable, optional): The hook performed on the trial to which the sample belongs. It is performed before the offline transformation and thus typically used to implement context-dependent sample transformations, such as moving averages, etc. The input of this hook function is a 2D EEG signal with shape (number of electrodes, number of data points), whose ideal output shape is also (number of electrodes, number of data points).
+        after_trial (Callable, optional): The hook performed on the trial to which the sample belongs. It is performed after the offline transformation and thus typically used to implement context-dependent sample transformations, such as moving averages, etc. The input and output of this hook function should be a sequence of dictionaries representing a sequence of EEG samples. Each dictionary contains two key-value pairs, indexed by :obj:`eeg` (the EEG signal matrix) and :obj:`key` (the index in the database) respectively.
         io_path (str): The path to generated unified data IO, cached as an intermediate result. (default: :obj:`./io/mahnob`)
         num_worker (str): How many subprocesses to use for data processing. (default: :obj:`0`)
         verbose (bool): Whether to display logs during processing, such as progress bars, etc. (default: :obj:`True`)
@@ -142,6 +144,8 @@ class MAHNOBDataset(BaseDataset):
                  online_transform: Union[None, Callable] = None,
                  offline_transform: Union[None, Callable] = None,
                  label_transform: Union[None, Callable] = None,
+                 before_trial: Union[None, Callable] = None,
+                 after_trial: Union[Callable, None] = None,
                  io_path: str = './io/mahnob',
                  num_worker: int = 0,
                  verbose: bool = True,
@@ -154,7 +158,9 @@ class MAHNOBDataset(BaseDataset):
                            num_baseline=num_baseline,
                            baseline_chunk_size=baseline_chunk_size,
                            num_trial_sample=num_trial_sample,
+                           before_trial=before_trial,
                            transform=offline_transform,
+                           after_trial=after_trial,
                            io_path=io_path,
                            num_worker=num_worker,
                            verbose=verbose,
@@ -172,6 +178,8 @@ class MAHNOBDataset(BaseDataset):
         self.online_transform = online_transform
         self.offline_transform = offline_transform
         self.label_transform = label_transform
+        self.before_trial = before_trial
+        self.after_trial = after_trial
         self.num_worker = num_worker
         self.verbose = verbose
         self.cache_size = cache_size
@@ -211,6 +219,8 @@ class MAHNOBDataset(BaseDataset):
                 'online_transform': self.online_transform,
                 'offline_transform': self.offline_transform,
                 'label_transform': self.label_transform,
+                'before_trial': self.before_trial,
+                'after_trial': self.after_trial,
                 'num_worker': self.num_worker,
                 'verbose': self.verbose,
                 'cache_size': self.cache_size

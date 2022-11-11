@@ -72,7 +72,6 @@ class KFoldGroupbyTrial:
             trial_ids = list(set(subject_info['trial_id']))
             for trial_id in trial_ids:
                 trial_info = subject_info[subject_info['trial_id'] == trial_id]
-
                 for i, (train_index,
                         test_index) in enumerate(self.k_fold.split(trial_info)):
                     train_info = trial_info.iloc[train_index]

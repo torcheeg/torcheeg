@@ -56,7 +56,8 @@ Numpy-based Transforms
     ToGrid
     ToInterpolatedGrid
     Concatenate
-    ChunkConcatenate
+    MapChunk
+    Downsample
 
 .. currentmodule:: torcheeg.transforms
 

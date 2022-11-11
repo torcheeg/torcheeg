@@ -12,10 +12,17 @@ MAX_QUEUE_SIZE = 1024
 
 
 def transform_producer(X_y_rank: Tuple[np.ndarray, Dict,
-                                       int], transform: Union[Callable, None],
+                                       int], before_trial: Union[Callable,
+                                                                 None],
+                       transform: Union[Callable,
+                                        None], after_trial: Union[Callable,
+                                                                  None],
                        write_info_fn: Callable, queue: Queue):
     X, y, worker_rank = X_y_rank
+    if before_trial:
+        X = before_trial(X)
 
+    trial_queue = []
     for write_pointer, clip_sample in enumerate(X):
 
         t_eeg = clip_sample
@@ -25,13 +32,21 @@ def transform_producer(X_y_rank: Tuple[np.ndarray, Dict,
             t_eeg = t['eeg']
 
         clip_id = f'{worker_rank}_{write_pointer}'
-
-        queue.put({'eeg': t_eeg, 'key': clip_id})
+        if after_trial:
+            trial_queue.append({'eeg': t_eeg, 'key': clip_id})
+        else:
+            queue.put({'eeg': t_eeg, 'key': clip_id})
 
         # record meta info for each signal
         record_info = {'clip_id': clip_id}
         record_info.update({k: v[write_pointer] for k, v in y.items()})
         write_info_fn(record_info)
+
+    if len(trial_queue) and after_trial:
+        trial_queue = after_trial(trial_queue)
+        for obj in trial_queue:
+            assert 'eeg' in obj and 'key' in obj, 'after_trial must return a list of dictionaries, where each dictionary corresponds to an EEG sample, containing `eeg` and `key` as keys.'
+            queue.put(obj)
 
 
 def io_consumer(write_eeg_fn, queue):
@@ -57,10 +72,12 @@ class SingleProcessingQueue:
 
 def numpy_constructor(X: np.ndarray,
                       y: Dict,
+                      before_trial: Union[None, Callable] = None,
                       transform: Union[None, Callable] = None,
+                      after_trial: Union[Callable, None] = None,
                       io_path: str = './io/numpy',
                       num_worker: int = 0,
-                      num_samples_per_worker: int = 100,
+                      num_samples_per_trial: int = 100,
                       verbose: bool = True,
                       cache_size: int = 64 * 1024 * 1024 * 1024) -> None:
 
@@ -86,7 +103,8 @@ def numpy_constructor(X: np.ndarray,
 
     # access the data
     indices = np.arange(len(X))
-    worker_indices_list = np.array_split(indices, len(X) // num_samples_per_worker)
+    worker_indices_list = np.array_split(indices,
+                                         len(X) // num_samples_per_trial)
 
     X_y_rank_list = []
     for worker_rank, worker_indices in enumerate(worker_indices_list):
@@ -108,7 +126,9 @@ def numpy_constructor(X: np.ndarray,
         io_consumer_process.start()
 
         partial_mp_fn = partial(transform_producer,
+                                before_trial=before_trial,
                                 transform=transform,
+                                after_trial=after_trial,
                                 write_info_fn=info_io.write_info,
                                 queue=queue)
 
@@ -124,7 +144,9 @@ def numpy_constructor(X: np.ndarray,
     else:
         for X_y_rank in X_y_rank_list:
             transform_producer(X_y_rank=X_y_rank,
+                               before_trial=before_trial,
                                transform=transform,
+                               after_trial=after_trial,
                                write_info_fn=info_io.write_info,
                                queue=SingleProcessingQueue(eeg_io.write_eeg))
             if verbose:

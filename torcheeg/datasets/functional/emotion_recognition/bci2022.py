@@ -1,10 +1,9 @@
 import os
 from functools import partial
-from multiprocessing import Manager, Pool, Process, Queue, set_start_method
+from multiprocessing import Manager, Pool, Process, Queue
 from typing import Callable, List, Union
 
 import joblib
-import numpy as np
 from torcheeg.io import EEGSignalIO, MetaInfoIO
 from tqdm import tqdm
 
@@ -91,7 +90,10 @@ EMOTION_DICT = {
 
 def transform_producer(file_name: str, root_path: str, chunk_size: int,
                        overlap: int, channel_num: int,
-                       transform: Union[List[Callable], Callable, None],
+                       before_trial: Union[Callable, None],
+                       transform: Union[List[Callable], Callable,
+                                        None], after_trial: Union[Callable,
+                                                                  None],
                        reorder: bool, write_info_fn: Callable, queue: Queue):
 
     subject = file_name  # subject (54)
@@ -135,9 +137,17 @@ def transform_producer(file_name: str, root_path: str, chunk_size: int,
                 'emotion': EMOTION_DICT[video_id],
             }
 
-            step = chunk_size - overlap
             cur_start_at = start_at
-            cur_end_at = start_at + chunk_size
+            if chunk_size <= 0:
+                chunk_size = end_at - start_at
+            cur_end_at = cur_start_at + chunk_size
+            step = chunk_size - overlap
+
+            trial_queue = []
+
+            if before_trial:
+                samples[:channel_num, cur_start_at:end_at] = before_trial(
+                    samples[:channel_num, cur_start_at:end_at])
 
             while cur_end_at <= end_at:
                 t_eeg = samples[:channel_num, cur_start_at:cur_end_at]
@@ -145,7 +155,10 @@ def transform_producer(file_name: str, root_path: str, chunk_size: int,
                     t_eeg = transform(eeg=t_eeg)['eeg']
 
                 clip_id = f'{subject}_{write_pointer}'
-                queue.put({'eeg': t_eeg, 'key': clip_id})
+                if after_trial:
+                    trial_queue.append({'eeg': t_eeg, 'key': clip_id})
+                else:
+                    queue.put({'eeg': t_eeg, 'key': clip_id})
                 write_pointer += 1
 
                 record_info = {
@@ -158,6 +171,12 @@ def transform_producer(file_name: str, root_path: str, chunk_size: int,
 
                 cur_start_at = cur_start_at + step
                 cur_end_at = cur_start_at + chunk_size
+
+            if len(trial_queue) and after_trial:
+                trial_queue = after_trial(trial_queue)
+                for obj in trial_queue:
+                    assert 'eeg' in obj and 'key' in obj, 'after_trial must return a list of dictionaries, where each dictionary corresponds to an EEG sample, containing `eeg` and `key` as keys.'
+                    queue.put(obj)
 
             # prepare for the next trial
             trial_id += 1
@@ -191,7 +210,9 @@ def bci2022_constructor(root_path: str = './2022EmotionPublic/TrainSet/',
                         chunk_size: int = 250,
                         overlap: int = 0,
                         channel_num: int = 30,
+                        before_trial: Union[None, Callable] = None,
                         transform: Union[None, Callable] = None,
+                        after_trial: Union[Callable, None] = None,
                         io_path: str = './io/bci2022',
                         num_worker: int = 0,
                         verbose: bool = True,
@@ -237,7 +258,9 @@ def bci2022_constructor(root_path: str = './2022EmotionPublic/TrainSet/',
                 chunk_size=chunk_size,
                 overlap=overlap,
                 channel_num=channel_num,
+                before_trial=before_trial,
                 transform=transform,
+                after_trial=after_trial,
                 reorder=train_set_batch == 'TrainSet_first_batch',
                 write_info_fn=info_io.write_info,
                 queue=queue)
@@ -259,7 +282,9 @@ def bci2022_constructor(root_path: str = './2022EmotionPublic/TrainSet/',
                     chunk_size=chunk_size,
                     overlap=overlap,
                     channel_num=channel_num,
+                    before_trial=before_trial,
                     transform=transform,
+                    after_trial=after_trial,
                     reorder=train_set_batch == 'TrainSet_first_batch',
                     write_info_fn=info_io.write_info,
                     queue=SingleProcessingQueue(eeg_io.write_eeg))

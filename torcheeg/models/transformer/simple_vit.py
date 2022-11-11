@@ -147,6 +147,28 @@ class SimpleViT(nn.Module):
         dataset = DEAPDataset(io_path=f'./deap',
                     root_path='./data_preprocessed_python',
                     offline_transform=transforms.Compose([
+                        transforms.MinMaxNormalize(axis=-1),
+                        transforms.ToGrid(DEAP_CHANNEL_LOCATION_DICT)
+                    ]),
+                    online_transform=transforms.Compose([
+                        transforms.ToTensor(),
+                    ]),
+                    label_transform=transforms.Compose([
+                        transforms.Select('valence'),
+                        transforms.Binary(5.0),
+                    ]))
+        model = SimpleViT(chunk_size=128,
+                          grid_size=(9, 9),
+                          t_patch_size=32,
+                          num_classes=2)
+
+    It can also be used for the analysis of features such as DE, PSD, etc:
+
+    .. code-block:: python
+
+        dataset = DEAPDataset(io_path=f'./deap',
+                    root_path='./data_preprocessed_python',
+                    offline_transform=transforms.Compose([
                         transforms.BandDifferentialEntropy({
                             "delta": [1, 4],
                             "theta": [4, 8],
@@ -163,20 +185,17 @@ class SimpleViT(nn.Module):
                         transforms.Select('valence'),
                         transforms.Binary(5.0),
                     ]))
-        model = SimpleViT(in_channels=5,
-                            grid_size=(9, 9),
-                            patch_size=(3, 3),
-                            hid_channels=32,
-                            depth=3,
-                            heads=4,
-                            head_channels=64,
-                            mlp_channels=64,
-                            num_classes=2)
+        model = SimpleViT(chunk_size=5,
+                          grid_size=(9, 9),
+                          t_patch_size=1,
+                          num_classes=2)
 
     Args:
-        in_channels (int): The feature dimension of each electrode. (defualt: :obj:`5`)
+        chunk_size (int): Number of data points included in each EEG chunk as training or test samples. (default: :obj:`128`)
         grid_size (tuple): Spatial dimensions of grid-like EEG representation. (defualt: :obj:`(9, 9)`)
         patch_size (tuple): The size (resolution) of each input patch. (defualt: :obj:`(3, 3)`)
+        t_patch_size (int): The size of each input patch at the temporal (chunk size) dimension. (defualt: :obj:`32`)
+        s_patch_size (tuple): The size (resolution) of each input patch at the spatial (grid size) dimension. (defualt: :obj:`(3, 3)`)
         hid_channels (int): The feature dimension of embeded patch. (defualt: :obj:`32`)
         depth (int): The number of attention layers for each transformer block. (defualt: :obj:`3`)
         heads (int): The number of attention heads for each attention layer. (defualt: :obj:`4`)
@@ -222,7 +241,7 @@ class SimpleViT(nn.Module):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         r'''
         Args:
-            x (torch.Tensor): EEG signal representation, the ideal input shape is :obj:`[n, 5, 9, 9]`. Here, :obj:`n` corresponds to the batch size, :obj:`5` corresponds to :obj:`in_channels`, and :obj:`(9, 9)` corresponds to :obj:`grid_size`.
+            x (torch.Tensor): EEG signal representation, the ideal input shape is :obj:`[n, 128, 9, 9]`. Here, :obj:`n` corresponds to the batch size, :obj:`128` corresponds to :obj:`chunk_size`, and :obj:`(9, 9)` corresponds to :obj:`grid_size`.
 
         Returns:
             torch.Tensor[number of sample, number of classes]: the predicted probability that the samples belong to the classes.

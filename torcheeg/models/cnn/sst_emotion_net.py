@@ -7,6 +7,58 @@ import torch.nn.functional as F
 
 
 class SSTEmotionNet(nn.Module):
+    r'''
+    Spatial-Spectral-Temporal based Attention 3D Dense Network (SST-EmotionNet) for EEG emotion recognition. For more details, please refer to the following information.
+
+    - Paper: Jia Z, Lin Y, Cai X, et al. Sst-emotionnet: Spatial-spectral-temporal based attention 3d dense network for eeg emotion recognition[C]//Proceedings of the 28th ACM International Conference on Multimedia. 2020: 2909-2917.
+    - URL: https://dl.acm.org/doi/abs/10.1145/3394171.3413724
+    - Related Project: https://github.com/ziyujia/SST-EmotionNet
+    - Related Project: https://github.com/LexieLiu01/SST-Emotion-Net-Pytorch-Version-
+    
+    Below is a recommended suite for use in emotion recognition tasks:
+
+    .. code-block:: python
+    
+        dataset = DEAPDataset(io_path=f'./deap',
+                    root_path='./data_preprocessed_python',
+                    offline_transform=transforms.Compose([
+                        transforms.BaselineRemoval(),
+                        transforms.Concatenate([
+                            transforms.Compose([
+                                transforms.BandDifferentialEntropy(sampling_rate=128),
+                                transforms.MeanStdNormalize()
+                            ]),
+                            transforms.Compose([
+                                transforms.Downsample(num_points=32),
+                                transforms.MinMaxNormalize()
+                            ])
+                        ]),
+                        transforms.ToInterpolatedGrid(DEAP_CHANNEL_LOCATION_DICT)
+                    ]),
+                    online_transform=transforms.Compose([
+                        transforms.ToTensor(),
+                        transforms.Resize((16, 16))
+                    ]),
+                    label_transform=transforms.Compose([
+                        transforms.Select('valence'),
+                        transforms.Binary(5.0),
+                    ]))
+        model = SSTEmotionNet(temporal_in_channels=32, spectral_in_channels=4, grid_size=(16, 16), num_classes=2)
+
+    Args:
+        grid_size (tuple): Spatial dimensions of grid-like EEG representation. (defualt: :obj:`(16, 16)`)
+        spectral_in_channels (int): How many 2D maps are stacked in the 3D spatial-spectral representation. (defualt: :obj:`5`)
+        temporal_in_channels (int): How many 2D maps are stacked in the 3D spatial-temporal representation. (defualt: :obj:`25`)
+        spectral_depth (int): The number of layers in spatial-spectral stream. (defualt: :obj:`16`)
+        temporal_depth (int): The number of layers in spatial-temporal stream. (defualt: :obj:`22`)
+        spectral_growth_rate (int): The growth rate of spatial-spectral stream. (defualt: :obj:`12`)
+        temporal_growth_rate (int): The growth rate of spatial-temporal stream. (defualt: :obj:`24`)
+        num_dense_block (int): The number of A3DBs to add to end (defualt: :obj:`3`)
+        hid_channels (int): The basic hidden channels in the network blocks. (defualt: :obj:`50`)
+        densenet_dropout (int): Probability of an element to be zeroed in the dropout layers from densenet blocks. (defualt: :obj:`0.0`)
+        task_dropout (int): Probability of an element to be zeroed in the dropout layers from task-specific classification blocks. (defualt: :obj:`0.0`)
+        num_classes (int): The number of classes to predict. (defualt: :obj:`2`)
+    '''
     def __init__(self,
                  grid_size: Tuple[int, int] = (32, 32),
                  spectral_in_channels: int = 5,
@@ -18,7 +70,7 @@ class SSTEmotionNet(nn.Module):
                  num_dense_block: int = 3,
                  hid_channels: int = 50,
                  densenet_dropout: float = 0.0,
-                 task_dropout: float = None,
+                 task_dropout: float = 0.0,
                  num_classes: int = 3):
         super(SSTEmotionNet, self).__init__()
         self.grid_size = grid_size
@@ -74,7 +126,14 @@ class SSTEmotionNet(nn.Module):
 
         return spectral_output.shape[1], temporal_output.shape[1]
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor):
+        r'''
+        Args:
+            x (torch.Tensor): EEG signal representation, the ideal input shape is :obj:`[n, 30, 16, 16]`. Here, :obj:`n` corresponds to the batch size, :obj:`36` corresponds to the sum of :obj:`spectral_in_channels` (e.g., 5) and :obj:`temporal_in_channels` (e.g., 25), and :obj:`(16, 16)` corresponds to :obj:`grid_size`. It is worth noting that the first :obj:`spectral_in_channels` channels should represent spectral information.
+
+        Returns:
+            torch.Tensor[number of sample, number of classes]: the predicted probability that the samples belong to the classes.
+        '''
         assert x.shape[1] == (
             self.spectral_in_channels + self.temporal_in_channels
         ), f'The input number of channels is {x.shape[1]}, but the expected number of channels is the number of spectral channels {self.spectral_in_channels} plus the number of temporal channels {self.temporal_in_channels}.'
@@ -114,8 +173,6 @@ class DenseNet3D(nn.Module):
         if reduction != 0.0:
             assert reduction <= 1.0 and reduction > 0.0, 'reduction value must lie between 0.0 and 1.0.'
 
-        # layers in each dense block
-
         assert (depth - 4) % 3 == 0, 'Depth must be 3 N + 4.'
         count = int((depth - 4) / 3)
 
@@ -125,11 +182,8 @@ class DenseNet3D(nn.Module):
         num_layers = [count for _ in range(num_dense_block)]
 
         num_filters = 2 * growth_rate
-
-        # compute compression factor
         compression = 1.0 - reduction
 
-        # Initial convolution
         if subsample_initial_block:
             initial_kernel = (5, 5, 3)
             initial_strides = (2, 2, 1)
@@ -372,15 +426,3 @@ class Attention(nn.Module):
         out = out * temporal
 
         return out
-
-
-# mock_model = SSTEmotionNet(spectral_in_channels=10,
-#                            temporal_in_channels=35,
-#                            grid_size=(17, 17))
-# mock_eeg_s = torch.randn(2, 10, 17, 17)
-# mock_eeg_t = torch.randn(2, 35, 17, 17)
-# mock_eeg = torch.cat([mock_eeg_s, mock_eeg_t], dim=1)
-# print(mock_model(mock_eeg).shape)
-
-# https://github.com/ziyujia/SST-EmotionNet
-# https://github.com/LexieLiu01/SST-Emotion-Net-Pytorch-Version-

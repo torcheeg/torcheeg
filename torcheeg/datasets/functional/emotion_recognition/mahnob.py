@@ -16,7 +16,11 @@ MAX_QUEUE_SIZE = 1024
 def transform_producer(file_name: str, root_path: str, chunk_size: int,
                        sampling_rate: int, overlap: int, num_channel: int,
                        num_baseline: int, baseline_chunk_size: int,
-                       num_trial_sample: int, transform: Union[Callable, None],
+                       num_trial_sample: int, before_trial: Union[Callable,
+                                                                  None],
+                       transform: Union[Callable,
+                                        None], after_trial: Union[Callable,
+                                                                  None],
                        write_info_fn: Callable, queue: Queue):
     trial_dir = os.path.join(root_path, file_name)
 
@@ -75,17 +79,23 @@ def transform_producer(file_name: str, root_path: str, chunk_size: int,
     trial_raw = raw.copy().crop(raw.times[start_samp], raw.times[end_samp])
     trial_raw = trial_raw.resample(sampling_rate)
     trial_samples = trial_raw.to_data_frame().to_numpy()[:, 1:].swapaxes(1, 0)
-
-    # calculate moving step
-    step = chunk_size - overlap
+    if before_trial:
+        trial_samples = before_trial(trial_samples)
 
     start_at = 0
-    end_at = start_at + chunk_size
+    if chunk_size <= 0:
+        chunk_size = trial_samples.shape[1] - start_at
+
+    # chunk with chunk size
+    end_at = chunk_size
+    # calculate moving step
+    step = chunk_size - overlap
 
     max_len = trial_samples.shape[1]
     if not (num_trial_sample <= 0):
         max_len = min(num_trial_sample * chunk_size, trial_samples.shape[1])
 
+    trial_queue = []
     while end_at <= max_len:
         clip_sample = trial_samples[:, start_at:end_at]
 
@@ -105,7 +115,10 @@ def transform_producer(file_name: str, root_path: str, chunk_size: int,
             trial_meta_info['baseline_id'] = trial_base_id
 
         clip_id = f'{file_name}_{write_pointer}'
-        queue.put({'eeg': t_eeg, 'key': clip_id})
+        if after_trial:
+            trial_queue.append({'eeg': t_eeg, 'key': clip_id})
+        else:
+            queue.put({'eeg': t_eeg, 'key': clip_id})
         write_pointer += 1
 
         # record meta info for each signal
@@ -118,6 +131,12 @@ def transform_producer(file_name: str, root_path: str, chunk_size: int,
         write_info_fn(record_info)
         start_at = start_at + step
         end_at = start_at + chunk_size
+
+    if len(trial_queue) and after_trial:
+        trial_queue = after_trial(trial_queue)
+        for obj in trial_queue:
+            assert 'eeg' in obj and 'key' in obj, 'after_trial must return a list of dictionaries, where each dictionary corresponds to an EEG sample, containing `eeg` and `key` as keys.'
+            queue.put(obj)
 
 
 def io_consumer(write_eeg_fn, queue):
@@ -149,7 +168,9 @@ def mahnob_constructor(root_path: str = './Sessions',
                        num_baseline: int = 30,
                        baseline_chunk_size: int = 128,
                        num_trial_sample: int = 30,
+                       before_trial: Union[None, Callable] = None,
                        transform: Union[None, Callable] = None,
+                       after_trial: Union[Callable, None] = None,
                        io_path: str = './io/mahnob',
                        num_worker: int = 0,
                        verbose: bool = True,
@@ -194,7 +215,9 @@ def mahnob_constructor(root_path: str = './Sessions',
                                 num_baseline=num_baseline,
                                 baseline_chunk_size=baseline_chunk_size,
                                 num_trial_sample=num_trial_sample,
+                                before_trial=before_trial,
                                 transform=transform,
+                                after_trial=after_trial,
                                 write_info_fn=info_io.write_info,
                                 queue=queue)
 
@@ -218,7 +241,9 @@ def mahnob_constructor(root_path: str = './Sessions',
                                num_baseline=num_baseline,
                                baseline_chunk_size=baseline_chunk_size,
                                num_trial_sample=num_trial_sample,
+                               before_trial=before_trial,
                                transform=transform,
+                               after_trial=after_trial,
                                write_info_fn=info_io.write_info,
                                queue=SingleProcessingQueue(eeg_io.write_eeg))
             if verbose:

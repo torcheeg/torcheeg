@@ -94,6 +94,8 @@ def format_adj_matrix_from_standard(
     for start_node_name, end_node_name in global_channel_list:
         if (not start_node_name in node_map) or (not end_node_name in node_map):
             continue
-        adj_matrix[node_map[start_node_name]][node_map[end_node_name]] = 1.0
+        adj_matrix[node_map[start_node_name]][
+            node_map[end_node_name]] = adj_matrix[node_map[start_node_name]][
+                node_map[end_node_name]] - 1.0
 
     return adj_matrix.tolist()

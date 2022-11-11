@@ -14,13 +14,17 @@ MAX_QUEUE_SIZE = 1024
 
 def transform_producer(epochs_metadata_rank: Tuple[mne.Epochs, Dict, int],
                        chunk_size: int, overlap: int, num_channel: int,
-                       transform: Union[Callable, None],
+                       before_trial: Union[Callable, None],
+                       transform: Union[Callable,
+                                        None], after_trial: Union[Callable,
+                                                                  None],
                        write_info_fn: Callable, queue: Queue):
 
     epochs, metadata, rank = epochs_metadata_rank
 
-    if chunk_size == -1:
+    if chunk_size <= 0:
         chunk_size = len(epochs.times)
+        
     if num_channel == -1:
         num_channel = len(epochs.info['chs'])
 
@@ -29,7 +33,8 @@ def transform_producer(epochs_metadata_rank: Tuple[mne.Epochs, Dict, int],
 
     trial_end_at = len(epochs.times) - chunk_size
 
-    clip_sample_start_at_list = np.arange(0, trial_end_at + 1, chunk_size - overlap)
+    clip_sample_start_at_list = np.arange(0, trial_end_at + 1,
+                                          chunk_size - overlap)
 
     sample_events = [[clip_sample_start_at, chunk_size, -1]
                      for clip_sample_start_at in clip_sample_start_at_list]
@@ -41,28 +46,33 @@ def transform_producer(epochs_metadata_rank: Tuple[mne.Epochs, Dict, int],
     # for loop of trials
     for trial_id, trial in enumerate(epochs):
         # split sample from epochs
-        start_at_list = clip_sample_start_at_list + trial_start_at_list[
-            trial_id]
+        start_at_list = clip_sample_start_at_list + trial_start_at_list[trial_id]
         end_at_list = clip_sample_start_at_list + trial_start_at_list[
             trial_id] + chunk_size
         event_index_list = len(sample_events) * [trial_event_index[trial_id]]
 
-        trial_signals = mne.Epochs(mne.io.RawArray(trial, epochs.info),
+        trial_samples = mne.Epochs(mne.io.RawArray(trial, epochs.info),
                                    sample_events,
                                    baseline=None,
                                    tmin=0,
                                    tmax=(chunk_size - 1) / epochs.info["sfreq"])
-        trial_signals.drop_bad(reject=None, flat=None)
+        trial_samples.drop_bad(reject=None, flat=None)
+        if before_trial:
+            trial_samples = before_trial(trial_samples)
 
         # for loop of samples
-        for i, trial_signal in enumerate(trial_signals.get_data()):
+        trial_queue = []
+        for i, trial_signal in enumerate(trial_samples.get_data()):
             t_eeg = trial_signal[:num_channel, :]
             if not transform is None:
                 t = transform(eeg=trial_signal[:num_channel, :])
                 t_eeg = t['eeg']
 
             clip_id = f'{rank}_{write_pointer}'
-            queue.put({'eeg': t_eeg, 'key': clip_id})
+            if after_trial:
+                trial_queue.append({'eeg': t_eeg, 'key': clip_id})
+            else:
+                queue.put({'eeg': t_eeg, 'key': clip_id})
             write_pointer += 1
 
             record_info = {
@@ -75,6 +85,12 @@ def transform_producer(epochs_metadata_rank: Tuple[mne.Epochs, Dict, int],
 
             record_info.update(epoch_meta_info)
             write_info_fn(record_info)
+
+        if len(trial_queue) and after_trial:
+            trial_queue = after_trial(trial_queue)
+            for obj in trial_queue:
+                assert 'eeg' in obj and 'key' in obj, 'after_trial must return a list of dictionaries, where each dictionary corresponds to an EEG sample, containing `eeg` and `key` as keys.'
+                queue.put(obj)
 
 
 def io_consumer(write_eeg_fn, queue):
@@ -103,7 +119,9 @@ def mne_constructor(epochs_list: List[mne.Epochs],
                     chunk_size: int = -1,
                     overlap: int = 0,
                     num_channel: int = -1,
+                    before_trial: Union[None, Callable] = None,
                     transform: Union[None, Callable] = None,
+                    after_trial: Union[Callable, None] = None,
                     io_path: str = './io/mne',
                     num_worker: int = 0,
                     verbose: bool = True,
@@ -153,7 +171,9 @@ def mne_constructor(epochs_list: List[mne.Epochs],
                                 chunk_size=chunk_size,
                                 overlap=overlap,
                                 num_channel=num_channel,
+                                before_trial=before_trial,
                                 transform=transform,
+                                after_trial=after_trial,
                                 write_info_fn=info_io.write_info,
                                 queue=queue)
 
@@ -173,7 +193,9 @@ def mne_constructor(epochs_list: List[mne.Epochs],
                                chunk_size=chunk_size,
                                overlap=overlap,
                                num_channel=num_channel,
+                               before_trial=before_trial,
                                transform=transform,
+                               after_trial=after_trial,
                                write_info_fn=info_io.write_info,
                                queue=SingleProcessingQueue(eeg_io.write_eeg))
             if verbose:

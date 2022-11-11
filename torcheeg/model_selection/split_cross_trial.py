@@ -64,16 +64,21 @@ def train_test_split_cross_trial(
             subject_info = info[info['subject_id'] == subject]
             trial_ids = list(set(subject_info['trial_id']))
 
-            train_trial_ids, test_trial_ids = model_selection.train_test_split(
+            train_index_trial_ids, test_index_trial_ids = model_selection.train_test_split(
                 trial_ids,
                 test_size=test_size,
                 shuffle=shuffle,
                 random_state=random_state)
 
-            if len(train_trial_ids) == 0 or len(test_trial_ids) == 0:
+            if len(train_index_trial_ids) == 0 or len(test_index_trial_ids) == 0:
                 raise ValueError(
                     f'The number of training or testing trials for subject {subject} is zero.'
                 )
+
+            train_trial_ids = np.array(
+                    trial_ids)[train_index_trial_ids].tolist()
+            test_trial_ids = np.array(
+                    trial_ids)[test_index_trial_ids].tolist()
 
             subject_train_info = []
             for train_trial_id in train_trial_ids:

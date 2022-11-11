@@ -105,19 +105,64 @@ class Transformer(nn.Module):
 
 
 class ArjunViT(nn.Module):
+    r'''
+    Arjun et al. employ a variation of the Transformer, the Vision Transformer to process EEG signals for emotion recognition. For more details, please refer to the following information. 
+
+    It is worth noting that this model is not designed for EEG analysis, but shows good performance and can serve as a good research start.
+
+    - Paper: Arjun A, Rajpoot A S, Panicker M R. Introducing attention mechanism for eeg signals: Emotion recognition with vision transformers[C]//2021 43rd Annual International Conference of the IEEE Engineering in Medicine & Biology Society (EMBC). IEEE, 2021: 5723-5726.
+    - URL: https://ieeexplore.ieee.org/abstract/document/9629837
+
+    Below is a recommended suite for use in emotion recognition tasks:
+
+    .. code-block:: python
+
+        dataset = DEAPDataset(io_path=f'./deap',
+                    root_path='./data_preprocessed_python',
+                    offline_transform=transforms.Compose([
+                        transforms.MeanStdNormalize(),
+                        transforms.To2d()
+                    ]),
+                    online_transform=transforms.Compose([
+                        transforms.ToTensor(),
+                    ]),
+                    label_transform=transforms.Compose([
+                        transforms.Select('valence'),
+                        transforms.Binary(5.0),
+                    ]))
+        model = ArjunViT(chunk_size=128,
+                         t_patch_size=50,
+                         num_electrodes=32,
+                         num_classes=2)
+
+    Args:
+       num_electrodes (int): The number of electrodes. (defualt: :obj:`32`)
+        chunk_size (int): Number of data points included in each EEG chunk. (defualt: :obj:`128`)
+        t_patch_size (int): The size of each input patch at the temporal (chunk size) dimension. (defualt: :obj:`32`)
+        patch_size (tuple): The size (resolution) of each input patch. (defualt: :obj:`(3, 3)`)
+        hid_channels (int): The feature dimension of embeded patch. (defualt: :obj:`32`)
+        depth (int): The number of attention layers for each transformer block. (defualt: :obj:`3`)
+        heads (int): The number of attention heads for each attention layer. (defualt: :obj:`4`)
+        head_channels (int): The dimension of each attention head for each attention layer. (defualt: :obj:`8`)
+        mlp_channels (int): The number of hidden nodes in the fully connected layer of each transformer block. (defualt: :obj:`64`)
+        num_classes (int): The number of classes to predict. (defualt: :obj:`2`)
+        embed_dropout (float): Probability of an element to be zeroed in the dropout layers of the embedding layers. (defualt: :obj:`0.0`)
+        dropout (float): Probability of an element to be zeroed in the dropout layers of the transformer layers. (defualt: :obj:`0.0`)
+        pool_func (str): The pool function before the classifier, optionally including :obj:`cls` and :obj:`mean`, where :obj:`cls` represents selecting classification-related token and :obj:`mean` represents the average pooling. (defualt: :obj:`cls`)
+    '''
     def __init__(self,
                  num_electrodes: int = 32,
                  chunk_size: int = 128,
                  t_patch_size: int = 32,
-                 dropout: float = 0.,
                  hid_channels: int = 32,
                  depth: int = 3,
                  heads: int = 4,
                  head_channels: int = 64,
                  mlp_channels: int = 64,
-                 pool: str = 'cls',
+                 num_classes: int = 2,
                  embed_dropout: float = 0.,
-                 num_classes: int = 2):
+                 dropout: float = 0.,
+                 pool_func: str = 'cls'):
         super(ArjunViT, self).__init__()
 
         assert chunk_size % t_patch_size == 0, f'EEG chunk size {chunk_size} must be divisible by the temporal patch size {t_patch_size}.'
@@ -125,12 +170,12 @@ class ArjunViT(nn.Module):
         num_patches = chunk_size // t_patch_size
         patch_channels = num_electrodes * t_patch_size
 
-        assert pool in {
+        assert pool_func in {
             'cls', 'mean'
-        }, 'pool type must be either cls (cls token) or mean (mean pooling)'
+        }, 'pool_func must be either cls (cls token) or mean (mean pooling)'
 
         self.to_patch_embedding = nn.Sequential(
-            Rearrange('b c h (w p) -> b (h w) (c p)', p=t_patch_size),
+            Rearrange('b c (w p) -> b w (c p)', p=t_patch_size),
             nn.Linear(patch_channels, hid_channels),
         )
 
@@ -142,12 +187,19 @@ class ArjunViT(nn.Module):
         self.transformer = Transformer(hid_channels, depth, heads,
                                        head_channels, mlp_channels, dropout)
 
-        self.pool = pool
+        self.pool_func = pool_func
 
         self.mlp_head = nn.Sequential(nn.LayerNorm(hid_channels),
                                       nn.Linear(hid_channels, num_classes))
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
+        r'''
+        Args:
+            x (torch.Tensor): EEG signal representation, the ideal input shape is :obj:`[n, 32, 128]`. Here, :obj:`n` corresponds to the batch size, :obj:`32` corresponds to :obj:`num_electrodes`, and :obj:`chunk_size` corresponds to :obj:`chunk_size`.
+
+        Returns:
+            torch.Tensor[number of sample, number of classes]: the predicted probability that the samples belong to the classes.
+        '''
         x = self.to_patch_embedding(x)
         x = rearrange(x, 'b ... d -> b (...) d')
         b, n, _ = x.shape
@@ -159,12 +211,11 @@ class ArjunViT(nn.Module):
 
         x = self.transformer(x)
 
-        x = x.mean(dim=1) if self.pool == 'mean' else x[:, 0]
+        x = x.mean(dim=1) if self.pool_func == 'mean' else x[:, 0]
 
         return self.mlp_head(x)
 
 
-# batch_size, chunk_size, 1, electrodes
-mock_eeg = torch.randn(1, 32, 1, 128)
-mock_model = ArjunViT(chunk_size=128, t_patch_size=32, num_classes=2)
-print(mock_model(mock_eeg).shape)
+# mock_eeg = torch.randn(1, 32, 128)
+# mock_model = ArjunViT(chunk_size=128, t_patch_size=32, num_classes=2)
+# print(mock_model(mock_eeg).shape)
