@@ -11,9 +11,6 @@ def pair(t):
     return t if isinstance(t, tuple) else (t, t)
 
 
-# https://github.com/tatp22/multidim-positional-encoding/blob/master/positional_encodings/torch_encodings.py
-
-
 def get_emb(sin_inp):
     emb = torch.stack((sin_inp.sin(), sin_inp.cos()), dim=-1)
     return torch.flatten(emb, -2, -1)
@@ -36,7 +33,9 @@ class PositionEmbedding3D(nn.Module):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         if len(x.shape) != 5:
-            raise RuntimeError("The input must be five-dimensional to perform thres-dimensional position embedding!")
+            raise RuntimeError(
+                "The input must be five-dimensional to perform thres-dimensional position embedding!"
+            )
 
         if self.cached_penc is not None and self.cached_penc.shape == x.shape:
             return self.cached_penc
@@ -255,11 +254,3 @@ class SimpleViT(nn.Module):
         x = x.mean(dim=1)
 
         return self.linear_head(x)
-
-
-# mock_eeg = torch.randn(1, 128, 9, 9)
-# mock_model = SimpleViT(chunk_size=128,
-#                        t_patch_size=32,
-#                        s_patch_size=(3, 3),
-#                        num_classes=2)
-# print(mock_model(mock_eeg).shape)

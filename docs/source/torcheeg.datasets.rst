@@ -25,6 +25,7 @@ Emotion Recognition Datasets
     AMIGOSDataset
     MAHNOBDataset
     BCI2022Dataset
+    MPEDFeatureDataset
 
 Personal Identification Datasets
 ----------------------------------

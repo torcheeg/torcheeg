@@ -6,19 +6,46 @@ import unittest
 from torcheeg import transforms
 from torcheeg.datasets import (AMIGOSDataset, DEAPDataset, DREAMERDataset,
                                MAHNOBDataset, SEEDDataset, SEEDFeatureDataset,
-                               SEEDIVDataset, SEEDIVFeatureDataset)
-from torcheeg.datasets.functional import (amigos_constructor, deap_constructor,
-                                          dreamer_constructor,
-                                          mahnob_constructor, seed_constructor,
-                                          seed_feature_constructor,
-                                          seed_iv_constructor,
-                                          seed_iv_feature_constructor)
+                               SEEDIVDataset, SEEDIVFeatureDataset,
+                               MPEDFeatureDataset)
+from torcheeg.datasets.functional import (
+    amigos_constructor, deap_constructor, dreamer_constructor,
+    mahnob_constructor, seed_constructor, seed_feature_constructor,
+    seed_iv_constructor, seed_iv_feature_constructor, mped_feature_constructor)
 
 
 class TestEmotionRecognitionDataset(unittest.TestCase):
     def setUp(self):
         shutil.rmtree('./tmp_out/')
         os.mkdir('./tmp_out/')
+
+    def test_mped_feature_constructor(self):
+        io_path = f'./tmp_out/mped_feature_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
+        root_path = './tmp_in/EEG_feature'
+
+        mped_feature_constructor(io_path=io_path,
+                                 root_path=root_path,
+                                 num_worker=0)
+
+    def test_mped_feature_dataset(self):
+        io_path = f'./tmp_out/mped_feature_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
+        root_path = './tmp_in/EEG_feature'
+
+        dataset = MPEDFeatureDataset(
+            io_path=io_path,
+            root_path=root_path,
+            online_transform=transforms.ToTensor(),
+            label_transform=transforms.Compose([
+                transforms.Select('emotion'),
+                transforms.Lambda(lambda x: int(x) + 1),
+            ]),
+            num_worker=4)
+
+        self.assertEqual(len(dataset), 129904)
+        first_item = dataset[0]
+        self.assertEqual(first_item[0].shape, (62, 5))
+        last_item = dataset[129903]
+        self.assertEqual(last_item[0].shape, (62, 5))
 
     def test_mahnob_constructor(self):
         io_path = f'./tmp_out/mahnob_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'

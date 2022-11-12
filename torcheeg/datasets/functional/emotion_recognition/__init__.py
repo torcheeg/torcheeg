@@ -6,3 +6,4 @@ from .seed import seed_constructor
 from .seed_feature import seed_feature_constructor
 from .seed_iv import seed_iv_constructor
 from .seed_iv_feature import seed_iv_feature_constructor
+from .mped_feature import mped_feature_constructor

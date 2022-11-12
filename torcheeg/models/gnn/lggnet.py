@@ -319,13 +319,3 @@ class LGGNet(nn.Module):
         d_mat_inv_sqrt = torch.diag_embed(d_inv_sqrt)
         adj = torch.bmm(torch.bmm(d_mat_inv_sqrt, adj), d_mat_inv_sqrt)
         return adj
-
-
-# if __name__ == '__main__':
-#     mock_eeg = torch.rand(2, 1, 32, 128)
-#     from torcheeg.datasets.constants.emotion_recognition.deap import \
-#         DEAP_GENERAL_REGION_LIST
-#     mock_model = LGGNet(DEAP_GENERAL_REGION_LIST,
-#                         num_electrodes=32,
-#                         chunk_size=128)
-#     print(mock_model(mock_eeg).shape)

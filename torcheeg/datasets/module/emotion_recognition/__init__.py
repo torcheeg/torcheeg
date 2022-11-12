@@ -7,3 +7,4 @@ from .seed import SEEDDataset
 from .seed_feature import SEEDFeatureDataset
 from .seed_iv import SEEDIVDataset
 from .seed_iv_feature import SEEDIVFeatureDataset
+from .mped_feature import MPEDFeatureDataset

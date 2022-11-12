@@ -256,11 +256,3 @@ class ViT(nn.Module):
         x = x.mean(dim=1) if self.pool_func == 'mean' else x[:, 0]
 
         return self.mlp_head(x)
-
-
-# mock_eeg = torch.randn(1, 128, 9, 9)
-# mock_model = ViT(chunk_size=128,
-#                                 t_patch_size=32,
-#                                 s_patch_size=(3, 3),
-#                                 num_classes=2)
-# print(mock_model(mock_eeg).shape)

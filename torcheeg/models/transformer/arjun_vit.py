@@ -214,8 +214,3 @@ class ArjunViT(nn.Module):
         x = x.mean(dim=1) if self.pool_func == 'mean' else x[:, 0]
 
         return self.mlp_head(x)
-
-
-# mock_eeg = torch.randn(1, 32, 128)
-# mock_model = ArjunViT(chunk_size=128, t_patch_size=32, num_classes=2)
-# print(mock_model(mock_eeg).shape)
