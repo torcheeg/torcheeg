@@ -1,32 +1,73 @@
-from statsmodels.tsa.vector_ar.var_model import VAR
-
 import numpy as np
 
 
-def before_trial_normalize(data, eps=1e-6):
-    '''
-    一个常用的钩子函数，用于在将实验划分为 chunk 之前，对整个实验的信号进行归一化。
-    使用方法为：
+def before_trial_normalize(data: np.ndarray, eps: float = 1e-6):
+    r'''
+    A common hook function used to normalize the signal of the whole trial before dividing it into chunks.
 
-    ```
-    from functools import partial
-    dataset = DEAPDataset(
-            ...
-            before_trial=partial(before_trial_normalize, eps=1e-6),
-            num_worker=4)
-    ```
-    
-    参数：
-    numpy 数组：一个 trial 的信号，允许多维矩阵作为输入，其中最后一维表示时序数据点。
-    返回：
-    numpy 数组：归一化后一个 trial 的信号
+    It is used as follows:
+
+    .. code-block:: python
+
+        from functools import partial
+        dataset = DEAPDataset(
+                ...
+                before_trial=before_trial_normalize,
+                num_worker=4)
+
+    If you want to pass in parameters, use partial to generate a new function:
+
+    .. code-block:: python
+
+        from functools import partial
+        dataset = DEAPDataset(
+                ...
+                before_trial=partial(before_trial_normalize, eps=1e-5),
+                num_worker=4)
+
+    Args:
+        data (np.ndarray): The input EEG signals or features of a trial.
+        eps (float): The term added to the denominator to improve numerical stability (default: :obj:`1e-6`)
+        
+    Returns:
+        np.ndarray: The normalized results of a trial.
     '''
     min_v = data.min(axis=-1, keepdims=True)
     max_v = data.max(axis=-1, keepdims=True)
     return (data - min_v) / (max_v - min_v + eps)
 
 
-def after_trial_normalize(data, eps=1e-6):
+def after_trial_normalize(data: np.ndarray, eps: float = 1e-6):
+    r'''
+    A common hook function used to normalize the signal of the whole trial after dividing it into chunks and transforming the divided chunks.
+
+    It is used as follows:
+
+    .. code-block:: python
+
+        from functools import partial
+        dataset = DEAPDataset(
+                ...
+                after_trial=after_trial_normalize,
+                num_worker=4)
+
+    If you want to pass in parameters, use partial to generate a new function:
+
+    .. code-block:: python
+
+        from functools import partial
+        dataset = DEAPDataset(
+                ...
+                after_trial=partial(after_trial_normalize, eps=1e-5),
+                num_worker=4)
+    
+    Args:
+        data (np.ndarray): The input EEG signals or features of a trial.
+        eps (float): The term added to the denominator to improve numerical stability (default: :obj:`1e-6`)
+        
+    Returns:
+        np.ndarray: The normalized results of a trial.
+    '''
     trial_samples = []
     trial_keys = []
     for sample in data:
@@ -47,23 +88,36 @@ def after_trial_normalize(data, eps=1e-6):
     return output_data
 
 
-def after_trial_moving_avg(data, window_size=4):
+def after_trial_moving_avg(data: list, window_size: int = 4):
     '''
-    一个常用的钩子函数，用于在将实验划分为 chunk，并对 chunk 信号进行预处理后的特征进行平滑化。
-    使用方法为：
+    A common hook function for smoothing the signal of each chunk in a trial after pre-processing.
 
-    ```
-    from functools import partial
-    dataset = DEAPDataset(
-            ...
-            after_trial=partial(after_trial_moving_avg, eps=1e-6),
-            num_worker=4)
-    ```
+    It is used as follows:
+
+    .. code-block:: python
+
+        from functools import partial
+        dataset = DEAPDataset(
+                ...
+                after_trial=after_trial_moving_avg,
+                num_worker=4)
     
-    参数：
-    字典数组：一个字典，其中 ...。
-    返回：
-    字典数组：一个字典，其中 ...。
+    If you want to pass in parameters, use partial to generate a new function:
+
+    .. code-block:: python
+
+        from functools import partial
+        dataset = DEAPDataset(
+                ...
+                after_trial=partial(after_trial_moving_avg, eps=1e-5),
+                num_worker=4)
+
+    Args:
+        data (np.ndarray): A list of dictionaries, one of which corresponds to an EEG signal in trial. Each dictionary consists of two key-value paris, eeg and key. The value of eeg is the representation of the EEG signal and the value of key is its ID in the IO.
+        window_size (int): The window size of moving average. (default: :obj:`4`)
+        
+    Returns:
+        list: The smoothing results of a trial. It is a list of dictionaries, one of which corresponds to an EEG signal in trial. Each dictionary consists of two key-value paris, eeg and key. The value of eeg is the representation of the EEG signal and the value of key is its ID in the IO.
     '''
     trial_samples = []
     trial_keys = []

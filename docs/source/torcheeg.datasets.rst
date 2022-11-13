@@ -57,3 +57,10 @@ Customized Datasets
 
     NumpyDataset
     MNEDataset
+
+Hooks
+---------------------------------------------------------
+
+.. autofunction:: before_trial_normalize
+.. autofunction:: after_trial_normalize
+.. autofunction:: after_trial_moving_avg
