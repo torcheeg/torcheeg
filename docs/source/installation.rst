@@ -23,7 +23,7 @@ according to the system, CUDA version and other information:
 Anaconda
 ~~~~~~~~
 
-Since version v1.0.9, torcheeg supports installing with conda! You can
+Since version v1.0.10, torcheeg supports installing with conda! You can
 simply install TorchEEG using Anaconda, just run the following command:
 
 .. code:: shell

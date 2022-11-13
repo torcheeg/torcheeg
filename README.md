@@ -44,7 +44,7 @@ pip install torch==1.11.0+cu102 torchvision==0.12.0+cu102 torchaudio==0.11.0 --e
 
 ### Anaconda
 
-Since version v1.0.9, torcheeg supports installing with conda! You can simply install TorchEEG using Anaconda, just run the following command:
+Since version v1.0.10, torcheeg supports installing with conda! You can simply install TorchEEG using Anaconda, just run the following command:
 
 ```bash
 conda install -c tczhangzhi -c conda-forge torcheeg
