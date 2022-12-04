@@ -111,7 +111,7 @@ class SEEDFeatureDataset(BaseDataset):
                  io_path: str = './io/seed_feature',
                  num_worker: int = 0,
                  verbose: bool = True,
-                 cache_size: int = 64 * 1024 * 1024 * 1024):
+                 cache_size: int = 10485760):
         seed_feature_constructor(root_path=root_path,
                                  feature=feature,
                                  num_channel=num_channel,

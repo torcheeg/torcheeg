@@ -108,7 +108,7 @@ class MPEDFeatureDataset(BaseDataset):
                  io_path: str = './io/mped_feature',
                  num_worker: int = 0,
                  verbose: bool = True,
-                 cache_size: int = 64 * 1024 * 1024 * 1024):
+                 cache_size: int = 10485760):
         mped_feature_constructor(root_path=root_path,
                                  feature=feature,
                                  num_channel=num_channel,

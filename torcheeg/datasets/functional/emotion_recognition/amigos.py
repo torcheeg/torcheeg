@@ -169,7 +169,7 @@ def amigos_constructor(root_path: str = './data_preprocessed',
                        io_path: str = './io/amigos',
                        num_worker: int = 0,
                        verbose: bool = True,
-                       cache_size: int = 64 * 1024 * 1024 * 1024) -> None:
+                       cache_size: int = 10485760) -> None:
     # init IO
     meta_info_io_path = os.path.join(io_path, 'info.csv')
     eeg_signal_io_path = os.path.join(io_path, 'eeg')

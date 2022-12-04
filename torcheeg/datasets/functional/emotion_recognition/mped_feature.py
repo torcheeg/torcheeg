@@ -126,7 +126,7 @@ def mped_feature_constructor(root_path: str = './EEG_feature',
                              io_path: str = './io/mped_feature',
                              num_worker: int = 0,
                              verbose: bool = True,
-                             cache_size: int = 64 * 1024 * 1024 * 1024) -> None:
+                             cache_size: int = 10485760) -> None:
     avaliable_features = os.listdir(
         root_path)  # ['HHS', 'Hjorth', 'PSD', 'STFT', 'HOC']
     assert set(feature).issubset(

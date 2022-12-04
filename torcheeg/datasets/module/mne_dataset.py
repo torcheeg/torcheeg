@@ -130,7 +130,7 @@ class MNEDataset(BaseDataset):
         num_worker (str): How many subprocesses to use for data processing. (default: :obj:`0`)
         verbose (bool): Whether to display logs during processing, such as progress bars, etc. (default: :obj:`True`)
         verbose (bool): Whether to display logs during processing, such as progress bars, etc. (default: :obj:`True`)
-        cache_size (int): Maximum size database may grow to; used to size the memory mapping. If database grows larger than ``map_size``, an exception will be raised and the user must close and reopen. (default: :obj:`64 * 1024 * 1024 * 1024`)
+        cache_size (int): Maximum size database may grow to; used to size the memory mapping. If database grows larger than ``map_size``, an exception will be raised and the user must close and reopen. (default: :obj:`10485760`)
     
     '''
     def __init__(self,
@@ -147,7 +147,7 @@ class MNEDataset(BaseDataset):
                  io_path: str = './io/mne',
                  num_worker: int = 0,
                  verbose: bool = True,
-                 cache_size: int = 64 * 1024 * 1024 * 1024):
+                 cache_size: int = 10485760):
         mne_constructor(epochs_list=epochs_list,
                         metadata_list=metadata_list,
                         chunk_size=chunk_size,

@@ -130,7 +130,7 @@ class BCI2022Dataset(BaseDataset):
                  io_path: str = './io/bci2022',
                  num_worker: int = 0,
                  verbose: bool = True,
-                 cache_size: int = 64 * 1024 * 1024 * 1024):
+                 cache_size: int = 10485760):
         bci2022_constructor(root_path=root_path,
                             chunk_size=chunk_size,
                             overlap=overlap,

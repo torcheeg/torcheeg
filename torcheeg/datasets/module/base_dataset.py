@@ -240,7 +240,7 @@ class BaseDataset(Dataset):
                       offline_transform: Union[None, Callable] = None,
                       num_worker: int = 0,
                       verbose: bool = True,
-                      cache_size: int = 64 * 1024 * 1024 * 1024,
+                      cache_size: int = 10485760,
                       chunk_size_for_worker: int = 100,
                       chunk_column_for_worker: str = 'baseline_id',
                       **args):
@@ -331,7 +331,7 @@ class BaseDataset(Dataset):
                              reduce_fn: Callable,
                              reduce_by: str = 'epoch_id',
                              verbose: bool = True,
-                             cache_size: int = 64 * 1024 * 1024 * 1024,
+                             cache_size: int = 10485760,
                              num_worker: int = 0,
                              chunk_size_for_worker: int = 100,
                              **args):
