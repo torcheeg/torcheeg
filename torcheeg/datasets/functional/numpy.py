@@ -79,7 +79,7 @@ def numpy_constructor(X: np.ndarray,
                       num_worker: int = 0,
                       num_samples_per_trial: int = 100,
                       verbose: bool = True,
-                      cache_size: int = 64 * 1024 * 1024 * 1024) -> None:
+                      cache_size: int = 10485760) -> None:
 
     for k, v in y.items():
         assert len(X) == len(

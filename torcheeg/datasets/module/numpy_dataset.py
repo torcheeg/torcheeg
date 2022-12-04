@@ -82,7 +82,7 @@ class NumpyDataset(BaseDataset):
         verbose (bool): Whether to display logs during processing, such as progress bars, etc. (default: :obj:`True`)
         num_samples_per_trial (str): The number of samples processed by each process. Once the specified number of samples are processed, the process will be destroyed and new processes will be created to perform new tasks. (default: :obj:`100`)
         verbose (bool): Whether to display logs during processing, such as progress bars, etc. (default: :obj:`True`)
-        cache_size (int): Maximum size database may grow to; used to size the memory mapping. If database grows larger than ``map_size``, an exception will be raised and the user must close and reopen. (default: :obj:`64 * 1024 * 1024 * 1024`)
+        cache_size (int): Maximum size database may grow to; used to size the memory mapping. If database grows larger than ``map_size``, an exception will be raised and the user must close and reopen. (default: :obj:`10485760`)
     
     '''
     def __init__(self,
@@ -97,7 +97,7 @@ class NumpyDataset(BaseDataset):
                  num_worker: int = 0,
                  num_samples_per_trial: int = 100,
                  verbose: bool = True,
-                 cache_size: int = 64 * 1024 * 1024 * 1024):
+                 cache_size: int = 10485760):
         numpy_constructor(X=X,
                           y=y,
                           before_trial=before_trial,

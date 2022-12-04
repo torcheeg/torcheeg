@@ -126,7 +126,7 @@ class MAHNOBDataset(BaseDataset):
         io_path (str): The path to generated unified data IO, cached as an intermediate result. (default: :obj:`./io/mahnob`)
         num_worker (str): How many subprocesses to use for data processing. (default: :obj:`0`)
         verbose (bool): Whether to display logs during processing, such as progress bars, etc. (default: :obj:`True`)
-        cache_size (int): Maximum size database may grow to; used to size the memory mapping. If database grows larger than ``map_size``, an exception will be raised and the user must close and reopen. (default: :obj:`64 * 1024 * 1024 * 1024`)
+        cache_size (int): Maximum size database may grow to; used to size the memory mapping. If database grows larger than ``map_size``, an exception will be raised and the user must close and reopen. (default: :obj:`10485760`)
     
     '''
     channel_location_dict = MAHNOB_CHANNEL_LOCATION_DICT
@@ -149,7 +149,7 @@ class MAHNOBDataset(BaseDataset):
                  io_path: str = './io/mahnob',
                  num_worker: int = 0,
                  verbose: bool = True,
-                 cache_size: int = 64 * 1024 * 1024 * 1024):
+                 cache_size: int = 10485760):
         mahnob_constructor(root_path=root_path,
                            chunk_size=chunk_size,
                            sampling_rate=sampling_rate,

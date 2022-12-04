@@ -20,9 +20,9 @@ class EEGSignalIO:
     
     Args:
         cache_path (str): Where the database is stored.
-        cache_size (int): The maximum capacity of the database. (default: :obj:`1099511627776`)
+        cache_size (int, optional): The maximum capacity of the database. It will increase according to the size of the dataset. (default: :obj:`10485760`)
     '''
-    def __init__(self, cache_path: str, cache_size: int = 1024 * 1024 * 1024 * 1024) -> None:
+    def __init__(self, cache_path: str, cache_size: int = 10485760) -> None:
         self.cache_path = cache_path
         self.cache_size = cache_size
 
@@ -34,11 +34,15 @@ class EEGSignalIO:
         return len(self)
 
     def __len__(self):
-        with lmdb.open(self.cache_path, self.cache_size, lock=False) as env:
+        with lmdb.open(path=self.cache_path,
+                       map_size=self.cache_size,
+                       lock=False) as env:
             with env.begin() as transaction:
                 return transaction.stat()['entries']
 
-    def write_eeg(self, eeg: Union[any, torch.Tensor], key: Union[str, None] = None) -> str:
+    def write_eeg(self,
+                  eeg: Union[any, torch.Tensor],
+                  key: Union[str, None] = None) -> str:
         r'''
         Write EEG signal to database.
 
@@ -56,10 +60,22 @@ class EEGSignalIO:
         if eeg is None:
             raise RuntimeError(f'Save None to the LMDB with the key {key}!')
 
-        with lmdb.open(self.cache_path, self.cache_size, lock=False) as env:
-            with env.begin(write=True) as transaction:
-                transaction.put(key.encode(), pickle.dumps(eeg))
-            return key
+        try_again = False
+        with lmdb.open(path=self.cache_path,
+                       map_size=self.cache_size,
+                       lock=False) as env:
+            try:
+                with env.begin(write=True) as transaction:
+                    transaction.put(key.encode(), pickle.dumps(eeg))
+            except lmdb.MapFullError:
+                print(
+                    f'The current cache_size is not enough, and double the LMDB map size to {self.cache_size * 2} automatically.'
+                )
+                self.cache_size = self.cache_size * 2
+                try_again = True
+        if try_again:
+            return self.write_eeg(key=key, eeg=eeg)
+        return key
 
     def read_eeg(self, key: str) -> any:
         r'''
@@ -72,11 +88,14 @@ class EEGSignalIO:
             any: The EEG signal sample.
         '''
 
-        with lmdb.open(self.cache_path, self.cache_size, lock=False) as env:
+        with lmdb.open(path=self.cache_path,
+                       map_size=self.cache_size,
+                       lock=False) as env:
             with env.begin() as transaction:
                 eeg = transaction.get(key.encode())
 
             if eeg is None:
-                raise RuntimeError(f'Unable to index the EEG signal sample with key {key}!')
+                raise RuntimeError(
+                    f'Unable to index the EEG signal sample with key {key}!')
 
             return pickle.loads(eeg)

@@ -126,7 +126,7 @@ class SEEDIVDataset(BaseDataset):
                  io_path: str = './io/seed',
                  num_worker: int = 0,
                  verbose: bool = True,
-                 cache_size: int = 64 * 1024 * 1024 * 1024):
+                 cache_size: int = 10485760):
         seed_iv_constructor(root_path=root_path,
                             chunk_size=chunk_size,
                             overlap=overlap,
