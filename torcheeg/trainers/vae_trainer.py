@@ -501,7 +501,7 @@ class CVAETrainer(VAETrainer):
             ), f'labels should be torch.Tensor instances, the current input is {type(labels)}'
         else:
             labels = torch.randint(low=0,
-                                   high=self.modules['generator'].num_classes,
+                                   high=self.modules['decoder'].num_classes,
                                    size=(num_samples, ))
         labels = labels.long().to(self.device)
         self.modules['decoder'].eval()

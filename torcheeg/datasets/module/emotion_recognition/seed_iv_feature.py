@@ -30,7 +30,7 @@ class SEEDIVFeatureDataset(BaseDataset):
     .. code-block:: python
 
         dataset = SEEDIVFeatureDataset(io_path=f'./seed',
-                              root_path='./ExtractedFeatures',
+                              root_path='./eeg_feature_smooth',
                               features=['de_movingAve'],
                               offline_transform=transforms.ToGrid(SEED_CHANNEL_LOCATION_DICT),
                               online_transform=transforms.ToTensor(),
@@ -45,7 +45,7 @@ class SEEDIVFeatureDataset(BaseDataset):
     .. code-block:: python
     
         dataset = SEEDIVFeatureDataset(io_path=f'./seed',
-                              root_path='./Preprocessed_EEG',
+                              root_path='./eeg_feature_smooth',
                               features=['de_movingAve'],
                               online_transform=transforms.pyg.ToG(SEED_ADJACENCY_MATRIX),
                               label_transform=transforms.Select(['emotion']))
@@ -60,7 +60,7 @@ class SEEDIVFeatureDataset(BaseDataset):
     
         if __name__ == '__main__':
             dataset = SEEDIVFeatureDataset(io_path=f'./seed',
-                              root_path='./ExtractedFeatures',
+                              root_path='./eeg_feature_smooth',
                               feature=['de_movingAve'],
                               offline_transform=transforms.ToGrid(SEED_CHANNEL_LOCATION_DICT),
                               online_transform=transforms.ToTensor(),

@@ -447,7 +447,7 @@ class CDDPMTrainer(DDPMTrainer):
         Returns:
             torch.Tensor: the generated samples.
         """
-        if labels:
+        if not labels is None:
             assert len(
                 labels
             ) == num_samples, f'labels ({len(labels)}) should be the same length as num_samples ({num_samples}).'

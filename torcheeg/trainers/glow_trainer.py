@@ -277,4 +277,4 @@ class GlowTrainer(BasicTrainer):
         labels = labels.long().to(self.device)
         self.modules['glow'].eval()
         with torch.no_grad():
-            return self.modules['glow'](y=labels, temperature=temperature, reverse=True)
+            return self.modules['glow'](labels=labels, temperature=temperature, reverse=True)
