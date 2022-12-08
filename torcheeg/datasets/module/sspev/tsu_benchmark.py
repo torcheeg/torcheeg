@@ -68,7 +68,7 @@ class TSUBenckmarkDataset(BaseDataset):
         dataset = TSUBenckmarkDataset(io_path=f'./tsu_benchmark',
                               root_path='./TSUBenchmark',
                               online_transform=transforms.Compose([
-                                  transforms.pyg.ToG(TSUBenckmark_ADJACENCY_MATRIX)
+                                  ToG(TSUBenckmark_ADJACENCY_MATRIX)
                               ]),
                               label_transform=transforms.Select(['trial_id']))
         print(dataset[0])
@@ -84,7 +84,7 @@ class TSUBenckmarkDataset(BaseDataset):
             dataset = TSUBenckmarkDataset(io_path=f'./tsu_benchmark',
                               root_path='./TSUBenchmark',
                               online_transform=transforms.Compose([
-                                  transforms.pyg.ToG(TSUBenckmark_ADJACENCY_MATRIX)
+                                  ToG(TSUBenckmark_ADJACENCY_MATRIX)
                               ]),
                               label_transform=transforms.Select(['freq']),
                               num_worker=4)

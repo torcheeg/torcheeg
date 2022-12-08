@@ -68,7 +68,7 @@ class M3CVDataset(BaseDataset):
         dataset = M3CVDataset(io_path=f'./m3cv',
                               root_path='./aistudio',
                               online_transform=transforms.Compose([
-                                  transforms.pyg.ToG(M3CV_ADJACENCY_MATRIX)
+                                  ToG(M3CV_ADJACENCY_MATRIX)
                               ]),
                               label_transform=transforms.Compose([
                                   transforms.Select('SubjectID'),
@@ -87,7 +87,7 @@ class M3CVDataset(BaseDataset):
             dataset = M3CVDataset(io_path=f'./m3cv',
                               root_path='./aistudio',
                               online_transform=transforms.Compose([
-                                  transforms.pyg.ToG(M3CV_ADJACENCY_MATRIX)
+                                  ToG(M3CV_ADJACENCY_MATRIX)
                               ]),
                               label_transform=transforms.Compose([
                                   transforms.Select('SubjectID'),

@@ -52,7 +52,7 @@ class MPEDFeatureDataset(BaseDataset):
         dataset = MPEDFeatureDataset(io_path=f'./mped',
                               root_path='./Preprocessed_EEG',
                               features=['PSD'],
-                              online_transform=transforms.pyg.ToG(MPED_ADJACENCY_MATRIX),
+                              online_transform=ToG(MPED_ADJACENCY_MATRIX),
                               label_transform=transforms.Compose([
                                   transforms.Select(['emotion'])
                               ]))

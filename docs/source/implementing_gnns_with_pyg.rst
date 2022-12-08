@@ -21,14 +21,16 @@ e.g. ``./tmp_in/Preprocessed_EEG``.
 
 .. code:: python
 
-   from torcheeg.datasets import SEEDDataset
-   from torcheeg.datasets.constants.emotion_recognition.seed import \
+    from torcheeg import transforms
+    from torcheeg.transforms.pyg import ToG
+    from torcheeg.datasets import SEEDDataset
+    from torcheeg.datasets.constants.emotion_recognition.seed import \
        SEED_ADJACENCY_MATRIX
 
-   dataset = SEEDDataset(io_path=f'./tmp_out/seed',
+    dataset = SEEDDataset(io_path=f'./tmp_out/seed',
                          root_path='./tmp_in/Preprocessed_EEG',
                          offline_transform=transforms.BandDifferentialEntropy(),
-                         online_transform=transforms.pyg.ToG(SEED_ADJACENCY_MATRIX),
+                         online_transform=ToG(SEED_ADJACENCY_MATRIX),
                          label_transform=transforms.Compose([
                              transforms.Select('emotion'),
                              transforms.Lambda(lambda x: int(x) + 1),
@@ -212,6 +214,3 @@ of the same category.
            train(train_loader, model, loss_fn, optimizer)
            valid(val_loader, model, loss_fn)
        print("Done!")
-
-For full code, please refer to
-https://github.com/tczhangzhi/torcheeg/blob/main/examples/examples_torch_geometric.py.

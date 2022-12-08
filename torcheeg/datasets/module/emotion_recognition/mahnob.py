@@ -78,7 +78,7 @@ class MAHNOBDataset(BaseDataset):
         dataset = MAHNOBDataset(io_path=f'./mahnob',
                               root_path='./Sessions',
                               online_transform=transforms.Compose([
-                                  transforms.pyg.ToG(MAHNOB_ADJACENCY_MATRIX)
+                                  ToG(MAHNOB_ADJACENCY_MATRIX)
                               ]),
                               label_transform=transforms.Compose([
                                   transforms.Select('feltArsl'),
@@ -97,7 +97,7 @@ class MAHNOBDataset(BaseDataset):
             dataset = MAHNOBDataset(io_path=f'./mahnob',
                               root_path='./Sessions',
                               online_transform=transforms.Compose([
-                                  transforms.pyg.ToG(MAHNOB_ADJACENCY_MATRIX)
+                                  ToG(MAHNOB_ADJACENCY_MATRIX)
                               ]),
                               label_transform=transforms.Compose([
                                   transforms.Select('feltArsl'),

@@ -67,7 +67,7 @@ class DREAMERDataset(BaseDataset):
         dataset = DREAMERDataset(io_path=f'./dreamer',
                               mat_path='./DREAMER.mat',
                               online_transform=transforms.Compose([
-                                  transforms.pyg.ToG(DREAMER_ADJACENCY_MATRIX)
+                                  ToG(DREAMER_ADJACENCY_MATRIX)
                               ]),
                               label_transform=transforms.Compose([
                                   transforms.Select('arousal'),
@@ -86,7 +86,7 @@ class DREAMERDataset(BaseDataset):
             dataset = DREAMERDataset(io_path=f'./dreamer',
                               mat_path='./DREAMER.mat',
                               online_transform=transforms.Compose([
-                                  transforms.pyg.ToG(DREAMER_ADJACENCY_MATRIX)
+                                  ToG(DREAMER_ADJACENCY_MATRIX)
                               ]),
                               label_transform=transforms.Compose([
                                   transforms.Select('arousal'),

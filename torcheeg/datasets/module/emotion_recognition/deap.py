@@ -71,7 +71,7 @@ class DEAPDataset(BaseDataset):
         dataset = DEAPDataset(io_path=f'./deap',
                               root_path='./data_preprocessed_python',
                               online_transform=transforms.Compose([
-                                  transforms.pyg.ToG(DEAP_ADJACENCY_MATRIX)
+                                  ToG(DEAP_ADJACENCY_MATRIX)
                               ]),
                               label_transform=transforms.Compose([
                                   transforms.Select('arousal'),
@@ -90,7 +90,7 @@ class DEAPDataset(BaseDataset):
             dataset = DEAPDataset(io_path=f'./deap',
                               root_path='./data_preprocessed_python',
                               online_transform=transforms.Compose([
-                                  transforms.pyg.ToG(DEAP_ADJACENCY_MATRIX)
+                                  ToG(DEAP_ADJACENCY_MATRIX)
                               ]),
                               label_transform=transforms.Compose([
                                   transforms.Select('arousal'),

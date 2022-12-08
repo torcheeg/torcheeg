@@ -49,6 +49,10 @@ lightning_logs/
 coverage.xml
 *.out
 *.pt
+docs/source/generated
+docs/source/auto_examples/
+
+# Local experimental folders
 /tmp_in
 /tmp_out
 /dev

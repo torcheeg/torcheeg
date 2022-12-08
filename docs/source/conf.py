@@ -6,18 +6,24 @@
 
 # -- Path setup --------------------------------------------------------------
 
+import inspect
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
 import os
+import os.path as op
 import sys
+
 import pytorch_sphinx_theme
+import sphinx_gallery
 
 sys.path.insert(0, os.path.abspath('../../'))
 
-import torcheeg
 import datetime
+
+import torcheeg
+
 # -- Project information -----------------------------------------------------
 
 project = 'torcheeg'
@@ -34,13 +40,62 @@ release = '1.0.10'
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    'sphinx.ext.mathjax',
-    'sphinx.ext.napoleon',
-    'sphinx.ext.autodoc',
-    'sphinx.ext.autosummary',
-    'sphinx.ext.intersphinx',
-    'sphinx.ext.viewcode'
+    'sphinx.ext.mathjax', 'sphinx.ext.napoleon', 'sphinx.ext.autodoc',
+    'sphinx.ext.autosummary', 'sphinx.ext.intersphinx', 'sphinx.ext.viewcode',
+    'sphinx.ext.linkcode', 'sphinx_gallery.gen_gallery'
 ]
+
+
+def linkcode_resolve(domain, info):
+    # adapted from https://github.com/braindecode/braindecode/blob/master/docs/conf.py
+    import mne
+    if domain != 'py':
+        return None
+
+    modname = info['module']
+    fullname = info['fullname']
+
+    submod = sys.modules.get(modname)
+    if submod is None:
+        return None
+
+    obj = submod
+    for part in fullname.split('.'):
+        try:
+            obj = getattr(obj, part)
+        except Exception:
+            return None
+    # deal with our decorators properly
+    while hasattr(obj, '__wrapped__'):
+        obj = obj.__wrapped__
+
+    try:
+        fn = inspect.getsourcefile(obj)
+    except Exception:
+        fn = None
+    if not fn:
+        try:
+            fn = inspect.getsourcefile(sys.modules[obj.__module__])
+        except Exception:
+            fn = None
+    if not fn:
+        return None
+    fn = op.relpath(fn, start=op.dirname(mne.__file__))
+    fn = '/'.join(op.normpath(fn).split(os.sep))  # in case on Windows
+
+    try:
+        source, lineno = inspect.getsourcelines(obj)
+    except Exception:
+        lineno = None
+
+    if lineno:
+        linespec = "#L%d-L%d" % (lineno, lineno + len(source) - 1)
+    else:
+        linespec = ""
+
+    return "http://github.com/tczhangzhi/torcheeg/blob/main/torcheeg/%s%s" % (
+        fn, linespec)
+
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -62,6 +117,14 @@ html_theme_path = [pytorch_sphinx_theme.get_html_theme_path()]
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
+
+sphinx_gallery_conf = {
+    'examples_dirs': ['../../examples'],
+    'gallery_dirs': ['auto_examples'],
+    'doc_module': ('torcheeg', 'mne'),
+    'backreferences_dir': 'generated',
+    'reference_url': dict(torcheeg=None),
+}
 
 html_logo = '_static/torcheeg_logo_light.svg'
 

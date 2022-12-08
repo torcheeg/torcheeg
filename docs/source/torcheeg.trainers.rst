@@ -33,6 +33,11 @@ trainers.DANNTrainer
 
 .. autoclass:: torcheeg.trainers.DANNTrainer
 
+trainers.DANTrainer
+----------------------------------------
+
+.. autoclass:: torcheeg.trainers.DANTrainer
+
 trainers.ADATrainer
 ----------------------------------------
 
