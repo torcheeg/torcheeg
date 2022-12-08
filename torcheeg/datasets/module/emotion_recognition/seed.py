@@ -72,7 +72,7 @@ class SEEDDataset(BaseDataset):
         dataset = SEEDDataset(io_path=f'./seed',
                               root_path='./Preprocessed_EEG',
                               online_transform=transforms.Compose([
-                                  transforms.pyg.ToG(SEED_ADJACENCY_MATRIX)
+                                  ToG(SEED_ADJACENCY_MATRIX)
                               ]),
                               label_transform=transforms.Compose([
                                   transforms.Select(['emotion']),
@@ -91,7 +91,7 @@ class SEEDDataset(BaseDataset):
             dataset = SEEDDataset(io_path=f'./seed',
                               root_path='./Preprocessed_EEG',
                               online_transform=transforms.Compose([
-                                  transforms.pyg.ToG(SEED_ADJACENCY_MATRIX)
+                                  ToG(SEED_ADJACENCY_MATRIX)
                               ]),
                               label_transform=transforms.Compose([
                                   transforms.Select(['emotion']),

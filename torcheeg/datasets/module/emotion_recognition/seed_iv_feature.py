@@ -47,7 +47,7 @@ class SEEDIVFeatureDataset(BaseDataset):
         dataset = SEEDIVFeatureDataset(io_path=f'./seed',
                               root_path='./eeg_feature_smooth',
                               features=['de_movingAve'],
-                              online_transform=transforms.pyg.ToG(SEED_ADJACENCY_MATRIX),
+                              online_transform=ToG(SEED_ADJACENCY_MATRIX),
                               label_transform=transforms.Select(['emotion']))
         print(dataset[0])
         # EEG signal (torch_geometric.data.Data),

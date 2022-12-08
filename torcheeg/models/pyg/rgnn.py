@@ -104,7 +104,7 @@ class RGNN(torch.nn.Module):
         dataset = SEEDDataset(io_path=f'./seed',
                               root_path='./Preprocessed_EEG',
                               offline_transform=transforms.BandDifferentialEntropy(),
-                              online_transform=transforms.pyg.ToG(SEED_STANDARD_ADJACENCY_MATRIX),
+                              online_transform=ToG(SEED_STANDARD_ADJACENCY_MATRIX),
                               label_transform=transforms.Compose([
                                   transforms.Select('emotion'),
                                   transforms.Lambda(lambda x: int(x) + 1),

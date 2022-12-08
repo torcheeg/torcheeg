@@ -34,7 +34,7 @@ class SEEDFeatureDataset(BaseDataset):
 
         dataset = SEEDFeatureDataset(io_path=f'./seed',
                               root_path='./ExtractedFeatures',
-                              features=['de_movingAve'],
+                              feature=['de_movingAve'],
                               offline_transform=transforms.ToGrid(SEED_CHANNEL_LOCATION_DICT),
                               online_transform=transforms.ToTensor(),
                               label_transform=transforms.Compose([
@@ -53,7 +53,7 @@ class SEEDFeatureDataset(BaseDataset):
         dataset = SEEDFeatureDataset(io_path=f'./seed',
                               root_path='./Preprocessed_EEG',
                               features=['de_movingAve'],
-                              online_transform=transforms.pyg.ToG(SEED_ADJACENCY_MATRIX),
+                              online_transform=ToG(SEED_ADJACENCY_MATRIX),
                               label_transform=transforms.Compose([
                                   transforms.Select(['emotion']),
                                   transforms.Lambda(x: x + 1)

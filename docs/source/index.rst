@@ -53,6 +53,7 @@ Transformers.
    introduction_by_example
    implementing_gnns_with_pyg
    managing_experiments_with_pytorch_lightning
+   Expand to See More Examples <auto_examples/index>
 
 .. toctree::
    :maxdepth: 1

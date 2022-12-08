@@ -5,3 +5,11 @@ https://stackoverflow.com/questions/59215996/how-to-add-a-logo-to-my-readthedocs
 .wy-side-nav-search .wy-dropdown > a img.logo, .wy-side-nav-search > a img.logo {
     width: 145px;
 }
+
+.sphx-glr-thumbcontainer {
+    width: 100% !important;
+}
+
+article.pytorch-article .sphx-glr-download-link-note.admonition.note, article.pytorch-article .reference.download.internal, article.pytorch-article .sphx-glr-signature {
+    display: block !important;
+}

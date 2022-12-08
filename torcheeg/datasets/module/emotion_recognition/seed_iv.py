@@ -70,7 +70,7 @@ class SEEDIVDataset(BaseDataset):
         dataset = SEEDIVDataset(io_path=f'./seed_iv',
                               root_path='./eeg_raw_data',
                               online_transform=transforms.Compose([
-                                  transforms.pyg.ToG(SEED_IV_ADJACENCY_MATRIX)
+                                  ToG(SEED_IV_ADJACENCY_MATRIX)
                               ]),
                               label_transform=transforms.Select(['emotion']))
         print(dataset[0])
@@ -86,7 +86,7 @@ class SEEDIVDataset(BaseDataset):
             dataset = SEEDIVDataset(io_path=f'./seed',
                               root_path='./eeg_raw_data',
                               online_transform=transforms.Compose([
-                                  transforms.pyg.ToG(SEED_IV_ADJACENCY_MATRIX)
+                                  ToG(SEED_IV_ADJACENCY_MATRIX)
                               ]),
                               label_transform=transforms.Select(['emotion']),
                               num_worker=4)

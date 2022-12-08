@@ -72,7 +72,7 @@ class AMIGOSDataset(BaseDataset):
         dataset = AMIGOSDataset(io_path=f'./amigos',
                               root_path='./data_preprocessed',
                               online_transform=transforms.Compose([
-                                  transforms.pyg.ToG(AMIGOS_ADJACENCY_MATRIX)
+                                  ToG(AMIGOS_ADJACENCY_MATRIX)
                               ]),
                               label_transform=transforms.Compose([
                                   transforms.Select('valence'),
@@ -91,7 +91,7 @@ class AMIGOSDataset(BaseDataset):
             dataset = AMIGOSDataset(io_path=f'./amigos',
                                     root_path='./data_preprocessed',
                                     online_transform=transforms.Compose([
-                                        transforms.pyg.ToG(AMIGOS_ADJACENCY_MATRIX)
+                                        ToG(AMIGOS_ADJACENCY_MATRIX)
                                     ]),
                                     label_transform=transforms.Compose([
                                         transforms.Select('valence'),

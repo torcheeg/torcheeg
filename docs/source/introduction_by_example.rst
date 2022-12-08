@@ -20,10 +20,11 @@ e.g. ``./tmp_in/data_preprocessed_python``.
 
 .. code:: python
 
-   from torcheeg.datasets import DEAPDataset
-   from torcheeg.datasets.constants.emotion_recognition.deap import DEAP_CHANNEL_LOCATION_DICT
+    from torcheeg import transforms
+    from torcheeg.datasets import DEAPDataset
+    from torcheeg.datasets.constants.emotion_recognition.deap import DEAP_CHANNEL_LOCATION_DICT
 
-   dataset = DEAPDataset(io_path=f'./tmp_out/deap',
+    dataset = DEAPDataset(io_path=f'./tmp_out/deap',
                          root_path='./tmp_in/data_preprocessed_python',
                          offline_transform=transforms.Compose(
                              [transforms.BandDifferentialEntropy(apply_to_baseline=True),
@@ -206,6 +207,3 @@ the model training caused by consecutive labels of the same category.
            train(train_loader, model, loss_fn, optimizer)
            valid(val_loader, model, loss_fn)
        print("Done!")
-
-For full code, please refer to
-https://github.com/tczhangzhi/torcheeg/blob/main/examples/examples_torch.py.

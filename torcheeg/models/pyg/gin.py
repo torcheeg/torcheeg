@@ -21,7 +21,7 @@ class GIN(nn.Module):
         dataset = DEAPDataset(io_path=f'./deap',
                     root_path='./data_preprocessed_python',
                     offline_transform=transforms.BandDifferentialEntropy(),
-                    online_transform=transforms.pyg.ToG(SEED_STANDARD_ADJACENCY_MATRIX),
+                    online_transform=ToG(SEED_STANDARD_ADJACENCY_MATRIX),
                     label_transform=transforms.Compose([
                         transforms.Select('valence'),
                         transforms.Binary(5.0),
