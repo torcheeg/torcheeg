@@ -6,13 +6,14 @@
 
 # -- Path setup --------------------------------------------------------------
 
+import re
 import inspect
+from os.path import relpath, dirname
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
 import os
-import os.path as op
 import sys
 
 import pytorch_sphinx_theme
@@ -47,8 +48,10 @@ extensions = [
 
 
 def linkcode_resolve(domain, info):
-    # adapted from https://github.com/braindecode/braindecode/blob/master/docs/conf.py
-    import mne
+    # adapted from https://github.com/scipy/scipy/blob/main/doc/source/conf.py
+    """
+    Determine the URL corresponding to Python object
+    """
     if domain != 'py':
         return None
 
@@ -65,10 +68,10 @@ def linkcode_resolve(domain, info):
             obj = getattr(obj, part)
         except Exception:
             return None
-    # deal with our decorators properly
-    while hasattr(obj, '__wrapped__'):
-        obj = obj.__wrapped__
 
+    # Use the original function object if it is wrapped.
+    while hasattr(obj, "__wrapped__"):
+        obj = obj.__wrapped__
     try:
         fn = inspect.getsourcefile(obj)
     except Exception:
@@ -80,8 +83,6 @@ def linkcode_resolve(domain, info):
             fn = None
     if not fn:
         return None
-    fn = op.relpath(fn, start=op.dirname(mne.__file__))
-    fn = '/'.join(op.normpath(fn).split(os.sep))  # in case on Windows
 
     try:
         source, lineno = inspect.getsourcelines(obj)
@@ -93,8 +94,14 @@ def linkcode_resolve(domain, info):
     else:
         linespec = ""
 
-    return "http://github.com/tczhangzhi/torcheeg/blob/main/torcheeg/%s%s" % (
-        fn, linespec)
+    startdir = os.path.abspath(os.path.join(dirname(torcheeg.__file__), '..'))
+    fn = relpath(fn, start=startdir).replace(os.path.sep, '/')
+
+    if fn.startswith('torcheeg/'):
+        return "https://github.com/tczhangzhi/torcheeg/blob/v%s/%s%s" % (
+            torcheeg.__version__, fn, linespec)
+    else:
+        return None
 
 
 # Add any paths that contain templates here, relative to this directory.
