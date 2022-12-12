@@ -111,10 +111,11 @@ class M3CVDataset(BaseDataset):
         before_trial (Callable, optional): The hook performed on the trial to which the sample belongs. It is performed before the offline transformation and thus typically used to implement context-dependent sample transformations, such as moving averages, etc. The input of this hook function is a 2D EEG signal with shape (number of electrodes, number of data points), whose ideal output shape is also (number of electrodes, number of data points).
         after_trial (Callable, optional): The hook performed on the trial to which the sample belongs. It is performed after the offline transformation and thus typically used to implement context-dependent sample transformations, such as moving averages, etc. The input and output of this hook function should be a sequence of dictionaries representing a sequence of EEG samples. Each dictionary contains two key-value pairs, indexed by :obj:`eeg` (the EEG signal matrix) and :obj:`key` (the index in the database) respectively.
         io_path (str): The path to generated unified data IO, cached as an intermediate result. (default: :obj:`./io/m3cv`)
+        io_size (int): Maximum size database may grow to; used to size the memory mapping. If database grows larger than ``map_size``, an exception will be raised and the user must close and reopen. (default: :obj:`10485760`)
+        io_mode (str): Storage mode of EEG signal. When io_mode is set to :obj:`lmdb`, TorchEEG provides an efficient database (LMDB) for storing EEG signals. LMDB may not perform well on limited operating systems, where a file system based EEG signal storage is also provided. When io_mode is set to :obj:`pickle`, pickle-based persistence files are used. (default: :obj:`lmdb`)
         num_worker (str): How many subprocesses to use for data processing. (default: :obj:`0`)
         verbose (bool): Whether to display logs during processing, such as progress bars, etc. (default: :obj:`True`)
-        cache_size (int): Maximum size database may grow to; used to size the memory mapping. If database grows larger than ``map_size``, an exception will be raised and the user must close and reopen. (default: :obj:`10485760`)
-    
+        in_memory (bool): Whether to load the entire dataset into memory. If :obj:`in_memory` is set to True, then the first time an EEG sample is read, the entire dataset is loaded into memory for subsequent retrieval. Otherwise, the dataset is stored on disk to avoid the out-of-memory problem. (default: :obj:`False`)    
     '''
     def __init__(self,
                  root_path: str = './aistudio',
@@ -128,22 +129,30 @@ class M3CVDataset(BaseDataset):
                  before_trial: Union[None, Callable] = None,
                  after_trial: Union[Callable, None] = None,
                  io_path: str = './io/m3cv',
+                 io_size: int = 10485760,
+                 io_mode: str = 'lmdb',
                  num_worker: int = 0,
                  verbose: bool = True,
-                 cache_size: int = 10485760):
-        m3cv_constructor(root_path=root_path,
-                         subset=subset,
-                         chunk_size=chunk_size,
-                         overlap=overlap,
-                         num_channel=num_channel,
-                         before_trial=before_trial,
-                         transform=offline_transform,
-                         after_trial=after_trial,
-                         io_path=io_path,
-                         num_worker=num_worker,
-                         verbose=verbose,
-                         cache_size=cache_size)
-        super().__init__(io_path)
+                 in_memory: bool = False):
+        m3cv_constructor(
+            root_path=root_path,
+            subset=subset,
+            chunk_size=chunk_size,
+            overlap=overlap,
+            num_channel=num_channel,
+            before_trial=before_trial,
+            transform=offline_transform,
+            after_trial=after_trial,
+            io_path=io_path,
+            io_size=io_size,
+            io_mode=io_mode,
+            num_worker=num_worker,
+            verbose=verbose,
+        )
+        super().__init__(io_path=io_path,
+                         io_size=io_size,
+                         io_mode=io_mode,
+                         in_memory=in_memory)
 
         self.root_path = root_path
         self.subset = subset
@@ -155,17 +164,16 @@ class M3CVDataset(BaseDataset):
         self.label_transform = label_transform
         self.num_worker = num_worker
         self.verbose = verbose
-        self.cache_size = cache_size
 
         assert subset in [
             'Enrollment', 'Calibration', 'Testing'
         ], f"Unavailable subset name {subset}, and available options include 'Enrollment', 'Calibration', and 'Testing'."
 
     def __getitem__(self, index: int) -> Tuple:
-        info = self.info.iloc[index].to_dict()
+        info = self.read_info(index)
 
         eeg_index = str(info['clip_id'])
-        eeg = self.eeg_io.read_eeg(eeg_index)
+        eeg = self.read_eeg(eeg_index)
 
         signal = eeg
         label = info
@@ -194,5 +202,5 @@ class M3CVDataset(BaseDataset):
                 'after_trial': self.after_trial,
                 'num_worker': self.num_worker,
                 'verbose': self.verbose,
-                'cache_size': self.cache_size
+                'io_size': self.io_size
             })

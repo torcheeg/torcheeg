@@ -70,16 +70,19 @@ class SingleProcessingQueue:
         self.write_eeg_fn(eeg, key)
 
 
-def numpy_constructor(X: np.ndarray,
-                      y: Dict,
-                      before_trial: Union[None, Callable] = None,
-                      transform: Union[None, Callable] = None,
-                      after_trial: Union[Callable, None] = None,
-                      io_path: str = './io/numpy',
-                      num_worker: int = 0,
-                      num_samples_per_trial: int = 100,
-                      verbose: bool = True,
-                      cache_size: int = 10485760) -> None:
+def numpy_constructor(
+    X: np.ndarray,
+    y: Dict,
+    before_trial: Union[None, Callable] = None,
+    transform: Union[None, Callable] = None,
+    after_trial: Union[Callable, None] = None,
+    num_samples_per_worker: int = 100,
+    io_path: str = './io/numpy',
+    io_size: int = 10485760,
+    io_mode: str = 'lmdb',
+    num_worker: int = 0,
+    verbose: bool = True,
+) -> None:
 
     for k, v in y.items():
         assert len(X) == len(
@@ -99,12 +102,12 @@ def numpy_constructor(X: np.ndarray,
     os.makedirs(io_path, exist_ok=True)
 
     info_io = MetaInfoIO(meta_info_io_path)
-    eeg_io = EEGSignalIO(eeg_signal_io_path, cache_size=cache_size)
+    eeg_io = EEGSignalIO(eeg_signal_io_path, io_size=io_size, io_mode=io_mode)
 
     # access the data
     indices = np.arange(len(X))
     worker_indices_list = np.array_split(indices,
-                                         len(X) // num_samples_per_trial)
+                                         len(X) // num_samples_per_worker)
 
     X_y_rank_list = []
     for worker_rank, worker_indices in enumerate(worker_indices_list):

@@ -172,9 +172,10 @@ def mahnob_constructor(root_path: str = './Sessions',
                        transform: Union[None, Callable] = None,
                        after_trial: Union[Callable, None] = None,
                        io_path: str = './io/mahnob',
+                       io_size: int = 10485760,
+                       io_mode: str = 'lmdb',
                        num_worker: int = 0,
-                       verbose: bool = True,
-                       cache_size: int = 10485760) -> None:
+                       verbose: bool = True) -> None:
     # init IO
     meta_info_io_path = os.path.join(io_path, 'info.csv')
     eeg_signal_io_path = os.path.join(io_path, 'eeg')
@@ -188,7 +189,7 @@ def mahnob_constructor(root_path: str = './Sessions',
     os.makedirs(io_path, exist_ok=True)
 
     info_io = MetaInfoIO(meta_info_io_path)
-    eeg_io = EEGSignalIO(eeg_signal_io_path, cache_size=cache_size)
+    eeg_io = EEGSignalIO(eeg_signal_io_path, io_size=io_size, io_mode=io_mode)
 
     # loop to access the dataset files
     file_list = os.listdir(root_path)

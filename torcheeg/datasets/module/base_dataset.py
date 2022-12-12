@@ -4,7 +4,7 @@ import shutil
 import pandas as pd
 from functools import partial
 from multiprocessing import Manager, Pool, Process, Queue
-from typing import Callable, Dict, List, Union
+from typing import Callable, Dict, List, Union, Any
 
 from torch.utils.data import Dataset
 from torcheeg.io import EEGSignalIO, MetaInfoIO
@@ -166,21 +166,66 @@ class BaseDataset(Dataset):
     channel_location_dict = {}
     adjacency_matrix = []
 
-    def __init__(self, io_path: str):
+    def __init__(self,
+                 io_path: str,
+                 io_size: int = 10485760,
+                 io_mode: str = 'lmdb',
+                 in_memory: bool = False):
         if not self.exist(io_path):
             raise RuntimeError(
                 'Database IO does not exist, please regenerate database IO.')
         self.io_path = io_path
+        self.io_size = io_size
+        self.io_mode = io_mode
+        self.in_memory = in_memory
 
         meta_info_io_path = os.path.join(self.io_path, 'info.csv')
         eeg_signal_io_path = os.path.join(self.io_path, 'eeg')
 
         info_io = MetaInfoIO(meta_info_io_path)
-        self.eeg_io = EEGSignalIO(eeg_signal_io_path)
+        self.eeg_io = EEGSignalIO(eeg_signal_io_path,
+                                  io_size=io_size,
+                                  io_mode=io_mode)
 
         self.info = info_io.read_all()
 
+    def read_eeg(self, key: str) -> Any:
+        r'''
+        Query the corresponding EEG signal in the EEGSignalIO according to the the given :obj:`key`. If :obj:`self.in_memory` is set to :obj:`True`, then EEGSignalIO will be read into memory and directly index the specified EEG signal in memory with the given :obj:`key` on subsequent reads.
+
+        Args:
+            key (str): The index of the EEG signal to be queried.
+            
+        Returns:
+            any: The EEG signal sample.
+        '''
+        if self.in_memory:
+            return self.eeg_io.read_eeg_in_memory(key)
+        return self.eeg_io.read_eeg(key)
+
+    def read_info(self, index: int) -> Dict:
+        r'''
+        Query the corresponding meta information in the MetaInfoIO according to the the given :obj:`index`.
+
+        In meta infomation, clip_id is required. Specifies the corresponding key of EEG in EEGSginalIO, which can be used to index EEG samples based on :obj:`self.read_eeg(key)`.
+
+        Args:
+            index (int): The index of the meta information to be queried.
+            
+        Returns:
+            dict: The meta information.
+        '''
+        return self.info.iloc[index].to_dict()
+
     def exist(self, io_path: str) -> bool:
+        '''
+        Check if the database IO exists.
+
+        Args:
+            io_path (str): The path of the database IO.
+        Returns:
+            bool: True if the database IO exists, otherwise False.
+        '''
         meta_info_io_path = os.path.join(io_path, 'info.csv')
         eeg_signal_io_path = eeg_signal_io_path = os.path.join(io_path, 'eeg')
 
@@ -201,12 +246,19 @@ class BaseDataset(Dataset):
         result.__dict__.update(self.__dict__)
         eeg_signal_io_path = os.path.join(self.io_path, 'eeg')
 
-        result.eeg_io = EEGSignalIO(eeg_signal_io_path)
+        result.eeg_io = EEGSignalIO(eeg_signal_io_path,
+                                    io_size=self.io_size,
+                                    io_mode=self.io_mode)
         return result
 
     @property
     def repr_body(self) -> Dict:
-        return {'io_path': self.io_path}
+        return {
+            'io_path': self.io_path,
+            'io_size': self.io_size,
+            'io_mode': self.io_mode,
+            'in_memory': self.in_memory
+        }
 
     @property
     def repr_tail(self) -> Dict:
@@ -240,7 +292,8 @@ class BaseDataset(Dataset):
                       offline_transform: Union[None, Callable] = None,
                       num_worker: int = 0,
                       verbose: bool = True,
-                      cache_size: int = 10485760,
+                      io_size: int = 10485760,
+                      io_mode: str = 'lmdb',
                       chunk_size_for_worker: int = 100,
                       chunk_column_for_worker: str = 'baseline_id',
                       **args):
@@ -258,7 +311,9 @@ class BaseDataset(Dataset):
                         os.path.join(io_path, 'info.csv'))
             # copy dataset
             if not offline_transform is None:
-                eeg_io = EEGSignalIO(eeg_signal_io_path, cache_size=cache_size)
+                eeg_io = EEGSignalIO(eeg_signal_io_path,
+                                     io_size=io_size,
+                                     io_mode=io_mode)
                 if chunk_column_for_worker in dataset.info.columns:
                     chunk_for_worker = split_df_by_column(
                         dataset.info, chunk_column_for_worker)
@@ -322,7 +377,7 @@ class BaseDataset(Dataset):
                              offline_transform=offline_transform,
                              num_worker=num_worker,
                              verbose=verbose,
-                             cache_size=cache_size,
+                             io_size=io_size,
                              **args)
 
     @staticmethod
@@ -331,7 +386,8 @@ class BaseDataset(Dataset):
                              reduce_fn: Callable,
                              reduce_by: str = 'epoch_id',
                              verbose: bool = True,
-                             cache_size: int = 10485760,
+                             io_size: int = 10485760,
+                             io_mode: str = 'lmdb',
                              num_worker: int = 0,
                              chunk_size_for_worker: int = 100,
                              **args):
@@ -345,7 +401,9 @@ class BaseDataset(Dataset):
             os.makedirs(io_path, exist_ok=True)
 
             info_io = MetaInfoIO(meta_info_io_path)
-            eeg_io = EEGSignalIO(eeg_signal_io_path, cache_size=cache_size)
+            eeg_io = EEGSignalIO(eeg_signal_io_path,
+                                 io_size=io_size,
+                                 io_mode=io_mode)
 
             reduce_list = split_df_by_column(dataset.info, reduce_by)
             chunk_for_worker = [
@@ -396,6 +454,6 @@ class BaseDataset(Dataset):
 
         return type(dataset)(io_path=io_path,
                              verbose=verbose,
-                             cache_size=cache_size,
+                             io_size=io_size,
                              num_worker=num_worker,
                              **args)

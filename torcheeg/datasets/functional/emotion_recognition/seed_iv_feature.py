@@ -122,17 +122,17 @@ class SingleProcessingQueue:
         self.write_eeg_fn(eeg, key)
 
 
-def seed_iv_feature_constructor(
-        root_path: str = './eeg_feature_smooth',
-        feature: list = ['de_movingAve1'],
-        num_channel: int = 61,
-        before_trial: Union[None, Callable] = None,
-        transform: Union[None, Callable] = None,
-        after_trial: Union[Callable, None] = None,
-        io_path: str = './io/seed_iv_feature',
-        num_worker: int = 0,
-        verbose: bool = True,
-        cache_size: int = 10485760) -> None:
+def seed_iv_feature_constructor(root_path: str = './eeg_feature_smooth',
+                                feature: list = ['de_movingAve1'],
+                                num_channel: int = 61,
+                                before_trial: Union[None, Callable] = None,
+                                transform: Union[None, Callable] = None,
+                                after_trial: Union[Callable, None] = None,
+                                io_path: str = './io/seed_iv_feature',
+                                io_size: int = 10485760,
+                                io_mode: str = 'lmdb',
+                                num_worker: int = 0,
+                                verbose: bool = True) -> None:
     # init IO
     meta_info_io_path = os.path.join(io_path, 'info.csv')
     eeg_signal_io_path = os.path.join(io_path, 'eeg')
@@ -149,7 +149,7 @@ def seed_iv_feature_constructor(
     eeg_signal_io_path = os.path.join(io_path, 'eeg')
 
     info_io = MetaInfoIO(meta_info_io_path)
-    eeg_io = EEGSignalIO(eeg_signal_io_path, cache_size=cache_size)
+    eeg_io = EEGSignalIO(eeg_signal_io_path, io_size=io_size, io_mode=io_mode)
 
     # loop to access the dataset files
     session_list = ['1', '2', '3']

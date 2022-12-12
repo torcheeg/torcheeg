@@ -12,25 +12,25 @@ class TestMetaInfoIO(unittest.TestCase):
         os.mkdir('./tmp_out/')
 
     def test_init(self):
-        io_cache_path = f'./tmp_out/{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}.csv'
-        io = MetaInfoIO(cache_path=io_cache_path)
+        io_io_path = f'./tmp_out/{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}.csv'
+        io = MetaInfoIO(io_path=io_io_path)
         self.assertEqual(len(io), 0)
 
-        self.assertTrue(os.path.exists(io_cache_path))
-        io = MetaInfoIO(cache_path=io_cache_path)
+        self.assertTrue(os.path.exists(io_io_path))
+        io = MetaInfoIO(io_path=io_io_path)
         self.assertEqual(len(io), 0)
 
     def test_write_info(self):
-        io_cache_path = f'./tmp_out/{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
-        io = MetaInfoIO(cache_path=io_cache_path)
+        io_io_path = f'./tmp_out/{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
+        io = MetaInfoIO(io_path=io_io_path)
 
         io.write_info({'subject_id': 0, 'clip_id': 0, 'baseline_id': 0, 'valence': 0, 'arousal': 0})
 
         io.write_info({'subject_id': 0, 'clip_id': 1, 'baseline_id': 0, 'valence': 0, 'arousal': 0})
 
     def test_len(self):
-        io_cache_path = f'./tmp_out/{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
-        io = MetaInfoIO(cache_path=io_cache_path)
+        io_io_path = f'./tmp_out/{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
+        io = MetaInfoIO(io_path=io_io_path)
 
         io.write_info({'subject_id': 0, 'clip_id': 0, 'baseline_id': 0, 'valence': 0, 'arousal': 0})
 
@@ -38,8 +38,8 @@ class TestMetaInfoIO(unittest.TestCase):
         self.assertEqual(len(io), 2)
 
     def test_read_info(self):
-        io_cache_path = f'./tmp_out/{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
-        io = MetaInfoIO(cache_path=io_cache_path)
+        io_io_path = f'./tmp_out/{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
+        io = MetaInfoIO(io_path=io_io_path)
 
         info = {'subject_id': 0, 'clip_id': 1, 'baseline_id': 0, 'valence': 0, 'arousal': 0}
         io_info_index = io.write_info(info)
@@ -48,8 +48,8 @@ class TestMetaInfoIO(unittest.TestCase):
             self.assertEqual(io_info[key], info[key])
 
     def test_read_all(self):
-        io_cache_path = f'./tmp_out/{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
-        io = MetaInfoIO(cache_path=io_cache_path)
+        io_io_path = f'./tmp_out/{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
+        io = MetaInfoIO(io_path=io_io_path)
 
         io.write_info({'subject_id': 0, 'clip_id': 0, 'baseline_id': 0, 'valence': 0, 'arousal': 0})
 

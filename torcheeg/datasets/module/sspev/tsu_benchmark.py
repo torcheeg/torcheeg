@@ -1,7 +1,8 @@
 from typing import Callable, Dict, Tuple, Union
 
 from ...constants.ssvep.tsu_benchmark import (TSUBENCHMARK_ADJACENCY_MATRIX,
-                                                   TSUBENCHMARK_CHANNEL_LOCATION_DICT)
+                                              TSUBENCHMARK_CHANNEL_LOCATION_DICT
+                                              )
 from ...functional.ssvep.tsu_benchmark import tsu_benchmark_constructor
 from ..base_dataset import BaseDataset
 
@@ -118,19 +119,25 @@ class TSUBenckmarkDataset(BaseDataset):
                  offline_transform: Union[None, Callable] = None,
                  label_transform: Union[None, Callable] = None,
                  io_path: str = './io/tsu_benchmark',
+                 io_size: int = 10485760,
+                 io_mode: str = 'lmdb',
                  num_worker: int = 0,
                  verbose: bool = True,
-                 cache_size: int = 10485760):
+                 in_memory: bool = False):
         tsu_benchmark_constructor(root_path=root_path,
-                         chunk_size=chunk_size,
-                         overlap=overlap,
-                         num_channel=num_channel,
-                         transform=offline_transform,
-                         io_path=io_path,
-                         num_worker=num_worker,
-                         verbose=verbose,
-                         cache_size=cache_size)
-        super().__init__(io_path)
+                                  chunk_size=chunk_size,
+                                  overlap=overlap,
+                                  num_channel=num_channel,
+                                  transform=offline_transform,
+                                  io_path=io_path,
+                                  io_size=io_size,
+                                  io_mode=io_mode,
+                                  num_worker=num_worker,
+                                  verbose=verbose)
+        super().__init__(io_path=io_path,
+                         io_size=io_size,
+                         io_mode=io_mode,
+                         in_memory=in_memory)
 
         self.root_path = root_path
         self.chunk_size = chunk_size
@@ -141,13 +148,12 @@ class TSUBenckmarkDataset(BaseDataset):
         self.label_transform = label_transform
         self.num_worker = num_worker
         self.verbose = verbose
-        self.cache_size = cache_size
 
     def __getitem__(self, index: int) -> Tuple[any, any, int, int, int]:
-        info = self.info.iloc[index].to_dict()
+        info = self.read_info(index)
 
         eeg_index = str(info['clip_id'])
-        eeg = self.eeg_io.read_eeg(eeg_index)
+        eeg = self.read_eeg(eeg_index)
 
         signal = eeg
         label = info
@@ -173,5 +179,5 @@ class TSUBenckmarkDataset(BaseDataset):
                 'label_transform': self.label_transform,
                 'num_worker': self.num_worker,
                 'verbose': self.verbose,
-                'cache_size': self.cache_size
+                'io_size': self.io_size
             })

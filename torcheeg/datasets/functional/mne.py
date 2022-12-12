@@ -24,7 +24,7 @@ def transform_producer(epochs_metadata_rank: Tuple[mne.Epochs, Dict, int],
 
     if chunk_size <= 0:
         chunk_size = len(epochs.times)
-        
+
     if num_channel == -1:
         num_channel = len(epochs.info['chs'])
 
@@ -123,9 +123,10 @@ def mne_constructor(epochs_list: List[mne.Epochs],
                     transform: Union[None, Callable] = None,
                     after_trial: Union[Callable, None] = None,
                     io_path: str = './io/mne',
+                    io_size: int = 10485760,
+                    io_mode: str = 'lmdb',
                     num_worker: int = 0,
-                    verbose: bool = True,
-                    cache_size: int = 10485760) -> None:
+                    verbose: bool = True) -> None:
 
     mne.set_log_level('CRITICAL')
 
@@ -146,7 +147,7 @@ def mne_constructor(epochs_list: List[mne.Epochs],
     os.makedirs(io_path, exist_ok=True)
 
     info_io = MetaInfoIO(meta_info_io_path)
-    eeg_io = EEGSignalIO(eeg_signal_io_path, cache_size=cache_size)
+    eeg_io = EEGSignalIO(eeg_signal_io_path, io_size=io_size, io_mode=io_mode)
 
     epochs_metadata_rank_list = []
     for rank, (epochs, metadata) in enumerate(zip(epochs_list, metadata_list)):

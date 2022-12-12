@@ -128,19 +128,22 @@ class SingleProcessingQueue:
         self.write_eeg_fn(eeg, key)
 
 
-def dreamer_constructor(mat_path: str = './DREAMER.mat',
-                        chunk_size: int = 128,
-                        overlap: int = 0,
-                        num_channel: int = 14,
-                        num_baseline: int = 61,
-                        baseline_chunk_size: int = 128,
-                        before_trial: Union[None, Callable] = None,
-                        transform: Union[None, Callable] = None,
-                        after_trial: Union[Callable, None] = None,
-                        io_path: str = './io/dreamer',
-                        num_worker: int = 0,
-                        verbose: bool = True,
-                        cache_size: int = 10485760) -> None:
+def dreamer_constructor(
+    mat_path: str = './DREAMER.mat',
+    chunk_size: int = 128,
+    overlap: int = 0,
+    num_channel: int = 14,
+    num_baseline: int = 61,
+    baseline_chunk_size: int = 128,
+    before_trial: Union[None, Callable] = None,
+    transform: Union[None, Callable] = None,
+    after_trial: Union[Callable, None] = None,
+    io_path: str = './io/dreamer',
+    io_size: int = 10485760,
+    io_mode: str = 'lmdb',
+    num_worker: int = 0,
+    verbose: bool = True,
+) -> None:
     # init IO
     meta_info_io_path = os.path.join(io_path, 'info.csv')
     eeg_signal_io_path = os.path.join(io_path, 'eeg')
@@ -154,7 +157,7 @@ def dreamer_constructor(mat_path: str = './DREAMER.mat',
     os.makedirs(io_path, exist_ok=True)
 
     info_io = MetaInfoIO(meta_info_io_path)
-    eeg_io = EEGSignalIO(eeg_signal_io_path, cache_size=cache_size)
+    eeg_io = EEGSignalIO(eeg_signal_io_path, io_size=io_size, io_mode=io_mode)
 
     # access the dataset files
     mat_data = scio.loadmat(mat_path, verify_compressed_data_integrity=False)
