@@ -129,6 +129,15 @@ class VanillaTransformer(nn.Module):
                  mlp_channels: int = 64,
                  num_classes: int = 2):
         super(VanillaTransformer, self).__init__()
+        self.num_electrodes = num_electrodes
+        self.chunk_size = chunk_size
+        self.t_patch_size = t_patch_size
+        self.hid_channels = hid_channels
+        self.depth = depth
+        self.heads = heads
+        self.head_channels = head_channels
+        self.mlp_channels = mlp_channels
+        self.num_classes = num_classes
 
         assert chunk_size % t_patch_size == 0, f'EEG chunk size {chunk_size} must be divisible by the patch size {t_patch_size}.'
 

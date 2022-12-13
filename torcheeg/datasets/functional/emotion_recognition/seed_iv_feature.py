@@ -15,10 +15,8 @@ MAX_QUEUE_SIZE = 1024
 
 def transform_producer(file_path: str, feature: list, num_channel: int,
                        before_trial: Union[None, Callable],
-                       transform: Union[None,
-                                        Callable], after_trial: Union[Callable,
-                                                                      None],
-                       write_info_fn: Callable, queue: Queue):
+                       transform: Union[None, Callable],
+                       after_trial: Union[Callable, None], queue: Queue):
     session_id = os.path.basename(os.path.dirname(file_path))
     _, file_name = os.path.split(file_path)
 
@@ -78,10 +76,6 @@ def transform_producer(file_path: str, feature: list, num_channel: int,
                 t_eeg = transform(eeg=clip_sample)['eeg']
 
             clip_id = f'{file_name}_{write_pointer}'
-            if after_trial:
-                trial_queue.append({'eeg': t_eeg, 'key': clip_id})
-            else:
-                queue.put({'eeg': t_eeg, 'key': clip_id})
             write_pointer += 1
 
             # record meta info for each signal
@@ -92,34 +86,48 @@ def transform_producer(file_path: str, feature: list, num_channel: int,
                 'clip_id': clip_id
             }
             record_info.update(trial_meta_info)
-            write_info_fn(record_info)
+            if after_trial:
+                trial_queue.append({
+                    'eeg': t_eeg,
+                    'key': clip_id,
+                    'info': record_info
+                })
+            else:
+                queue.put({'eeg': t_eeg, 'key': clip_id, 'info': record_info})
 
         if len(trial_queue) and after_trial:
             trial_queue = after_trial(trial_queue)
             for obj in trial_queue:
-                assert 'eeg' in obj and 'key' in obj, 'after_trial must return a list of dictionaries, where each dictionary corresponds to an EEG sample, containing `eeg` and `key` as keys.'
+                assert 'eeg' in obj and 'key' in obj and 'info' in obj, 'after_trial must return a list of dictionaries, where each dictionary corresponds to an EEG sample, containing `eeg`, `key` and `info` as keys.'
                 queue.put(obj)
 
 
-def io_consumer(write_eeg_fn, queue):
+def io_consumer(write_eeg_fn: Callable, write_info_fn: Callable, queue: Queue):
     while True:
         item = queue.get()
         if not item is None:
             eeg = item['eeg']
             key = item['key']
             write_eeg_fn(eeg, key)
+            if 'info' in item:
+                info = item['info']
+                write_info_fn(info)
         else:
             break
 
 
 class SingleProcessingQueue:
-    def __init__(self, write_eeg_fn):
+    def __init__(self, write_eeg_fn: Callable, write_info_fn: Callable):
         self.write_eeg_fn = write_eeg_fn
+        self.write_info_fn = write_info_fn
 
     def put(self, item):
         eeg = item['eeg']
         key = item['key']
         self.write_eeg_fn(eeg, key)
+        if 'info' in item:
+            info = item['info']
+            self.write_info_fn(info)
 
 
 def seed_iv_feature_constructor(root_path: str = './eeg_feature_smooth',
@@ -168,7 +176,8 @@ def seed_iv_feature_constructor(root_path: str = './eeg_feature_smooth',
         manager = Manager()
         queue = manager.Queue(maxsize=MAX_QUEUE_SIZE)
         io_consumer_process = Process(target=io_consumer,
-                                      args=(eeg_io.write_eeg, queue),
+                                      args=(eeg_io.write_eeg,
+                                            info_io.write_info, queue),
                                       daemon=True)
         io_consumer_process.start()
 
@@ -178,7 +187,6 @@ def seed_iv_feature_constructor(root_path: str = './eeg_feature_smooth',
                                 before_trial=before_trial,
                                 transform=transform,
                                 after_trial=after_trial,
-                                write_info_fn=info_io.write_info,
                                 queue=queue)
 
         for _ in Pool(num_worker).imap(partial_mp_fn, file_path_list):
@@ -198,8 +206,8 @@ def seed_iv_feature_constructor(root_path: str = './eeg_feature_smooth',
                                before_trial=before_trial,
                                transform=transform,
                                after_trial=after_trial,
-                               write_info_fn=info_io.write_info,
-                               queue=SingleProcessingQueue(eeg_io.write_eeg))
+                               queue=SingleProcessingQueue(
+                                   eeg_io.write_eeg, info_io.write_info))
             if verbose:
                 pbar.update(1)
 

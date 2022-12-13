@@ -214,6 +214,17 @@ class SimpleViT(nn.Module):
                  mlp_channels: int = 64,
                  num_classes: int = 2):
         super(SimpleViT, self).__init__()
+        self.chunk_size = chunk_size
+        self.grid_size = grid_size
+        self.t_patch_size = t_patch_size
+        self.s_patch_size = s_patch_size
+        self.hid_channels = hid_channels
+        self.depth = depth
+        self.heads = heads
+        self.head_channels = head_channels
+        self.mlp_channels = mlp_channels
+        self.num_classes = num_classes
+
         grid_height, grid_width = pair(grid_size)
         patch_height, patch_width = pair(s_patch_size)
 

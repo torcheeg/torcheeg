@@ -13,11 +13,10 @@ MAX_QUEUE_SIZE = 1024
 
 def transform_producer(file_name: str, root_path: str, chunk_size: int,
                        overlap: int, num_channel: int,
-                       before_trial: Union[Callable, None],
-                       transform: Union[Callable,
-                                        None], after_trial: Union[Callable,
-                                                                  None],
-                       write_info_fn: Callable, queue: Queue):
+                       before_trial: Union[Callable,
+                                           None], transform: Union[Callable,
+                                                                   None],
+                       after_trial: Union[Callable, None], queue: Queue):
     subject = int(re.findall(r'S(\d*).mat', file_name)[0])  # subject (35)
     freq_phase = scio.loadmat(os.path.join(root_path, 'Freq_Phase.mat'))
     freqs = freq_phase['freqs'][0]
@@ -68,10 +67,6 @@ def transform_producer(file_name: str, root_path: str, chunk_size: int,
                     t_eeg = transform(eeg=clip_sample)['eeg']
 
                 clip_id = f'{file_name}_{write_pointer}'
-                if after_trial:
-                    block_queue.append({'eeg': t_eeg, 'key': clip_id})
-                else:
-                    queue.put({'eeg': t_eeg, 'key': clip_id})
                 write_pointer += 1
 
                 # record meta info for each signal
@@ -81,7 +76,18 @@ def transform_producer(file_name: str, root_path: str, chunk_size: int,
                     'clip_id': clip_id
                 }
                 record_info.update(block_meta_info)
-                write_info_fn(record_info)
+                if after_trial:
+                    block_queue.append({
+                        'eeg': t_eeg,
+                        'key': clip_id,
+                        'info': record_info
+                    })
+                else:
+                    queue.put({
+                        'eeg': t_eeg,
+                        'key': clip_id,
+                        'info': record_info
+                    })
 
                 start_at = start_at + step
                 end_at = start_at + chunk_size
@@ -89,44 +95,50 @@ def transform_producer(file_name: str, root_path: str, chunk_size: int,
             if len(block_queue) and after_trial:
                 block_queue = after_trial(block_queue)
                 for obj in block_queue:
-                    assert 'eeg' in obj and 'key' in obj, 'after_trial must return a list of dictionaries, where each dictionary corresponds to an EEG sample, containing `eeg` and `key` as keys.'
+                    assert 'eeg' in obj and 'key' in obj and 'info' in obj, 'after_trial must return a list of dictionaries, where each dictionary corresponds to an EEG sample, containing `eeg`, `key` and `info` as keys.'
                     queue.put(obj)
 
 
-def io_consumer(write_eeg_fn, queue):
+def io_consumer(write_eeg_fn: Callable, write_info_fn: Callable, queue: Queue):
     while True:
         item = queue.get()
         if not item is None:
             eeg = item['eeg']
             key = item['key']
             write_eeg_fn(eeg, key)
+            if 'info' in item:
+                info = item['info']
+                write_info_fn(info)
         else:
             break
 
 
 class SingleProcessingQueue:
-    def __init__(self, write_eeg_fn):
+    def __init__(self, write_eeg_fn: Callable, write_info_fn: Callable):
         self.write_eeg_fn = write_eeg_fn
+        self.write_info_fn = write_info_fn
 
     def put(self, item):
         eeg = item['eeg']
         key = item['key']
         self.write_eeg_fn(eeg, key)
+        if 'info' in item:
+            info = item['info']
+            self.write_info_fn(info)
 
 
-def tsu_benchmark_constructor(
-        root_path: str = './TSUBenchmark',
-        chunk_size: int = 200,
-        overlap: int = 0,
-        num_channel: int = 64,
-        before_trial: Union[None, Callable] = None,
-        transform: Union[None, Callable] = None,
-        after_trial: Union[Callable, None] = None,
-        io_path: str = './io/tsu_benchmark',
-        io_size: int = 10485760,
-        io_mode: str = 'lmdb',
-        num_worker: int = 0,
-        verbose: bool = True) -> None:
+def tsu_benchmark_constructor(root_path: str = './TSUBenchmark',
+                              chunk_size: int = 200,
+                              overlap: int = 0,
+                              num_channel: int = 64,
+                              before_trial: Union[None, Callable] = None,
+                              transform: Union[None, Callable] = None,
+                              after_trial: Union[Callable, None] = None,
+                              io_path: str = './io/tsu_benchmark',
+                              io_size: int = 10485760,
+                              io_mode: str = 'lmdb',
+                              num_worker: int = 0,
+                              verbose: bool = True) -> None:
     # init IO
     meta_info_io_path = os.path.join(io_path, 'info.csv')
     eeg_signal_io_path = os.path.join(io_path, 'eeg')
@@ -162,7 +174,8 @@ def tsu_benchmark_constructor(
         manager = Manager()
         queue = manager.Queue(maxsize=MAX_QUEUE_SIZE)
         io_consumer_process = Process(target=io_consumer,
-                                      args=(eeg_io.write_eeg, queue),
+                                      args=(eeg_io.write_eeg,
+                                            info_io.write_info, queue),
                                       daemon=True)
         io_consumer_process.start()
 
@@ -174,7 +187,6 @@ def tsu_benchmark_constructor(
                                 before_trial=before_trial,
                                 transform=transform,
                                 after_trial=after_trial,
-                                write_info_fn=info_io.write_info,
                                 queue=queue)
 
         for _ in Pool(num_worker).imap(partial_mp_fn, file_list):
@@ -196,8 +208,8 @@ def tsu_benchmark_constructor(
                                before_trial=before_trial,
                                transform=transform,
                                after_trial=after_trial,
-                               write_info_fn=info_io.write_info,
-                               queue=SingleProcessingQueue(eeg_io.write_eeg))
+                               queue=SingleProcessingQueue(
+                                   eeg_io.write_eeg, info_io.write_info))
             if verbose:
                 pbar.update(1)
 
