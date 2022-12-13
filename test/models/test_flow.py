@@ -37,7 +37,7 @@ class TestFlow(unittest.TestCase):
         loss = F.cross_entropy(y_logits, y) + F.cross_entropy(y_logits, y)
 
         # sample a generated result
-        fake_X = model(y=y, temperature=1.0, reverse=True)
+        fake_X = model(labels=y, temperature=1.0, reverse=True)
         self.assertEqual(tuple(fake_X.shape), (2, 4, 32, 32))
 
         model = model.cuda()
@@ -48,7 +48,7 @@ class TestFlow(unittest.TestCase):
         z, nll_loss, y_logits = model(mock_eeg, y)
 
         # sample a generated result
-        fake_X = model(y=y, temperature=1.0, reverse=True)
+        fake_X = model(labels=y, temperature=1.0, reverse=True)
         self.assertEqual(tuple(fake_X.shape), (2, 4, 32, 32))
 
 

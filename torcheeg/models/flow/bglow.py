@@ -704,7 +704,7 @@ class BGlow(nn.Module):
         if labels is None:
             y_onehot = None
         else:
-            y_onehot = F.one_hot(labels, num_classes=self.num_classes, top_k=1).float()
+            y_onehot = F.one_hot(labels, num_classes=self.num_classes).float()
 
         if reverse:
             return self.reverse_flow(z, y_onehot, temperature)

@@ -11,7 +11,7 @@ from torcheeg.datasets.module.base_dataset import BaseDataset
 def train_test_split_per_subject_groupby_trial(
         dataset: BaseDataset,
         test_size: float = 0.2,
-        subject: int = 0,
+        subject: str = 's01.dat',
         shuffle: bool = False,
         random_state: Union[float, None] = None,
         split_path='./dataset/train_test_split_per_subject_groupby_trial'):
@@ -47,7 +47,7 @@ def train_test_split_per_subject_groupby_trial(
     Args:
         dataset (BaseDataset): Dataset to be divided.
         test_size (int):  If float, should be between 0.0 and 1.0 and represent the proportion of the dataset to include in the test split. If int, represents the absolute number of test samples. (default: :obj:`0.2`)
-        subject (int): The subject whose EEG samples will be used for training and test. (default: :obj:`0`)
+        subject (str): The subject whose EEG samples will be used for training and test. (default: :obj:`s01.dat`)
         shuffle (bool): Whether to shuffle the data before splitting into batches. Note that the samples within each split will not be shuffled. (default: :obj:`False`)
         random_state (int, optional): When shuffle is :obj:`True`, :obj:`random_state` affects the ordering of the indices, which controls the randomness of each fold. Otherwise, this parameter has no effect. (default: :obj:`None`)
         split_path (str): The path to data partition information. If the path exists, read the existing partition from the path. If the path does not exist, the current division method will be saved for next use. (default: :obj:`./split/k_fold_dataset`)

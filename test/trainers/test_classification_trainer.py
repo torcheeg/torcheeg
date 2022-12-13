@@ -42,11 +42,11 @@ class TestClassificationTrainer(unittest.TestCase):
 
         model = DummyModel()
 
-        trainer = ClassificationTrainer(model)
+        trainer = ClassificationTrainer(model, num_classes=2)
         trainer.fit(train_loader, val_loader)
         trainer.test(test_loader)
 
-        trainer = ClassificationTrainer(model, device_ids=[0])
+        trainer = ClassificationTrainer(model, device_ids=[0], num_classes=2)
         trainer.fit(train_loader, val_loader)
         trainer.test(test_loader)
 

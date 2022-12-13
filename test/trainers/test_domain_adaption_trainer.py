@@ -45,16 +45,17 @@ class TestDomainAdaptionTrainer(unittest.TestCase):
         extractor = DummyModel(120, 10)
         classifier = DummyModel(10, 2)
 
-        trainer = CORALTrainer(extractor, classifier)
+        trainer = CORALTrainer(extractor, classifier, num_classes=2)
         trainer.fit(source_loader, target_loader, val_loader)
         trainer.test(test_loader)
 
         trainer = CORALTrainer(extractor,
                                classifier,
-                               device_ids=[0])
+                               device_ids=[0],
+                               num_classes=2)
         trainer.fit(source_loader, target_loader, val_loader)
         trainer.test(test_loader)
-    
+
     def test_ada_trainer(self):
         source_dataset = DummyDataset()
         target_dataset = DummyDataset()
@@ -69,13 +70,14 @@ class TestDomainAdaptionTrainer(unittest.TestCase):
         extractor = DummyModel(120, 10)
         classifier = DummyModel(10, 2)
 
-        trainer = ADATrainer(extractor, classifier)
+        trainer = ADATrainer(extractor, classifier, num_classes=2)
         trainer.fit(source_loader, target_loader, val_loader)
         trainer.test(test_loader)
 
         trainer = ADATrainer(extractor,
-                               classifier,
-                               device_ids=[0])
+                             classifier,
+                             device_ids=[0],
+                             num_classes=2)
         trainer.fit(source_loader, target_loader, val_loader)
         trainer.test(test_loader)
 
@@ -93,16 +95,17 @@ class TestDomainAdaptionTrainer(unittest.TestCase):
         extractor = DummyModel(120, 10)
         classifier = DummyModel(10, 2)
 
-        trainer = DANTrainer(extractor, classifier)
+        trainer = DANTrainer(extractor, classifier, num_classes=2)
         trainer.fit(source_loader, target_loader, val_loader)
         trainer.test(test_loader)
 
         trainer = DANTrainer(extractor,
-                               classifier,
-                               device_ids=[0])
+                             classifier,
+                             device_ids=[0],
+                             num_classes=2)
         trainer.fit(source_loader, target_loader, val_loader)
         trainer.test(test_loader)
-    
+
     def test_ddc_trainer(self):
         source_dataset = DummyDataset()
         target_dataset = DummyDataset()
@@ -117,13 +120,14 @@ class TestDomainAdaptionTrainer(unittest.TestCase):
         extractor = DummyModel(120, 10)
         classifier = DummyModel(10, 2)
 
-        trainer = DDCTrainer(extractor, classifier)
+        trainer = DDCTrainer(extractor, classifier, num_classes=2)
         trainer.fit(source_loader, target_loader, val_loader)
         trainer.test(test_loader)
 
         trainer = DDCTrainer(extractor,
-                               classifier,
-                               device_ids=[0])
+                             classifier,
+                             device_ids=[0],
+                             num_classes=2)
         trainer.fit(source_loader, target_loader, val_loader)
         trainer.test(test_loader)
 
@@ -142,14 +146,18 @@ class TestDomainAdaptionTrainer(unittest.TestCase):
         classifier = DummyModel(10, 2)
         domain_classifier = DummyModel(10, 2)
 
-        trainer = DANNTrainer(extractor, classifier, domain_classifier)
+        trainer = DANNTrainer(extractor,
+                              classifier,
+                              domain_classifier,
+                              num_classes=2)
         trainer.fit(source_loader, target_loader, val_loader)
         trainer.test(test_loader)
 
         trainer = DANNTrainer(extractor,
-                               classifier,
-                               domain_classifier,
-                               device_ids=[0])
+                              classifier,
+                              domain_classifier,
+                              device_ids=[0],
+                              num_classes=2)
         trainer.fit(source_loader, target_loader, val_loader)
         trainer.test(test_loader)
 
