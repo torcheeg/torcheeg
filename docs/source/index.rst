@@ -35,6 +35,15 @@ Transformers.
    about_us
 
 .. toctree::
+   :maxdepth: 1
+   :caption: Tutorials:
+
+   introduction_by_example
+   implementing_gnns_with_pyg
+   managing_experiments_with_pytorch_lightning
+   Expand to See More Examples <auto_examples/index>
+
+.. toctree::
    :maxdepth: 2
    :caption: Package Reference:
 
@@ -45,27 +54,6 @@ Transformers.
    torcheeg.transforms
    torcheeg.trainers
    torcheeg.utils
-
-.. toctree::
-   :maxdepth: 1
-   :caption: Tutorials:
-
-   introduction_by_example
-   implementing_gnns_with_pyg
-   managing_experiments_with_pytorch_lightning
-   Expand to See More Examples <auto_examples/index>
-
-.. toctree::
-   :maxdepth: 1
-   :caption: PyTorch Libraries
-
-   PyTorch <https://pytorch.org/docs>
-   torchaudio <https://pytorch.org/audio>
-   torchtext <https://pytorch.org/text>
-   torchvision <https://pytorch.org/vision>
-   TorchElastic <https://pytorch.org/elastic/>
-   TorchServe <https://pytorch.org/serve>
-   PyTorch on XLA Devices <http://pytorch.org/xla/>
 
 Indices and tables
 ==================

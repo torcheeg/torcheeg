@@ -70,21 +70,27 @@ def after_trial_normalize(data: np.ndarray, eps: float = 1e-6):
     '''
     trial_samples = []
     trial_keys = []
+    trial_infos = []
     for sample in data:
         # electrodes, bands
         trial_samples.append(sample['eeg'])
         trial_keys.append(sample['key'])
+        trial_infos.append(sample['info'])
 
     # windows, electrodes, bands
     trial_samples = np.stack(trial_samples, axis=0)
 
-    min_v = trail_samples.min(axis=0, keepdims=True)
-    max_v = trail_samples.max(axis=0, keepdims=True)
-    trail_samples = (trail_samples - min_v) / (max_v - min_v + eps)
+    min_v = trial_samples.min(axis=0, keepdims=True)
+    max_v = trial_samples.max(axis=0, keepdims=True)
+    trial_samples = (trial_samples - min_v) / (max_v - min_v + eps)
 
     output_data = []
     for i, sample in enumerate(trial_samples):
-        output_data.append({'eeg': sample, 'key': trial_keys[i]})
+        output_data.append({
+            'eeg': sample,
+            'key': trial_keys[i],
+            'info': trial_infos[i]
+        })
     return output_data
 
 
@@ -121,13 +127,15 @@ def after_trial_moving_avg(data: list, window_size: int = 4):
     '''
     trial_samples = []
     trial_keys = []
+    trial_infos = []
     for sample in data:
         # electrodes, bands
         trial_samples.append(sample['eeg'])
         trial_keys.append(sample['key'])
+        trial_infos.append(sample['info'])
 
     trial_samples = np.stack(trial_samples, axis=0)
-    trail_samples_shape = trial_samples.shape
+    trial_samples_shape = trial_samples.shape
     trial_samples = trial_samples.reshape(trial_samples.shape[0], -1)
     # windows, electrodes * bands
     trial_samples_T = trial_samples.T
@@ -143,9 +151,13 @@ def after_trial_moving_avg(data: list, window_size: int = 4):
     # windows, electrodes * bands
     trial_samples = trial_samples_T.T
     # windows, electrodes, bands
-    trial_samples = trial_samples.reshape(*trail_samples_shape)
+    trial_samples = trial_samples.reshape(*trial_samples_shape)
 
     output_data = []
     for i, sample in enumerate(trial_samples):
-        output_data.append({'eeg': sample, 'key': trial_keys[i]})
+        output_data.append({
+            'eeg': sample,
+            'key': trial_keys[i],
+            'info': trial_infos[i]
+        })
     return output_data
