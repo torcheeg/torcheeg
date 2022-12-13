@@ -146,14 +146,14 @@ class VAETrainer(BasicTrainer):
         self.optimizer.zero_grad()
 
         try:
-            mu, log_var = self.modules['encoder'](X, y)
+            mu, log_var = self.modules['encoder'](X)
         except:
             raise RuntimeError(
                 'The output of the encoder should be two batches of vectors of the same dimension, representing the mean and variance estimated in the reparameterization trick!'
             )
 
         z = self.reparameterize(mu, log_var)
-        rec_X = self.modules['decoder'](z, y)
+        rec_X = self.modules['decoder'](z)
 
         rec_loss = self.loss_fn(rec_X, X)
         kld_loss = torch.mean(
@@ -192,13 +192,13 @@ class VAETrainer(BasicTrainer):
         y = val_batch[1].to(self.device)
 
         try:
-            mu, log_var = self.modules['encoder'](X, y)
+            mu, log_var = self.modules['encoder'](X)
         except:
             raise RuntimeError(
                 'The output of the encoder should be two batches of vectors of the same dimension, representing the mean and variance estimated in the reparameterization trick!'
             )
         z = self.reparameterize(mu, log_var)
-        rec_X = self.modules['decoder'](z, y)
+        rec_X = self.modules['decoder'](z)
 
         rec_loss = self.loss_fn(rec_X, X)
         kld_loss = torch.mean(
@@ -223,13 +223,13 @@ class VAETrainer(BasicTrainer):
         y = test_batch[1].to(self.device)
 
         try:
-            mu, log_var = self.modules['encoder'](X, y)
+            mu, log_var = self.modules['encoder'](X)
         except:
             raise RuntimeError(
                 'The output of the encoder should be two batches of vectors of the same dimension, representing the mean and variance estimated in the reparameterization trick!'
             )
         z = self.reparameterize(mu, log_var)
-        rec_X = self.modules['decoder'](z, y)
+        rec_X = self.modules['decoder'](z)
 
         rec_loss = self.loss_fn(rec_X, X)
         kld_loss = torch.mean(

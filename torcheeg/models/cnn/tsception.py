@@ -64,6 +64,15 @@ class TSCeption(nn.Module):
                  dropout: float = 0.5):
         # input_size: 1 x EEG channel x datapoint
         super(TSCeption, self).__init__()
+        self.num_electrodes = num_electrodes
+        self.num_T = num_T
+        self.num_S = num_S
+        self.in_channels = in_channels
+        self.hid_channels = hid_channels
+        self.num_classes = num_classes
+        self.sampling_rate = sampling_rate
+        self.dropout = dropout
+
         self.inception_window = [0.5, 0.25, 0.125]
         self.pool = 8
         # by setting the convolutional kernel being (1,lenght) and the strids being 1 we can use conv2d to

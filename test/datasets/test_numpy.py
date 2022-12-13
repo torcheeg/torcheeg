@@ -32,24 +32,50 @@ class TestNumpyDataset(unittest.TestCase):
             'arousal': np.random.randint(10, size=100)
         }
 
-        dataset = NumpyDataset(X=X,
-                               y=y,
-                               io_path=io_path,
-                               offline_transform=transforms.Compose(
-                                   [transforms.BandDifferentialEntropy()]),
-                               online_transform=transforms.ToTensor(),
-                               label_transform=transforms.Compose([
-                                   transforms.Select('valence'),
-                                   transforms.Binary(5.0),
-                               ]),
-                               num_worker=2,
-                               num_samples_per_trial=50)
-        
-        self.assertEqual(len(dataset), 100)
-        first_item = dataset[0]
-        self.assertEqual(first_item[0].shape, (32, 4))
-        last_item = dataset[99]
-        self.assertEqual(last_item[0].shape, (32, 4))
+        in_memory_space = [True, False]
+        for in_memory in in_memory_space:
+            dataset = NumpyDataset(X=X,
+                                   y=y,
+                                   io_path=io_path,
+                                   offline_transform=transforms.Compose(
+                                       [transforms.BandDifferentialEntropy()]),
+                                   online_transform=transforms.ToTensor(),
+                                   label_transform=transforms.Compose([
+                                       transforms.Select('valence'),
+                                       transforms.Binary(5.0),
+                                   ]),
+                                   num_worker=2,
+                                   num_samples_per_worker=50,
+                                   in_memory=in_memory)
+
+            self.assertEqual(len(dataset), 100)
+            first_item = dataset[0]
+            self.assertEqual(first_item[0].shape, (32, 4))
+            last_item = dataset[99]
+            self.assertEqual(last_item[0].shape, (32, 4))
+
+        io_mode_space = ['lmdb', 'pickle']
+        for io_mode in io_mode_space:
+            io_path = f'./tmp_out/numpy_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
+            dataset = NumpyDataset(X=X,
+                                   y=y,
+                                   io_path=io_path,
+                                   offline_transform=transforms.Compose(
+                                       [transforms.BandDifferentialEntropy()]),
+                                   online_transform=transforms.ToTensor(),
+                                   label_transform=transforms.Compose([
+                                       transforms.Select('valence'),
+                                       transforms.Binary(5.0),
+                                   ]),
+                                   num_worker=2,
+                                   num_samples_per_worker=50,
+                                   io_mode=io_mode)
+
+            self.assertEqual(len(dataset), 100)
+            first_item = dataset[0]
+            self.assertEqual(first_item[0].shape, (32, 4))
+            last_item = dataset[99]
+            self.assertEqual(last_item[0].shape, (32, 4))
 
 
 if __name__ == '__main__':

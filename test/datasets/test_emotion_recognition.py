@@ -194,9 +194,9 @@ class TestEmotionRecognitionDataset(unittest.TestCase):
 
         self.assertEqual(len(dataset), 152730)
         first_item = dataset[0]
-        self.assertEqual(first_item[0].shape, (62, 200))
+        self.assertEqual(first_item[0].shape, (62, 5))
         last_item = dataset[152729]
-        self.assertEqual(last_item[0].shape, (62, 200))
+        self.assertEqual(last_item[0].shape, (62, 5))
 
     def test_seed_iv_constructor(self):
         io_path = f'./tmp_out/seed_iv_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'

@@ -164,6 +164,18 @@ class ArjunViT(nn.Module):
                  dropout: float = 0.,
                  pool_func: str = 'cls'):
         super(ArjunViT, self).__init__()
+        self.num_electrodes = num_electrodes
+        self.chunk_size = chunk_size
+        self.t_patch_size = t_patch_size
+        self.hid_channels = hid_channels
+        self.depth = depth
+        self.heads = heads
+        self.head_channels = head_channels
+        self.mlp_channels = mlp_channels
+        self.num_classes = num_classes
+        self.embed_dropout = embed_dropout
+        self.dropout = dropout
+        self.pool_func = pool_func
 
         assert chunk_size % t_patch_size == 0, f'EEG chunk size {chunk_size} must be divisible by the temporal patch size {t_patch_size}.'
 

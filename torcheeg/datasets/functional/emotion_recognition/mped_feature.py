@@ -15,10 +15,8 @@ MAX_QUEUE_SIZE = 1024
 
 def transform_producer(file_name: str, root_path: str, feature: list,
                        num_channel: int, before_trial: Union[None, Callable],
-                       transform: Union[None,
-                                        Callable], after_trial: Union[Callable,
-                                                                      None],
-                       write_info_fn: Callable, queue: Queue):
+                       transform: Union[None, Callable],
+                       after_trial: Union[Callable, None], queue: Queue):
     labels = [
         0, 2, 1, 4, 3, 5, 6, 7, 1, 2, 3, 6, 7, 4, 5, 0, 1, 5, 6, 2, 2, 1, 7, 6,
         4, 4, 3, 5, 3, 7
@@ -78,43 +76,53 @@ def transform_producer(file_name: str, root_path: str, feature: list,
                 t_eeg = transform(eeg=clip_sample)['eeg']
 
             clip_id = f'{file_name}_{write_pointer}'
-            if after_trial:
-                trial_queue.append({'eeg': t_eeg, 'key': clip_id})
-            else:
-                queue.put({'eeg': t_eeg, 'key': clip_id})
             write_pointer += 1
 
             # record meta info for each signal
             record_info = {'clip_id': clip_id}
             record_info.update(trial_meta_info)
-            write_info_fn(record_info)
+            if after_trial:
+                trial_queue.append({
+                    'eeg': t_eeg,
+                    'key': clip_id,
+                    'info': record_info
+                })
+            else:
+                queue.put({'eeg': t_eeg, 'key': clip_id, 'info': record_info})
 
         if len(trial_queue) and after_trial:
             trial_queue = after_trial(trial_queue)
             for obj in trial_queue:
-                assert 'eeg' in obj and 'key' in obj, 'after_trial must return a list of dictionaries, where each dictionary corresponds to an EEG sample, containing `eeg` and `key` as keys.'
+                assert 'eeg' in obj and 'key' in obj and 'info' in obj, 'after_trial must return a list of dictionaries, where each dictionary corresponds to an EEG sample, containing `eeg`, `key` and `info` as keys.'
                 queue.put(obj)
 
 
-def io_consumer(write_eeg_fn, queue):
+def io_consumer(write_eeg_fn: Callable, write_info_fn: Callable, queue: Queue):
     while True:
         item = queue.get()
         if not item is None:
             eeg = item['eeg']
             key = item['key']
             write_eeg_fn(eeg, key)
+            if 'info' in item:
+                info = item['info']
+                write_info_fn(info)
         else:
             break
 
 
 class SingleProcessingQueue:
-    def __init__(self, write_eeg_fn):
+    def __init__(self, write_eeg_fn: Callable, write_info_fn: Callable):
         self.write_eeg_fn = write_eeg_fn
+        self.write_info_fn = write_info_fn
 
     def put(self, item):
         eeg = item['eeg']
         key = item['key']
         self.write_eeg_fn(eeg, key)
+        if 'info' in item:
+            info = item['info']
+            self.write_info_fn(info)
 
 
 def mped_feature_constructor(root_path: str = './EEG_feature',
@@ -124,9 +132,10 @@ def mped_feature_constructor(root_path: str = './EEG_feature',
                              transform: Union[None, Callable] = None,
                              after_trial: Union[Callable, None] = None,
                              io_path: str = './io/mped_feature',
+                             io_size: int = 10485760,
+                             io_mode: str = 'lmdb',
                              num_worker: int = 0,
-                             verbose: bool = True,
-                             cache_size: int = 10485760) -> None:
+                             verbose: bool = True) -> None:
     avaliable_features = os.listdir(
         root_path)  # ['HHS', 'Hjorth', 'PSD', 'STFT', 'HOC']
     assert set(feature).issubset(
@@ -149,7 +158,7 @@ def mped_feature_constructor(root_path: str = './EEG_feature',
     eeg_signal_io_path = os.path.join(io_path, 'eeg')
 
     info_io = MetaInfoIO(meta_info_io_path)
-    eeg_io = EEGSignalIO(eeg_signal_io_path, cache_size=cache_size)
+    eeg_io = EEGSignalIO(eeg_signal_io_path, io_size=io_size, io_mode=io_mode)
 
     # loop to access the dataset files
     file_list = os.listdir(os.path.join(root_path, avaliable_features[0]))
@@ -163,7 +172,8 @@ def mped_feature_constructor(root_path: str = './EEG_feature',
         manager = Manager()
         queue = manager.Queue(maxsize=MAX_QUEUE_SIZE)
         io_consumer_process = Process(target=io_consumer,
-                                      args=(eeg_io.write_eeg, queue),
+                                      args=(eeg_io.write_eeg,
+                                            info_io.write_info, queue),
                                       daemon=True)
         io_consumer_process.start()
 
@@ -174,7 +184,6 @@ def mped_feature_constructor(root_path: str = './EEG_feature',
                                 before_trial=before_trial,
                                 transform=transform,
                                 after_trial=after_trial,
-                                write_info_fn=info_io.write_info,
                                 queue=queue)
 
         for _ in Pool(num_worker).imap(partial_mp_fn, file_list):
@@ -195,8 +204,8 @@ def mped_feature_constructor(root_path: str = './EEG_feature',
                                before_trial=before_trial,
                                transform=transform,
                                after_trial=after_trial,
-                               write_info_fn=info_io.write_info,
-                               queue=SingleProcessingQueue(eeg_io.write_eeg))
+                               queue=SingleProcessingQueue(
+                                   eeg_io.write_eeg, info_io.write_info))
             if verbose:
                 pbar.update(1)
 

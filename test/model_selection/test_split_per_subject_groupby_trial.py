@@ -22,7 +22,7 @@ class TestTrainTestSplitPerSubjectGroupbyTrial(unittest.TestCase):
 
         train_dataset, test_dataset = train_test_split_per_subject_groupby_trial(dataset=dataset,
                                                                                  split_path=split_path,
-                                                                                 subject=0)
+                                                                                 subject='s16.dat')
 
         self.assertEqual(len(train_dataset), 1920)
         self.assertEqual(len(test_dataset), 480)

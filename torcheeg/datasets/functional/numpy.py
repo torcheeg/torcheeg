@@ -11,13 +11,11 @@ import numpy as np
 MAX_QUEUE_SIZE = 1024
 
 
-def transform_producer(X_y_rank: Tuple[np.ndarray, Dict,
-                                       int], before_trial: Union[Callable,
-                                                                 None],
-                       transform: Union[Callable,
-                                        None], after_trial: Union[Callable,
-                                                                  None],
-                       write_info_fn: Callable, queue: Queue):
+def transform_producer(X_y_rank: Tuple[np.ndarray, Dict, int],
+                       before_trial: Union[Callable,
+                                           None], transform: Union[Callable,
+                                                                   None],
+                       after_trial: Union[Callable, None], queue: Queue):
     X, y, worker_rank = X_y_rank
     if before_trial:
         X = before_trial(X)
@@ -32,54 +30,67 @@ def transform_producer(X_y_rank: Tuple[np.ndarray, Dict,
             t_eeg = t['eeg']
 
         clip_id = f'{worker_rank}_{write_pointer}'
-        if after_trial:
-            trial_queue.append({'eeg': t_eeg, 'key': clip_id})
-        else:
-            queue.put({'eeg': t_eeg, 'key': clip_id})
 
         # record meta info for each signal
         record_info = {'clip_id': clip_id}
         record_info.update({k: v[write_pointer] for k, v in y.items()})
-        write_info_fn(record_info)
+        if after_trial:
+            trial_queue.append({
+                'eeg': t_eeg,
+                'key': clip_id,
+                'info': record_info
+            })
+        else:
+            queue.put({'eeg': t_eeg, 'key': clip_id, 'info': record_info})
 
     if len(trial_queue) and after_trial:
         trial_queue = after_trial(trial_queue)
         for obj in trial_queue:
-            assert 'eeg' in obj and 'key' in obj, 'after_trial must return a list of dictionaries, where each dictionary corresponds to an EEG sample, containing `eeg` and `key` as keys.'
+            assert 'eeg' in obj and 'key' in obj and 'info' in obj, 'after_trial must return a list of dictionaries, where each dictionary corresponds to an EEG sample, containing `eeg`, `key` and `info` as keys.'
             queue.put(obj)
 
 
-def io_consumer(write_eeg_fn, queue):
+def io_consumer(write_eeg_fn: Callable, write_info_fn: Callable, queue: Queue):
     while True:
         item = queue.get()
         if not item is None:
             eeg = item['eeg']
             key = item['key']
             write_eeg_fn(eeg, key)
+            if 'info' in item:
+                info = item['info']
+                write_info_fn(info)
         else:
             break
 
 
 class SingleProcessingQueue:
-    def __init__(self, write_eeg_fn):
+    def __init__(self, write_eeg_fn: Callable, write_info_fn: Callable):
         self.write_eeg_fn = write_eeg_fn
+        self.write_info_fn = write_info_fn
 
     def put(self, item):
         eeg = item['eeg']
         key = item['key']
         self.write_eeg_fn(eeg, key)
+        if 'info' in item:
+            info = item['info']
+            self.write_info_fn(info)
 
 
-def numpy_constructor(X: np.ndarray,
-                      y: Dict,
-                      before_trial: Union[None, Callable] = None,
-                      transform: Union[None, Callable] = None,
-                      after_trial: Union[Callable, None] = None,
-                      io_path: str = './io/numpy',
-                      num_worker: int = 0,
-                      num_samples_per_trial: int = 100,
-                      verbose: bool = True,
-                      cache_size: int = 10485760) -> None:
+def numpy_constructor(
+    X: np.ndarray,
+    y: Dict,
+    before_trial: Union[None, Callable] = None,
+    transform: Union[None, Callable] = None,
+    after_trial: Union[Callable, None] = None,
+    num_samples_per_worker: int = 100,
+    io_path: str = './io/numpy',
+    io_size: int = 10485760,
+    io_mode: str = 'lmdb',
+    num_worker: int = 0,
+    verbose: bool = True,
+) -> None:
 
     for k, v in y.items():
         assert len(X) == len(
@@ -99,12 +110,12 @@ def numpy_constructor(X: np.ndarray,
     os.makedirs(io_path, exist_ok=True)
 
     info_io = MetaInfoIO(meta_info_io_path)
-    eeg_io = EEGSignalIO(eeg_signal_io_path, cache_size=cache_size)
+    eeg_io = EEGSignalIO(eeg_signal_io_path, io_size=io_size, io_mode=io_mode)
 
     # access the data
     indices = np.arange(len(X))
     worker_indices_list = np.array_split(indices,
-                                         len(X) // num_samples_per_trial)
+                                         len(X) // num_samples_per_worker)
 
     X_y_rank_list = []
     for worker_rank, worker_indices in enumerate(worker_indices_list):
@@ -121,7 +132,8 @@ def numpy_constructor(X: np.ndarray,
         manager = Manager()
         queue = manager.Queue(maxsize=MAX_QUEUE_SIZE)
         io_consumer_process = Process(target=io_consumer,
-                                      args=(eeg_io.write_eeg, queue),
+                                      args=(eeg_io.write_eeg,
+                                            info_io.write_info, queue),
                                       daemon=True)
         io_consumer_process.start()
 
@@ -129,7 +141,6 @@ def numpy_constructor(X: np.ndarray,
                                 before_trial=before_trial,
                                 transform=transform,
                                 after_trial=after_trial,
-                                write_info_fn=info_io.write_info,
                                 queue=queue)
 
         for _ in Pool(num_worker).imap(partial_mp_fn, X_y_rank_list):
@@ -147,8 +158,8 @@ def numpy_constructor(X: np.ndarray,
                                before_trial=before_trial,
                                transform=transform,
                                after_trial=after_trial,
-                               write_info_fn=info_io.write_info,
-                               queue=SingleProcessingQueue(eeg_io.write_eeg))
+                               queue=SingleProcessingQueue(
+                                   eeg_io.write_eeg, info_io.write_info))
             if verbose:
                 pbar.update(1)
 

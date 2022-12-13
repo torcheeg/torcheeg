@@ -1,6 +1,6 @@
 import math
 from itertools import chain, cycle
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 
 import numpy as np
 import torch
@@ -83,6 +83,7 @@ class DDCTrainer(ClassificationTrainer):
         classifier (nn.Module): The classification model, learning the classification task with source labeled data based on the feature of the feature extraction model. The dimension of its output should be equal to the number of categories in the dataset. The output layer does not need to have a softmax activation function.
         lambd (float): The weight of DDC loss to trade-off between the classification loss and DDC loss. (defualt: :obj:`1.0`)
         adaption_factor (bool): Whether to adjust the cross-domain-related loss term using the fitness factor, which was first proposed in DANN but works in many cases. (defualt: :obj:`False`)
+        num_classes (int, optional): The number of categories in the dataset. If :obj:`None`, the number of categories will be inferred from the attribute :obj:`num_classes` of the model. (defualt: :obj:`None`)
         lr (float): The learning rate. (defualt: :obj:`0.0001`)
         weight_decay: (float): The weight decay (L2 penalty). (defualt: :obj:`0.0`)
         device_ids (list): Use cpu if the list is empty. If the list contains indices of multiple GPUs, it needs to be launched with :obj:`torch.distributed.launch` or :obj:`torchrun`. (defualt: :obj:`[]`)
@@ -99,6 +100,7 @@ class DDCTrainer(ClassificationTrainer):
                  classifier: nn.Module,
                  lambd: float = 1.0,
                  adaption_factor: bool = False,
+                 num_classes: Optional[int] = None,
                  lr: float = 1e-4,
                  weight_decay: float = 0.0,
                  device_ids: List[int] = [],
@@ -123,6 +125,13 @@ class DDCTrainer(ClassificationTrainer):
         self.lambd = lambd
         self.adaption_factor = adaption_factor
 
+        if not num_classes is None:
+            self.num_classes = num_classes
+        elif hasattr(classifier, 'num_classes'):
+            self.num_classes = classifier.num_classes
+        else:
+            raise ValueError('The number of classes is not specified.')
+
         self.optimizer = torch.optim.Adam(chain(extractor.parameters(),
                                                 classifier.parameters()),
                                           lr=lr,
@@ -131,13 +140,16 @@ class DDCTrainer(ClassificationTrainer):
 
         # init metric
         self.train_loss = torchmetrics.MeanMetric().to(self.device)
-        self.train_accuracy = torchmetrics.Accuracy().to(self.device)
+        self.train_accuracy = torchmetrics.Accuracy(
+            task='multiclass', num_classes=self.num_classes, top_k=1).to(self.device)
 
         self.val_loss = torchmetrics.MeanMetric().to(self.device)
-        self.val_accuracy = torchmetrics.Accuracy().to(self.device)
+        self.val_accuracy = torchmetrics.Accuracy(
+            task='multiclass', num_classes=self.num_classes, top_k=1).to(self.device)
 
         self.test_loss = torchmetrics.MeanMetric().to(self.device)
-        self.test_accuracy = torchmetrics.Accuracy().to(self.device)
+        self.test_accuracy = torchmetrics.Accuracy(
+            task='multiclass', num_classes=self.num_classes, top_k=1).to(self.device)
 
     def on_training_step(self, source_loader: DataLoader,
                          target_loader: DataLoader, batch_id: int,

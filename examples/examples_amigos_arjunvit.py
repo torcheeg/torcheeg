@@ -85,7 +85,8 @@ dataset = AMIGOSDataset(io_path='./tmp_out/examples_amigos_arjunvit/amigos',
                         chunk_size=128,
                         baseline_chunk_size=128,
                         num_baseline=5,
-                        num_worker=4)
+                        num_worker=4,
+                        io_mode='pickle')
 
 ######################################################################
 # .. warning::
@@ -106,11 +107,15 @@ dataset = AMIGOSDataset(io_path='./tmp_out/examples_amigos_arjunvit/amigos',
 #                             transforms.Select('valence'),
 #                             transforms.Binary(5.0)
 #                         ]),
+#                         io_mode='pickle',
 #                         chunk_size=128,
 #                         baseline_chunk_size=128,
 #                         num_baseline=5,
 #                         num_worker=4)
 #        # the following codes
+#
+# .. note::
+#    LMDB may not be optimized for parts of Windows systems or storage devices. If you find that the data preprocessing speed is slow, you can consider setting :obj:`io_mode` to :obj:`pickle`, which is an alternative implemented by TorchEEG based on pickle.
 
 ######################################################################
 # Step 2: Divide the Training and Test samples in the Dataset
@@ -136,7 +141,7 @@ for i, (train_dataset, val_dataset) in enumerate(k_fold.split(dataset)):
                      num_electrodes=len(AMIGOS_CHANNEL_LOCATION_DICT),
                      num_classes=2)
 
-    # Initialize the trainer and use the 0-th GPU for training
+    # Initialize the trainer and use the 0-th GPU for training, or set device_ids=[] to use CPU
     trainer = MyClassificationTrainer(model=model,
                                       lr=1e-4,
                                       weight_decay=1e-4,

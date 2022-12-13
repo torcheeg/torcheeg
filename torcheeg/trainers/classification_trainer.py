@@ -1,5 +1,5 @@
 import math
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 
 import torch
 import numpy as np
@@ -71,6 +71,7 @@ class ClassificationTrainer(BasicTrainer):
 
     Args:
         model (nn.Module): The classification model, and the dimension of its output should be equal to the number of categories in the dataset. The output layer does not need to have a softmax activation function.
+        num_classes (int, optional): The number of categories in the dataset. If :obj:`None`, the number of categories will be inferred from the attribute :obj:`num_classes` of the model. (defualt: :obj:`None`)
         lr (float): The learning rate. (defualt: :obj:`0.0001`)
         weight_decay: (float): The weight decay (L2 penalty). (defualt: :obj:`0.0`)
         device_ids (list): Use cpu if the list is empty. If the list contains indices of multiple GPUs, it needs to be launched with :obj:`torch.distributed.launch` or :obj:`torchrun`. (defualt: :obj:`[]`)
@@ -84,6 +85,7 @@ class ClassificationTrainer(BasicTrainer):
     '''
     def __init__(self,
                  model: nn.Module,
+                 num_classes: Optional[int] = None,
                  lr: float = 1e-4,
                  weight_decay: float = 0.0,
                  device_ids: List[int] = [],
@@ -101,6 +103,13 @@ class ClassificationTrainer(BasicTrainer):
         self.lr = lr
         self.weight_decay = weight_decay
 
+        if not num_classes is None:
+            self.num_classes = num_classes
+        elif hasattr(model, 'num_classes'):
+            self.num_classes = model.num_classes
+        else:
+            raise ValueError('The number of classes is not specified.')
+
         self.optimizer = torch.optim.Adam(model.parameters(),
                                           lr=lr,
                                           weight_decay=weight_decay)
@@ -108,13 +117,16 @@ class ClassificationTrainer(BasicTrainer):
 
         # init metric
         self.train_loss = torchmetrics.MeanMetric().to(self.device)
-        self.train_accuracy = torchmetrics.Accuracy().to(self.device)
+        self.train_accuracy = torchmetrics.Accuracy(
+            task='multiclass', num_classes=self.num_classes, top_k=1).to(self.device)
 
         self.val_loss = torchmetrics.MeanMetric().to(self.device)
-        self.val_accuracy = torchmetrics.Accuracy().to(self.device)
+        self.val_accuracy = torchmetrics.Accuracy(
+            task='multiclass', num_classes=self.num_classes, top_k=1).to(self.device)
 
         self.test_loss = torchmetrics.MeanMetric().to(self.device)
-        self.test_accuracy = torchmetrics.Accuracy().to(self.device)
+        self.test_accuracy = torchmetrics.Accuracy(
+            task='multiclass', num_classes=self.num_classes, top_k=1).to(self.device)
 
     def before_training_epoch(self, epoch_id: int, num_epochs: int, **kwargs):
         self.log(f"Epoch {epoch_id}\n-------------------------------")

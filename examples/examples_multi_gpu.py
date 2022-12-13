@@ -112,11 +112,15 @@ dataset = DEAPDataset(io_path=f'./tmp_out/examples_multi_gpu/deap',
 #                 transforms.Select('valence'),
 #                 transforms.Binary(5.0),
 #             ]),
+#             io_mode='pickle',
 #             chunk_size=128,
 #             baseline_chunk_size=128,
 #             num_baseline=3,
 #             num_worker=4)
 #        # the following codes
+#
+# .. note::
+#    LMDB may not be optimized for parts of Windows systems or storage devices. If you find that the data preprocessing speed is slow, you can consider setting :obj:`io_mode` to :obj:`pickle`, which is an alternative implemented by TorchEEG based on pickle.
 
 ######################################################################
 # Step 2: Divide the Training and Test samples in the Dataset

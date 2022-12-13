@@ -28,20 +28,20 @@ class MetaInfoIO:
             }
 
     Args:
-        cache_path (str): Where the table is stored.
+        io_path (str): Where the table is stored.
     '''
-    def __init__(self, cache_path: str) -> None:
-        self.cache_path = cache_path
-        if not os.path.exists(self.cache_path):
-            open(self.cache_path, 'x').close()
+    def __init__(self, io_path: str) -> None:
+        self.io_path = io_path
+        if not os.path.exists(self.io_path):
+            open(self.io_path, 'x').close()
             self.write_pointer = 0
         else:
             self.write_pointer = len(self)
 
     def __len__(self):
-        if os.path.getsize(self.cache_path) == 0:
+        if os.path.getsize(self.io_path) == 0:
             return 0
-        info_list = pd.read_csv(self.cache_path)
+        info_list = pd.read_csv(self.io_path)
         return len(info_list)
 
     def write_info(self, obj: Dict) -> int:
@@ -54,8 +54,8 @@ class MetaInfoIO:
         Returns:
             int: The index of written EEG description in the table.
         '''
-        with open(self.cache_path, 'a+') as f:
-            require_head = os.path.getsize(self.cache_path) == 0
+        with open(self.io_path, 'a+') as f:
+            require_head = os.path.getsize(self.io_path) == 0
             writer = csv.DictWriter(f, fieldnames=list(obj.keys()))
             if require_head:
                 writer.writeheader()
@@ -73,7 +73,7 @@ class MetaInfoIO:
         Returns:
             pd.DataFrame: The EEG description.
         '''
-        return pd.read_csv(self.cache_path).iloc[key]
+        return pd.read_csv(self.io_path).iloc[key]
 
     def read_all(self) -> pd.DataFrame:
         r'''
@@ -82,4 +82,4 @@ class MetaInfoIO:
         Returns:
             pd.DataFrame: The EEG descriptions.
         '''
-        return pd.read_csv(self.cache_path)
+        return pd.read_csv(self.io_path)

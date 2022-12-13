@@ -124,6 +124,34 @@ dataset = MNEDataset(epochs_list=epochs_list,
                      num_worker=2)
 
 ######################################################################
+# .. warning::
+#    If you use TorchEEG under the `Windows` system and want to use multiple processes (such as in dataset or dataloader), you should check whether :obj:`__name__` is :obj:`__main__` to avoid errors caused by multiple :obj:`import`.
+#
+# That is, under the :obj:`Windows` system, you need to:
+#  .. code-block::
+#
+#    if __name__ == "__main__":
+#        dataset = MNEDataset(epochs_list=epochs_list,
+#                      metadata_list=metadata_list,
+#                      chunk_size=160,
+#                      overlap=80,
+#                      io_path='./tmp_out/examples_mne_dataset/physionet',
+#                      offline_transform=transforms.Compose(
+#                          [transforms.MeanStdNormalize(),
+#                           transforms.To2d()]),
+#                      online_transform=transforms.ToTensor(),
+#                      label_transform=transforms.Compose([
+#                          transforms.Select('event'),
+#                          transforms.Lambda(lambda x: x - 2)
+#                      ]),
+#                      io_mode='pickle',
+#                      num_worker=2)
+#        # the following codes
+#
+# .. note::
+#    LMDB may not be optimized for parts of Windows systems or storage devices. If you find that the data preprocessing speed is slow, you can consider setting :obj:`io_mode` to :obj:`pickle`, which is an alternative implemented by TorchEEG based on pickle.
+
+######################################################################
 # Step 2: Divide the Training and Test samples in the Dataset
 #
 # Here, the dataset is divided using 5-fold cross-validation. In the process of division, the total dataset takes 4 folds as training samples and 1 fold as test samples.
@@ -150,7 +178,7 @@ for i, (train_dataset, val_dataset) in enumerate(k_fold.split(dataset)):
                       sampling_rate=160,
                       dropout=0.5)
 
-    # Initialize the trainer and use the 0-th GPU for training
+    # Initialize the trainer and use the 0-th GPU for training, or set device_ids=[] to use CPU
     trainer = MyClassificationTrainer(model=model,
                                       lr=1e-4,
                                       weight_decay=1e-4,
