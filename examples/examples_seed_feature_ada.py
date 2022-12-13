@@ -131,10 +131,11 @@ dataset = SEEDFeatureDataset(io_path='./tmp_out/examples_seed_feature_ada/seed',
 #                                  transforms.Select('emotion'),
 #                                  transforms.Lambda(lambda x: int(x) + 1),
 #                              ]),
+#                              io_mode='pickle',
 #                              num_worker=8)
 #        # the following codes
 #
-# .. warning::
+# .. note::
 #    LMDB may not be optimized for parts of Windows systems or storage devices. If you find that the data preprocessing speed is slow, you can consider setting :obj:`io_mode` to :obj:`pickle`, which is an alternative implemented by TorchEEG based on pickle.
 
 ######################################################################

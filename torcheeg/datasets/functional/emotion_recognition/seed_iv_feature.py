@@ -131,7 +131,7 @@ class SingleProcessingQueue:
 
 
 def seed_iv_feature_constructor(root_path: str = './eeg_feature_smooth',
-                                feature: list = ['de_movingAve1'],
+                                feature: list = ['de_movingAve'],
                                 num_channel: int = 61,
                                 before_trial: Union[None, Callable] = None,
                                 transform: Union[None, Callable] = None,

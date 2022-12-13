@@ -107,6 +107,7 @@ dataset = DEAPDataset(
 #                           transforms.BandDifferentialEntropy(apply_to_baseline=True),
 #                           transforms.ToGrid(DEAP_CHANNEL_LOCATION_DICT, apply_to_baseline=True)
 #                       ]),
+#                       io_mode='pickle',
 #                       online_transform=transforms.Compose(
 #                           [transforms.BaselineRemoval(),
 #                            transforms.ToTensor()]),
@@ -116,7 +117,7 @@ dataset = DEAPDataset(
 #                       ]))
 #        # the following codes
 #
-# .. warning::
+# .. note::
 #    LMDB may not be optimized for parts of Windows systems or storage devices. If you find that the data preprocessing speed is slow, you can consider setting :obj:`io_mode` to :obj:`pickle`, which is an alternative implemented by TorchEEG based on pickle.
 
 ######################################################################

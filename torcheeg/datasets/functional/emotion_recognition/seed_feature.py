@@ -121,7 +121,7 @@ class SingleProcessingQueue:
 
 def seed_feature_constructor(
     root_path: str = './ExtractedFeatures',
-    feature: list = ['de_movingAve1'],
+    feature: list = ['de_movingAve'],
     num_channel: int = 62,
     before_trial: Union[None, Callable] = None,
     transform: Union[None, Callable] = None,
