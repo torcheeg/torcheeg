@@ -38,7 +38,7 @@ class MPEDFeatureDataset(BaseDataset):
                               offline_transform=transforms.ToGrid(MPED_CHANNEL_LOCATION_DICT),
                               online_transform=transforms.ToTensor(),
                               label_transform=transforms.Compose([
-                                  transforms.Select(['emotion'])
+                                  transforms.Select('emotion')
                               ]))
         print(dataset[0])
         # EEG signal (torch.Tensor[5, 9, 9]),
@@ -54,7 +54,7 @@ class MPEDFeatureDataset(BaseDataset):
                               features=['PSD'],
                               online_transform=ToG(MPED_ADJACENCY_MATRIX),
                               label_transform=transforms.Compose([
-                                  transforms.Select(['emotion'])
+                                  transforms.Select('emotion')
                               ]))
         print(dataset[0])
         # EEG signal (torch_geometric.data.Data),
@@ -72,7 +72,7 @@ class MPEDFeatureDataset(BaseDataset):
                               offline_transform=transforms.ToGrid(MPED_CHANNEL_LOCATION_DICT),
                               online_transform=transforms.ToTensor(),
                               label_transform=transforms.Compose([
-                                  transforms.Select(['emotion'])
+                                  transforms.Select('emotion')
                               ]),
                               num_worker=4)
             print(dataset[0])

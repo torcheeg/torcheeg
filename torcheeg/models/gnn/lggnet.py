@@ -131,7 +131,7 @@ class LGGNet(nn.Module):
                                   transforms.ToTensor()
                               ]),
                               label_transform=transforms.Compose([
-                                  transforms.Select(['emotion']),
+                                  transforms.Select('emotion'),
                                   transforms.Lambda(lambda x: x + 1)
                               ]))
         model = LGGNet(region_list=SEED_GENERAL_REGION_LIST, chunk_size=128, num_electrodes=32, hid_channels=32, num_classes=2)

@@ -111,7 +111,7 @@ class DGCNN(nn.Module):
                                   transforms.ToTensor()
                               ]),
                               label_transform=transforms.Compose([
-                                  transforms.Select(['emotion']),
+                                  transforms.Select('emotion'),
                                   transforms.Lambda(lambda x: x + 1)
                               ]))
         model = DGCNN(in_channels=5, num_electrodes=62, hid_channels=32, num_layers=2, num_classes=2)
