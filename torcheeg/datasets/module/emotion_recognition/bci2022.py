@@ -45,7 +45,7 @@ class BCI2022Dataset(BaseDataset):
                                   transforms.ToGrid(BCI2022_CHANNEL_LOCATION_DICT)
                               ]),
                               online_transform=transforms.ToTensor(),
-                              label_transform=transforms.Select(['emotion']))
+                              label_transform=transforms.Select('emotion'))
         print(dataset[0])
         # EEG signal (torch.Tensor[4, 8, 9]),
         # coresponding baseline signal (torch.Tensor[4, 8, 9]),
@@ -61,7 +61,7 @@ class BCI2022Dataset(BaseDataset):
                                   transforms.ToTensor(),
                                   transforms.To2d()
                               ]),
-                              label_transform=transforms.Select(['emotion']))
+                              label_transform=transforms.Select('emotion'))
         print(dataset[0])
         # EEG signal (torch.Tensor[30, 250]),
         # coresponding baseline signal (torch.Tensor[30, 250]),
@@ -76,7 +76,7 @@ class BCI2022Dataset(BaseDataset):
                               online_transform=transforms.Compose([
                                   transforms.ToG(BCI2022_ADJACENCY_MATRIX)
                               ]),
-                              label_transform=transforms.Select(['emotion']))
+                              label_transform=transforms.Select('emotion'))
         print(dataset[0])
         # EEG signal (torch_geometric.data.Data),
         # coresponding baseline signal (torch_geometric.data.Data),
@@ -92,7 +92,7 @@ class BCI2022Dataset(BaseDataset):
                               online_transform=transforms.Compose([
                                   transforms.ToG(BCI2022_ADJACENCY_MATRIX)
                               ]),
-                              label_transform=transforms.Select(['emotion']),
+                              label_transform=transforms.Select('emotion'),
                               num_worker=4)
             print(dataset[0])
             # EEG signal (torch_geometric.data.Data),

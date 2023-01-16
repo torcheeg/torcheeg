@@ -38,7 +38,7 @@ class SEEDFeatureDataset(BaseDataset):
                               offline_transform=transforms.ToGrid(SEED_CHANNEL_LOCATION_DICT),
                               online_transform=transforms.ToTensor(),
                               label_transform=transforms.Compose([
-                                  transforms.Select(['emotion']),
+                                  transforms.Select('emotion'),
                                   transforms.Lambda(lambda x: x + 1)
                               ]))
         print(dataset[0])
@@ -55,7 +55,7 @@ class SEEDFeatureDataset(BaseDataset):
                               features=['de_movingAve'],
                               online_transform=ToG(SEED_ADJACENCY_MATRIX),
                               label_transform=transforms.Compose([
-                                  transforms.Select(['emotion']),
+                                  transforms.Select('emotion'),
                                   transforms.Lambda(x: x + 1)
                               ]))
         print(dataset[0])
@@ -74,7 +74,7 @@ class SEEDFeatureDataset(BaseDataset):
                               offline_transform=transforms.ToGrid(SEED_CHANNEL_LOCATION_DICT),
                               online_transform=transforms.ToTensor(),
                               label_transform=transforms.Compose([
-                                  transforms.Select(['emotion']),
+                                  transforms.Select('emotion'),
                                   transforms.Lambda(lambda x: x + 1)
                               ]),
                               num_worker=4)

@@ -57,7 +57,7 @@ seed_everything(42)
 ###############################################################################
 # Defining a graph convolutional network
 # -----------------------------------------
-# Use the API provided by PyTorch Geometric to define graph convolutional networks. Here, the EEG signal or feature of the electrode corresponds to the input :obj`data.x`, and the relationship between electrodes corresponds to :obj`data.edge_index`. Depending on the definition of the adjacency matrix, the relationship may represent spatial adjacency, etc.
+# Use the API provided by PyTorch Geometric to define graph convolutional networks. Here, the EEG signal or feature of the electrode corresponds to the input :obj:`data.x`, and the relationship between electrodes corresponds to :obj:`data.edge_index`. Depending on the definition of the adjacency matrix, the relationship may represent spatial adjacency, etc.
 #
 
 

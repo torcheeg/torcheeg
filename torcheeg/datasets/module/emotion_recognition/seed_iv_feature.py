@@ -35,7 +35,7 @@ class SEEDIVFeatureDataset(BaseDataset):
                               features=['de_movingAve'],
                               offline_transform=transforms.ToGrid(SEED_CHANNEL_LOCATION_DICT),
                               online_transform=transforms.ToTensor(),
-                              label_transform=transforms.Select(['emotion']))
+                              label_transform=transforms.Select('emotion'))
         print(dataset[0])
         # EEG signal (torch.Tensor[5, 9, 9]),
         # coresponding baseline signal (torch.Tensor[5, 9, 9]),
@@ -49,7 +49,7 @@ class SEEDIVFeatureDataset(BaseDataset):
                               root_path='./eeg_feature_smooth',
                               features=['de_movingAve'],
                               online_transform=ToG(SEED_ADJACENCY_MATRIX),
-                              label_transform=transforms.Select(['emotion']))
+                              label_transform=transforms.Select('emotion'))
         print(dataset[0])
         # EEG signal (torch_geometric.data.Data),
         # coresponding baseline signal (torch_geometric.data.Data),
@@ -65,7 +65,7 @@ class SEEDIVFeatureDataset(BaseDataset):
                               feature=['de_movingAve'],
                               offline_transform=transforms.ToGrid(SEED_CHANNEL_LOCATION_DICT),
                               online_transform=transforms.ToTensor(),
-                              label_transform=transforms.Select(['emotion']),
+                              label_transform=transforms.Select('emotion'),
                               num_worker=4)
             print(dataset[0])
             # EEG signal (torch_geometric.data.Data),

@@ -38,7 +38,7 @@ class SEEDDataset(BaseDataset):
                               ]),
                               online_transform=transforms.ToTensor(),
                               label_transform=transforms.Compose([
-                                  transforms.Select(['emotion']),
+                                  transforms.Select('emotion'),
                                   transforms.Lambda(lambda x: x + 1)
                               ]))
         print(dataset[0])
@@ -57,7 +57,7 @@ class SEEDDataset(BaseDataset):
                                   transforms.To2d()
                               ]),
                               label_transform=transforms.Compose([
-                                  transforms.Select(['emotion']),
+                                  transforms.Select('emotion'),
                                   transforms.Lambda(x: x + 1)
                               ]))
         print(dataset[0])
@@ -75,7 +75,7 @@ class SEEDDataset(BaseDataset):
                                   ToG(SEED_ADJACENCY_MATRIX)
                               ]),
                               label_transform=transforms.Compose([
-                                  transforms.Select(['emotion']),
+                                  transforms.Select('emotion'),
                                   transforms.Lambda(x: x + 1)
                               ]))
         print(dataset[0])
@@ -94,7 +94,7 @@ class SEEDDataset(BaseDataset):
                                   ToG(SEED_ADJACENCY_MATRIX)
                               ]),
                               label_transform=transforms.Compose([
-                                  transforms.Select(['emotion']),
+                                  transforms.Select('emotion'),
                                   transforms.Lambda(x: x + 1)
                               ]),
                               num_worker=4)

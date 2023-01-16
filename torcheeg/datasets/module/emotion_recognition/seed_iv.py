@@ -38,7 +38,7 @@ class SEEDIVDataset(BaseDataset):
                               ]),
                               online_transform=transforms.ToTensor(),
                               label_transform=transforms.Compose([
-                                  transforms.Select(['emotion']),
+                                  transforms.Select('emotion'),
                                   transforms.Lambda(lambda x: x + 1)
                               ]))
         print(dataset[0])
@@ -56,7 +56,7 @@ class SEEDIVDataset(BaseDataset):
                                   transforms.ToTensor(),
                                   transforms.To2d()
                               ]),
-                              label_transform=transforms.Select(['emotion']))
+                              label_transform=transforms.Select('emotion'))
         print(dataset[0])
         # EEG signal (torch.Tensor[62, 200]),
         # coresponding baseline signal (torch.Tensor[62, 200]),
@@ -71,7 +71,7 @@ class SEEDIVDataset(BaseDataset):
                               online_transform=transforms.Compose([
                                   ToG(SEED_IV_ADJACENCY_MATRIX)
                               ]),
-                              label_transform=transforms.Select(['emotion']))
+                              label_transform=transforms.Select('emotion'))
         print(dataset[0])
         # EEG signal (torch_geometric.data.Data),
         # coresponding baseline signal (torch_geometric.data.Data),
@@ -87,7 +87,7 @@ class SEEDIVDataset(BaseDataset):
                               online_transform=transforms.Compose([
                                   ToG(SEED_IV_ADJACENCY_MATRIX)
                               ]),
-                              label_transform=transforms.Select(['emotion']),
+                              label_transform=transforms.Select('emotion'),
                               num_worker=4)
             print(dataset[0])
             # EEG signal (torch_geometric.data.Data),
