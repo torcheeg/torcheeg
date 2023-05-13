@@ -3,7 +3,7 @@ import torchmetrics
 from torchmetrics import MetricCollection
 
 def classification_metrics(metric_list, num_classes, device):
-    allowed_metrics = ['precision', 'recall', 'f1_score', 'accuracy']
+    allowed_metrics = ['precision', 'recall', 'f1score', 'accuracy']
 
     if metric_list:
         for metric in metric_list:
@@ -13,7 +13,7 @@ def classification_metrics(metric_list, num_classes, device):
             'accuracy': torchmetrics.Accuracy(task='multiclass', num_classes=num_classes, top_k=1).to(device),
             'precision': torchmetrics.Precision(task='multiclass', average='macro', num_classes=num_classes).to(device),
             'recall': torchmetrics.Recall(task='multiclass', average='macro', num_classes=num_classes).to(device),
-            'f1_score': torchmetrics.F1Score(task='multiclass', average='macro', num_classes=num_classes).to(device)
+            'f1score': torchmetrics.F1Score(task='multiclass', average='macro', num_classes=num_classes).to(device)
         }
     
     else:
