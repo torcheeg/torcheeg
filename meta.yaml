@@ -30,7 +30,7 @@ requirements:
     - networkx>=2.6.3
     - PyWavelets>=1.3.0
     - spectrum>=0.8.1
-    - torchmetrics>=0.8.2
+    - torchmetrics>=0.10.0
     - mne-connectivity>=0.4.0
 
 about:
