@@ -50,6 +50,10 @@ class TestClassificationTrainer(unittest.TestCase):
         trainer.fit(train_loader, val_loader)
         trainer.test(test_loader)
 
+        trainer = ClassificationTrainer(model, device_ids=[0], num_classes=2, 
+                                        metrics=['accuracy','recall','precision','f1score'])
+        trainer.fit(train_loader, val_loader)
+        trainer.test(test_loader)
 
 if __name__ == '__main__':
     unittest.main()

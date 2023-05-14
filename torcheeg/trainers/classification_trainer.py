@@ -4,6 +4,7 @@ from typing import List, Tuple, Optional
 import torch
 import numpy as np
 import torch.nn as nn
+from .utils import classification_metrics
 import torchmetrics
 from torch.utils.data import DataLoader
 
@@ -72,6 +73,7 @@ class ClassificationTrainer(BasicTrainer):
     Args:
         model (nn.Module): The classification model, and the dimension of its output should be equal to the number of categories in the dataset. The output layer does not need to have a softmax activation function.
         num_classes (int, optional): The number of categories in the dataset. If :obj:`None`, the number of categories will be inferred from the attribute :obj:`num_classes` of the model. (defualt: :obj:`None`)
+        metrics (list, optional): Supported metrics are precision, recall, f1_score and accuracy. atleast one should be present
         lr (float): The learning rate. (defualt: :obj:`0.0001`)
         weight_decay: (float): The weight decay (L2 penalty). (defualt: :obj:`0.0`)
         device_ids (list): Use cpu if the list is empty. If the list contains indices of multiple GPUs, it needs to be launched with :obj:`torch.distributed.launch` or :obj:`torchrun`. (defualt: :obj:`[]`)
@@ -86,6 +88,7 @@ class ClassificationTrainer(BasicTrainer):
     def __init__(self,
                  model: nn.Module,
                  num_classes: Optional[int] = None,
+                 metrics: Optional[list] = None, 
                  lr: float = 1e-4,
                  weight_decay: float = 0.0,
                  device_ids: List[int] = [],
@@ -102,7 +105,8 @@ class ClassificationTrainer(BasicTrainer):
                              ddp_test=ddp_test)
         self.lr = lr
         self.weight_decay = weight_decay
-
+        self.metrics = metrics
+        
         if not num_classes is None:
             self.num_classes = num_classes
         elif hasattr(model, 'num_classes'):
@@ -117,23 +121,27 @@ class ClassificationTrainer(BasicTrainer):
 
         # init metric
         self.train_loss = torchmetrics.MeanMetric().to(self.device)
-        self.train_accuracy = torchmetrics.Accuracy(
-            task='multiclass', num_classes=self.num_classes, top_k=1).to(self.device)
+
+        self.train_metrics = classification_metrics(metric_list=self.metrics,
+                                                    num_classes=self.num_classes,
+                                                    device=self.device)
 
         self.val_loss = torchmetrics.MeanMetric().to(self.device)
-        self.val_accuracy = torchmetrics.Accuracy(
-            task='multiclass', num_classes=self.num_classes, top_k=1).to(self.device)
+        self.val_metrics = classification_metrics(metric_list=self.metrics,
+                                                  num_classes=self.num_classes,
+                                                  device=self.device)
 
         self.test_loss = torchmetrics.MeanMetric().to(self.device)
-        self.test_accuracy = torchmetrics.Accuracy(
-            task='multiclass', num_classes=self.num_classes, top_k=1).to(self.device)
+        self.test_metrics = classification_metrics(metric_list=self.metrics,
+                                                   num_classes=self.num_classes,
+                                                   device=self.device)
 
     def before_training_epoch(self, epoch_id: int, num_epochs: int, **kwargs):
         self.log(f"Epoch {epoch_id}\n-------------------------------")
 
     def on_training_step(self, train_batch: Tuple, batch_id: int,
                          num_batches: int, **kwargs):
-        self.train_accuracy.reset()
+        self.train_metrics.reset()
         self.train_loss.reset()
 
         X = train_batch[0].to(self.device)
@@ -152,21 +160,24 @@ class ClassificationTrainer(BasicTrainer):
         log_step = math.ceil(num_batches / 5)
         if batch_id % log_step == 0:
             self.train_loss.update(loss)
-            self.train_accuracy.update(pred.argmax(1), y)
-
             train_loss = self.train_loss.compute()
-            train_accuracy = 100 * self.train_accuracy.compute()
 
+            # Update and compute selected metrics
+            
+            self.train_metrics.update(pred.argmax(1), y)
+            train_metric_results = self.train_metrics.compute()
             # if not distributed, world_size is 1
             batch_id = batch_id * self.world_size
             num_batches = num_batches * self.world_size
-            if self.is_main:
-                self.log(
-                    f"loss: {train_loss:>8f}, accuracy: {train_accuracy:>0.1f}% [{batch_id:>5d}/{num_batches:>5d}]"
-                )
+
+            log_msg = f"loss: {train_loss:>8f} [{batch_id:>5d}/{num_batches:>5d}]"
+            for metric, result in train_metric_results.items():
+                log_msg += f" {metric.replace('Multiclass','')}: {result*100:>0.3f}"
+            self.log(log_msg)
+
 
     def before_validation_epoch(self, epoch_id: int, num_epochs: int, **kwargs):
-        self.val_accuracy.reset()
+        self.val_metrics.reset()
         self.val_loss.reset()
 
     def on_validation_step(self, val_batch: Tuple, batch_id: int,
@@ -177,16 +188,19 @@ class ClassificationTrainer(BasicTrainer):
         pred = self.modules['model'](X)
 
         self.val_loss.update(self.loss_fn(pred, y))
-        self.val_accuracy.update(pred.argmax(1), y)
-
+        self.val_metrics.update(pred.argmax(1), y)
+        
     def after_validation_epoch(self, epoch_id: int, num_epochs: int, **kwargs):
-        val_accuracy = 100 * self.val_accuracy.compute()
         val_loss = self.val_loss.compute()
-        self.log(f"\nloss: {val_loss:>8f}, accuracy: {val_accuracy:>0.1f}%")
+        val_metric_results = self.val_metrics.compute()
+        log_msg = f"\nloss: {val_loss:>8f} "
+        for metric, result in val_metric_results.items():
+            log_msg += f" {metric.replace('Multiclass','')}: {result*100:>0.3f} "
+        self.log(log_msg)
 
     def before_test_epoch(self, **kwargs):
+        self.test_metrics.reset()
         self.test_loss.reset()
-        self.test_accuracy.reset()
 
     def on_test_step(self, test_batch: Tuple, batch_id: int, num_batches: int,
                      **kwargs):
@@ -195,12 +209,15 @@ class ClassificationTrainer(BasicTrainer):
         pred = self.modules['model'](X)
 
         self.test_loss.update(self.loss_fn(pred, y))
-        self.test_accuracy.update(pred.argmax(1), y)
+        self.test_metrics.update(pred.argmax(1), y)
 
     def after_test_epoch(self, **kwargs):
-        test_accuracy = 100 * self.test_accuracy.compute()
+        test_metric_results = self.test_metrics.compute()
         test_loss = self.test_loss.compute()
-        self.log(f"\nloss: {test_loss:>8f}, accuracy: {test_accuracy:>0.1f}%")
+        log_msg = f"\nloss: {test_loss:>8f} "
+        for metric, result in test_metric_results.items():
+            log_msg += f" {metric.replace('Multiclass','')}: {result*100:>0.3f}"
+        self.log(log_msg)
 
     def test(self, test_loader: DataLoader, **kwargs):
         r'''
