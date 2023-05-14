@@ -9,6 +9,7 @@ from torcheeg.trainers import ClassificationTrainer
 
 
 class DummyDataset(Dataset):
+
     def __init__(self, length: int = 101):
         self.length = length
 
@@ -20,6 +21,7 @@ class DummyDataset(Dataset):
 
 
 class DummyModel(nn.Module):
+
     def __init__(self, in_channels=120, out_channels=2):
         super().__init__()
         self.in_channels = in_channels
@@ -31,6 +33,7 @@ class DummyModel(nn.Module):
 
 
 class TestClassificationTrainer(unittest.TestCase):
+
     def test_classification_trainer(self):
         train_dataset = DummyDataset()
         val_dataset = DummyDataset()
@@ -50,10 +53,23 @@ class TestClassificationTrainer(unittest.TestCase):
         trainer.fit(train_loader, val_loader)
         trainer.test(test_loader)
 
-        trainer = ClassificationTrainer(model, device_ids=[0], num_classes=2, 
-                                        metrics=['accuracy','recall','precision','f1score'])
+        trainer = ClassificationTrainer(
+            model,
+            device_ids=[0],
+            num_classes=2,
+            metrics=['accuracy', 'recall', 'precision', 'f1score'])
         trainer.fit(train_loader, val_loader)
         trainer.test(test_loader)
+
+        # should catch value error for metrics 'unexpected'
+        with self.assertRaises(ValueError):
+            trainer = ClassificationTrainer(model,
+                                            device_ids=[0],
+                                            num_classes=2,
+                                            metrics=['unexpected'])
+            trainer.fit(train_loader, val_loader)
+            trainer.test(test_loader)
+
 
 if __name__ == '__main__':
     unittest.main()

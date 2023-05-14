@@ -6,13 +6,13 @@ from typing import List
 
 
 def classification_metrics(metric_list: List[str], num_classes: int,
-                           device: torch.Device):
+                           device: torch.device):
     allowed_metrics = ['precision', 'recall', 'f1score', 'accuracy']
 
     if metric_list:
         for metric in metric_list:
             if metric not in allowed_metrics:
-                ValueError(
+                raise ValueError(
                     f"{metric} is not allowed. Please choose 'precision', 'recall', 'f1_score', 'accuracy'"
                 )
         metric_dict = {
