@@ -300,6 +300,30 @@ If you would like to contribute new datasets, deep learning methods, and extensi
 
 ## Thanks for the contributors
 <!-- readme: collaborators,contributors -start -->
+<table>
+<tr>
+    <td align="center">
+        <a href="https://github.com/tczhangzhi">
+            <img src="https://avatars.githubusercontent.com/u/14837418?v=4" width="100;" alt="tczhangzhi"/>
+            <br />
+            <sub><b>ZHANG Zhi</b></sub>
+        </a>
+    </td>
+    <td align="center">
+        <a href="https://github.com/talhaanwarch">
+            <img src="https://avatars.githubusercontent.com/u/37379131?v=4" width="100;" alt="talhaanwarch"/>
+            <br />
+            <sub><b>Talha Anwar</b></sub>
+        </a>
+    </td>
+    <td align="center">
+        <a href="https://github.com/gitter-badger">
+            <img src="https://avatars.githubusercontent.com/u/8518239?v=4" width="100;" alt="gitter-badger"/>
+            <br />
+            <sub><b>The Gitter Badger</b></sub>
+        </a>
+    </td></tr>
+</table>
 <!-- readme: collaborators,contributors -end -->
 
 ## License
