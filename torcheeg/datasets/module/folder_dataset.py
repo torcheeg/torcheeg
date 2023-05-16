@@ -6,9 +6,9 @@ from .base_dataset import BaseDataset
 class FolderDataset(BaseDataset):
     def __init__(self,
                  root_path: str = './eeg_raw_data',
-                 chunk_size: int = 800,
+                 chunk_size: int = -1,
                  overlap: int = 0,
-                 num_channel: int = 62,
+                 num_channel: int = -1,
                  online_transform: Union[None, Callable] = None,
                  offline_transform: Union[None, Callable] = None,
                  label_transform: Union[None, Callable] = None,

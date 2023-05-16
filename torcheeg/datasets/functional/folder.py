@@ -96,9 +96,9 @@ class SingleProcessingQueue:
 
 def folder_constructor(
     root_path: str = './eeg_raw_data',
-    chunk_size: int = 800,
+    chunk_size: int = -1,
     overlap: int = 0,
-    num_channel: int = None,
+    num_channel: int = -1,
     before_trial: Union[None, Callable] = None,
     transform: Union[None, Callable] = None,
     after_trial: Union[Callable, None] = None,

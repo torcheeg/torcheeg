@@ -107,7 +107,6 @@ class TestFolderDataset(unittest.TestCase):
         
         self.assertEqual(len(dataset), 20)
         first_item = dataset[0]
-        print('first_item',first_item[0].shape)
         self.assertEqual(first_item[0].shape, (14, 128))
         self.assertEqual(first_item[1], 0)
         last_item = dataset[-1]
