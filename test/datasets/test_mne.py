@@ -15,8 +15,8 @@ class TestMNEDataset(unittest.TestCase):
         shutil.rmtree('./tmp_out/')
         os.mkdir('./tmp_out/')
 
-    def test_numpy_constructor(self):
-        io_path = f'./tmp_out/numpy_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
+    def test_mne_constructor(self):
+        io_path = f'./tmp_out/mne_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
 
         metadata_list = [{
             'subject': 1,
@@ -48,8 +48,8 @@ class TestMNEDataset(unittest.TestCase):
             epochs_list.append(mne.Epochs(raw, events, picks=picks))
         mne_constructor(epochs_list, metadata_list, io_path=io_path, num_worker=0)
 
-    def test_numpy_dataset(self):
-        io_path = f'./tmp_out/numpy_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
+    def test_mne_dataset(self):
+        io_path = f'./tmp_out/mne_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
 
         metadata_list = [{
             'subject': 1,
