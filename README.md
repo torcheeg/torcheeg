@@ -295,6 +295,37 @@ TorchEEG is currently in beta; Please let us know if you encounter a bug by fili
 
 If you would like to contribute new datasets, deep learning methods, and extensions to the core, please first open an issue and then send a PR. If you are planning to contribute back bug fixes, please do so without any further discussion.
 
+## Thanks for the support
+[![Stargazers repo roster for @torcheeg/torcheeg](https://reporoster.com/stars/torcheeg/torcheeg)](https://github.com/torcheeg/torcheeg/stargazers)
+
+## Thanks for the contributors
+<!-- readme: collaborators,contributors -start -->
+<table>
+<tr>
+    <td align="center">
+        <a href="https://github.com/tczhangzhi">
+            <img src="https://avatars.githubusercontent.com/u/14837418?v=4" width="100;" alt="tczhangzhi"/>
+            <br />
+            <sub><b>ZHANG Zhi</b></sub>
+        </a>
+    </td>
+    <td align="center">
+        <a href="https://github.com/talhaanwarch">
+            <img src="https://avatars.githubusercontent.com/u/37379131?v=4" width="100;" alt="talhaanwarch"/>
+            <br />
+            <sub><b>Talha Anwar</b></sub>
+        </a>
+    </td>
+    <td align="center">
+        <a href="https://github.com/gitter-badger">
+            <img src="https://avatars.githubusercontent.com/u/8518239?v=4" width="100;" alt="gitter-badger"/>
+            <br />
+            <sub><b>The Gitter Badger</b></sub>
+        </a>
+    </td></tr>
+</table>
+<!-- readme: collaborators,contributors -end -->
+
 ## License
 
 TorchEEG has a MIT license, as found in the [LICENSE](https://github.com/tczhangzhi/torcheeg/blob/main/LICENSE) file.
