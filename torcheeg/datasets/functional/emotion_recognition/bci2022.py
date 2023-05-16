@@ -257,7 +257,8 @@ def bci2022_constructor(root_path: str = './2022EmotionPublic/TrainSet/',
             # show process bar
             pbar = tqdm(total=len(file_list))
             pbar.set_description(f"[BCI2022 BATCH {train_set_batch_index+1}/2]")
-
+        if num_worker < 0:
+            num_worker = os.cpu_count() + num_worker +1
         if num_worker > 1:
             manager = Manager()
             queue = manager.Queue(maxsize=MAX_QUEUE_SIZE)

@@ -156,7 +156,8 @@ def m3cv_constructor(
         # show process bar
         pbar = tqdm(total=len(df_list))
         pbar.set_description("[M3CV]")
-
+    if num_worker < 0:
+        num_worker = os.cpu_count() + num_worker +1
     if num_worker > 1:
         manager = Manager()
         queue = manager.Queue(maxsize=MAX_QUEUE_SIZE)

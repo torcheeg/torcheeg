@@ -169,7 +169,8 @@ def tsu_benchmark_constructor(root_path: str = './TSUBenchmark',
         # show process bar
         pbar = tqdm(total=len(file_list))
         pbar.set_description("[TSU Benchmark]")
-
+    if num_worker < 0:
+        num_worker = os.cpu_count() + num_worker +1
     if num_worker > 1:
         manager = Manager()
         queue = manager.Queue(maxsize=MAX_QUEUE_SIZE)
