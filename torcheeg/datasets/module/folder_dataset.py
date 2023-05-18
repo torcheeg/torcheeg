@@ -23,7 +23,7 @@ class FolderDataset(BaseDataset):
     '''
     Read EEG samples and their corresponding labels from a fixed folder structure. This class allows two kinds of common file structures, :obj:`subject_in_label` and :obj:`label_in_subject`. Here, :obj:`subject_in_label` corresponds to the following file structure:
 
-    .. ode-block:: shell
+    .. code-block:: python
 
         tree
         # outputs
@@ -36,7 +36,7 @@ class FolderDataset(BaseDataset):
 
     And :obj:`label_in_subject` corresponds to the following file structure:
 
-    .. ode-block:: shell
+    .. code-block:: python
 
         tree
         # outputs
@@ -50,7 +50,7 @@ class FolderDataset(BaseDataset):
     Args:
         root_path (str): The path to the root folder. (default: :obj:`'./folder'`)
         structure (str): Folder structure, which affects how labels and subjects are mapped to EEG signal samples. Please refer to the above description of the structure of the two folders to select the correct parameters. (default: :obj:`'subject_in_label'`)
-        read_fn (Callable): Method for reading files in a folder. By default, this class provides methods for reading files using :obj:`mne.io.read_raw`. At the same time, we allow users to pass in custom file reading methods. The first input parameter of whose is file_path, and other parameters are additional parameters passed in when the class is initialized. For example, you can pass `chunk_size=32` to `FolderDataset`, then `chunk_size ` will be received here.
+        read_fn (Callable): Method for reading files in a folder. By default, this class provides methods for reading files using :obj:`mne.io.read_raw`. At the same time, we allow users to pass in custom file reading methods. The first input parameter of whose is file_path, and other parameters are additional parameters passed in when the class is initialized. For example, you can pass :obj:`chunk_size=32` to :obj:`FolderDataset`, then :obj:`chunk_size` will be received here.
         online_transform (Callable, optional): The transformation of the EEG signals and baseline EEG signals. The input is a :obj:`np.ndarray`, and the ouput is used as the first and second value of each element in the dataset. (default: :obj:`None`)
         offline_transform (Callable, optional): The usage is the same as :obj:`online_transform`, but executed before generating IO intermediate results. (default: :obj:`None`)
         label_transform (Callable, optional): The transformation of the label. The input is an information dictionary, and the ouput is used as the third value of each element in the dataset. (default: :obj:`None`)
