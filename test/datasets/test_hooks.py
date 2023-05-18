@@ -10,7 +10,8 @@ from torcheeg.datasets.functional.hooks import before_trial_normalize, after_tri
 
 class TestHooks(unittest.TestCase):
     def setUp(self):
-        shutil.rmtree('./tmp_out/')
+        if os.path.exists('./tmp_out/'):
+            shutil.rmtree('./tmp_out/')
         os.mkdir('./tmp_out/')
 
     def test_before_trial_after_trial(self):

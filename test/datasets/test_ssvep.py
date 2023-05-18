@@ -16,7 +16,8 @@ def mean_reduce(eeg_list):
 class TestSSVEPDataset(unittest.TestCase):
 
     def setUp(self):
-        shutil.rmtree('./tmp_out/')
+        if os.path.exists('./tmp_out/'):
+            shutil.rmtree('./tmp_out/')
         os.mkdir('./tmp_out/')
 
     def test_tsu_benchmark_dataset(self):

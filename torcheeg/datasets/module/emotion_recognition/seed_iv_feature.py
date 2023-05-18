@@ -140,7 +140,6 @@ class SEEDIVFeatureDataset(BaseDataset):
                lock: Any = None,
                **kwargs):
         file_path = block  # an element from file name list
-        root_path = kwargs.pop('root_path', './eeg_feature_smooth')
         feature = kwargs.pop('feature', ['de_movingAve'])
         num_channel = kwargs.pop('num_channel', 62)
         before_trial = kwargs.pop('before_trial', None)
@@ -273,6 +272,8 @@ class SEEDIVFeatureDataset(BaseDataset):
             for file_name in os.listdir(session_root_path):
                 file_path_list.append(os.path.join(session_root_path,
                                                    file_name))
+
+        return file_path_list
 
     def __getitem__(self, index: int) -> Tuple[any, any, int, int, int]:
         info = self.read_info(index)

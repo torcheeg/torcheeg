@@ -8,9 +8,9 @@ from torcheeg.datasets import M3CVDataset
 
 
 class TestPersonalIdentificationDataset(unittest.TestCase):
-
     def setUp(self):
-        shutil.rmtree('./tmp_out/')
+        if os.path.exists('./tmp_out/'):
+            shutil.rmtree('./tmp_out/')
         os.mkdir('./tmp_out/')
 
     def test_m3cv_dataset(self):

@@ -122,7 +122,6 @@ class M3CVDataset(BaseDataset):
         verbose (bool): Whether to display logs during processing, such as progress bars, etc. (default: :obj:`True`)
         in_memory (bool): Whether to load the entire dataset into memory. If :obj:`in_memory` is set to True, then the first time an EEG sample is read, the entire dataset is loaded into memory for subsequent retrieval. Otherwise, the dataset is stored on disk to avoid the out-of-memory problem. (default: :obj:`False`)    
     '''
-
     def __init__(self,
                  root_path: str = './aistudio',
                  subset: str = 'Enrollment',
@@ -209,8 +208,8 @@ class M3CVDataset(BaseDataset):
             if start_epoch is None:
                 start_epoch = epoch_id
 
-            trial_samples = scio.loadmat(os.path.join(root_path,
-                                                      epoch_id))['epoch_data']
+            trial_samples = scio.loadmat(
+                os.path.join(root_path, subset, epoch_id))['epoch_data']
             if before_trial:
                 trial_samples = before_trial(trial_samples)
 

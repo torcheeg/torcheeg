@@ -11,7 +11,8 @@ from torcheeg.datasets import MNEDataset
 class TestMNEDataset(unittest.TestCase):
 
     def setUp(self):
-        shutil.rmtree('./tmp_out/')
+        if os.path.exists('./tmp_out/'):
+            shutil.rmtree('./tmp_out/')
         os.mkdir('./tmp_out/')
 
     def test_mne_dataset(self):

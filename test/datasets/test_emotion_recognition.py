@@ -11,9 +11,9 @@ from torcheeg.datasets import (AMIGOSDataset, DEAPDataset, DREAMERDataset,
 
 
 class TestEmotionRecognitionDataset(unittest.TestCase):
-
     def setUp(self):
-        shutil.rmtree('./tmp_out/')
+        if os.path.exists('./tmp_out/'):
+            shutil.rmtree('./tmp_out/')
         os.mkdir('./tmp_out/')
 
     def test_mped_feature_dataset(self):
