@@ -325,6 +325,8 @@ class BaseDataset(Dataset):
                     # show process bar
                     pbar = tqdm(total=len(chunk_for_worker))
                     pbar.set_description("[FROM EXISTING]")
+                if num_worker < 0:
+                    num_worker = os.cpu_count() + num_worker +1
                 if num_worker > 1:
                     manager = Manager()
                     queue = manager.Queue(maxsize=MAX_QUEUE_SIZE)
@@ -415,7 +417,8 @@ class BaseDataset(Dataset):
                 # show process bar
                 pbar = tqdm(total=len(chunk_for_worker))
                 pbar.set_description("[REDUCE]")
-
+            if num_worker < 0:
+                num_worker = os.cpu_count() + num_worker +1
             if num_worker > 1:
                 manager = Manager()
                 queue = manager.Queue(maxsize=MAX_QUEUE_SIZE)

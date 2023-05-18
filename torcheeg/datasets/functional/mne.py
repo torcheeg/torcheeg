@@ -167,7 +167,8 @@ def mne_constructor(epochs_list: List[mne.Epochs],
         # show process bar
         pbar = tqdm(total=len(epochs_metadata_rank_list))
         pbar.set_description("[MNE]")
-
+    if num_worker < 0:
+        num_worker = os.cpu_count() + num_worker +1
     if num_worker > 1:
         manager = Manager()
         queue = manager.Queue(maxsize=MAX_QUEUE_SIZE)
