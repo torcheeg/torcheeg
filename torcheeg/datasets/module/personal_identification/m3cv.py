@@ -1,7 +1,12 @@
-from typing import Callable, Union, Tuple, Dict
+import os
+from typing import Any, Callable, Dict, Tuple, Union
+
+import pandas as pd
+import scipy.io as scio
+
+from torcheeg.io import EEGSignalIO, MetaInfoIO
 
 from ..base_dataset import BaseDataset
-from ...functional.personal_identification.m3cv import m3cv_constructor
 
 
 class M3CVDataset(BaseDataset):
@@ -134,40 +139,148 @@ class M3CVDataset(BaseDataset):
                  num_worker: int = 0,
                  verbose: bool = True,
                  in_memory: bool = False):
-        m3cv_constructor(
-            root_path=root_path,
-            subset=subset,
-            chunk_size=chunk_size,
-            overlap=overlap,
-            num_channel=num_channel,
-            before_trial=before_trial,
-            transform=offline_transform,
-            after_trial=after_trial,
-            io_path=io_path,
-            io_size=io_size,
-            io_mode=io_mode,
-            num_worker=num_worker,
-            verbose=verbose,
-        )
-        super().__init__(io_path=io_path,
-                         io_size=io_size,
-                         io_mode=io_mode,
-                         in_memory=in_memory)
+        # pass all arguments to super class
+        params = {
+            'root_path': root_path,
+            'subset': subset,
+            'chunk_size': chunk_size,
+            'overlap': overlap,
+            'num_channel': num_channel,
+            'online_transform': online_transform,
+            'offline_transform': offline_transform,
+            'label_transform': label_transform,
+            'before_trial': before_trial,
+            'after_trial': after_trial,
+            'io_path': io_path,
+            'io_size': io_size,
+            'io_mode': io_mode,
+            'num_worker': num_worker,
+            'verbose': verbose,
+            'in_memory': in_memory
+        }
+        super().__init__(**params)
+        # save all arguments to __dict__
+        self.__dict__.update(params)
 
-        self.root_path = root_path
-        self.subset = subset
-        self.chunk_size = chunk_size
-        self.overlap = overlap
-        self.num_channel = num_channel
-        self.online_transform = online_transform
-        self.offline_transform = offline_transform
-        self.label_transform = label_transform
-        self.num_worker = num_worker
-        self.verbose = verbose
+    @staticmethod
+    def __io__(io_path: str = None,
+               io_size: int = 10485760,
+               io_mode: str = 'lmdb',
+               block: Any = None,
+               lock: Any = None,
+               **kwargs):
+        start_idx, end_idx = block
+        root_path = kwargs.pop('root_path', './aistudio')  # str
+        subset = kwargs.pop('subset', 'Enrollment')  # str
+        chunk_size = kwargs.pop('chunk_size', 1000)  # int
+        overlap = kwargs.pop('overlap', 0)  # int
+        num_channel = kwargs.pop('num_channel', 64)  # int
+        before_trial = kwargs.pop('before_trial', None)  # Callable
+        transform = kwargs.pop('transform', None)  # Callable
+        after_trial = kwargs.pop('after_trial', None)  # Callable
+        df = pd.read_csv(os.path.join(root_path, f'{subset}_Info.csv'))
+        df = df.iloc[start_idx:end_idx]
 
+        meta_info_io_path = os.path.join(io_path, 'info.csv')
+        eeg_signal_io_path = os.path.join(io_path, 'eeg')
+
+        info_io = MetaInfoIO(meta_info_io_path)
+        eeg_io = EEGSignalIO(eeg_signal_io_path,
+                             io_size=io_size,
+                             io_mode=io_mode)
+
+        # calculate moving step
+        write_pointer = 0
+
+        start_epoch = None
+
+        for _, epoch_info in df.iterrows():
+            epoch_meta_info = {
+                'epoch_id': epoch_info['EpochID'],
+                'subject_id': epoch_info['SubjectID'],
+                'session': epoch_info['Session'],
+                'task': epoch_info['Task'],
+                'usage': epoch_info['Usage'],
+            }
+
+            epoch_id = epoch_meta_info['epoch_id']
+
+            if start_epoch is None:
+                start_epoch = epoch_id
+
+            trial_samples = scio.loadmat(
+                os.path.join(root_path, subset, epoch_id))['epoch_data']
+            if before_trial:
+                trial_samples = before_trial(trial_samples)
+
+            start_at = 0
+            if chunk_size <= 0:
+                chunk_size = trial_samples.shape[1] - start_at
+
+            # chunk with chunk size
+            end_at = chunk_size
+            # calculate moving step
+            step = chunk_size - overlap
+
+            trial_queue = []
+            while end_at <= trial_samples.shape[1]:
+                clip_sample = trial_samples[:num_channel, start_at:end_at]
+                t_eeg = clip_sample
+
+                if not transform is None:
+                    t_eeg = transform(eeg=clip_sample)['eeg']
+
+                clip_id = f'after{start_epoch}_{write_pointer}'
+                write_pointer += 1
+
+                # record meta info for each signal
+                record_info = {
+                    'start_at': start_at,
+                    'end_at': end_at,
+                    'clip_id': clip_id
+                }
+                record_info.update(epoch_meta_info)
+                if after_trial:
+                    trial_queue.append({
+                        'eeg': t_eeg,
+                        'key': clip_id,
+                        'info': record_info
+                    })
+                else:
+                    with lock:
+                        eeg_io.write_eeg(t_eeg, clip_id)
+                        info_io.write_info(record_info)
+
+                start_at = start_at + step
+                end_at = start_at + chunk_size
+
+            if len(trial_queue) and after_trial:
+                trial_queue = after_trial(trial_queue)
+                for obj in trial_queue:
+                    assert 'eeg' in obj and 'key' in obj and 'info' in obj, 'after_trial must return a list of dictionaries, where each dictionary corresponds to an EEG sample, containing `eeg`, `key` and `info` as keys.'
+                    with lock:
+                        eeg_io.write_eeg(obj['eeg'], obj['key'])
+                        info_io.write_info(obj['info'])
+
+    @staticmethod
+    def __block__(**kwargs):
+        root_path = kwargs.pop('root_path', './aistudio')  # str
+        subset = kwargs.pop('subset', 'Enrollment')  # str
         assert subset in [
             'Enrollment', 'Calibration', 'Testing'
         ], f"Unavailable subset name {subset}, and available options include 'Enrollment', 'Calibration', and 'Testing'."
+
+        df = pd.read_csv(os.path.join(root_path, f'{subset}_Info.csv'))
+        # split the dataset into 60 blocks, each of which contains len(df) // 60 samples, the start and end index of each block are recorded in block_list
+        block_list = []
+        for i in range(60):
+            start = i * len(df) // 60
+            end = (i + 1) * len(df) // 60
+            block_list.append((start, end))
+        # the last block contains the remaining samples
+        if len(df) % 60 != 0:
+            block_list[-1] = (block_list[-1][0], len(df))
+        return block_list
 
     def __getitem__(self, index: int) -> Tuple:
         info = self.read_info(index)

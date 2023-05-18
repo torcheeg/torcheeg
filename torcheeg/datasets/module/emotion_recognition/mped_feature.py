@@ -1,9 +1,13 @@
-from typing import Callable, Dict, Tuple, Union
+import os
+from typing import Any, Callable, Dict, Tuple, Union
+
+import numpy as np
+import scipy.io as scio
+
+from torcheeg.io import EEGSignalIO, MetaInfoIO
 
 from ...constants.emotion_recognition.mped import (MPED_ADJACENCY_MATRIX,
                                                    MPED_CHANNEL_LOCATION_DICT)
-from ...functional.emotion_recognition.mped_feature import \
-    mped_feature_constructor
 from ..base_dataset import BaseDataset
 
 
@@ -114,33 +118,145 @@ class MPEDFeatureDataset(BaseDataset):
                  num_worker: int = 0,
                  verbose: bool = True,
                  in_memory: bool = False):
-        mped_feature_constructor(root_path=root_path,
-                                 feature=feature,
-                                 num_channel=num_channel,
-                                 before_trial=before_trial,
-                                 transform=offline_transform,
-                                 after_trial=after_trial,
-                                 io_path=io_path,
-                                 io_size=io_size,
-                                 io_mode=io_mode,
-                                 num_worker=num_worker,
-                                 verbose=verbose)
-        super().__init__(io_path=io_path,
-                         io_size=io_size,
-                         io_mode=io_mode,
-                         in_memory=in_memory)
+        # pass all arguments to super class
+        params = {
+            'root_path': root_path,
+            'feature': feature,
+            'num_channel': num_channel,
+            'online_transform': online_transform,
+            'offline_transform': offline_transform,
+            'label_transform': label_transform,
+            'before_trial': before_trial,
+            'after_trial': after_trial,
+            'io_path': io_path,
+            'io_size': io_size,
+            'io_mode': io_mode,
+            'num_worker': num_worker,
+            'verbose': verbose,
+            'in_memory': in_memory
+        }
+        super().__init__(**params)
+        # save all arguments to __dict__
+        self.__dict__.update(params)
 
-        self.root_path = root_path
-        self.feature = feature
-        self.num_channel = num_channel
-        self.online_transform = online_transform
-        self.offline_transform = offline_transform
-        self.label_transform = label_transform
-        self.before_trial = before_trial
-        self.after_trial = after_trial
-        self.num_worker = num_worker
-        self.verbose = verbose
-        self.io_size = io_size
+    @staticmethod
+    def __io__(io_path: str = None,
+               io_size: int = 10485760,
+               io_mode: str = 'lmdb',
+               block: Any = None,
+               lock: Any = None,
+               **kwargs):
+        file_name = block
+        root_path = kwargs.pop('root_path', './EEG_feature')
+        feature = kwargs.pop('feature', ['PSD'])
+        num_channel = kwargs.pop('num_channel', 62)
+        before_trial = kwargs.pop('before_trial', None)
+        transform = kwargs.pop('offline_transform', None)
+        after_trial = kwargs.pop('after_trial', None)
+
+        meta_info_io_path = os.path.join(io_path, 'info.csv')
+        eeg_signal_io_path = os.path.join(io_path, 'eeg')
+
+        info_io = MetaInfoIO(meta_info_io_path)
+        eeg_io = EEGSignalIO(eeg_signal_io_path,
+                             io_size=io_size,
+                             io_mode=io_mode)
+
+        labels = [
+            0, 2, 1, 4, 3, 5, 6, 7, 1, 2, 3, 6, 7, 4, 5, 0, 1, 5, 6, 2, 2, 1, 7,
+            6, 4, 4, 3, 5, 3, 7
+        ]  # 0-resting status, 1-neutral, 2-joy, 3-funny, 4-angry, 5-fear, 6-disgust, 7-sadness
+
+        subject = os.path.basename(file_name).split('.')[0].split('_')[0]
+
+        samples_dict = {}
+        for cur_feature in feature:
+            samples_dict[cur_feature] = scio.loadmat(
+                os.path.join(root_path, cur_feature, file_name),
+                verify_compressed_data_integrity=False)  # (1, 30)
+        write_pointer = 0
+
+        for trial_id in range(30):
+            trial_samples = []
+            for cur_feature, samples in samples_dict.items():
+                for sub_band in samples.keys():
+                    # HHS: hhs_A, hhs_E
+                    # Hjorth/HOC: alpha, beta, delta, gamma, theta, whole
+                    # STFT: STFT
+                    # PSD: PSD
+                    if not str.startswith(sub_band, '__'):
+                        # not '__header__', '__version__', '__globals__'
+                        trial_samples += [
+                            samples[sub_band][0][trial_id][:num_channel],
+                        ]
+                        # PSD: (62, 120, 5)
+                        # Hjorth: (62, 120, 3)
+                        # HOC: (62, 120, 20)
+                        # HHS: (62, 120, 5)
+                        # STFT: (62, 120, 5)
+            trial_samples = np.concatenate(trial_samples,
+                                           axis=-1)  # (62, 120, num_features)
+            if before_trial:
+                trial_samples = before_trial(trial_samples)
+
+            # record the common meta info
+            trial_meta_info = {
+                'subject_id': subject,
+                'trial_id': trial_id,
+                'emotion': labels[trial_id]
+            }
+            num_clips = trial_samples.shape[1]
+
+            trial_queue = []
+            for clip_id in range(num_clips):
+                # PSD: (62, 5)
+                # Hjorth: (62, 3 * 6)
+                # HOC: (62, 20 * 6)
+                # STFT: (62, 5)
+                # HHS: (62, 5 * 2)
+                clip_sample = trial_samples[:, clip_id]
+
+                t_eeg = clip_sample
+                if not transform is None:
+                    t_eeg = transform(eeg=clip_sample)['eeg']
+
+                clip_id = f'{file_name}_{write_pointer}'
+                write_pointer += 1
+
+                # record meta info for each signal
+                record_info = {'clip_id': clip_id}
+                record_info.update(trial_meta_info)
+                if after_trial:
+                    trial_queue.append({
+                        'eeg': t_eeg,
+                        'key': clip_id,
+                        'info': record_info
+                    })
+                else:
+                    with lock:
+                        eeg_io.write_eeg(t_eeg, clip_id)
+                        info_io.write_info(record_info)
+
+            if len(trial_queue) and after_trial:
+                trial_queue = after_trial(trial_queue)
+                for obj in trial_queue:
+                    assert 'eeg' in obj and 'key' in obj and 'info' in obj, 'after_trial must return a list of dictionaries, where each dictionary corresponds to an EEG sample, containing `eeg`, `key` and `info` as keys.'
+                    with lock:
+                        eeg_io.write_eeg(obj['eeg'], obj['key'])
+                        info_io.write_info(obj['info'])
+
+    @staticmethod
+    def __block__(**kwargs):
+        root_path = kwargs.pop('root_path', './data_preprocessed_python')  # str
+        feature = kwargs.pop('feature', ['PSD'])  # list
+        avaliable_features = os.listdir(root_path)
+
+        assert set(feature).issubset(
+            set(avaliable_features)
+        ), 'The features supported by the MPEDFeature dataset are HHS, Hjorth, PSD, STFT, HOC. The input features are not a subset of the list of supported features.'
+
+        file_list = os.listdir(os.path.join(root_path, avaliable_features[0]))
+        return file_list
 
     def __getitem__(self, index: int) -> Tuple[any, any, int, int, int]:
         info = self.read_info(index)
