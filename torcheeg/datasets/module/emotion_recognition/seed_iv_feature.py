@@ -1,9 +1,14 @@
-from typing import Callable, Dict, Tuple, Union
+import os
+import re
+from typing import Any, Callable, Dict, Tuple, Union
+
+import numpy as np
+import scipy.io as scio
+
+from torcheeg.io import EEGSignalIO, MetaInfoIO
 
 from ...constants.emotion_recognition.seed_iv import (
     SEED_IV_ADJACENCY_MATRIX, SEED_IV_CHANNEL_LOCATION_DICT)
-from ...functional.emotion_recognition.seed_iv_feature import \
-    seed_iv_feature_constructor
 from ..base_dataset import BaseDataset
 
 
@@ -106,32 +111,168 @@ class SEEDIVFeatureDataset(BaseDataset):
                  num_worker: int = 0,
                  verbose: bool = True,
                  in_memory: bool = False):
-        seed_iv_feature_constructor(root_path=root_path,
-                                    feature=feature,
-                                    num_channel=num_channel,
-                                    before_trial=before_trial,
-                                    transform=offline_transform,
-                                    after_trial=after_trial,
-                                    io_path=io_path,
-                                    io_size=io_size,
-                                    io_mode=io_mode,
-                                    num_worker=num_worker,
-                                    verbose=verbose)
-        super().__init__(io_path=io_path,
-                         io_size=io_size,
-                         io_mode=io_mode,
-                         in_memory=in_memory)
+        # pass all arguments to super class
+        params = {
+            'root_path': root_path,
+            'feature': feature,
+            'num_channel': num_channel,
+            'online_transform': online_transform,
+            'offline_transform': offline_transform,
+            'label_transform': label_transform,
+            'before_trial': before_trial,
+            'after_trial': after_trial,
+            'io_path': io_path,
+            'io_size': io_size,
+            'io_mode': io_mode,
+            'num_worker': num_worker,
+            'verbose': verbose,
+            'in_memory': in_memory
+        }
+        super().__init__(**params)
+        # save all arguments to __dict__
+        self.__dict__.update(params)
 
-        self.root_path = root_path
-        self.feature = feature
-        self.num_channel = num_channel
-        self.online_transform = online_transform
-        self.offline_transform = offline_transform
-        self.label_transform = label_transform
-        self.before_trial = before_trial
-        self.after_trial = after_trial
-        self.num_worker = num_worker
-        self.verbose = verbose
+    @staticmethod
+    def __io__(io_path: str = None,
+               io_size: int = 10485760,
+               io_mode: str = 'lmdb',
+               block: Any = None,
+               lock: Any = None,
+               **kwargs):
+        file_path = block  # an element from file name list
+        root_path = kwargs.pop('root_path', './eeg_feature_smooth')
+        feature = kwargs.pop('feature', ['de_movingAve'])
+        num_channel = kwargs.pop('num_channel', 62)
+        before_trial = kwargs.pop('before_trial', None)
+        transform = kwargs.pop('offline_transform', None)
+        after_trial = kwargs.pop('after_trial', None)
+
+        meta_info_io_path = os.path.join(io_path, 'info.csv')
+        eeg_signal_io_path = os.path.join(io_path, 'eeg')
+
+        info_io = MetaInfoIO(meta_info_io_path)
+        eeg_io = EEGSignalIO(eeg_signal_io_path,
+                             io_size=io_size,
+                             io_mode=io_mode)
+
+        session_id = os.path.basename(os.path.dirname(file_path))
+        _, file_name = os.path.split(file_path)
+
+        subject = int(os.path.basename(file_name).split('.')[0].split('_')
+                      [0])  # subject (15)
+        date = int(os.path.basename(file_name).split('.')[0].split('_')
+                   [1])  # period (3)
+
+        samples = scio.loadmat(file_path,
+                               verify_compressed_data_integrity=False
+                               )  # trial (15), channel(62), timestep(n*200)
+        # label file
+        labels = [
+            [
+                1, 2, 3, 0, 2, 0, 0, 1, 0, 1, 2, 1, 1, 1, 2, 3, 2, 2, 3, 3, 0,
+                3, 0, 3
+            ],
+            [
+                2, 1, 3, 0, 0, 2, 0, 2, 3, 3, 2, 3, 2, 0, 1, 1, 2, 1, 0, 3, 0,
+                1, 3, 1
+            ],
+            [
+                1, 2,
+                2, 1,
+                3, 3,
+                3, 1,
+                1, 2,
+                1, 0,
+                2, 3,
+                3, 0,
+                2, 3,
+                0, 0,
+                2, 0,
+                1, 0
+            ]
+        ]  # The labels with 0, 1, 2, and 3 denote the ground truth, neutral, sad, fear, and happy emotions, respectively.
+        session_labels = labels[int(session_id) - 1]
+
+        trial_ids = [
+            int(re.findall(r"de_movingAve(\d+)", key)[0])
+            for key in samples.keys() if 'de_movingAve' in key
+        ]
+
+        write_pointer = 0
+        # loop for each trial
+        for trial_id in trial_ids:
+            # extract baseline signals
+            trial_samples = []
+            for cur_feature in feature:
+                trial_samples.append(samples[
+                    cur_feature +
+                    str(trial_id)])  # channel(61), timestep(n), bands(5)
+            trial_samples = np.concatenate(
+                trial_samples,
+                axis=-1)[:
+                         num_channel]  # channel(61), timestep(n), features(5*k)
+            trial_samples = trial_samples.transpose((1, 0, 2))
+            # timestep(n), channel(61), features(5*k)
+
+            if before_trial:
+                trial_samples = before_trial(trial_samples)
+
+            # record the common meta info
+            trial_meta_info = {
+                'subject_id': subject,
+                'trial_id': trial_id,
+                'session_id': session_id,
+                'emotion': int(session_labels[trial_id - 1]),
+                'date': date
+            }
+
+            trial_queue = []
+            for i, clip_sample in enumerate(trial_samples):
+                t_eeg = clip_sample
+                if not transform is None:
+                    t_eeg = transform(eeg=clip_sample)['eeg']
+
+                clip_id = f'{file_name}_{write_pointer}'
+                write_pointer += 1
+
+                # record meta info for each signal
+                record_info = {
+                    'start_at': i * 400,
+                    'end_at': (i + 1) *
+                    400,  # The size of the sliding time windows for feature extraction is 4 seconds.
+                    'clip_id': clip_id
+                }
+                record_info.update(trial_meta_info)
+                if after_trial:
+                    trial_queue.append({
+                        'eeg': t_eeg,
+                        'key': clip_id,
+                        'info': record_info
+                    })
+                else:
+                    with lock:
+                        eeg_io.write_eeg(t_eeg, clip_id)
+                        info_io.write_info(record_info)
+
+            if len(trial_queue) and after_trial:
+                trial_queue = after_trial(trial_queue)
+                for obj in trial_queue:
+                    assert 'eeg' in obj and 'key' in obj and 'info' in obj, 'after_trial must return a list of dictionaries, where each dictionary corresponds to an EEG sample, containing `eeg`, `key` and `info` as keys.'
+                    with lock:
+                        eeg_io.write_eeg(obj['eeg'], obj['key'])
+                        info_io.write_info(obj['info'])
+
+    @staticmethod
+    def __block__(**kwargs):
+        root_path = kwargs.pop('root_path', './eeg_feature_smooth')  # str
+
+        session_list = ['1', '2', '3']
+        file_path_list = []
+        for session in session_list:
+            session_root_path = os.path.join(root_path, session)
+            for file_name in os.listdir(session_root_path):
+                file_path_list.append(os.path.join(session_root_path,
+                                                   file_name))
 
     def __getitem__(self, index: int) -> Tuple[any, any, int, int, int]:
         info = self.read_info(index)

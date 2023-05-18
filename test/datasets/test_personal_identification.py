@@ -5,18 +5,13 @@ import unittest
 
 from torcheeg import transforms
 from torcheeg.datasets import M3CVDataset
-from torcheeg.datasets.functional import m3cv_constructor
 
 
 class TestPersonalIdentificationDataset(unittest.TestCase):
+
     def setUp(self):
         shutil.rmtree('./tmp_out/')
         os.mkdir('./tmp_out/')
-
-    def test_m3cv_constructor(self):
-        io_path = f'./tmp_out/m3cv_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
-        root_path = './tmp_in/aistudio'
-        m3cv_constructor(io_path=io_path, root_path=root_path, num_worker=0)
 
     def test_m3cv_dataset(self):
         io_path = f'./tmp_out/m3cv_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
