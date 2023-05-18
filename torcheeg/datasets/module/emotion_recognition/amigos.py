@@ -1,8 +1,13 @@
-from typing import Callable, Dict, List, Tuple, Union
+import os
+import re
+from typing import Any, Callable, Dict, List, Tuple, Union
+
+import scipy.io as scio
+
+from torcheeg.io import EEGSignalIO, MetaInfoIO
 
 from ...constants.emotion_recognition.amigos import (
     AMIGOS_ADJACENCY_MATRIX, AMIGOS_CHANNEL_LOCATION_DICT)
-from ...functional.emotion_recognition.amigos import amigos_constructor
 from ..base_dataset import BaseDataset
 
 
@@ -147,44 +152,187 @@ class AMIGOSDataset(BaseDataset):
                  num_worker: int = 0,
                  verbose: bool = True,
                  in_memory: bool = False):
-        amigos_constructor(
-            root_path=root_path,
-            chunk_size=chunk_size,
-            overlap=overlap,
-            num_channel=num_channel,
-            num_trial=num_trial,
-            skipped_subjects=skipped_subjects,
-            num_baseline=num_baseline,
-            baseline_chunk_size=baseline_chunk_size,
-            before_trial=before_trial,
-            transform=offline_transform,
-            after_trial=after_trial,
-            io_path=io_path,
-            io_size=io_size,
-            io_mode=io_mode,
-            num_worker=num_worker,
-            verbose=verbose,
-        )
-        super().__init__(io_path=io_path,
-                         io_size=io_size,
-                         io_mode=io_mode,
-                         in_memory=in_memory)
+        # pass all arguments to super class
+        params = {
+            'root_path': root_path,
+            'chunk_size': chunk_size,
+            'overlap': overlap,
+            'num_channel': num_channel,
+            'num_trial': num_trial,
+            'skipped_subjects': skipped_subjects,
+            'num_baseline': num_baseline,
+            'baseline_chunk_size': baseline_chunk_size,
+            'online_transform': online_transform,
+            'offline_transform': offline_transform,
+            'label_transform': label_transform,
+            'before_trial': before_trial,
+            'after_trial': after_trial,
+            'io_path': io_path,
+            'io_size': io_size,
+            'io_mode': io_mode,
+            'num_worker': num_worker,
+            'verbose': verbose,
+            'in_memory': in_memory
+        }
+        super().__init__(**params)
+        # save all arguments to __dict__
+        self.__dict__.update(params)
 
-        self.root_path = root_path
-        self.chunk_size = chunk_size
-        self.overlap = overlap
-        self.num_channel = num_channel
-        self.num_trial = num_trial
-        self.skipped_subjects = skipped_subjects
-        self.num_baseline = num_baseline
-        self.baseline_chunk_size = baseline_chunk_size
-        self.online_transform = online_transform
-        self.offline_transform = offline_transform
-        self.label_transform = label_transform
-        self.before_trial = before_trial
-        self.after_trial = after_trial
-        self.num_worker = num_worker
-        self.verbose = verbose
+    @staticmethod
+    def __io__(io_path: str = None,
+               io_size: int = 10485760,
+               io_mode: str = 'lmdb',
+               block: Any = None,
+               lock: Any = None,
+               **kwargs):
+        file_name = block  # an element from file name list
+        root_path = kwargs.pop('root_path', './data_preprocessed')  # str
+        chunk_size = kwargs.pop('chunk_size', 128)  # int
+        overlap = kwargs.pop('overlap', 0)  # int
+        num_channel = kwargs.pop('num_channel', 14)  # int
+        num_trial = kwargs.pop('num_trial', 16)  # int
+        skipped_subjects = kwargs.pop('skipped_subjects',
+                                      [9, 12, 21, 22, 23, 24, 33])  # list
+        num_baseline = kwargs.pop('num_baseline', 5)  # int
+        baseline_chunk_size = kwargs.pop('baseline_chunk_size', 128)  # int
+        before_trial = kwargs.pop('before_trial', None)  # callable
+        transform = kwargs.pop('offline_transform', None)  # callable
+        after_trial = kwargs.pop('after_trial', None)  # callable
+
+        subject = int(
+            re.findall(r'Data_Preprocessed_P(\d*).mat',
+                       file_name)[0])  # subject (40)
+
+        if subject in skipped_subjects:
+            return
+
+        meta_info_io_path = os.path.join(io_path, 'info.csv')
+        eeg_signal_io_path = os.path.join(io_path, 'eeg')
+
+        info_io = MetaInfoIO(meta_info_io_path)
+        eeg_io = EEGSignalIO(eeg_signal_io_path,
+                             io_size=io_size,
+                             io_mode=io_mode)
+
+        data = scio.loadmat(os.path.join(root_path, file_name),
+                            verify_compressed_data_integrity=False)
+        samples = data['joined_data'][
+            0]  # trial (20), timestep(n*128), channel(17) (14 channels are EEGs)
+        # label file
+        labels = data['labels_selfassessment'][
+            0]  # trial (20), label of different dimensions ((1, 12))
+
+        write_pointer = 0
+
+        max_len = len(samples)
+        if not (num_trial <= 0):
+            max_len = min(len(samples), num_trial)
+
+        # loop for each trial
+        for trial_id in range(max_len):
+            # extract baseline signals
+            trial_samples = samples[trial_id]
+
+            # record the common meta info
+            trial_meta_info = {'subject_id': subject, 'trial_id': trial_id}
+            trial_rating = labels[trial_id][
+                0]  # label of different dimensions (12)
+
+            # missing values
+            if (not sum(trial_samples.shape)) or (not sum(trial_rating.shape)):
+                # 3 of the participants (08,24,28<->32) of the previous experiment did not watch a set of 4 long affective
+                if sum(trial_samples.shape) != sum(trial_rating.shape):
+                    print(
+                        f'[WARNING] Find EEG signals without labels, or labels without EEG signals. Please check the {trial_id + 1}-th experiment of the {subject}-th subject in the file {file_name}. TorchEEG currently skipped the mismatched data.'
+                    )
+                continue
+
+            trial_samples = trial_samples.swapaxes(
+                1, 0)  # channel(17), timestep(n*128)
+            if before_trial:
+                trial_samples = before_trial(trial_samples)
+
+            for label_index, label_name in enumerate([
+                    'arousal', 'valence', 'dominance', 'liking', 'familiarity',
+                    'neutral', 'disgust', 'happiness', 'surprise', 'anger',
+                    'fear', 'sadness'
+            ]):
+                trial_meta_info[label_name] = trial_rating[label_index]
+
+            # extract baseline signals
+            trial_baseline_sample = trial_samples[:num_channel, :
+                                                  baseline_chunk_size *
+                                                  num_baseline]  # channel(14), timestep(5*128)
+            trial_baseline_sample = trial_baseline_sample.reshape(
+                num_channel, num_baseline,
+                baseline_chunk_size).mean(axis=1)  # channel(14), timestep(128)
+
+            trial_queue = []
+
+            start_at = baseline_chunk_size * num_baseline
+            if chunk_size <= 0:
+                chunk_size = trial_samples.shape[1] - start_at
+
+            # chunk with chunk size
+            end_at = start_at + chunk_size
+            # calculate moving step
+            step = chunk_size - overlap
+
+            while end_at <= trial_samples.shape[1]:
+                clip_sample = trial_samples[:num_channel, start_at:end_at]
+
+                t_eeg = clip_sample
+                t_baseline = trial_baseline_sample
+                if not transform is None:
+                    t = transform(eeg=clip_sample,
+                                  baseline=trial_baseline_sample)
+                    t_eeg = t['eeg']
+                    t_baseline = t['baseline']
+
+                # put baseline signal into IO
+                if not 'baseline_id' in trial_meta_info:
+                    trial_base_id = f'{file_name}_{write_pointer}'
+                    with lock:
+                        eeg_io.write_eeg(t_baseline, trial_base_id)
+                    write_pointer += 1
+                    trial_meta_info['baseline_id'] = trial_base_id
+
+                clip_id = f'{file_name}_{write_pointer}'
+                write_pointer += 1
+
+                # record meta info for each signal
+                record_info = {
+                    'start_at': start_at,
+                    'end_at': end_at,
+                    'clip_id': clip_id
+                }
+                record_info.update(trial_meta_info)
+                if after_trial:
+                    trial_queue.append({
+                        'eeg': t_eeg,
+                        'key': clip_id,
+                        'info': record_info
+                    })
+                else:
+                    with lock:
+                        eeg_io.write_eeg(t_eeg, clip_id)
+                        info_io.write_info(record_info)
+
+                start_at = start_at + step
+                end_at = start_at + chunk_size
+
+            if len(trial_queue) and after_trial:
+                trial_queue = after_trial(trial_queue)
+                for obj in trial_queue:
+                    assert 'eeg' in obj and 'key' in obj and 'info' in obj, 'after_trial must return a list of dictionaries, where each dictionary corresponds to an EEG sample, containing `eeg`, `key` and `info` as keys.'
+                    with lock:
+                        eeg_io.write_eeg(obj['eeg'], obj['key'])
+                        info_io.write_info(obj['info'])
+
+    @staticmethod
+    def __block__(**kwargs):
+        root_path = kwargs.pop('root_path', './data_preprocessed')  # str
+        return os.listdir(root_path)
 
     def __getitem__(self, index: int) -> Tuple[any, any, int, int, int]:
         info = self.read_info(index)

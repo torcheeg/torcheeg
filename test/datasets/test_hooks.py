@@ -8,12 +8,13 @@ from torcheeg.datasets import DEAPDataset
 from torcheeg.datasets.functional.hooks import before_trial_normalize, after_trial_normalize, after_trial_moving_avg
 
 
-class TestEmotionRecognitionDataset(unittest.TestCase):
+class TestHooks(unittest.TestCase):
     def setUp(self):
-        shutil.rmtree('./tmp_out/')
+        if os.path.exists('./tmp_out/'):
+            shutil.rmtree('./tmp_out/')
         os.mkdir('./tmp_out/')
 
-    def test_deap_dataset(self):
+    def test_before_trial_after_trial(self):
         io_path = f'./tmp_out/deap_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
         root_path = './tmp_in/data_preprocessed_python'
 

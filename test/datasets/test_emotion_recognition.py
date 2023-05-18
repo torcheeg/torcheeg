@@ -8,24 +8,13 @@ from torcheeg.datasets import (AMIGOSDataset, DEAPDataset, DREAMERDataset,
                                MAHNOBDataset, SEEDDataset, SEEDFeatureDataset,
                                SEEDIVDataset, SEEDIVFeatureDataset,
                                MPEDFeatureDataset)
-from torcheeg.datasets.functional import (
-    amigos_constructor, deap_constructor, dreamer_constructor,
-    mahnob_constructor, seed_constructor, seed_feature_constructor,
-    seed_iv_constructor, seed_iv_feature_constructor, mped_feature_constructor)
 
 
 class TestEmotionRecognitionDataset(unittest.TestCase):
     def setUp(self):
-        shutil.rmtree('./tmp_out/')
+        if os.path.exists('./tmp_out/'):
+            shutil.rmtree('./tmp_out/')
         os.mkdir('./tmp_out/')
-
-    def test_mped_feature_constructor(self):
-        io_path = f'./tmp_out/mped_feature_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
-        root_path = './tmp_in/EEG_feature'
-
-        mped_feature_constructor(io_path=io_path,
-                                 root_path=root_path,
-                                 num_worker=0)
 
     def test_mped_feature_dataset(self):
         io_path = f'./tmp_out/mped_feature_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
@@ -47,11 +36,6 @@ class TestEmotionRecognitionDataset(unittest.TestCase):
         last_item = dataset[129903]
         self.assertEqual(last_item[0].shape, (62, 5))
 
-    def test_mahnob_constructor(self):
-        io_path = f'./tmp_out/mahnob_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
-        root_path = './tmp_in/Sessions'
-        mahnob_constructor(io_path=io_path, root_path=root_path, num_worker=0)
-
     def test_mahnob_dataset(self):
         io_path = f'./tmp_out/mahnob_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
         root_path = './tmp_in/Sessions'
@@ -70,11 +54,6 @@ class TestEmotionRecognitionDataset(unittest.TestCase):
         self.assertEqual(first_item[0].shape, (32, 128))
         last_item = dataset[16409]
         self.assertEqual(last_item[0].shape, (32, 128))
-
-    def test_amigos_constructor(self):
-        io_path = f'./tmp_out/amigos_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
-        root_path = './tmp_in/data_preprocessed'
-        amigos_constructor(io_path=io_path, root_path=root_path, num_worker=0)
 
     def test_amigos_dataset(self):
         io_path = f'./tmp_out/amigos_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
@@ -96,11 +75,6 @@ class TestEmotionRecognitionDataset(unittest.TestCase):
         last_item = dataset[45473]
         self.assertEqual(last_item[0].shape, (14, 128))
 
-    def test_deap_constructor(self):
-        io_path = f'./tmp_out/deap_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
-        root_path = './tmp_in/data_preprocessed_python'
-        deap_constructor(io_path=io_path, root_path=root_path, num_worker=0)
-        
     def test_deap_dataset(self):
         io_path = f'./tmp_out/deap_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
         root_path = './tmp_in/data_preprocessed_python'
@@ -119,12 +93,6 @@ class TestEmotionRecognitionDataset(unittest.TestCase):
         self.assertEqual(first_item[0].shape, (32, 128))
         last_item = dataset[76799]
         self.assertEqual(last_item[0].shape, (32, 128))
-
-    def test_dreamer_constructor(self):
-        io_path = f'./tmp_out/dreamer_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
-        mat_path = './tmp_in/DREAMER.mat'
-
-        dreamer_constructor(io_path=io_path, mat_path=mat_path, num_worker=0)
 
     def test_dreamer_dataset(self):
         io_path = f'./tmp_out/dreamer_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
@@ -145,12 +113,6 @@ class TestEmotionRecognitionDataset(unittest.TestCase):
         last_item = dataset[85743]
         self.assertEqual(last_item[0].shape, (14, 128))
 
-    def test_seed_constructor(self):
-        io_path = f'./tmp_out/seed_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
-        root_path = './tmp_in/Preprocessed_EEG'
-
-        seed_constructor(io_path=io_path, root_path=root_path, num_worker=0)
-
     def test_seed_dataset(self):
         io_path = f'./tmp_out/seed_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
         root_path = './tmp_in/Preprocessed_EEG'
@@ -169,14 +131,6 @@ class TestEmotionRecognitionDataset(unittest.TestCase):
         self.assertEqual(first_item[0].shape, (62, 200))
         last_item = dataset[152729]
         self.assertEqual(last_item[0].shape, (62, 200))
-
-    def test_seed_feature_constructor(self):
-        io_path = f'./tmp_out/seed_feature_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
-        root_path = './tmp_in/ExtractedFeatures'
-
-        seed_feature_constructor(io_path=io_path,
-                                 root_path=root_path,
-                                 num_worker=0)
 
     def test_seed_feature_dataset(self):
         io_path = f'./tmp_out/seed_feature_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
@@ -198,12 +152,6 @@ class TestEmotionRecognitionDataset(unittest.TestCase):
         last_item = dataset[152729]
         self.assertEqual(last_item[0].shape, (62, 5))
 
-    def test_seed_iv_constructor(self):
-        io_path = f'./tmp_out/seed_iv_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
-        root_path = './tmp_in/eeg_raw_data'
-
-        seed_iv_constructor(io_path=io_path, root_path=root_path, num_worker=0)
-
     def test_seed_iv_dataset(self):
         io_path = f'./tmp_out/seed_iv_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
         root_path = './tmp_in/eeg_raw_data'
@@ -219,14 +167,6 @@ class TestEmotionRecognitionDataset(unittest.TestCase):
         self.assertEqual(first_item[0].shape, (62, 800))
         last_item = dataset[37574]
         self.assertEqual(last_item[0].shape, (62, 800))
-
-    def test_seed_iv_feature_constructor(self):
-        io_path = f'./tmp_out/seed_iv_feature_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
-        root_path = './tmp_in/eeg_feature_smooth'
-
-        seed_iv_feature_constructor(io_path=io_path,
-                                    root_path=root_path,
-                                    num_worker=0)
 
     def test_seed_iv_feature_dataset(self):
         io_path = f'./tmp_out/seed_iv_feature_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'

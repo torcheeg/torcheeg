@@ -1,9 +1,91 @@
-from typing import Callable, Dict, Tuple, Union
+import os
+from typing import Any, Callable, Dict, Tuple, Union
+
+import joblib
+
+from torcheeg.io import EEGSignalIO, MetaInfoIO
 
 from ...constants.emotion_recognition.bci2022 import (
     BCI2022_ADJACENCY_MATRIX, BCI2022_CHANNEL_LOCATION_DICT)
-from ...functional.emotion_recognition.bci2022 import bci2022_constructor
 from ..base_dataset import BaseDataset
+
+FIRST_BATCH_CHANNEL = [
+    'FP1', 'FP2', 'FZ', 'F3', 'F4', 'F7', 'F8', 'FC1', 'FC2', 'FC5', 'FC6',
+    'CZ', 'C3', 'C4', 'T7', 'T8', 'A1', 'A2', 'CP1', 'CP2', 'CP5', 'CP6', 'PZ',
+    'P3', 'P4', 'P7', 'P8', 'PO3', 'PO4', 'OZ', 'O1', 'O2'
+]
+
+SECOND_BATCH_CHANNEL = [
+    'FP1', 'FP2', 'FZ', 'F3', 'F4', 'F7', 'F8', 'FC1', 'FC2', 'FC5', 'FC6',
+    'CZ', 'C3', 'C4', 'T7', 'T8', 'CP1', 'CP2', 'CP5', 'CP6', 'PZ', 'P3', 'P4',
+    'P7', 'P8', 'PO3', 'PO4', 'OZ', 'O1', 'O2', 'A2', 'A1'
+]
+
+FIRST_TO_SECOND_ORDER = [
+    FIRST_BATCH_CHANNEL.index(c) for c in SECOND_BATCH_CHANNEL
+]
+
+VALENCE_DICT = {
+    1: -1,  # negative
+    2: -1,
+    3: -1,
+    4: -1,
+    5: -1,
+    6: -1,
+    7: -1,
+    8: -1,
+    9: -1,
+    10: -1,
+    11: -1,
+    12: -1,
+    13: 0,  # neutral
+    14: 0,
+    15: 0,
+    16: 0,
+    17: 1,  # positive
+    18: 1,
+    19: 1,
+    20: 1,
+    21: 1,
+    22: 1,
+    23: 1,
+    24: 1,
+    25: 1,
+    26: 1,
+    27: 1,
+    28: 1
+}
+
+EMOTION_DICT = {
+    1: 0,  # anger	
+    2: 0,
+    3: 0,
+    4: 1,  # disgust
+    5: 1,
+    6: 1,
+    7: 2,  # fear
+    8: 2,
+    9: 2,
+    10: 3,  # sadness
+    11: 3,
+    12: 3,
+    13: 4,  # neutral
+    14: 4,
+    15: 4,
+    16: 4,
+    17: 5,  # amusement
+    18: 5,
+    19: 5,
+    20: 6,  # excitation
+    21: 6,
+    22: 6,
+    23: 7,  # happy
+    24: 7,
+    25: 7,
+    26: 8,  # warmth
+    27: 8,
+    28: 8
+}
 
 
 class BCI2022Dataset(BaseDataset):
@@ -135,34 +217,160 @@ class BCI2022Dataset(BaseDataset):
                  num_worker: int = 0,
                  verbose: bool = True,
                  in_memory: bool = False):
-        bci2022_constructor(root_path=root_path,
-                            chunk_size=chunk_size,
-                            overlap=overlap,
-                            channel_num=channel_num,
-                            before_trial=before_trial,
-                            transform=offline_transform,
-                            after_trial=after_trial,
-                            io_path=io_path,
-                            io_size=io_size,
-                            io_mode=io_mode,
-                            num_worker=num_worker,
-                            verbose=verbose)
-        super().__init__(io_path=io_path,
-                         io_size=io_size,
-                         io_mode=io_mode,
-                         in_memory=in_memory)
+        # pass all arguments to super class
+        params = {
+            'root_path': root_path,
+            'chunk_size': chunk_size,
+            'overlap': overlap,
+            'channel_num': channel_num,
+            'online_transform': online_transform,
+            'offline_transform': offline_transform,
+            'label_transform': label_transform,
+            'before_trial': before_trial,
+            'after_trial': after_trial,
+            'io_path': io_path,
+            'io_size': io_size,
+            'io_mode': io_mode,
+            'num_worker': num_worker,
+            'verbose': verbose,
+            'in_memory': in_memory
+        }
+        super().__init__(**params)
+        # save all arguments to __dict__
+        self.__dict__.update(params)
 
-        self.root_path = root_path
-        self.chunk_size = chunk_size
-        self.overlap = overlap
-        self.channel_num = channel_num
-        self.online_transform = online_transform
-        self.offline_transform = offline_transform
-        self.label_transform = label_transform
-        self.before_trial = before_trial
-        self.after_trial = after_trial
-        self.num_worker = num_worker
-        self.verbose = verbose
+    @staticmethod
+    def __io__(io_path: str = None,
+               io_size: int = 10485760,
+               io_mode: str = 'lmdb',
+               block: Any = None,
+               lock: Any = None,
+               **kwargs):
+        file_name = os.path.basename(block)  # an element from file name list
+        chunk_size = kwargs.pop('chunk_size', 250)  # int
+        overlap = kwargs.pop('overlap', 0)  # int
+        channel_num = kwargs.pop('channel_num', 30)  # int
+        before_trial = kwargs.pop('before_trial', None)  # Callable
+        transform = kwargs.pop('transform', None)  # Callable
+        after_trial = kwargs.pop('after_trial', None)  # Callable
+        reorder = 'TrainSet_first_batch' in file_name  # bool, the first batch needs to be reordered
+
+        meta_info_io_path = os.path.join(io_path, 'info.csv')
+        eeg_signal_io_path = os.path.join(io_path, 'eeg')
+
+        info_io = MetaInfoIO(meta_info_io_path)
+        eeg_io = EEGSignalIO(eeg_signal_io_path,
+                             io_size=io_size,
+                             io_mode=io_mode)
+
+        subject = file_name  # subject (54)
+        samples = joblib.load(os.path.join(
+            block, f'{file_name}.pkl'))  # channel(33), timestep(n*250)
+
+        events = samples[-1]
+        if reorder:
+            samples = samples.take(FIRST_TO_SECOND_ORDER, axis=0)
+
+        # initial pointers
+        trial_id = 0
+        write_pointer = 0
+
+        video_id = None
+        start_at = None
+        end_at = None
+
+        # loop for each trial
+        for i, event in enumerate(events):
+
+            if event in list(range(1, 29)):
+                # Video events 1-28: Different events correspond to different experimental video materials
+                video_id = event
+            elif event == 240:
+                # Current trial video start event 240: This event appears 0.1s after the video event, indicating that the video starts to play.
+                start_at = i
+            elif event == 241:
+                # Current trial video end event 241: This event indicates that the video ends playing. Block end event 243: This event indicates the end of the block.
+                end_at = i
+                assert (not video_id is None) and (
+                    not start_at is None
+                ), f'Parse event fail for trial {trial_id} with video_id={video_id}, start_at={start_at}, end_at={end_at}!'
+
+                trial_meta_info = {
+                    'trial_id': trial_id,
+                    'video_id': video_id,
+                    'subject_id': subject,
+                    'valence': VALENCE_DICT[video_id],
+                    'emotion': EMOTION_DICT[video_id],
+                }
+
+                cur_start_at = start_at
+                if chunk_size <= 0:
+                    chunk_size = end_at - start_at
+                cur_end_at = cur_start_at + chunk_size
+                step = chunk_size - overlap
+
+                trial_queue = []
+
+                if before_trial:
+                    samples[:channel_num, cur_start_at:end_at] = before_trial(
+                        samples[:channel_num, cur_start_at:end_at])
+
+                while cur_end_at <= end_at:
+                    t_eeg = samples[:channel_num, cur_start_at:cur_end_at]
+                    if not transform is None:
+                        t_eeg = transform(eeg=t_eeg)['eeg']
+
+                    clip_id = f'{subject}_{write_pointer}'
+                    write_pointer += 1
+
+                    record_info = {
+                        'start_at': cur_start_at,
+                        'end_at': cur_end_at,
+                        'clip_id': clip_id
+                    }
+                    record_info.update(trial_meta_info)
+                    if after_trial:
+                        trial_queue.append({
+                            'eeg': t_eeg,
+                            'key': clip_id,
+                            'info': record_info
+                        })
+                    else:
+                        with lock:
+                            eeg_io.write_eeg(t_eeg, clip_id)
+                            info_io.write_info(record_info)
+
+                    cur_start_at = cur_start_at + step
+                    cur_end_at = cur_start_at + chunk_size
+
+                if len(trial_queue) and after_trial:
+                    trial_queue = after_trial(trial_queue)
+                    for obj in trial_queue:
+                        assert 'eeg' in obj and 'key' in obj and 'info' in obj, 'after_trial must return a list of dictionaries, where each dictionary corresponds to an EEG sample, containing `eeg`, `key` and `info` as keys.'
+                        with lock:
+                            eeg_io.write_eeg(t_eeg, clip_id)
+                            info_io.write_info(record_info)
+
+                # prepare for the next trial
+                trial_id += 1
+                video_id = None
+                start_at = None
+                end_at = None
+
+    @staticmethod
+    def __block__(**kwargs):
+        root_path = kwargs.pop('root_path', './data_preprocessed_python')  # str
+        outputs = []
+        for train_set_batch in [
+                'TrainSet_first_batch', 'TrainSet_second_batch'
+        ]:
+            # loop to access the first batch files
+            file_list = os.listdir(os.path.join(root_path, train_set_batch))
+            for file in file_list:
+                # loop to access the second batch files
+                file_path = os.path.join(root_path, train_set_batch, file)
+                outputs.append(file_path)
+        return outputs
 
     def __getitem__(self, index: int) -> Tuple[any, any, int, int, int]:
         info = self.read_info(index)

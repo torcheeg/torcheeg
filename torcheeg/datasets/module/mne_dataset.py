@@ -1,8 +1,9 @@
-from typing import Callable, Dict, List, Tuple, Union
-
+import os
+from typing import Callable, Dict, List, Tuple, Union, Any
+import numpy as np
+from torcheeg.io import EEGSignalIO, MetaInfoIO
 import mne
 
-from ..functional.mne import mne_constructor
 from .base_dataset import BaseDataset
 
 
@@ -116,7 +117,7 @@ class MNEDataset(BaseDataset):
             # label (int)
 
     Args:
-        epochs_list (list): A list of :obj:`mne.Epochs`. :obj:`MNEDataset` will divide the signals in :obj:`mne.Epochs` into several segments according to the :obj:`chunk_size` and :obj:`overlap` information provided by the user. The divided segments will be transformed and cached in a unified input and output format (IO) for accessing.
+        epochs_list (list): A list of :obj:`mne.Epochs`. :obj:`MNEDataset` will divide the signals in :obj:`mne.Epochs` into several segments according to the :obj:`chunk_size` and :obj:`overlap` information provided by the user. The divided segments will be transformed and cached in a unified input and output format (IO) for accessing. You can also pass through the path list of the mne.Epochs file (can be obtained by .save()).
         metadata_list (list): A list of dictionaries of the same length as :obj:`epochs_list`. Each of these dictionaries is annotated with meta-information about :obj:`mne.Epochs`, such as subject index, experimental dates, etc. These annotated meta-information will be added to the element corresponding to :obj:`mne.Epochs` for use as labels for the sample.
         chunk_size (int): Number of data points included in each EEG chunk as training or test samples. If set to -1, the EEG signal of a trial is used as a sample of a chunk. If set to -1, the EEG signal is not segmented, and the length of the chunk is the length of the event. (default: :obj:`-1`)
         overlap (int): The number of overlapping data points between different chunks when dividing EEG chunks. (default: :obj:`0`)
@@ -133,6 +134,7 @@ class MNEDataset(BaseDataset):
         verbose (bool): Whether to display logs during processing, such as progress bars, etc. (default: :obj:`True`)
         in_memory (bool): Whether to load the entire dataset into memory. If :obj:`in_memory` is set to True, then the first time an EEG sample is read, the entire dataset is loaded into memory for subsequent retrieval. Otherwise, the dataset is stored on disk to avoid the out-of-memory problem. (default: :obj:`False`)    
     '''
+
     def __init__(self,
                  epochs_list: List[mne.Epochs],
                  metadata_list: List[Dict],
@@ -150,34 +152,160 @@ class MNEDataset(BaseDataset):
                  num_worker: int = 0,
                  verbose: bool = True,
                  in_memory: bool = False):
-        mne_constructor(epochs_list=epochs_list,
-                        metadata_list=metadata_list,
-                        chunk_size=chunk_size,
-                        overlap=overlap,
-                        num_channel=num_channel,
-                        before_trial=before_trial,
-                        transform=offline_transform,
-                        after_trial=after_trial,
-                        io_path=io_path,
-                        io_size=io_size,
-                        io_mode=io_mode,
-                        num_worker=num_worker,
-                        verbose=verbose)
-        super().__init__(io_path=io_path,
-                         io_size=io_size,
-                         io_mode=io_mode,
-                         in_memory=in_memory)
+        # pass all arguments to super class
+        params = {
+            'chunk_size': chunk_size,
+            'overlap': overlap,
+            'num_channel': num_channel,
+            'online_transform': online_transform,
+            'offline_transform': offline_transform,
+            'label_transform': label_transform,
+            'before_trial': before_trial,
+            'after_trial': after_trial,
+            'io_path': io_path,
+            'io_size': io_size,
+            'io_mode': io_mode,
+            'num_worker': num_worker,
+            'verbose': verbose,
+            'in_memory': in_memory
+        }
+        super().__init__(**params,
+                         epochs_list=epochs_list,
+                         metadata_list=metadata_list)
+        # save all arguments to __dict__
+        self.__dict__.update(params)
 
-        self.chunk_size = chunk_size
-        self.overlap = overlap
-        self.num_channel = num_channel
-        self.online_transform = online_transform
-        self.offline_transform = offline_transform
-        self.label_transform = label_transform
-        self.before_trial = before_trial
-        self.after_trial = after_trial
-        self.num_worker = num_worker
-        self.verbose = verbose
+    @staticmethod
+    def __io__(io_path: str = None,
+               io_size: int = 10485760,
+               io_mode: str = 'lmdb',
+               block: Any = None,
+               lock: Any = None,
+               **kwargs):
+        mne.set_log_level('CRITICAL')
+
+        tmp_path, metadata, block_id = block
+        epochs = mne.read_epochs(tmp_path, preload=True)
+
+        chunk_size = kwargs.pop('chunk_size', -1)  # int
+        overlap = kwargs.pop('overlap', 0)  # int
+        num_channel = kwargs.pop('num_channel', -1)  # int
+        before_trial = kwargs.pop('before_trial', None)  # Callable
+        transform = kwargs.pop('offline_transform', None)  # Callable
+        after_trial = kwargs.pop('after_trial', None)  # Callable
+
+        meta_info_io_path = os.path.join(io_path, 'info.csv')
+        eeg_signal_io_path = os.path.join(io_path, 'eeg')
+
+        info_io = MetaInfoIO(meta_info_io_path)
+        eeg_io = EEGSignalIO(eeg_signal_io_path,
+                             io_size=io_size,
+                             io_mode=io_mode)
+
+        if chunk_size <= 0:
+            chunk_size = len(epochs.times)
+
+        if num_channel == -1:
+            num_channel = len(epochs.info['chs'])
+
+        trial_event_index = epochs.events[:, 2]
+        trial_start_at_list = epochs.events[:, 0]
+
+        trial_end_at = len(epochs.times) - chunk_size
+
+        clip_sample_start_at_list = np.arange(0, trial_end_at + 1,
+                                              chunk_size - overlap)
+
+        sample_events = [[clip_sample_start_at, chunk_size, -1]
+                         for clip_sample_start_at in clip_sample_start_at_list]
+
+        epoch_meta_info = metadata
+
+        write_pointer = 0
+
+        # for loop of trials
+        for trial_id, trial in enumerate(epochs):
+            # split sample from epochs
+            start_at_list = clip_sample_start_at_list + trial_start_at_list[
+                trial_id]
+            end_at_list = clip_sample_start_at_list + trial_start_at_list[
+                trial_id] + chunk_size
+            event_index_list = len(sample_events) * [
+                trial_event_index[trial_id]
+            ]
+
+            trial_samples = mne.Epochs(mne.io.RawArray(trial, epochs.info),
+                                       sample_events,
+                                       baseline=None,
+                                       tmin=0,
+                                       tmax=(chunk_size - 1) /
+                                       epochs.info["sfreq"])
+            trial_samples.drop_bad(reject=None, flat=None)
+            if before_trial:
+                trial_samples = before_trial(trial_samples)
+
+            # for loop of samples
+            trial_queue = []
+            for i, trial_signal in enumerate(trial_samples.get_data()):
+                t_eeg = trial_signal[:num_channel, :]
+                if not transform is None:
+                    t = transform(eeg=trial_signal[:num_channel, :])
+                    t_eeg = t['eeg']
+
+                clip_id = f'{block_id}_{write_pointer}'
+                write_pointer += 1
+
+                record_info = {
+                    'trial_id': trial_id,
+                    'start_at': start_at_list[i],
+                    'end_at': end_at_list[i],
+                    'event': event_index_list[i],
+                    'clip_id': clip_id
+                }
+                record_info.update(epoch_meta_info)
+                if after_trial:
+                    trial_queue.append({
+                        'eeg': t_eeg,
+                        'key': clip_id,
+                        'info': record_info
+                    })
+                else:
+                    with lock:
+                        eeg_io.write_eeg(t_eeg, clip_id)
+                        info_io.write_info(record_info)
+
+            if len(trial_queue) and after_trial:
+                trial_queue = after_trial(trial_queue)
+                for obj in trial_queue:
+                    assert 'eeg' in obj and 'key' in obj and 'info' in obj, 'after_trial must return a list of dictionaries, where each dictionary corresponds to an EEG sample, containing `eeg`, `key` and `info` as keys.'
+                    with lock:
+                        eeg_io.write_eeg(obj['eeg'], obj['key'])
+                        info_io.write_info(obj['info'])
+
+    @staticmethod
+    def __block__(**kwargs):
+        io_path = kwargs.pop('io_path', '.')  # str
+        epochs_list = kwargs.pop('epochs_list', [])  # list
+        metadata_list = kwargs.pop('metadata_list', [])  # list
+        chunk_size = kwargs.pop('chunk_size', -1)  # int
+
+        epochs_metadata_block_id_list = []
+        for block_id, (epochs,
+                       metadata) in enumerate(zip(epochs_list, metadata_list)):
+            if isinstance(epochs, str):
+                epochs_path = epochs
+            else:
+                assert (epochs.tmax - epochs.tmin) * epochs.info[
+                    "sfreq"] >= chunk_size, f'chunk_size cannot be larger than (tmax - tmin) * sfreq. Here, tmax is set to {epochs.tmax}, tmin is set to {epochs.tmin}, and sfreq is {epochs.info["sfreq"]}. In the current configuration, chunk_size {chunk_size} is greater than {(epochs.tmax - epochs.tmin) * epochs.info["sfreq"]}!'
+                # save epochs to disk
+                if not os.path.exists(os.path.join(io_path, 'tmp')):
+                    os.makedirs(os.path.join(io_path, 'tmp'))
+                epochs_path = os.path.join(io_path, 'tmp', f'{block_id}.mne')
+                epochs.save(epochs_path, overwrite=True)
+
+            epochs_metadata_block_id_list.append((epochs_path, metadata, block_id))
+
+        return epochs_metadata_block_id_list
 
     def __getitem__(self, index: int) -> Tuple:
         info = self.read_info(index)

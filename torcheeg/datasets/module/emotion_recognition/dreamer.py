@@ -1,9 +1,10 @@
-from typing import Callable, Dict, Tuple, Union
-
+import os
+from typing import Callable, Dict, Tuple, Union, Any
+import scipy.io as scio
 from ...constants.emotion_recognition.dreamer import (
     DREAMER_ADJACENCY_MATRIX, DREAMER_CHANNEL_LOCATION_DICT)
-from ...functional.emotion_recognition.dreamer import dreamer_constructor
 from ..base_dataset import BaseDataset
+from torcheeg.io import EEGSignalIO, MetaInfoIO
 
 
 class DREAMERDataset(BaseDataset):
@@ -138,38 +139,170 @@ class DREAMERDataset(BaseDataset):
                  num_worker: int = 0,
                  verbose: bool = True,
                  in_memory: bool = False):
-        dreamer_constructor(mat_path=mat_path,
-                            chunk_size=chunk_size,
-                            overlap=overlap,
-                            num_channel=num_channel,
-                            num_baseline=num_baseline,
-                            baseline_chunk_size=baseline_chunk_size,
-                            before_trial=before_trial,
-                            transform=offline_transform,
-                            after_trial=after_trial,
-                            io_path=io_path,
-                            io_size=io_size,
-                            io_mode=io_mode,
-                            num_worker=num_worker,
-                            verbose=verbose)
-        super().__init__(io_path=io_path,
-                         io_size=io_size,
-                         io_mode=io_mode,
-                         in_memory=in_memory)
+        # pass all arguments to super class
+        params = {
+            'mat_path': mat_path,
+            'chunk_size': chunk_size,
+            'overlap': overlap,
+            'num_channel': num_channel,
+            'num_baseline': num_baseline,
+            'baseline_chunk_size': baseline_chunk_size,
+            'online_transform': online_transform,
+            'offline_transform': offline_transform,
+            'label_transform': label_transform,
+            'before_trial': before_trial,
+            'after_trial': after_trial,
+            'io_path': io_path,
+            'io_size': io_size,
+            'io_mode': io_mode,
+            'num_worker': num_worker,
+            'verbose': verbose,
+            'in_memory': in_memory
+        }
+        super().__init__(**params)
+        # save all arguments to __dict__
+        self.__dict__.update(params)
 
-        self.mat_path = mat_path
-        self.chunk_size = chunk_size
-        self.overlap = overlap
-        self.num_channel = num_channel
-        self.num_baseline = num_baseline
-        self.baseline_chunk_size = baseline_chunk_size
-        self.online_transform = online_transform
-        self.offline_transform = offline_transform
-        self.label_transform = label_transform
-        self.before_trial = before_trial
-        self.after_trial = after_trial
-        self.num_worker = num_worker
-        self.verbose = verbose
+    @staticmethod
+    def __io__(io_path: str = None,
+               io_size: int = 10485760,
+               io_mode: str = 'lmdb',
+               block: Any = None,
+               lock: Any = None,
+               **kwargs):
+        subject = block
+        mat_path = kwargs.pop('mat_path', './DREAMER.mat')  # str
+        chunk_size = kwargs.pop('chunk_size', 128)  # int
+        overlap = kwargs.pop('overlap', 0)  # int
+        num_channel = kwargs.pop('num_channel', 14)  # int
+        num_baseline = kwargs.pop('num_baseline', 61)  # int
+        baseline_chunk_size = kwargs.pop('baseline_chunk_size', 128)  # int
+        before_trial = kwargs.pop('before_trial', None)  # Callable
+        transform = kwargs.pop('offline_transform', None)  # Callable
+        after_trial = kwargs.pop('after_trial', None)  # Callable
+
+        meta_info_io_path = os.path.join(io_path, 'info.csv')
+        eeg_signal_io_path = os.path.join(io_path, 'eeg')
+
+        info_io = MetaInfoIO(meta_info_io_path)
+        eeg_io = EEGSignalIO(eeg_signal_io_path,
+                             io_size=io_size,
+                             io_mode=io_mode)
+
+        mat_data = scio.loadmat(mat_path,
+                                verify_compressed_data_integrity=False)
+
+        trial_len = len(
+            mat_data['DREAMER'][0, 0]['Data'][0,
+                                              0]['EEG'][0,
+                                                        0]['stimuli'][0,
+                                                                      0])  # 18
+
+        write_pointer = 0
+        # loop for each trial
+        for trial_id in range(trial_len):
+            # extract baseline signals
+            trial_baseline_sample = mat_data['DREAMER'][0, 0]['Data'][
+                0, subject]['EEG'][0, 0]['baseline'][0, 0][trial_id, 0]
+            trial_baseline_sample = trial_baseline_sample[:, :num_channel].swapaxes(
+                1, 0)  # channel(14), timestep(61*128)
+            trial_baseline_sample = trial_baseline_sample[:, :num_baseline *
+                                                          baseline_chunk_size].reshape(
+                                                              num_channel,
+                                                              num_baseline,
+                                                              baseline_chunk_size
+                                                          ).mean(
+                                                              axis=1
+                                                          )  # channel(14), timestep(128)
+
+            # record the common meta info
+            trial_meta_info = {'subject_id': subject, 'trial_id': trial_id}
+
+            trial_meta_info['valence'] = mat_data['DREAMER'][0, 0]['Data'][
+                0, subject]['ScoreValence'][0, 0][trial_id, 0]
+            trial_meta_info['arousal'] = mat_data['DREAMER'][0, 0]['Data'][
+                0, subject]['ScoreArousal'][0, 0][trial_id, 0]
+            trial_meta_info['dominance'] = mat_data['DREAMER'][0, 0]['Data'][
+                0, subject]['ScoreDominance'][0, 0][trial_id, 0]
+
+            trial_samples = mat_data['DREAMER'][0, 0]['Data'][
+                0, subject]['EEG'][0, 0]['stimuli'][0, 0][trial_id, 0]
+            trial_samples = trial_samples[:, :num_channel].swapaxes(
+                1, 0)  # channel(14), timestep(n*128)
+
+            if before_trial:
+                trial_samples = before_trial(trial_samples)
+
+            start_at = 0
+            if chunk_size <= 0:
+                chunk_size = trial_samples.shape[1] - start_at
+
+            # chunk with chunk size
+            end_at = chunk_size
+            # calculate moving step
+            step = chunk_size - overlap
+
+            trial_queue = []
+            while end_at <= trial_samples.shape[1]:
+                clip_sample = trial_samples[:, start_at:end_at]
+
+                t_eeg = clip_sample
+                t_baseline = trial_baseline_sample
+
+                if not transform is None:
+                    t = transform(eeg=clip_sample,
+                                  baseline=trial_baseline_sample)
+                    t_eeg = t['eeg']
+                    t_baseline = t['baseline']
+
+                # put baseline signal into IO
+                if not 'baseline_id' in trial_meta_info:
+                    trial_base_id = f'{subject}_{write_pointer}'
+                    with lock:
+                        eeg_io.write_eeg(t_baseline, trial_base_id)
+                    write_pointer += 1
+                    trial_meta_info['baseline_id'] = trial_base_id
+
+                clip_id = f'{subject}_{write_pointer}'
+                write_pointer += 1
+
+                # record meta info for each signal
+                record_info = {
+                    'start_at': start_at,
+                    'end_at': end_at,
+                    'clip_id': clip_id
+                }
+                record_info.update(trial_meta_info)
+                if after_trial:
+                    trial_queue.append({
+                        'eeg': t_eeg,
+                        'key': clip_id,
+                        'info': record_info
+                    })
+                else:
+                    with lock:
+                        eeg_io.write_eeg(t_eeg, clip_id)
+                        info_io.write_info(record_info)
+
+                start_at = start_at + step
+                end_at = start_at + chunk_size
+
+            if len(trial_queue) and after_trial:
+                trial_queue = after_trial(trial_queue)
+                for obj in trial_queue:
+                    assert 'eeg' in obj and 'key' in obj and 'info' in obj, 'after_trial must return a list of dictionaries, where each dictionary corresponds to an EEG sample, containing `eeg`, `key` and `info` as keys.'
+                    with lock:
+                        eeg_io.write_eeg(obj['eeg'], obj['key'])
+                        info_io.write_info(obj['info'])
+
+    @staticmethod
+    def __block__(**kwargs):
+        mat_path = kwargs.pop('mat_path', './DREAMER.mat')  # str
+        mat_data = scio.loadmat(mat_path,
+                                verify_compressed_data_integrity=False)
+
+        subject_len = len(mat_data['DREAMER'][0, 0]['Data'][0])  # 23
+        return list(range(subject_len))
 
     def __getitem__(self, index: int) -> Tuple:
         info = self.read_info(index)

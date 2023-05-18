@@ -57,6 +57,7 @@ Customized Datasets
 
     NumpyDataset
     MNEDataset
+    FolderDataset
 
 Hooks
 ---------------------------------------------------------

@@ -91,9 +91,9 @@ class EEGSignalIO:
                     with env.begin(write=True) as transaction:
                         transaction.put(key.encode(), pickle.dumps(eeg))
                 except lmdb.MapFullError:
-                    print(
-                        f'The current io_size is not enough, and double the LMDB map size to {self.io_size * 2} automatically.'
-                    )
+                    # print(
+                    #     f'The current io_size is not enough, and double the LMDB map size to {self.io_size * 2} automatically.'
+                    # )
                     self.io_size = self.io_size * 2
                     try_again = True
             if try_again:
