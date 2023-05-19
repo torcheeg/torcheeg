@@ -186,32 +186,21 @@ class MAHNOBDataset(BaseDataset):
         self.__dict__.update(params)
 
     @staticmethod
-    def __io__(io_path: str = None,
-               io_size: int = 10485760,
-               io_mode: str = 'lmdb',
-               block: Any = None,
-               lock: Any = None,
+    def _load_data(
+               file: Any = None,
+                root_path: str = './Sessions',
+                chunk_size: int = 128,
+                sampling_rate: int = 128,
+                overlap: int = 0,
+                num_channel: int = 32,
+                num_baseline: int = 30,
+                baseline_chunk_size: int = 128,
+                num_trial_sample: int = 30,
+                offline_transform: Union[None, Callable] = None,
+                before_trial: Union[None, Callable] = None,
+                after_trial: Union[None, Callable] = None,
                **kwargs):
-        file_name = block
-        root_path = kwargs.pop('root_path', './Sessions')  # str
-        chunk_size = kwargs.pop('chunk_size', 128)  # int
-        sampling_rate = kwargs.pop('sampling_rate', 128)  # int
-        overlap = kwargs.pop('overlap', 0)  # int
-        num_channel = kwargs.pop('num_channel', 32)  # int
-        num_baseline = kwargs.pop('num_baseline', 30)  # int
-        baseline_chunk_size = kwargs.pop('baseline_chunk_size', 128)  # int
-        num_trial_sample = kwargs.pop('num_trial_sample', 30)  # int
-        before_trial = kwargs.pop('before_trial', None)  # Callable
-        transform = kwargs.pop('offline_transform', None)  # Callable
-        after_trial = kwargs.pop('after_trial', None)  # Callable
-
-        meta_info_io_path = os.path.join(io_path, 'info.csv')
-        eeg_signal_io_path = os.path.join(io_path, 'eeg')
-
-        info_io = MetaInfoIO(meta_info_io_path)
-        eeg_io = EEGSignalIO(eeg_signal_io_path,
-                             io_size=io_size,
-                             io_mode=io_mode)
+        file_name = file
 
         trial_dir = os.path.join(root_path, file_name)
 
@@ -295,16 +284,18 @@ class MAHNOBDataset(BaseDataset):
 
             t_eeg = clip_sample
             t_baseline = trial_baseline_sample
-            if not transform is None:
-                t = transform(eeg=clip_sample, baseline=trial_baseline_sample)
+            if not offline_transform is None:
+                t = offline_transform(eeg=clip_sample, baseline=trial_baseline_sample)
                 t_eeg = t['eeg']
                 t_baseline = t['baseline']
 
             # put baseline signal into IO
             if not 'baseline_id' in trial_meta_info:
                 trial_base_id = f'{file_name}_{write_pointer}'
-                with lock:
-                    eeg_io.write_eeg(t_baseline, trial_base_id)
+                yield {
+                    'eeg': t_baseline,
+                    'key': trial_base_id
+                }
                 write_pointer += 1
                 trial_meta_info['baseline_id'] = trial_base_id
 
@@ -325,9 +316,11 @@ class MAHNOBDataset(BaseDataset):
                     'info': record_info
                 })
             else:
-                with lock:
-                    eeg_io.write_eeg(t_eeg, clip_id)
-                    info_io.write_info(record_info)
+                yield {
+                    'eeg': t_eeg,
+                    'key': clip_id,
+                    'info': record_info
+                }
 
             start_at = start_at + step
             end_at = start_at + chunk_size
@@ -336,13 +329,10 @@ class MAHNOBDataset(BaseDataset):
             trial_queue = after_trial(trial_queue)
             for obj in trial_queue:
                 assert 'eeg' in obj and 'key' in obj and 'info' in obj, 'after_trial must return a list of dictionaries, where each dictionary corresponds to an EEG sample, containing `eeg`, `key` and `info` as keys.'
-                with lock:
-                    eeg_io.write_eeg(obj['eeg'], obj['key'])
-                    info_io.write_info(obj['info'])
+                yield obj
 
     @staticmethod
-    def __block__(**kwargs):
-        root_path = kwargs.pop('root_path', './Sessions')  # str
+    def _set_files(root_path: str = './Sessions', **kwargs):
         return os.listdir(root_path)
 
     def __getitem__(self, index: int) -> Tuple:

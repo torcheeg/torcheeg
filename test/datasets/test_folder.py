@@ -8,6 +8,7 @@ import numpy as np
 from torcheeg import transforms
 from torcheeg.datasets import FolderDataset
 
+mne.set_log_level('CRITICAL')
 
 class TestFolderDataset(unittest.TestCase):
     def setUp(self):
@@ -43,11 +44,10 @@ class TestFolderDataset(unittest.TestCase):
         folder2 = './tmp_in/data/folder2'
         if not os.path.exists(folder1):
             os.makedirs(folder1)
+            self.generate_dummy_eeg_files(2, folder1)
         if not os.path.exists(folder2):
             os.makedirs(folder2)
-
-        self.generate_dummy_eeg_files(2, folder1)
-        self.generate_dummy_eeg_files(2, folder2)
+            self.generate_dummy_eeg_files(2, folder2)
 
         # Define input and output paths for folder_constructor
         io_path = './tmp_out/eeg_folder'

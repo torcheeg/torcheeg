@@ -7,6 +7,7 @@ import mne
 from torcheeg import transforms
 from torcheeg.datasets import MNEDataset
 
+mne.set_log_level('CRITICAL')
 
 class TestMNEDataset(unittest.TestCase):
 

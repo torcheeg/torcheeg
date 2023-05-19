@@ -1,18 +1,17 @@
 import os
+from multiprocessing import Manager
 from typing import Any, Dict
 
-from torch.utils.data import Dataset
-from multiprocessing import Manager
-from torcheeg.io import EEGSignalIO, MetaInfoIO
 from joblib import Parallel, delayed
-
+from torch.utils.data import Dataset
 from tqdm import tqdm
+
+from torcheeg.io import EEGSignalIO, MetaInfoIO
 
 MAX_QUEUE_SIZE = 1024
 
 
 class MockLock():
-
     def __enter__(self):
         pass
 
@@ -21,8 +20,6 @@ class MockLock():
 
 
 class BaseDataset(Dataset):
-    channel_location_dict = {}
-    adjacency_matrix = []
 
     def __init__(self,
                  io_path: str = None,
@@ -59,36 +56,33 @@ class BaseDataset(Dataset):
 
             if self.num_worker == 0:
                 lock = MockLock()  # do nothing, just for compatibility
-                for block in tqdm(self.__block__(io_path=self.io_path,
-                                                 io_size=self.io_size,
-                                                 io_mode=self.io_mode,
-                                                 **kwargs),
-                                  disable=not self.verbose,
-                                  desc="[PROCESS]"):
-                    self.__io__(io_path=self.io_path,
-                                io_size=self.io_size,
-                                io_mode=self.io_mode,
-                                block=block,
-                                lock=lock,
-                                **kwargs)
+                for file in tqdm(self._set_files(**kwargs),
+                                 disable=not self.verbose,
+                                 desc="[PROCESS]"):
+                    self._process_file(io_path=self.io_path,
+                                       io_size=self.io_size,
+                                       io_mode=self.io_mode,
+                                       file=file,
+                                       lock=lock,
+                                       _load_data=self._load_data,
+                                       **kwargs)
             else:
                 # lock for lmdb writter, LMDB only allows single-process writes
                 manager = Manager()
                 lock = manager.Lock()
 
                 Parallel(n_jobs=self.num_worker)(
-                    delayed(self.__io__)(io_path=io_path,
-                                         io_size=io_size,
-                                         io_mode=io_mode,
-                                         block=block,
-                                         lock=lock,
-                                         **kwargs)
-                    for block in tqdm(self.__block__(io_path=self.io_path,
-                                                     io_size=self.io_size,
-                                                     io_mode=self.io_mode,
-                                                     **kwargs),
-                                      disable=not self.verbose,
-                                      desc="[PROCESS]"))
+                    delayed(self._process_file)(io_path=io_path,
+                                                io_size=io_size,
+                                                io_mode=io_mode,
+                                                file=file,
+                                                lock=lock,
+                                                _load_data=self._load_data,
+                                                **
+                                                kwargs)
+                    for file in tqdm(self._set_files(**kwargs),
+                                     disable=not self.verbose,
+                                     desc="[PROCESS]"))
 
         print(
             f'dataset already exists at path {self.io_path}, reading from path...'
@@ -105,53 +99,7 @@ class BaseDataset(Dataset):
         self.info = info_io.read_all()
 
     @staticmethod
-    def __io__(io_path: str = None,
-               io_size: int = 10485760,
-               io_mode: str = 'lmdb',
-               block: Any = None,
-               lock: Any = None,
-               **kwargs):
-        '''
-        The IO method for generating the database. It is used to describe how data blocks are processed to generate the database. It is called in parallel by :obj:`joblib.Parallel` in :obj:`__init__` of the class.
-
-        Args:
-            io_path (str): The path to generated unified data IO, cached as an intermediate result. (default: :obj:`None`)
-            io_size (int): Maximum size database may grow to; used to size the memory mapping. If database grows larger than ``map_size``, an exception will be raised and the user must close and reopen. (default: :obj:`10485760`)
-            io_mode (str): Storage mode of EEG signal. When io_mode is set to :obj:`lmdb`, TorchEEG provides an efficient database (LMDB) for storing EEG signals. LMDB may not perform well on limited operating systems, where a file system based EEG signal storage is also provided. When io_mode is set to :obj:`pickle`, pickle-based persistence files are used. (default: :obj:`lmdb`)
-            block (Any): The block to be processed. It is an element in the list returned by __block__. (default: :obj:`Any`)
-            lock (joblib.parallel.Lock): The lock for IO writter. (default: :obj:`None`)
-            **kwargs: The arguments derived from __init__ of the class.
-
-        .. code-block:: python
-
-            meta_info_io_path = os.path.join(io_path, 'info.csv')
-            eeg_signal_io_path = os.path.join(io_path, 'eeg')
-
-            info_io = MetaInfoIO(meta_info_io_path)
-            eeg_io = EEGSignalIO(eeg_signal_io_path,
-                                io_size=io_size,
-                                io_mode=io_mode)
-
-            # derive the given arguments (kwargs)
-            chunk_size = kwargs.pop('chunk_size', 128)  # int
-            offline_transforms = kwargs.pop('offline_transforms', lambda x: x)  # Callable
-            # process block
-            eeg = None
-            key = None
-            info = None
-
-            # can be used in a for loop
-            with lock:
-                info_io.write_eeg(eeg, key)
-                eeg_io.write_info(info)
-
-        '''
-
-        raise NotImplementedError(
-            "Method __io__ is not implemented in class BaseDataset")
-
-    @staticmethod
-    def __block__(**kwargs):
+    def _set_files(**kwargs):
         '''
         The block method for generating the database. It is used to describe which data blocks need to be processed to generate the database. It is called in parallel by :obj:`joblib.Parallel` in :obj:`__init__` of the class.
 
@@ -161,13 +109,79 @@ class BaseDataset(Dataset):
 
         .. code-block:: python
 
-            # e.g., return file name list for __io__ to process
-            root_path = kwargs.pop('root_path', None)  # str
-            return os.listdir(root_path)
+            def _set_files(root_path: str = None, **kwargs):
+                # e.g., return file name list for _load_data to process
+                return os.listdir(root_path)
 
         '''
         raise NotImplementedError(
-            "Method __block__ is not implemented in class BaseDataset")
+            "Method _set_files is not implemented in class BaseDataset")
+
+    @staticmethod
+    def _process_file(io_path: str = None,
+                      io_size: int = 10485760,
+                      io_mode: str = 'lmdb',
+                      file: Any = None,
+                      lock: Any = None,
+                      _load_data=None,
+                      **kwargs):
+
+        meta_info_io_path = os.path.join(io_path, 'info.csv')
+        eeg_signal_io_path = os.path.join(io_path, 'eeg')
+
+        info_io = MetaInfoIO(meta_info_io_path)
+        eeg_io = EEGSignalIO(eeg_signal_io_path,
+                             io_size=io_size,
+                             io_mode=io_mode)
+
+        gen = _load_data(file=file, **kwargs)
+        # loop for data yield by _load_data, until to the end of the data
+        while True:
+            try:
+                # call _load_data of the class
+                # get the current class name
+                obj = next(gen)
+
+            except StopIteration:
+                break
+
+            with lock:
+                if 'eeg' in obj and 'key' in obj:
+                    eeg_io.write_eeg(obj['eeg'], obj['key'])
+                if 'info' in obj:
+                    info_io.write_info(obj['info'])
+
+    @staticmethod
+    def _load_data(file: Any = None, **kwargs):
+        '''
+        The IO method for generating the database. It is used to describe how files are processed to generate the database. It is called in parallel by :obj:`joblib.Parallel` in :obj:`__init__` of the class.
+
+        Args:
+            file (Any): The file to be processed. It is an element in the list returned by _set_files. (default: :obj:`Any`)
+            **kwargs: The arguments derived from :obj:`__init__` of the class.
+
+        .. code-block:: python
+
+            def _load_data(file: Any = None, chunk_size: int = 128, **kwargs):
+                # process file
+                eeg = np.ndarray((chunk_size, 64, 128), dtype=np.float32)
+                key = '1'
+                info = {
+                    'subject': '1',
+                    'session': '1',
+                    'run': '1',
+                    'label': '1'
+                }
+                yield {
+                    'eeg': eeg,
+                    'key': key,
+                    'info': info
+                }
+
+        '''
+
+        raise NotImplementedError(
+            "Method _load_data is not implemented in class BaseDataset")
 
     def read_eeg(self, key: str) -> Any:
         r'''

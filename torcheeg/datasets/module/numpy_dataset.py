@@ -1,11 +1,21 @@
 import os
-from typing import Any, Callable, Dict, Tuple, Union
-
+from typing import Any, List, Callable, Dict, Tuple, Union
+from multiprocessing import Manager
+from joblib import Parallel, delayed
+from tqdm import tqdm
 import numpy as np
 
 from torcheeg.io import EEGSignalIO, MetaInfoIO
 
 from .base_dataset import BaseDataset
+
+
+class MockLock():
+    def __enter__(self):
+        pass
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        pass
 
 
 class NumpyDataset(BaseDataset):
@@ -84,7 +94,6 @@ class NumpyDataset(BaseDataset):
         verbose (bool): Whether to display logs during processing, such as progress bars, etc. (default: :obj:`True`)
         in_memory (bool): Whether to load the entire dataset into memory. If :obj:`in_memory` is set to True, then the first time an EEG sample is read, the entire dataset is loaded into memory for subsequent retrieval. Otherwise, the dataset is stored on disk to avoid the out-of-memory problem. (default: :obj:`False`)    
     '''
-
     def __init__(self,
                  X: np.ndarray,
                  y: Dict,
@@ -107,40 +116,90 @@ class NumpyDataset(BaseDataset):
             'label_transform': label_transform,
             'before_trial': before_trial,
             'after_trial': after_trial,
-            'io_path': io_path,
-            'io_size': io_size,
-            'io_mode': io_mode,
-            'num_worker': num_worker,
-            'num_samples_per_worker': num_samples_per_worker,
-            'verbose': verbose,
-            'in_memory': in_memory
+            'num_samples_per_worker': num_samples_per_worker
         }
-        super().__init__(**params, X=X, y=y)
-        # save all arguments to __dict__
         self.__dict__.update(params)
 
-    @staticmethod
-    def __io__(io_path: str = None,
-               io_size: int = 10485760,
-               io_mode: str = 'lmdb',
-               block: Any = None,
-               lock: Any = None,
-               **kwargs):
-        X_block_path, y_block_path, block_id = block
-        X = np.load(X_block_path)
-        y = np.load(y_block_path)
+        self.io_path = io_path
+        self.io_size = io_size
+        self.io_mode = io_mode
+        self.in_memory = in_memory
+        self.num_worker = num_worker
+        self.verbose = verbose
 
-        before_trial = kwargs.pop('before_trial', None)
-        transform = kwargs.pop('offline_transform', None)
-        after_trial = kwargs.pop('after_trial', None)
+        # new IO
+        if not self.exist(self.io_path):
+            print(
+                f'dataset does not exist at path {self.io_path}, generating files to path...'
+            )
+            # make the root dictionary
+            os.makedirs(self.io_path, exist_ok=True)
 
-        meta_info_io_path = os.path.join(io_path, 'info.csv')
-        eeg_signal_io_path = os.path.join(io_path, 'eeg')
+            # init sub-folders
+            meta_info_io_path = os.path.join(self.io_path, 'info.csv')
+            eeg_signal_io_path = os.path.join(self.io_path, 'eeg')
+
+            MetaInfoIO(meta_info_io_path)
+            EEGSignalIO(eeg_signal_io_path,
+                        io_size=self.io_size,
+                        io_mode=self.io_mode)
+
+            if self.num_worker == 0:
+                lock = MockLock()  # do nothing, just for compatibility
+                for file in tqdm(self._set_files(X=X,
+                                                 y=y,
+                                                 io_path=io_path,
+                                                 **params),
+                                 disable=not self.verbose,
+                                 desc="[PROCESS]"):
+                    self._process_file(io_path=self.io_path,
+                                       io_size=self.io_size,
+                                       io_mode=self.io_mode,
+                                       file=file,
+                                       lock=lock,
+                                       _load_data=self._load_data,
+                                       **params)
+            else:
+                # lock for lmdb writter, LMDB only allows single-process writes
+                manager = Manager()
+                lock = manager.Lock()
+
+                Parallel(n_jobs=self.num_worker)(
+                    delayed(self._process_file)(io_path=io_path,
+                                                io_size=io_size,
+                                                io_mode=io_mode,
+                                                file=file,
+                                                lock=lock,
+                                                _load_data=self._load_data,
+                                                **params)
+                    for file in tqdm(self._set_files(
+                        X=X, y=y, io_path=io_path, **params),
+                                     disable=not self.verbose,
+                                     desc="[PROCESS]"))
+
+        print(
+            f'dataset already exists at path {self.io_path}, reading from path...'
+        )
+
+        meta_info_io_path = os.path.join(self.io_path, 'info.csv')
+        eeg_signal_io_path = os.path.join(self.io_path, 'eeg')
 
         info_io = MetaInfoIO(meta_info_io_path)
-        eeg_io = EEGSignalIO(eeg_signal_io_path,
-                             io_size=io_size,
-                             io_mode=io_mode)
+        self.eeg_io = EEGSignalIO(eeg_signal_io_path,
+                                  io_size=self.io_size,
+                                  io_mode=self.io_mode)
+
+        self.info = info_io.read_all()
+
+    @staticmethod
+    def _load_data(file: Any = None,
+                   before_trial: Union[None, Callable] = None,
+                   offline_transform: Union[None, Callable] = None,
+                   after_trial: Union[None, Callable] = None,
+                   **kwargs):
+        X_file_path, y_file_path, file_id = file
+        X = np.load(X_file_path)
+        y = np.load(y_file_path)
 
         if before_trial:
             X = before_trial(X)
@@ -150,18 +209,19 @@ class NumpyDataset(BaseDataset):
 
             t_eeg = clip_sample
 
-            if not transform is None:
-                t = transform(eeg=clip_sample)
+            if not offline_transform is None:
+                t = offline_transform(eeg=clip_sample)
                 t_eeg = t['eeg']
 
-            clip_id = f'{block_id}_{write_pointer}'
+            clip_id = f'{file_id}_{write_pointer}'
 
             # record meta info for each signal
             record_info = {'clip_id': clip_id}
             # y is np.ndarray (n_samples, n_labels)
             record_info.update(
-                {f'{i}': y[write_pointer, i] for i in range(y.shape[1])})
-            
+                {f'{i}': y[write_pointer, i]
+                 for i in range(y.shape[1])})
+
             if after_trial:
                 trial_queue.append({
                     'eeg': t_eeg,
@@ -169,35 +229,29 @@ class NumpyDataset(BaseDataset):
                     'info': record_info
                 })
             else:
-                with lock:
-                    eeg_io.write_eeg(t_eeg, clip_id)
-                    info_io.write_info(record_info)
+                yield {'eeg': t_eeg, 'key': clip_id, 'info': record_info}
 
         if len(trial_queue) and after_trial:
             trial_queue = after_trial(trial_queue)
             for obj in trial_queue:
                 assert 'eeg' in obj and 'key' in obj and 'info' in obj, 'after_trial must return a list of dictionaries, where each dictionary corresponds to an EEG sample, containing `eeg`, `key` and `info` as keys.'
-                with lock:
-                    eeg_io.write_eeg(obj['eeg'], obj['key'])
-                    info_io.write_info(obj['info'])
+                yield obj
 
     @staticmethod
-    def __block__(**kwargs):
-        io_path = kwargs.pop('io_path', '.')  # str
-        X = kwargs.pop('X', None)  # np.ndarray
-        y = kwargs.pop('y', None)  # dict
-        num_samples_per_worker = kwargs.pop('num_samples_per_worker',
-                                            100)  # int
-
+    def _set_files(X: Union[np.ndarray, List[str]] = None,
+                   y: Union[np.ndarray, List[str]] = None,
+                   io_path: str = None,
+                   num_samples_per_worker: int = 100,
+                   **kwargs):
         # check if X is a list of str
         X_str = isinstance(X, list) and all([isinstance(x, str) for x in X])
         y_str = isinstance(y, list) and all([isinstance(y, str) for y in y])
 
         if X_str and y_str:
-            X_y_block_id_list = []
-            for block_id, (X_block_path, y_block_path) in enumerate(zip(X, y)):
-                X_y_block_id_list.append((X_block_path, y_block_path, block_id))
-            return X_y_block_id_list
+            X_y_file_id_list = []
+            for block_id, (X_file_path, y_file_path) in enumerate(zip(X, y)):
+                X_y_file_id_list.append((X_file_path, y_file_path, block_id))
+            return X_y_file_id_list
 
         X_ndarray = isinstance(X, np.ndarray)
         y_ndarray = isinstance(y, np.ndarray)
@@ -208,23 +262,23 @@ class NumpyDataset(BaseDataset):
                 indices,
                 len(X) // num_samples_per_worker)
 
-            X_y_block_id_list = []
+            X_y_file_id_list = []
             for block_id, sample_indices in enumerate(block_samples_list):
-                X_block = X[sample_indices]
-                y_block = y[sample_indices]
+                X_file = X[sample_indices]
+                y_file = y[sample_indices]
                 # save block to disk
                 if not os.path.exists(os.path.join(io_path, 'tmp')):
                     os.makedirs(os.path.join(io_path, 'tmp'))
 
-                X_block_path = os.path.join(io_path, 'tmp', f'{block_id}_x.npy')
-                np.save(X_block_path, X_block)
+                X_file_path = os.path.join(io_path, 'tmp', f'{block_id}_x.npy')
+                np.save(X_file_path, X_file)
 
-                y_block_path = os.path.join(io_path, 'tmp', f'{block_id}_y.npy')
-                np.save(y_block_path, y_block)
+                y_file_path = os.path.join(io_path, 'tmp', f'{block_id}_y.npy')
+                np.save(y_file_path, y_file)
 
-                X_y_block_id_list.append((X_block_path, y_block_path, block_id))
+                X_y_file_id_list.append((X_file_path, y_file_path, block_id))
 
-            return X_y_block_id_list
+            return X_y_file_id_list
 
         raise ValueError(
             'X and y must be either a list of paths to np.ndarray, or a np.ndarray.'

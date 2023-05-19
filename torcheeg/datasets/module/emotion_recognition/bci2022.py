@@ -240,32 +240,21 @@ class BCI2022Dataset(BaseDataset):
         self.__dict__.update(params)
 
     @staticmethod
-    def __io__(io_path: str = None,
-               io_size: int = 10485760,
-               io_mode: str = 'lmdb',
-               block: Any = None,
-               lock: Any = None,
-               **kwargs):
-        file_name = os.path.basename(block)  # an element from file name list
-        chunk_size = kwargs.pop('chunk_size', 250)  # int
-        overlap = kwargs.pop('overlap', 0)  # int
-        channel_num = kwargs.pop('channel_num', 30)  # int
-        before_trial = kwargs.pop('before_trial', None)  # Callable
-        transform = kwargs.pop('transform', None)  # Callable
-        after_trial = kwargs.pop('after_trial', None)  # Callable
+    def _load_data(file: Any = None,
+                   chunk_size: int = 250,
+                   overlap: int = 0,
+                   channel_num: int = 30,
+                   before_trial: Union[None, Callable] = None,
+                   offline_transform: Union[None, Callable] = None,
+                   after_trial: Union[None, Callable] = None,
+                   **kwargs):
+
+        file_name = os.path.basename(file)  # an element from file name list
         reorder = 'TrainSet_first_batch' in file_name  # bool, the first batch needs to be reordered
-
-        meta_info_io_path = os.path.join(io_path, 'info.csv')
-        eeg_signal_io_path = os.path.join(io_path, 'eeg')
-
-        info_io = MetaInfoIO(meta_info_io_path)
-        eeg_io = EEGSignalIO(eeg_signal_io_path,
-                             io_size=io_size,
-                             io_mode=io_mode)
 
         subject = file_name  # subject (54)
         samples = joblib.load(os.path.join(
-            block, f'{file_name}.pkl'))  # channel(33), timestep(n*250)
+            file, f'{file_name}.pkl'))  # channel(33), timestep(n*250)
 
         events = samples[-1]
         if reorder:
@@ -317,8 +306,8 @@ class BCI2022Dataset(BaseDataset):
 
                 while cur_end_at <= end_at:
                     t_eeg = samples[:channel_num, cur_start_at:cur_end_at]
-                    if not transform is None:
-                        t_eeg = transform(eeg=t_eeg)['eeg']
+                    if not offline_transform is None:
+                        t_eeg = offline_transform(eeg=t_eeg)['eeg']
 
                     clip_id = f'{subject}_{write_pointer}'
                     write_pointer += 1
@@ -336,9 +325,11 @@ class BCI2022Dataset(BaseDataset):
                             'info': record_info
                         })
                     else:
-                        with lock:
-                            eeg_io.write_eeg(t_eeg, clip_id)
-                            info_io.write_info(record_info)
+                        yield {
+                            'eeg': t_eeg,
+                            'key': clip_id,
+                            'info': record_info
+                        }
 
                     cur_start_at = cur_start_at + step
                     cur_end_at = cur_start_at + chunk_size
@@ -347,9 +338,7 @@ class BCI2022Dataset(BaseDataset):
                     trial_queue = after_trial(trial_queue)
                     for obj in trial_queue:
                         assert 'eeg' in obj and 'key' in obj and 'info' in obj, 'after_trial must return a list of dictionaries, where each dictionary corresponds to an EEG sample, containing `eeg`, `key` and `info` as keys.'
-                        with lock:
-                            eeg_io.write_eeg(t_eeg, clip_id)
-                            info_io.write_info(record_info)
+                        yield obj
 
                 # prepare for the next trial
                 trial_id += 1
@@ -358,8 +347,7 @@ class BCI2022Dataset(BaseDataset):
                 end_at = None
 
     @staticmethod
-    def __block__(**kwargs):
-        root_path = kwargs.pop('root_path', './data_preprocessed_python')  # str
+    def _set_files(root_path: str = './data_preprocessed_python', **kwargs):
         outputs = []
         for train_set_batch in [
                 'TrainSet_first_batch', 'TrainSet_second_batch'

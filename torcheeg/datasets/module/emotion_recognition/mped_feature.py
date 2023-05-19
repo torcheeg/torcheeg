@@ -140,27 +140,15 @@ class MPEDFeatureDataset(BaseDataset):
         self.__dict__.update(params)
 
     @staticmethod
-    def __io__(io_path: str = None,
-               io_size: int = 10485760,
-               io_mode: str = 'lmdb',
-               block: Any = None,
-               lock: Any = None,
-               **kwargs):
-        file_name = block
-        root_path = kwargs.pop('root_path', './EEG_feature')
-        feature = kwargs.pop('feature', ['PSD'])
-        num_channel = kwargs.pop('num_channel', 62)
-        before_trial = kwargs.pop('before_trial', None)
-        transform = kwargs.pop('offline_transform', None)
-        after_trial = kwargs.pop('after_trial', None)
-
-        meta_info_io_path = os.path.join(io_path, 'info.csv')
-        eeg_signal_io_path = os.path.join(io_path, 'eeg')
-
-        info_io = MetaInfoIO(meta_info_io_path)
-        eeg_io = EEGSignalIO(eeg_signal_io_path,
-                             io_size=io_size,
-                             io_mode=io_mode)
+    def _load_data(file: Any = None,
+                   root_path: str = './EEG_feature',
+                   feature: list = ['PSD'],
+                   num_channel: int = 62,
+                   before_trial: Union[None, Callable] = None,
+                   offline_transform: Union[None, Callable] = None,
+                   after_trial: Union[None, Callable] = None,
+                   **kwargs):
+        file_name = file
 
         labels = [
             0, 2, 1, 4, 3, 5, 6, 7, 1, 2, 3, 6, 7, 4, 5, 0, 1, 5, 6, 2, 2, 1, 7,
@@ -217,8 +205,8 @@ class MPEDFeatureDataset(BaseDataset):
                 clip_sample = trial_samples[:, clip_id]
 
                 t_eeg = clip_sample
-                if not transform is None:
-                    t_eeg = transform(eeg=clip_sample)['eeg']
+                if not offline_transform is None:
+                    t_eeg = offline_transform(eeg=clip_sample)['eeg']
 
                 clip_id = f'{file_name}_{write_pointer}'
                 write_pointer += 1
@@ -233,22 +221,18 @@ class MPEDFeatureDataset(BaseDataset):
                         'info': record_info
                     })
                 else:
-                    with lock:
-                        eeg_io.write_eeg(t_eeg, clip_id)
-                        info_io.write_info(record_info)
+                    yield {'eeg': t_eeg, 'key': clip_id, 'info': record_info}
 
             if len(trial_queue) and after_trial:
                 trial_queue = after_trial(trial_queue)
                 for obj in trial_queue:
                     assert 'eeg' in obj and 'key' in obj and 'info' in obj, 'after_trial must return a list of dictionaries, where each dictionary corresponds to an EEG sample, containing `eeg`, `key` and `info` as keys.'
-                    with lock:
-                        eeg_io.write_eeg(obj['eeg'], obj['key'])
-                        info_io.write_info(obj['info'])
+                    yield obj
 
     @staticmethod
-    def __block__(**kwargs):
-        root_path = kwargs.pop('root_path', './data_preprocessed_python')  # str
-        feature = kwargs.pop('feature', ['PSD'])  # list
+    def _set_files(root_path: str = './EEG_feature',
+                   feature: list = ['PSD'],
+                   **kwargs):
         avaliable_features = os.listdir(root_path)
 
         assert set(feature).issubset(

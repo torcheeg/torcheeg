@@ -2,8 +2,6 @@ import os
 import pickle as pkl
 from typing import Any, Callable, Dict, Tuple, Union
 
-from torcheeg.io import EEGSignalIO, MetaInfoIO
-
 from ..base_dataset import BaseDataset
 
 
@@ -124,7 +122,6 @@ class DEAPDataset(BaseDataset):
         verbose (bool): Whether to display logs during processing, such as progress bars, etc. (default: :obj:`True`)
         in_memory (bool): Whether to load the entire dataset into memory. If :obj:`in_memory` is set to True, then the first time an EEG sample is read, the entire dataset is loaded into memory for subsequent retrieval. Otherwise, the dataset is stored on disk to avoid the out-of-memory problem. (default: :obj:`False`)
     '''
-
     def __init__(self,
                  root_path: str = './data_preprocessed_python',
                  chunk_size: int = 128,
@@ -168,30 +165,18 @@ class DEAPDataset(BaseDataset):
         self.__dict__.update(params)
 
     @staticmethod
-    def __io__(io_path: str = None,
-               io_size: int = 10485760,
-               io_mode: str = 'lmdb',
-               block: Any = None,
-               lock: Any = None,
-               **kwargs):
-        file_name = block  # an element from file name list
-        root_path = kwargs.pop('root_path', './data_preprocessed_python')
-        chunk_size = kwargs.pop('chunk_size', 128)
-        overlap = kwargs.pop('overlap', 0)
-        num_channel = kwargs.pop('num_channel', 32)
-        num_baseline = kwargs.pop('num_baseline', 3)
-        baseline_chunk_size = kwargs.pop('baseline_chunk_size', 128)
-        before_trial = kwargs.pop('before_trial', None)
-        transform = kwargs.pop('offline_transform', None)
-        after_trial = kwargs.pop('after_trial', None)
-
-        meta_info_io_path = os.path.join(io_path, 'info.csv')
-        eeg_signal_io_path = os.path.join(io_path, 'eeg')
-
-        info_io = MetaInfoIO(meta_info_io_path)
-        eeg_io = EEGSignalIO(eeg_signal_io_path,
-                             io_size=io_size,
-                             io_mode=io_mode)
+    def _load_data(file: Any = None,
+                   root_path: str = './data_preprocessed_python',
+                   chunk_size: int = 128,
+                   overlap: int = 0,
+                   num_channel: int = 32,
+                   num_baseline: int = 3,
+                   baseline_chunk_size: int = 128,
+                   before_trial: Union[None, Callable] = None,
+                   after_trial: Union[Callable, None] = None,
+                   offline_transform: Union[None, Callable] = None,
+                   **kwargs):
+        file_name = file  # an element from file name list
 
         # derive the given arguments (kwargs)
         with open(os.path.join(root_path, file_name), 'rb') as f:
@@ -241,17 +226,16 @@ class DEAPDataset(BaseDataset):
                 t_eeg = clip_sample
                 t_baseline = trial_baseline_sample
 
-                if not transform is None:
-                    t = transform(eeg=clip_sample,
-                                  baseline=trial_baseline_sample)
+                if not offline_transform is None:
+                    t = offline_transform(eeg=clip_sample,
+                                          baseline=trial_baseline_sample)
                     t_eeg = t['eeg']
                     t_baseline = t['baseline']
 
                 # put baseline signal into IO
                 if not 'baseline_id' in trial_meta_info:
                     trial_base_id = f'{file_name}_{write_pointer}'
-                    with lock:
-                        eeg_io.write_eeg(t_baseline, trial_base_id)
+                    yield {'eeg': t_baseline, 'key': trial_base_id}
                     write_pointer += 1
                     trial_meta_info['baseline_id'] = trial_base_id
 
@@ -272,9 +256,7 @@ class DEAPDataset(BaseDataset):
                         'info': record_info
                     })
                 else:
-                    with lock:
-                        eeg_io.write_eeg(t_eeg, clip_id)
-                        info_io.write_info(record_info)
+                    yield {'eeg': t_eeg, 'key': clip_id, 'info': record_info}
 
                 start_at = start_at + step
                 end_at = start_at + chunk_size
@@ -283,13 +265,11 @@ class DEAPDataset(BaseDataset):
                 trial_queue = after_trial(trial_queue)
                 for obj in trial_queue:
                     assert 'eeg' in obj and 'key' in obj and 'info' in obj, 'after_trial must return a list of dictionaries, where each dictionary corresponds to an EEG sample, containing `eeg`, `key` and `info` as keys.'
-                    with lock:
-                        eeg_io.write_eeg(obj['eeg'], obj['key'])
-                        info_io.write_info(obj['info'])
+                    yield obj
 
     @staticmethod
-    def __block__(**kwargs):
-        root_path = kwargs.pop('root_path', './data_preprocessed_python')  # str
+    def _set_files(root_path: str = './data_preprocessed_python',
+        **kwargs):
         return os.listdir(root_path)
 
     def __getitem__(self, index: int) -> Tuple:
