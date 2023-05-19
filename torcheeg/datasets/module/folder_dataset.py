@@ -96,24 +96,12 @@ class FolderDataset(BaseDataset):
         self.__dict__.update(params)
 
     @staticmethod
-    def __io__(io_path: str = None,
-               io_size: int = 10485760,
-               io_mode: str = 'lmdb',
-               block: Any = None,
-               lock: Any = None,
-               **kwargs):
+    def _load_data(file: Any = None,
+                   offline_transform: Union[None, Callable] = None,
+                   read_fn: Union[None, Callable] = None,
+                   **kwargs):
 
-        file_path, subject_id, label = block
-        transform = kwargs.pop('offline_transform', None)  # Callable
-        read_fn = kwargs.pop('read_fn', None)
-
-        meta_info_io_path = os.path.join(io_path, 'info.csv')
-        eeg_signal_io_path = os.path.join(io_path, 'eeg')
-
-        info_io = MetaInfoIO(meta_info_io_path)
-        eeg_io = EEGSignalIO(eeg_signal_io_path,
-                             io_size=io_size,
-                             io_mode=io_mode)
+        file_path, subject_id, label = file
 
         trial_samples = read_fn(file_path, **kwargs)
         events = [i[0] for i in trial_samples.events]
@@ -124,8 +112,8 @@ class FolderDataset(BaseDataset):
         write_pointer = 0
         for i, trial_signal in enumerate(trial_samples.get_data()):
             t_eeg = trial_signal
-            if not transform is None:
-                t = transform(eeg=trial_signal)
+            if not offline_transform is None:
+                t = offline_transform(eeg=trial_signal)
                 t_eeg = t['eeg']
 
             clip_id = f'{subject_id}_{label}_{write_pointer}'
@@ -140,14 +128,12 @@ class FolderDataset(BaseDataset):
                 'label': label
             }
 
-            with lock:
-                eeg_io.write_eeg(t_eeg, clip_id)
-                info_io.write_info(record_info)
+            yield {'eeg': t_eeg, 'key': clip_id, 'info': record_info}
 
     @staticmethod
-    def __block__(**kwargs):
-        root_path = kwargs.pop('root_path', './folder')  # str
-        folder_mode = kwargs.pop('structure', 'subject_in_label')  # str
+    def _set_files(root_path: str = './folder',
+                   structure: str = 'subject_in_label',
+                   **kwargs):
         # get all the subfolders
         subfolders = [str(i) for i in Path(root_path).iterdir() if i.is_dir()]
         # get all the files in the subfolders
@@ -157,15 +143,15 @@ class FolderDataset(BaseDataset):
                 str(i) for i in Path(subfolder).iterdir() if i.is_file()
             ]
         # get the subject id
-        if folder_mode == 'subject_in_label':
+        if structure == 'subject_in_label':
             # get the file name without the extension
             subjects = [i.split('/')[-1].split('.')[0] for i in file_path_list]
             labels = [i.split('/')[-2] for i in file_path_list]
-        elif folder_mode == 'label_in_subject':
+        elif structure == 'label_in_subject':
             subjects = [i.split('/')[-2] for i in file_path_list]
             labels = [i.split('/')[-1].split('.')[0] for i in file_path_list]
         else:
-            raise ValueError('Unknown folder mode: {}'.format(folder_mode))
+            raise ValueError('Unknown folder mode: {}'.format(structure))
 
         file_path_subject_label = list(zip(file_path_list, subjects, labels))
         return file_path_subject_label

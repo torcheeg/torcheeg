@@ -165,28 +165,16 @@ class SEEDDataset(BaseDataset):
         self.__dict__.update(params)
 
     @staticmethod
-    def __io__(io_path: str = None,
-               io_size: int = 10485760,
-               io_mode: str = 'lmdb',
-               block: Any = None,
-               lock: Any = None,
-               **kwargs):
-        file_name = block
-        root_path = kwargs.pop('root_path', './Preprocessed_EEG')  # str
-        chunk_size = kwargs.pop('chunk_size', 200)  # int
-        overlap = kwargs.pop('overlap', 0)  # int
-        num_channel = kwargs.pop('num_channel', 62)  # int
-        before_trial = kwargs.pop('before_trial', None)  # Callable
-        transform = kwargs.pop('offline_transform', None)  # Callable
-        after_trial = kwargs.pop('after_trial', None)  # Callable
-
-        meta_info_io_path = os.path.join(io_path, 'info.csv')
-        eeg_signal_io_path = os.path.join(io_path, 'eeg')
-
-        info_io = MetaInfoIO(meta_info_io_path)
-        eeg_io = EEGSignalIO(eeg_signal_io_path,
-                             io_size=io_size,
-                             io_mode=io_mode)
+    def _load_data(file: Any = None,
+                   root_path: str = './Preprocessed_EEG',
+                   chunk_size: int = 200,
+                   overlap: int = 0,
+                   num_channel: int = 62,
+                   before_trial: Union[None, Callable] = None,
+                   offline_transform: Union[None, Callable] = None,
+                   after_trial: Union[None, Callable] = None,
+                   **kwargs):
+        file_name = file
 
         subject = int(os.path.basename(file_name).split('.')[0].split('_')
                       [0])  # subject (15)
@@ -234,8 +222,8 @@ class SEEDDataset(BaseDataset):
                 clip_sample = trial_samples[:num_channel, start_at:end_at]
 
                 t_eeg = clip_sample
-                if not transform is None:
-                    t_eeg = transform(eeg=clip_sample)['eeg']
+                if not offline_transform is None:
+                    t_eeg = offline_transform(eeg=clip_sample)['eeg']
 
                 clip_id = f'{file_name}_{write_pointer}'
                 write_pointer += 1
@@ -254,9 +242,7 @@ class SEEDDataset(BaseDataset):
                         'info': record_info
                     })
                 else:
-                    with lock:
-                        eeg_io.write_eeg(t_eeg, clip_id)
-                        info_io.write_info(record_info)
+                    yield {'eeg': t_eeg, 'key': clip_id, 'info': record_info}
 
                 start_at = start_at + step
                 end_at = start_at + chunk_size
@@ -265,13 +251,10 @@ class SEEDDataset(BaseDataset):
                 trial_queue = after_trial(trial_queue)
                 for obj in trial_queue:
                     assert 'eeg' in obj and 'key' in obj and 'info' in obj, 'after_trial must return a list of dictionaries, where each dictionary corresponds to an EEG sample, containing `eeg`, `key` and `info` as keys.'
-                    with lock:
-                        eeg_io.write_eeg(obj['eeg'], obj['key'])
-                        info_io.write_info(obj['info'])
+                    yield obj
 
     @staticmethod
-    def __block__(**kwargs):
-        root_path = kwargs.pop('root_path', './Preprocessed_EEG')  # str
+    def _set_files(root_path: str = './Preprocessed_EEG', **kwargs):
         file_list = os.listdir(root_path)
         skip_set = ['label.mat', 'readme.txt']
         file_list = [f for f in file_list if f not in skip_set]

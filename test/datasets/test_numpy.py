@@ -18,10 +18,7 @@ class TestNumpyDataset(unittest.TestCase):
     def test_numpy_dataset(self):
         io_path = f'./tmp_out/numpy_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
         X = np.random.randn(100, 32, 128)
-        y = {
-            'valence': np.random.randint(10, size=100),
-            'arousal': np.random.randint(10, size=100)
-        }
+        y = np.random.randint(10, size=(100, 2))
 
         in_memory_space = [True, False]
         for in_memory in in_memory_space:
@@ -32,7 +29,7 @@ class TestNumpyDataset(unittest.TestCase):
                                        [transforms.BandDifferentialEntropy()]),
                                    online_transform=transforms.ToTensor(),
                                    label_transform=transforms.Compose([
-                                       transforms.Select('valence'),
+                                       transforms.Select('0'),
                                        transforms.Binary(5.0),
                                    ]),
                                    num_worker=2,
@@ -55,7 +52,7 @@ class TestNumpyDataset(unittest.TestCase):
                                        [transforms.BandDifferentialEntropy()]),
                                    online_transform=transforms.ToTensor(),
                                    label_transform=transforms.Compose([
-                                       transforms.Select('valence'),
+                                       transforms.Select('0'),
                                        transforms.Binary(5.0),
                                    ]),
                                    num_worker=2,
@@ -71,6 +68,10 @@ class TestNumpyDataset(unittest.TestCase):
     def test_numpy_dataset_from_files(self):
         io_path = f'./tmp_out/numpy_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
         tmp_path = f'./tmp_out/tmp_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
+
+        if not os.path.exists(tmp_path):
+            os.makedirs(tmp_path)
+
         X = np.random.randn(100, 32, 128)
         y = np.random.randint(10, size=(100, 2))
 

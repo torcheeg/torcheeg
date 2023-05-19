@@ -133,26 +133,14 @@ class SEEDIVFeatureDataset(BaseDataset):
         self.__dict__.update(params)
 
     @staticmethod
-    def __io__(io_path: str = None,
-               io_size: int = 10485760,
-               io_mode: str = 'lmdb',
-               block: Any = None,
-               lock: Any = None,
-               **kwargs):
-        file_path = block  # an element from file name list
-        feature = kwargs.pop('feature', ['de_movingAve'])
-        num_channel = kwargs.pop('num_channel', 62)
-        before_trial = kwargs.pop('before_trial', None)
-        transform = kwargs.pop('offline_transform', None)
-        after_trial = kwargs.pop('after_trial', None)
-
-        meta_info_io_path = os.path.join(io_path, 'info.csv')
-        eeg_signal_io_path = os.path.join(io_path, 'eeg')
-
-        info_io = MetaInfoIO(meta_info_io_path)
-        eeg_io = EEGSignalIO(eeg_signal_io_path,
-                             io_size=io_size,
-                             io_mode=io_mode)
+    def _load_data(feature: list = ['de_movingAve'],
+                   num_channel: int = 62,
+                   offline_transform: Union[None, Callable] = None,
+                   before_trial: Union[None, Callable] = None,
+                   after_trial: Union[Callable, None] = None,
+                   file: Any = None,
+                   **kwargs):
+        file_path = file  # an element from file name list
 
         session_id = os.path.basename(os.path.dirname(file_path))
         _, file_name = os.path.split(file_path)
@@ -228,8 +216,8 @@ class SEEDIVFeatureDataset(BaseDataset):
             trial_queue = []
             for i, clip_sample in enumerate(trial_samples):
                 t_eeg = clip_sample
-                if not transform is None:
-                    t_eeg = transform(eeg=clip_sample)['eeg']
+                if not offline_transform is None:
+                    t_eeg = offline_transform(eeg=clip_sample)['eeg']
 
                 clip_id = f'{file_name}_{write_pointer}'
                 write_pointer += 1
@@ -249,21 +237,16 @@ class SEEDIVFeatureDataset(BaseDataset):
                         'info': record_info
                     })
                 else:
-                    with lock:
-                        eeg_io.write_eeg(t_eeg, clip_id)
-                        info_io.write_info(record_info)
+                    yield {'eeg': t_eeg, 'key': clip_id, 'info': record_info}
 
             if len(trial_queue) and after_trial:
                 trial_queue = after_trial(trial_queue)
                 for obj in trial_queue:
                     assert 'eeg' in obj and 'key' in obj and 'info' in obj, 'after_trial must return a list of dictionaries, where each dictionary corresponds to an EEG sample, containing `eeg`, `key` and `info` as keys.'
-                    with lock:
-                        eeg_io.write_eeg(obj['eeg'], obj['key'])
-                        info_io.write_info(obj['info'])
+                    yield obj
 
     @staticmethod
-    def __block__(**kwargs):
-        root_path = kwargs.pop('root_path', './eeg_feature_smooth')  # str
+    def _set_files(root_path: str = './eeg_feature_smooth', **kwargs):
 
         session_list = ['1', '2', '3']
         file_path_list = []

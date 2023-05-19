@@ -7,7 +7,7 @@ from torcheeg import transforms
 from torcheeg.datasets import (AMIGOSDataset, DEAPDataset, DREAMERDataset,
                                MAHNOBDataset, SEEDDataset, SEEDFeatureDataset,
                                SEEDIVDataset, SEEDIVFeatureDataset,
-                               MPEDFeatureDataset)
+                               MPEDFeatureDataset, BCI2022Dataset)
 
 
 class TestEmotionRecognitionDataset(unittest.TestCase):
@@ -184,6 +184,23 @@ class TestEmotionRecognitionDataset(unittest.TestCase):
         self.assertEqual(first_item[0].shape, (62, 5))
         last_item = dataset[37574]
         self.assertEqual(last_item[0].shape, (62, 5))
+
+    def test_bci2022(self):
+        io_path = f'./tmp_out/bci2022_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
+        root_path = './tmp_in/TrainSet'
+
+        dataset = BCI2022Dataset(io_path=io_path,
+                                 root_path=root_path,
+                                 online_transform=transforms.ToTensor(),
+                                 label_transform=transforms.Select('emotion'),
+                                 channel_num=30,
+                                 num_worker=4)
+
+        self.assertEqual(len(dataset), 146812)
+        first_item = dataset[0]
+        self.assertEqual(first_item[0].shape, (30, 250))
+        last_item = dataset[146811]
+        self.assertEqual(last_item[0].shape, (30, 250))
 
 
 if __name__ == '__main__':

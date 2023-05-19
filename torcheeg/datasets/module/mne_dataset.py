@@ -1,10 +1,25 @@
 import os
-from typing import Callable, Dict, List, Tuple, Union, Any
-import numpy as np
-from torcheeg.io import EEGSignalIO, MetaInfoIO
+from multiprocessing import Manager
+from typing import Any, Callable, Dict, List, Tuple, Union
+
 import mne
+import numpy as np
+from joblib import Parallel, delayed
+from tqdm import tqdm
+
+from torcheeg.io import EEGSignalIO, MetaInfoIO
 
 from .base_dataset import BaseDataset
+
+MAX_QUEUE_SIZE = 1024
+
+
+class MockLock():
+    def __enter__(self):
+        pass
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        pass
 
 
 class MNEDataset(BaseDataset):
@@ -127,14 +142,13 @@ class MNEDataset(BaseDataset):
         label_transform (Callable, optional): The transformation of the label. The input is an information dictionary, and the ouput is used as the third value of each element in the dataset. (default: :obj:`None`)
         before_trial (Callable, optional): The hook performed on the trial to which the sample belongs. It is performed before the offline transformation and thus typically used to implement context-dependent sample transformations, such as moving averages, etc. The input and output of this hook function should be a :obj:`mne.Epoch`.
         after_trial (Callable, optional): The hook performed on the trial to which the sample belongs. It is performed after the offline transformation and thus typically used to implement context-dependent sample transformations, such as moving averages, etc. The input and output of this hook function should be a sequence of dictionaries representing a sequence of EEG samples. Each dictionary contains two key-value pairs, indexed by :obj:`eeg` (the EEG signal matrix) and :obj:`key` (the index in the database) respectively
-        io_path (str): The path to generated unified data IO, cached as an intermediate result. (default: :obj:`./io/deap`)
+        io_path (str): The path to generated unified data IO, cached as an intermediate result. (default: :obj:`./io/mne`)
         io_size (int): Maximum size database may grow to; used to size the memory mapping. If database grows larger than ``map_size``, an exception will be raised and the user must close and reopen. (default: :obj:`10485760`)
         io_mode (str): Storage mode of EEG signal. When io_mode is set to :obj:`lmdb`, TorchEEG provides an efficient database (LMDB) for storing EEG signals. LMDB may not perform well on limited operating systems, where a file system based EEG signal storage is also provided. When io_mode is set to :obj:`pickle`, pickle-based persistence files are used. (default: :obj:`lmdb`)
         num_worker (str): How many subprocesses to use for data processing. (default: :obj:`0`)
         verbose (bool): Whether to display logs during processing, such as progress bars, etc. (default: :obj:`True`)
         in_memory (bool): Whether to load the entire dataset into memory. If :obj:`in_memory` is set to True, then the first time an EEG sample is read, the entire dataset is loaded into memory for subsequent retrieval. Otherwise, the dataset is stored on disk to avoid the out-of-memory problem. (default: :obj:`False`)    
     '''
-
     def __init__(self,
                  epochs_list: List[mne.Epochs],
                  metadata_list: List[Dict],
@@ -161,46 +175,100 @@ class MNEDataset(BaseDataset):
             'offline_transform': offline_transform,
             'label_transform': label_transform,
             'before_trial': before_trial,
-            'after_trial': after_trial,
-            'io_path': io_path,
-            'io_size': io_size,
-            'io_mode': io_mode,
-            'num_worker': num_worker,
-            'verbose': verbose,
-            'in_memory': in_memory
+            'after_trial': after_trial
         }
-        super().__init__(**params,
-                         epochs_list=epochs_list,
-                         metadata_list=metadata_list)
-        # save all arguments to __dict__
         self.__dict__.update(params)
 
-    @staticmethod
-    def __io__(io_path: str = None,
-               io_size: int = 10485760,
-               io_mode: str = 'lmdb',
-               block: Any = None,
-               lock: Any = None,
-               **kwargs):
-        mne.set_log_level('CRITICAL')
+        self.io_path = io_path
+        self.io_size = io_size
+        self.io_mode = io_mode
+        self.in_memory = in_memory
+        self.num_worker = num_worker
+        self.verbose = verbose
 
-        tmp_path, metadata, block_id = block
-        epochs = mne.read_epochs(tmp_path, preload=True)
+        # new IO
+        if not self.exist(self.io_path):
+            print(
+                f'dataset does not exist at path {self.io_path}, generating files to path...'
+            )
+            # make the root dictionary
+            os.makedirs(self.io_path, exist_ok=True)
 
-        chunk_size = kwargs.pop('chunk_size', -1)  # int
-        overlap = kwargs.pop('overlap', 0)  # int
-        num_channel = kwargs.pop('num_channel', -1)  # int
-        before_trial = kwargs.pop('before_trial', None)  # Callable
-        transform = kwargs.pop('offline_transform', None)  # Callable
-        after_trial = kwargs.pop('after_trial', None)  # Callable
+            # init sub-folders
+            meta_info_io_path = os.path.join(self.io_path, 'info.csv')
+            eeg_signal_io_path = os.path.join(self.io_path, 'eeg')
 
-        meta_info_io_path = os.path.join(io_path, 'info.csv')
-        eeg_signal_io_path = os.path.join(io_path, 'eeg')
+            MetaInfoIO(meta_info_io_path)
+            EEGSignalIO(eeg_signal_io_path,
+                        io_size=self.io_size,
+                        io_mode=self.io_mode)
+
+            if self.num_worker == 0:
+                lock = MockLock()  # do nothing, just for compatibility
+                for file in tqdm(self._set_files(epochs_list=epochs_list,
+                                                 metadata_list=metadata_list,
+                                                 io_path=io_path,
+                                                 **params),
+                                 disable=not self.verbose,
+                                 desc="[PROCESS]"):
+                    self._process_file(io_path=self.io_path,
+                                       io_size=self.io_size,
+                                       io_mode=self.io_mode,
+                                       file=file,
+                                       lock=lock,
+                                       _load_data=self._load_data,
+                                       **params)
+            else:
+                # lock for lmdb writter, LMDB only allows single-process writes
+                manager = Manager()
+                lock = manager.Lock()
+
+                Parallel(n_jobs=self.num_worker)(
+                    delayed(self._process_file)(io_path=io_path,
+                                                io_size=io_size,
+                                                io_mode=io_mode,
+                                                file=file,
+                                                lock=lock,
+                                                _load_data=self._load_data,
+                                                **params)
+                    for file in tqdm(self._set_files(
+                        epochs_list=epochs_list,
+                        metadata_list=metadata_list,
+                        io_path=io_path,
+                        **params),
+                                     disable=not self.verbose,
+                                     desc="[PROCESS]"))
+
+        print(
+            f'dataset already exists at path {self.io_path}, reading from path...'
+        )
+
+        meta_info_io_path = os.path.join(self.io_path, 'info.csv')
+        eeg_signal_io_path = os.path.join(self.io_path, 'eeg')
 
         info_io = MetaInfoIO(meta_info_io_path)
-        eeg_io = EEGSignalIO(eeg_signal_io_path,
-                             io_size=io_size,
-                             io_mode=io_mode)
+        self.eeg_io = EEGSignalIO(eeg_signal_io_path,
+                                  io_size=self.io_size,
+                                  io_mode=self.io_mode)
+
+        self.info = info_io.read_all()
+
+    @staticmethod
+    def _load_data(file: Any = None,
+                   chunk_size: int = -1,
+                   overlap: int = 0,
+                   num_channel: int = -1,
+                   before_trial: Union[None, Callable] = None,
+                   offline_transform: Union[None, Callable] = None,
+                   after_trial: Union[None, Callable] = None,
+                   **kwargs):
+        mne.set_log_level('CRITICAL')
+
+        tmp_path, metadata, block_id = file
+        epochs = mne.read_epochs(tmp_path, preload=True)
+
+        assert (epochs.tmax - epochs.tmin) * epochs.info[
+            "sfreq"] >= chunk_size, f'chunk_size cannot be larger than (tmax - tmin) * sfreq. Here, tmax is set to {epochs.tmax}, tmin is set to {epochs.tmin}, and sfreq is {epochs.info["sfreq"]}. In the current configuration, chunk_size {chunk_size} is greater than {(epochs.tmax - epochs.tmin) * epochs.info["sfreq"]}!'
 
         if chunk_size <= 0:
             chunk_size = len(epochs.times)
@@ -248,8 +316,8 @@ class MNEDataset(BaseDataset):
             trial_queue = []
             for i, trial_signal in enumerate(trial_samples.get_data()):
                 t_eeg = trial_signal[:num_channel, :]
-                if not transform is None:
-                    t = transform(eeg=trial_signal[:num_channel, :])
+                if not offline_transform is None:
+                    t = offline_transform(eeg=trial_signal[:num_channel, :])
                     t_eeg = t['eeg']
 
                 clip_id = f'{block_id}_{write_pointer}'
@@ -270,40 +338,30 @@ class MNEDataset(BaseDataset):
                         'info': record_info
                     })
                 else:
-                    with lock:
-                        eeg_io.write_eeg(t_eeg, clip_id)
-                        info_io.write_info(record_info)
+                    yield {'eeg': t_eeg, 'key': clip_id, 'info': record_info}
 
             if len(trial_queue) and after_trial:
                 trial_queue = after_trial(trial_queue)
                 for obj in trial_queue:
                     assert 'eeg' in obj and 'key' in obj and 'info' in obj, 'after_trial must return a list of dictionaries, where each dictionary corresponds to an EEG sample, containing `eeg`, `key` and `info` as keys.'
-                    with lock:
-                        eeg_io.write_eeg(obj['eeg'], obj['key'])
-                        info_io.write_info(obj['info'])
+                    yield obj
 
     @staticmethod
-    def __block__(**kwargs):
-        io_path = kwargs.pop('io_path', '.')  # str
-        epochs_list = kwargs.pop('epochs_list', [])  # list
-        metadata_list = kwargs.pop('metadata_list', [])  # list
-        chunk_size = kwargs.pop('chunk_size', -1)  # int
-
+    def _set_files(epochs_list: Union[List[str], List[mne.Epochs]],
+                   metadata_list: List[Dict[str, Any]], io_path: str, **kwargs):
         epochs_metadata_block_id_list = []
         for block_id, (epochs,
                        metadata) in enumerate(zip(epochs_list, metadata_list)):
             if isinstance(epochs, str):
                 epochs_path = epochs
             else:
-                assert (epochs.tmax - epochs.tmin) * epochs.info[
-                    "sfreq"] >= chunk_size, f'chunk_size cannot be larger than (tmax - tmin) * sfreq. Here, tmax is set to {epochs.tmax}, tmin is set to {epochs.tmin}, and sfreq is {epochs.info["sfreq"]}. In the current configuration, chunk_size {chunk_size} is greater than {(epochs.tmax - epochs.tmin) * epochs.info["sfreq"]}!'
-                # save epochs to disk
                 if not os.path.exists(os.path.join(io_path, 'tmp')):
                     os.makedirs(os.path.join(io_path, 'tmp'))
-                epochs_path = os.path.join(io_path, 'tmp', f'{block_id}.mne')
-                epochs.save(epochs_path, overwrite=True)
+                epochs_path = os.path.join(io_path, 'tmp', f'{block_id}.epochs')
+                epochs.save(epochs_path)
 
-            epochs_metadata_block_id_list.append((epochs_path, metadata, block_id))
+            epochs_metadata_block_id_list.append(
+                (epochs_path, metadata, block_id))
 
         return epochs_metadata_block_id_list
 
