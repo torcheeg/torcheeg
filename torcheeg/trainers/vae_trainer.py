@@ -1,10 +1,10 @@
 import math
+from itertools import chain
 from typing import List, Tuple
 
 import torch
 import torch.nn as nn
 import torchmetrics
-from itertools import chain
 from torch.utils.data import DataLoader
 
 from .basic_trainer import BasicTrainer
@@ -87,6 +87,7 @@ class VAETrainer(BasicTrainer):
     .. automethod:: test
     .. automethod:: sample
     '''
+
     def __init__(self,
                  encoder: nn.Module,
                  decoder: nn.Module,
@@ -366,6 +367,7 @@ class CVAETrainer(VAETrainer):
     .. automethod:: test
     .. automethod:: sample
     '''
+
     def __init__(self,
                  encoder: nn.Module,
                  decoder: nn.Module,

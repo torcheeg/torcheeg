@@ -10,7 +10,7 @@ from torch.utils.data.dataloader import DataLoader
 
 from ..classification_trainer import ClassificationTrainer
 import torch.nn.functional as F
-
+from ..utils import classification_metrics
 
 class WalkerLoss(nn.Module):
     def forward(self, P_aba, y):
@@ -210,19 +210,26 @@ class ADATrainer(ClassificationTrainer):
 
         # init metric
         self.train_loss = torchmetrics.MeanMetric().to(self.device)
-        self.train_accuracy = torchmetrics.Accuracy(task='multiclass', num_classes=self.num_classes, top_k=1).to(self.device)
+
+        self.train_metrics = classification_metrics(
+            metric_list=self.metrics,
+            num_classes=self.num_classes,
+            device=self.device)
 
         self.val_loss = torchmetrics.MeanMetric().to(self.device)
-        self.val_accuracy = torchmetrics.Accuracy(task='multiclass', num_classes=self.num_classes, top_k=1).to(self.device)
+        self.val_metrics = classification_metrics(metric_list=self.metrics,
+                                                  num_classes=self.num_classes,
+                                                  device=self.device)
 
         self.test_loss = torchmetrics.MeanMetric().to(self.device)
-        self.test_accuracy = torchmetrics.Accuracy(task='multiclass', num_classes=self.num_classes, top_k=1).to(self.device)
-
+        self.test_metrics = classification_metrics(metric_list=self.metrics,
+                                                   num_classes=self.num_classes,
+                                                   device=self.device)
     def on_training_step(self, source_loader: DataLoader,
                          target_loader: DataLoader, batch_id: int,
                          num_batches: int, epoch_id: int, num_epochs: int,
                          **kwargs):
-        self.train_accuracy.reset()
+        self.train_metrics.reset()
         self.train_loss.reset()
 
         self.optimizer.zero_grad()
@@ -254,19 +261,21 @@ class ADATrainer(ClassificationTrainer):
         # log five times
         log_step = math.ceil(num_batches / 5)
         if batch_id % log_step == 0:
-            self.train_loss.update(loss)
-            self.train_accuracy.update(y_source_pred.argmax(1), y_source)
+            # Update and compute selected metrics
+            self.train_metrics.update(y_source_pred.argmax(1), y_source)
+            train_metric_results = self.train_metrics.compute()
 
             train_loss = self.train_loss.compute()
-            train_accuracy = 100 * self.train_accuracy.compute()
 
             # if not distributed, world_size is 1
             batch_id = batch_id * self.world_size
             num_batches = num_batches * self.world_size
+
             if self.is_main:
-                self.log(
-                    f"loss: {train_loss:>8f}, accuracy: {train_accuracy:>0.1f}% [{batch_id:>5d}/{num_batches:>5d}]"
-                )
+                log_msg = f"loss: {train_loss:>8f} [{batch_id:>5d}/{num_batches:>5d}]"
+                for metric, result in train_metric_results.items():
+                    log_msg += f" {metric.replace('Multiclass','')}: {result*100:>0.3f}"
+                self.log(log_msg)
 
     def fit(self,
             source_loader: DataLoader,
@@ -353,7 +362,7 @@ class ADATrainer(ClassificationTrainer):
         pred = self.modules['classifier'](feat)
 
         self.val_loss.update(self.loss_fn(pred, y))
-        self.val_accuracy.update(pred.argmax(1), y)
+        self.val_metrics.update(pred.argmax(1), y)
 
     def on_test_step(self, test_batch: Tuple, batch_id: int, num_batches: int,
                      **kwargs):
@@ -363,4 +372,4 @@ class ADATrainer(ClassificationTrainer):
         pred = self.modules['classifier'](feat)
 
         self.test_loss.update(self.loss_fn(pred, y))
-        self.test_accuracy.update(pred.argmax(1), y)
+        self.test_metrics.update(pred.argmax(1), y)

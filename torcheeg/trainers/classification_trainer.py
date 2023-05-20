@@ -1,14 +1,14 @@
 import math
-from typing import List, Tuple, Optional
+from typing import List, Optional, Tuple
 
-import torch
 import numpy as np
+import torch
 import torch.nn as nn
-from .utils import classification_metrics
 import torchmetrics
 from torch.utils.data import DataLoader
 
 from .basic_trainer import BasicTrainer
+from .utils import classification_metrics
 
 
 class ClassificationTrainer(BasicTrainer):
@@ -85,10 +85,11 @@ class ClassificationTrainer(BasicTrainer):
     .. automethod:: fit
     .. automethod:: test
     '''
+
     def __init__(self,
                  model: nn.Module,
                  num_classes: Optional[int] = None,
-                 metrics: Optional[list] = None, 
+                 metrics: Optional[list] = None,
                  lr: float = 1e-4,
                  weight_decay: float = 0.0,
                  device_ids: List[int] = [],
@@ -106,7 +107,7 @@ class ClassificationTrainer(BasicTrainer):
         self.lr = lr
         self.weight_decay = weight_decay
         self.metrics = metrics
-        
+
         if not num_classes is None:
             self.num_classes = num_classes
         elif hasattr(model, 'num_classes'):
@@ -122,9 +123,10 @@ class ClassificationTrainer(BasicTrainer):
         # init metric
         self.train_loss = torchmetrics.MeanMetric().to(self.device)
 
-        self.train_metrics = classification_metrics(metric_list=self.metrics,
-                                                    num_classes=self.num_classes,
-                                                    device=self.device)
+        self.train_metrics = classification_metrics(
+            metric_list=self.metrics,
+            num_classes=self.num_classes,
+            device=self.device)
 
         self.val_loss = torchmetrics.MeanMetric().to(self.device)
         self.val_metrics = classification_metrics(metric_list=self.metrics,
@@ -163,7 +165,7 @@ class ClassificationTrainer(BasicTrainer):
             train_loss = self.train_loss.compute()
 
             # Update and compute selected metrics
-            
+
             self.train_metrics.update(pred.argmax(1), y)
             train_metric_results = self.train_metrics.compute()
             # if not distributed, world_size is 1
@@ -174,7 +176,6 @@ class ClassificationTrainer(BasicTrainer):
             for metric, result in train_metric_results.items():
                 log_msg += f" {metric.replace('Multiclass','')}: {result*100:>0.3f}"
             self.log(log_msg)
-
 
     def before_validation_epoch(self, epoch_id: int, num_epochs: int, **kwargs):
         self.val_metrics.reset()
@@ -189,7 +190,7 @@ class ClassificationTrainer(BasicTrainer):
 
         self.val_loss.update(self.loss_fn(pred, y))
         self.val_metrics.update(pred.argmax(1), y)
-        
+
     def after_validation_epoch(self, epoch_id: int, num_epochs: int, **kwargs):
         val_loss = self.val_loss.compute()
         val_metric_results = self.val_metrics.compute()

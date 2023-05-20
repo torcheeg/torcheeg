@@ -116,6 +116,7 @@ class GANTrainer(BasicTrainer):
     .. automethod:: test
     .. automethod:: sample
     '''
+
     def __init__(self,
                  generator: nn.Module,
                  discriminator: nn.Module,
@@ -462,6 +463,7 @@ class CGANTrainer(GANTrainer):
     .. automethod:: test
     .. automethod:: sample
     '''
+
     def __init__(self,
                  generator: nn.Module,
                  discriminator: nn.Module,
@@ -589,7 +591,9 @@ class CGANTrainer(GANTrainer):
         self.test_g_loss.update(g_loss)
         self.test_d_loss.update(d_loss)
 
-    def sample(self, num_samples: int, labels: torch.Tensor = None) -> torch.Tensor:
+    def sample(self,
+               num_samples: int,
+               labels: torch.Tensor = None) -> torch.Tensor:
         """
         Samples from the latent space and return generated results.
 
