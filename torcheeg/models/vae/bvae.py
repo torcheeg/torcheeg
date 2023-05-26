@@ -15,9 +15,9 @@ class BEncoder(nn.Module):
         mu, logvar = encoder(mock_eeg)
 
     Args:
-        in_channels (int): The feature dimension of each electrode. (defualt: :obj:`4`)
-        grid_size (tuple): Spatial dimensions of grid-like EEG representation. (defualt: :obj:`(9, 9)`)
-        hid_channels (int): The number of hidden nodes in the first convolutional layer, which is also used as the dimension of output mu and var. (defualt: :obj:`32`)
+        in_channels (int): The feature dimension of each electrode. (default: :obj:`4`)
+        grid_size (tuple): Spatial dimensions of grid-like EEG representation. (default: :obj:`(9, 9)`)
+        hid_channels (int): The number of hidden nodes in the first convolutional layer, which is also used as the dimension of output mu and var. (default: :obj:`32`)
     '''
     def __init__(self,
                  in_channels: int = 4,
@@ -111,9 +111,9 @@ class BDecoder(nn.Module):
         fake_X = decoder(z)
 
     Args:
-        in_channels (int): The input feature dimension (of noise vectors). (defualt: :obj:`64`)
-        out_channels (int): The generated feature dimension of each electrode. (defualt: :obj:`4`)
-        grid_size (tuple): Spatial dimensions of grid-like EEG representation. (defualt: :obj:`(9, 9)`)
+        in_channels (int): The input feature dimension (of noise vectors). (default: :obj:`64`)
+        out_channels (int): The generated feature dimension of each electrode. (default: :obj:`4`)
+        grid_size (tuple): Spatial dimensions of grid-like EEG representation. (default: :obj:`(9, 9)`)
     '''
     def __init__(self,
                  in_channels: int = 64,

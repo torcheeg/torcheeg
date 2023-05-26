@@ -158,18 +158,18 @@ class ViT(nn.Module):
 
     Args:
         chunk_size (int): Number of data points included in each EEG chunk as training or test samples. (default: :obj:`128`)
-        grid_size (tuple): Spatial dimensions of grid-like EEG representation. (defualt: :obj:`(9, 9)`)
-        t_patch_size (int): The size of each input patch at the temporal (chunk size) dimension. (defualt: :obj:`32`)
-        s_patch_size (tuple): The size (resolution) of each input patch at the spatial (grid size) dimension. (defualt: :obj:`(3, 3)`)
-        hid_channels (int): The feature dimension of embeded patch. (defualt: :obj:`32`)
-        depth (int): The number of attention layers for each transformer block. (defualt: :obj:`3`)
-        heads (int): The number of attention heads for each attention layer. (defualt: :obj:`4`)
-        head_channels (int): The dimension of each attention head for each attention layer. (defualt: :obj:`8`)
-        mlp_channels (int): The number of hidden nodes in the fully connected layer of each transformer block. (defualt: :obj:`64`)
-        num_classes (int): The number of classes to predict. (defualt: :obj:`0.0`)
-        embed_dropout (float): Probability of an element to be zeroed in the dropout layers of the embedding layers. (defualt: :obj:`0.0`)
-        dropout (float): Probability of an element to be zeroed in the dropout layers of the transformer layers. (defualt: :obj:`0.0`)
-        pool_func (str): The pool function before the classifier, optionally including :obj:`cls` and :obj:`mean`, where :obj:`cls` represents selecting classification-related token and :obj:`mean` represents the average pooling. (defualt: :obj:`cls`)
+        grid_size (tuple): Spatial dimensions of grid-like EEG representation. (default: :obj:`(9, 9)`)
+        t_patch_size (int): The size of each input patch at the temporal (chunk size) dimension. (default: :obj:`32`)
+        s_patch_size (tuple): The size (resolution) of each input patch at the spatial (grid size) dimension. (default: :obj:`(3, 3)`)
+        hid_channels (int): The feature dimension of embeded patch. (default: :obj:`32`)
+        depth (int): The number of attention layers for each transformer block. (default: :obj:`3`)
+        heads (int): The number of attention heads for each attention layer. (default: :obj:`4`)
+        head_channels (int): The dimension of each attention head for each attention layer. (default: :obj:`8`)
+        mlp_channels (int): The number of hidden nodes in the fully connected layer of each transformer block. (default: :obj:`64`)
+        num_classes (int): The number of classes to predict. (default: :obj:`0.0`)
+        embed_dropout (float): Probability of an element to be zeroed in the dropout layers of the embedding layers. (default: :obj:`0.0`)
+        dropout (float): Probability of an element to be zeroed in the dropout layers of the transformer layers. (default: :obj:`0.0`)
+        pool_func (str): The pool function before the classifier, optionally including :obj:`cls` and :obj:`mean`, where :obj:`cls` represents selecting classification-related token and :obj:`mean` represents the average pooling. (default: :obj:`cls`)
     '''
     def __init__(self,
                  chunk_size: int = 128,

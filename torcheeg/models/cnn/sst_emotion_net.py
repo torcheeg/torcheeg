@@ -46,18 +46,18 @@ class SSTEmotionNet(nn.Module):
         model = SSTEmotionNet(temporal_in_channels=32, spectral_in_channels=4, grid_size=(16, 16), num_classes=2)
 
     Args:
-        grid_size (tuple): Spatial dimensions of grid-like EEG representation. (defualt: :obj:`(16, 16)`)
-        spectral_in_channels (int): How many 2D maps are stacked in the 3D spatial-spectral representation. (defualt: :obj:`5`)
-        temporal_in_channels (int): How many 2D maps are stacked in the 3D spatial-temporal representation. (defualt: :obj:`25`)
-        spectral_depth (int): The number of layers in spatial-spectral stream. (defualt: :obj:`16`)
-        temporal_depth (int): The number of layers in spatial-temporal stream. (defualt: :obj:`22`)
-        spectral_growth_rate (int): The growth rate of spatial-spectral stream. (defualt: :obj:`12`)
-        temporal_growth_rate (int): The growth rate of spatial-temporal stream. (defualt: :obj:`24`)
-        num_dense_block (int): The number of A3DBs to add to end (defualt: :obj:`3`)
-        hid_channels (int): The basic hidden channels in the network blocks. (defualt: :obj:`50`)
-        densenet_dropout (int): Probability of an element to be zeroed in the dropout layers from densenet blocks. (defualt: :obj:`0.0`)
-        task_dropout (int): Probability of an element to be zeroed in the dropout layers from task-specific classification blocks. (defualt: :obj:`0.0`)
-        num_classes (int): The number of classes to predict. (defualt: :obj:`2`)
+        grid_size (tuple): Spatial dimensions of grid-like EEG representation. (default: :obj:`(16, 16)`)
+        spectral_in_channels (int): How many 2D maps are stacked in the 3D spatial-spectral representation. (default: :obj:`5`)
+        temporal_in_channels (int): How many 2D maps are stacked in the 3D spatial-temporal representation. (default: :obj:`25`)
+        spectral_depth (int): The number of layers in spatial-spectral stream. (default: :obj:`16`)
+        temporal_depth (int): The number of layers in spatial-temporal stream. (default: :obj:`22`)
+        spectral_growth_rate (int): The growth rate of spatial-spectral stream. (default: :obj:`12`)
+        temporal_growth_rate (int): The growth rate of spatial-temporal stream. (default: :obj:`24`)
+        num_dense_block (int): The number of A3DBs to add to end (default: :obj:`3`)
+        hid_channels (int): The basic hidden channels in the network blocks. (default: :obj:`50`)
+        densenet_dropout (int): Probability of an element to be zeroed in the dropout layers from densenet blocks. (default: :obj:`0.0`)
+        task_dropout (int): Probability of an element to be zeroed in the dropout layers from task-specific classification blocks. (default: :obj:`0.0`)
+        num_classes (int): The number of classes to predict. (default: :obj:`2`)
     '''
     def __init__(self,
                  grid_size: Tuple[int, int] = (32, 32),

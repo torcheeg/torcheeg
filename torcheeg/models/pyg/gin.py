@@ -29,9 +29,9 @@ class GIN(nn.Module):
         model = GIN(in_channels=4, hid_channels=64, num_classes=2)
 
     Args:
-        in_channels (int): The feature dimension of each electrode. (defualt: :obj:`4`)
-        hid_channels (int): The number of hidden nodes in the GRU layers and the fully connected layer. (defualt: :obj:`64`)
-        num_classes (int): The number of classes to predict. (defualt: :obj:`2`)
+        in_channels (int): The feature dimension of each electrode. (default: :obj:`4`)
+        hid_channels (int): The number of hidden nodes in the GRU layers and the fully connected layer. (default: :obj:`64`)
+        num_classes (int): The number of classes to predict. (default: :obj:`2`)
     '''
     def __init__(self,
                  in_channels: int = 4,

@@ -599,17 +599,17 @@ class BGlow(nn.Module):
         fake_X = model(y=y, temperature=1.0, reverse=True)
 
     Args:
-        in_channels (int): The feature dimension of each electrode. (defualt: :obj:`4`)
-        grid_size (tuple): Spatial dimensions of grid-like EEG representation. (defualt: :obj:`(9, 9)`)
-        hid_channels (int): The basic hidden channels in the network blocks. (defualt: :obj:`512`)
-        num_layers (int): The number of steps in the flow, each step contains an affine coupling layer, an invertible 1x1 conv and an actnorm layer. (defualt: :obj:`32`)
-        num_blocks (int): Number of blocks, each block includes split, step of flow and squeeze. (defualt: :obj:`3`)
-        actnorm_scale (float): The pre-defined scale factor in the actnorm layer. (defualt: :obj:`1.0`)
-        flow_permutation (str): The used flow permutation method, options include :obj:`invconv`, :obj:`shuffle` and :obj:`reverse`. (defualt: :obj:`invconv`)
-        flow_coupling (str): The used flow coupling method, options include :obj:`additive` and  :obj:`affine`. (defualt: :obj:`affine`)
-        LU_decomposed (bool): Whether to use LU decomposed 1x1 convs. (defualt: :obj:`True`)
-        learnable_prior (bool): Whether to train top layer (prior). (defualt: :obj:`True`)
-        num_classes (int): The number of classes. If the number of categories is greater than 0, conditional Glow will be used. During the generation process, additional category labels are provided to guide the generation of samples for the specified category. (defualt: :obj:`-1`)
+        in_channels (int): The feature dimension of each electrode. (default: :obj:`4`)
+        grid_size (tuple): Spatial dimensions of grid-like EEG representation. (default: :obj:`(9, 9)`)
+        hid_channels (int): The basic hidden channels in the network blocks. (default: :obj:`512`)
+        num_layers (int): The number of steps in the flow, each step contains an affine coupling layer, an invertible 1x1 conv and an actnorm layer. (default: :obj:`32`)
+        num_blocks (int): Number of blocks, each block includes split, step of flow and squeeze. (default: :obj:`3`)
+        actnorm_scale (float): The pre-defined scale factor in the actnorm layer. (default: :obj:`1.0`)
+        flow_permutation (str): The used flow permutation method, options include :obj:`invconv`, :obj:`shuffle` and :obj:`reverse`. (default: :obj:`invconv`)
+        flow_coupling (str): The used flow coupling method, options include :obj:`additive` and  :obj:`affine`. (default: :obj:`affine`)
+        LU_decomposed (bool): Whether to use LU decomposed 1x1 convs. (default: :obj:`True`)
+        learnable_prior (bool): Whether to train top layer (prior). (default: :obj:`True`)
+        num_classes (int): The number of classes. If the number of categories is greater than 0, conditional Glow will be used. During the generation process, additional category labels are provided to guide the generation of samples for the specified category. (default: :obj:`-1`)
     '''
     def __init__(self,
                  in_channels: int = 4,
@@ -694,7 +694,7 @@ class BGlow(nn.Module):
             x (torch.Tensor): EEG signal representation. The ideal input shape is :obj:`[n, 4, 9, 9]`. Here, :obj:`n` corresponds to the batch size, :obj:`4` corresponds to the :obj:`in_channels`, and :obj:`(9, 9)` corresponds to the :obj:`grid_size`.
             labels (torch.Tensor): Category labels (int) for a batch of samples The shape should be :obj:`[n,]`. Here, :obj:`n` corresponds to the batch size.
             z (torch.Tensor): The latent vector :obj:`z`. If it is not passed in, then it is automatically sampled from a gaussian distribution.
-            temperature (float): The hyper-parameter, temperature, to sample from gaussian distributions. (defualt: :obj:`1.0`)
+            temperature (float): The hyper-parameter, temperature, to sample from gaussian distributions. (default: :obj:`1.0`)
             reverse (bool): forward process (False) or reverse process (True). Among them, the forward process is used to extract the hidden variables from the EEG representation for training. The reverse process is used to sample the hidden variables from the random distribution for inverse operation to get the generated samples. With :obj:`reverse=True`, :obj:`y`, :obj:`z`, :obj:`temperature` can be specified. In :obj:`reverse=False`, :obj:`x` must be specified.
 
         Returns:

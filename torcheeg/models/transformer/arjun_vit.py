@@ -136,19 +136,19 @@ class ArjunViT(nn.Module):
                          num_classes=2)
 
     Args:
-       num_electrodes (int): The number of electrodes. (defualt: :obj:`32`)
-        chunk_size (int): Number of data points included in each EEG chunk. (defualt: :obj:`128`)
-        t_patch_size (int): The size of each input patch at the temporal (chunk size) dimension. (defualt: :obj:`32`)
-        patch_size (tuple): The size (resolution) of each input patch. (defualt: :obj:`(3, 3)`)
-        hid_channels (int): The feature dimension of embeded patch. (defualt: :obj:`32`)
-        depth (int): The number of attention layers for each transformer block. (defualt: :obj:`3`)
-        heads (int): The number of attention heads for each attention layer. (defualt: :obj:`4`)
-        head_channels (int): The dimension of each attention head for each attention layer. (defualt: :obj:`8`)
-        mlp_channels (int): The number of hidden nodes in the fully connected layer of each transformer block. (defualt: :obj:`64`)
-        num_classes (int): The number of classes to predict. (defualt: :obj:`2`)
-        embed_dropout (float): Probability of an element to be zeroed in the dropout layers of the embedding layers. (defualt: :obj:`0.0`)
-        dropout (float): Probability of an element to be zeroed in the dropout layers of the transformer layers. (defualt: :obj:`0.0`)
-        pool_func (str): The pool function before the classifier, optionally including :obj:`cls` and :obj:`mean`, where :obj:`cls` represents selecting classification-related token and :obj:`mean` represents the average pooling. (defualt: :obj:`cls`)
+       num_electrodes (int): The number of electrodes. (default: :obj:`32`)
+        chunk_size (int): Number of data points included in each EEG chunk. (default: :obj:`128`)
+        t_patch_size (int): The size of each input patch at the temporal (chunk size) dimension. (default: :obj:`32`)
+        patch_size (tuple): The size (resolution) of each input patch. (default: :obj:`(3, 3)`)
+        hid_channels (int): The feature dimension of embeded patch. (default: :obj:`32`)
+        depth (int): The number of attention layers for each transformer block. (default: :obj:`3`)
+        heads (int): The number of attention heads for each attention layer. (default: :obj:`4`)
+        head_channels (int): The dimension of each attention head for each attention layer. (default: :obj:`8`)
+        mlp_channels (int): The number of hidden nodes in the fully connected layer of each transformer block. (default: :obj:`64`)
+        num_classes (int): The number of classes to predict. (default: :obj:`2`)
+        embed_dropout (float): Probability of an element to be zeroed in the dropout layers of the embedding layers. (default: :obj:`0.0`)
+        dropout (float): Probability of an element to be zeroed in the dropout layers of the transformer layers. (default: :obj:`0.0`)
+        pool_func (str): The pool function before the classifier, optionally including :obj:`cls` and :obj:`mean`, where :obj:`cls` represents selecting classification-related token and :obj:`mean` represents the average pooling. (default: :obj:`cls`)
     '''
     def __init__(self,
                  num_electrodes: int = 32,

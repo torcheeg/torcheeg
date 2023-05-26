@@ -69,10 +69,10 @@ class BandSignal(BandTransform):
         >>> (4, 32, 128)
 
     Args:
-        sampling_rate (int): The original sampling rate of EEG signals in Hz. (defualt: :obj:`128`)
-        order (int): The order of the filter. (defualt: :obj:`5`)
-        band_dict: (dict): Band name and the critical sampling rate or frequencies. By default, the differential entropy of the four sub-bands, theta, alpha, beta and gamma, is calculated. (defualt: :obj:`{...}`)
-        apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (defualt: :obj:`False`)
+        sampling_rate (int): The original sampling rate of EEG signals in Hz. (default: :obj:`128`)
+        order (int): The order of the filter. (default: :obj:`5`)
+        band_dict: (dict): Band name and the critical sampling rate or frequencies. By default, the differential entropy of the four sub-bands, theta, alpha, beta and gamma, is calculated. (default: :obj:`{...}`)
+        apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (default: :obj:`False`)
     
     .. automethod:: __call__
     '''
@@ -126,10 +126,10 @@ class BandDifferentialEntropy(BandTransform):
         >>> (32, 4)
 
     Args:
-        sampling_rate (int): The original sampling rate of EEG signals in Hz. (defualt: :obj:`128`)
-        order (int): The order of the filter. (defualt: :obj:`5`)
-        band_dict: (dict): Band name and the critical sampling rate or frequencies. By default, the differential entropy of the four sub-bands, theta, alpha, beta and gamma, is calculated. (defualt: :obj:`{...}`)
-        apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (defualt: :obj:`False`)
+        sampling_rate (int): The original sampling rate of EEG signals in Hz. (default: :obj:`128`)
+        order (int): The order of the filter. (default: :obj:`5`)
+        band_dict: (dict): Band name and the critical sampling rate or frequencies. By default, the differential entropy of the four sub-bands, theta, alpha, beta and gamma, is calculated. (default: :obj:`{...}`)
+        apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (default: :obj:`False`)
     
     .. automethod:: __call__
     '''
@@ -165,10 +165,10 @@ class BandDifferentialEntropyV1(EEGTransform):
         >>> (32, 4)
 
     Args:
-        sampling_rate (int): The original sampling rate of EEG signals in Hz. (defualt: :obj:`128`)
-        order (int): The order of the filter. (defualt: :obj:`5`)
-        band_dict: (dict): Band name and the critical sampling rate or frequencies. By default, the differential entropy of the four sub-bands, theta, alpha, beta and gamma, is calculated. (defualt: :obj:`{...}`)
-        apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (defualt: :obj:`False`)
+        sampling_rate (int): The original sampling rate of EEG signals in Hz. (default: :obj:`128`)
+        order (int): The order of the filter. (default: :obj:`5`)
+        band_dict: (dict): Band name and the critical sampling rate or frequencies. By default, the differential entropy of the four sub-bands, theta, alpha, beta and gamma, is calculated. (default: :obj:`{...}`)
+        apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (default: :obj:`False`)
     
     .. automethod:: __call__
     '''
@@ -258,12 +258,12 @@ class BandPowerSpectralDensity(EEGTransform):
         >>> (32, 4)
 
     Args:
-        sampling_rate (int): The sampling rate of EEG signals in Hz. (defualt: :obj:`128`)
-        fft_n (int): Computes the one-dimensional n-point discrete Fourier Transform (DFT) with the efficient Fast Fourier Transform (FFT) algorithm. If set to None, it will automatically match sampling_rate. (defualt: :obj:`None`)
-        num_window (int): Welch's method computes an estimate of the power spectral density by dividing the data into non-overlapping segments, where the num_window denotes the number of windows. (defualt: :obj:`1`)
-        order (int): The order of the filter. (defualt: :obj:`5`)
-        band_dict: (dict): Band name and the critical sampling rate or frequencies. By default, the power spectral density of the four sub-bands, theta, alpha, beta and gamma, is calculated. (defualt: :obj:`{...}`)
-        apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (defualt: :obj:`False`)
+        sampling_rate (int): The sampling rate of EEG signals in Hz. (default: :obj:`128`)
+        fft_n (int): Computes the one-dimensional n-point discrete Fourier Transform (DFT) with the efficient Fast Fourier Transform (FFT) algorithm. If set to None, it will automatically match sampling_rate. (default: :obj:`None`)
+        num_window (int): Welch's method computes an estimate of the power spectral density by dividing the data into non-overlapping segments, where the num_window denotes the number of windows. (default: :obj:`1`)
+        order (int): The order of the filter. (default: :obj:`5`)
+        band_dict: (dict): Band name and the critical sampling rate or frequencies. By default, the power spectral density of the four sub-bands, theta, alpha, beta and gamma, is calculated. (default: :obj:`{...}`)
+        apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (default: :obj:`False`)
 
     .. automethod:: __call__
     '''
@@ -352,9 +352,9 @@ class BandMeanAbsoluteDeviation(BandTransform):
         >>> (32, 4)
 
     Args:
-        sampling_rate (int): The original sampling rate of EEG signals in Hz. (defualt: :obj:`128`)
-        order (int): The order of the filter. (defualt: :obj:`5`)
-        band_dict: (dict): Band name and the critical sampling rate or frequencies. By default, the mean absolute deviation of the four sub-bands, theta, alpha, beta and gamma, is calculated. (defualt: :obj:`{...}`)
+        sampling_rate (int): The original sampling rate of EEG signals in Hz. (default: :obj:`128`)
+        order (int): The order of the filter. (default: :obj:`5`)
+        band_dict: (dict): Band name and the critical sampling rate or frequencies. By default, the mean absolute deviation of the four sub-bands, theta, alpha, beta and gamma, is calculated. (default: :obj:`{...}`)
     
     .. automethod:: __call__
     '''
@@ -387,9 +387,9 @@ class BandKurtosis(BandTransform):
         >>> (32, 4)
 
     Args:
-        sampling_rate (int): The original sampling rate of EEG signals in Hz. (defualt: :obj:`128`)
-        order (int): The order of the filter. (defualt: :obj:`5`)
-        band_dict: (dict): Band name and the critical sampling rate or frequencies. By default, the kurtosis of the four sub-bands, theta, alpha, beta and gamma, is calculated. (defualt: :obj:`{...}`)
+        sampling_rate (int): The original sampling rate of EEG signals in Hz. (default: :obj:`128`)
+        order (int): The order of the filter. (default: :obj:`5`)
+        band_dict: (dict): Band name and the critical sampling rate or frequencies. By default, the kurtosis of the four sub-bands, theta, alpha, beta and gamma, is calculated. (default: :obj:`{...}`)
     
     .. automethod:: __call__
     '''
@@ -434,9 +434,9 @@ class BandSkewness(BandTransform):
         >>> (32, 4)
 
     Args:
-        sampling_rate (int): The original sampling rate of EEG signals in Hz. (defualt: :obj:`128`)
-        order (int): The order of the filter. (defualt: :obj:`5`)
-        band_dict: (dict): Band name and the critical sampling rate or frequencies. By default, the skewness of the four sub-bands, theta, alpha, beta and gamma, is calculated. (defualt: :obj:`{...}`)
+        sampling_rate (int): The original sampling rate of EEG signals in Hz. (default: :obj:`128`)
+        order (int): The order of the filter. (default: :obj:`5`)
+        band_dict: (dict): Band name and the critical sampling rate or frequencies. By default, the skewness of the four sub-bands, theta, alpha, beta and gamma, is calculated. (default: :obj:`{...}`)
 
     .. automethod:: __call__
     '''

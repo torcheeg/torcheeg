@@ -121,13 +121,13 @@ class RGNN(torch.nn.Module):
 
     Args:
         adj (torch.Tensor): The adjacency matrix corresponding to the EEG representation, where 1.0 means the node is adjacent and 0.0 means the node is not adjacent. The matrix shape should be [num_electrodes, num_electrodes].
-        num_electrodes (int): The number of electrodes. (defualt: :obj:`62`)
-        in_channels (int): The feature dimension of each electrode. (defualt: :obj:`5`)
-        num_layers (int): The number of graph convolutional layers. (defualt: :obj:`2`)
-        hid_channels (int): The number of hidden nodes in the first fully connected layer. (defualt: :obj:`32`)
-        num_classes (int): The number of classes to predict. (defualt: :obj:`3`)
-        dropout (float): Probability of an element to be zeroed in the dropout layers at the output fully-connected layer. (defualt: :obj:`0.7`)
-        learn_edge_weights (bool): Whether to learn a set of parameters to adjust the adjacency matrix. (defualt: :obj:`True`)
+        num_electrodes (int): The number of electrodes. (default: :obj:`62`)
+        in_channels (int): The feature dimension of each electrode. (default: :obj:`5`)
+        num_layers (int): The number of graph convolutional layers. (default: :obj:`2`)
+        hid_channels (int): The number of hidden nodes in the first fully connected layer. (default: :obj:`32`)
+        num_classes (int): The number of classes to predict. (default: :obj:`3`)
+        dropout (float): Probability of an element to be zeroed in the dropout layers at the output fully-connected layer. (default: :obj:`0.7`)
+        learn_edge_weights (bool): Whether to learn a set of parameters to adjust the adjacency matrix. (default: :obj:`True`)
     '''
     def __init__(self,
                  adj: Union[torch.Tensor, list],

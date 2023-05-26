@@ -39,11 +39,11 @@ class CWTSpectrum(EEGTransform):
             >>> (32, 480, 640, 4)
 
         Args:
-            sampling_rate (int): The sampling period for the frequencies output in Hz. (defualt: :obj:`128`)
-            wavelet (str): Wavelet to use. Options include: cgau1, cgau2, cgau3, cgau4, cgau5, cgau6, cgau7, cgau8, cmor, fbsp, gaus1, gaus2 , gaus3, gaus4, gaus5, gaus6, gaus7, gaus8, mexh, morl, shan. (defualt: :obj:`'morl'`)
-            total_scale: (int): The total wavelet scales to use. (defualt: :obj:`128`)
-            contourf: (bool): Whether to output the np.ndarray corresponding to the image with content of filled contours. (defualt: :obj:`False`)
-            apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (defualt: :obj:`False`)
+            sampling_rate (int): The sampling period for the frequencies output in Hz. (default: :obj:`128`)
+            wavelet (str): Wavelet to use. Options include: cgau1, cgau2, cgau3, cgau4, cgau5, cgau6, cgau7, cgau8, cmor, fbsp, gaus1, gaus2 , gaus3, gaus4, gaus5, gaus6, gaus7, gaus8, mexh, morl, shan. (default: :obj:`'morl'`)
+            total_scale: (int): The total wavelet scales to use. (default: :obj:`128`)
+            contourf: (bool): Whether to output the np.ndarray corresponding to the image with content of filled contours. (default: :obj:`False`)
+            apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (default: :obj:`False`)
         
         .. automethod:: __call__
     '''
@@ -142,7 +142,7 @@ class DWTDecomposition(EEGTransform):
             >>> (32, 500)
 
         Args:
-            apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (defualt: :obj:`False`)
+            apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (default: :obj:`False`)
         
         .. automethod:: __call__
     '''

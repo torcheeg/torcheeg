@@ -20,8 +20,8 @@ class Concatenate(EEGTransform):
 
     Args:
         transforms (list, tuple): a sequence of transforms.
-        axis (int): The axis along which the arrays will be joined. If axis is None, arrays are flattened before use (defualt: :obj:`-1`).
-        apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (defualt: :obj:`False`)
+        axis (int): The axis along which the arrays will be joined. If axis is None, arrays are flattened before use (default: :obj:`-1`).
+        apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (default: :obj:`False`)
     
     .. automethod:: __call__
     '''
@@ -113,7 +113,7 @@ class MapChunk(EEGTransform):
 
     Args:
         transform (EEGTransform): a transform
-        apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (defualt: :obj:`False`)
+        apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (default: :obj:`False`)
     
     .. automethod:: __call__
     '''

@@ -50,8 +50,8 @@ class PearsonCorrelation(CorrelationTransform):
         >>> (1, 32, 32)
 
     Args:
-        absolute (bool): Whether to take the absolute value of the correlation coefficient. (defualt: :obj:`128`)
-        apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (defualt: :obj:`False`)
+        absolute (bool): Whether to take the absolute value of the correlation coefficient. (default: :obj:`128`)
+        apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (default: :obj:`False`)
     
     .. automethod:: __call__
     '''
@@ -96,7 +96,7 @@ class PhaseLockingCorrelation(CorrelationTransform):
         >>> (1, 32, 32)
 
     Args:
-        apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (defualt: :obj:`False`)
+        apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (default: :obj:`False`)
     
     .. automethod:: __call__
     '''

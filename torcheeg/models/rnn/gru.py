@@ -25,9 +25,9 @@ class GRU(nn.Module):
         model = GRU(num_electrodes=32, hid_channels=64, num_classes=2)
 
     Args:
-        num_electrodes (int): The number of electrodes, i.e., :math:`C` in the paper. (defualt: :obj:`32`)
-        hid_channels (int): The number of hidden nodes in the GRU layers and the fully connected layer. (defualt: :obj:`64`)
-        num_classes (int): The number of classes to predict. (defualt: :obj:`2`)
+        num_electrodes (int): The number of electrodes, i.e., :math:`C` in the paper. (default: :obj:`32`)
+        hid_channels (int): The number of hidden nodes in the GRU layers and the fully connected layer. (default: :obj:`64`)
+        num_classes (int): The number of classes to predict. (default: :obj:`2`)
     '''
     def __init__(self,
                  num_electrodes: int = 32,

@@ -17,9 +17,9 @@ class ARRCoefficient(EEGTransform):
         >>> (32, 4)
 
     Args:
-        order (int): The order of autoregressive process to be fitted. (defualt: :obj:`4`)
-        norm (str): Use a biased or unbiased correlation. (defualt: :obj:`biased`)
-        apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (defualt: :obj:`False`)
+        order (int): The order of autoregressive process to be fitted. (default: :obj:`4`)
+        norm (str): Use a biased or unbiased correlation. (default: :obj:`biased`)
+        apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (default: :obj:`False`)
     
     .. automethod:: __call__
     '''

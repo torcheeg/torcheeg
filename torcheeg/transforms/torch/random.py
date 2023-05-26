@@ -39,10 +39,10 @@ class RandomNoise(RandomEEGTransform):
         >>> (32, 128)
 
     Args:
-        mean (float): The mean of the normal distribution of noise. (defualt: :obj:`0.0`)
-        std (float): The standard deviation of the normal distribution of noise. (defualt: :obj:`0.0`)
-        p (float): Probability of adding noise to EEG signal samples. Should be between 0.0 and 1.0, where 0.0 means no noise is added to every sample and 1.0 means that noise is added to every sample. (defualt: :obj:`0.5`)
-        apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (defualt: :obj:`False`)
+        mean (float): The mean of the normal distribution of noise. (default: :obj:`0.0`)
+        std (float): The standard deviation of the normal distribution of noise. (default: :obj:`0.0`)
+        p (float): Probability of adding noise to EEG signal samples. Should be between 0.0 and 1.0, where 0.0 means no noise is added to every sample and 1.0 means that noise is added to every sample. (default: :obj:`0.5`)
+        apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (default: :obj:`False`)
 
     .. automethod:: __call__
     '''
@@ -92,9 +92,9 @@ class RandomMask(RandomEEGTransform):
         >>> (32, 128)
 
     Args:
-        ratio (float): The proportion of data points covered by the mask out of all data points for each EEG signal sample. (defualt: :obj:`0.5`)
-        p (float): Probability of applying random mask on EEG signal samples. Should be between 0.0 and 1.0, where 0.0 means no mask is applied to every sample and 1.0 means that masks are applied to every sample. (defualt: :obj:`0.5`)
-        apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (defualt: :obj:`False`)
+        ratio (float): The proportion of data points covered by the mask out of all data points for each EEG signal sample. (default: :obj:`0.5`)
+        p (float): Probability of applying random mask on EEG signal samples. Should be between 0.0 and 1.0, where 0.0 means no mask is applied to every sample and 1.0 means that masks are applied to every sample. (default: :obj:`0.5`)
+        apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (default: :obj:`False`)
 
     .. automethod:: __call__
     '''
@@ -151,9 +151,9 @@ class RandomWindowSlice(RandomEEGTransform):
 
     Args:
         window_size (int): The window size of the slice, the original signal will be sliced to the window_size size, and then adaptively scaled to the input shape.
-        series_dim (int): Dimension of the time series in the input tensor. (defualt: :obj:`-1`)
-        p (float): Probability of applying random mask on EEG signal samples. Should be between 0.0 and 1.0, where 0.0 means no mask is applied to every sample and 1.0 means that masks are applied to every sample. (defualt: :obj:`0.5`)
-        apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (defualt: :obj:`False`)
+        series_dim (int): Dimension of the time series in the input tensor. (default: :obj:`-1`)
+        p (float): Probability of applying random mask on EEG signal samples. Should be between 0.0 and 1.0, where 0.0 means no mask is applied to every sample and 1.0 means that masks are applied to every sample. (default: :obj:`0.5`)
+        apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (default: :obj:`False`)
 
     .. automethod:: __call__
     '''
@@ -265,11 +265,11 @@ class RandomWindowWarp(RandomEEGTransform):
         >>> (128, 9, 9)
 
     Args:
-        window_size (int): Randomly pick a window of size window_size on the time series to transform. (defualt: :obj:`-1`)
-        warp_size (int): The size of the window after the warp. If warp_size is larger than window_size, it means slowing down, and if warp_size is smaller than window_size, it means speeding up. (defualt: :obj:`24`)
-        series_dim (int): Dimension of the time series in the input tensor. (defualt: :obj:`-1`)
-        p (float): Probability of applying random mask on EEG signal samples. Should be between 0.0 and 1.0, where 0.0 means no mask is applied to every sample and 1.0 means that masks are applied to every sample. (defualt: :obj:`0.5`)
-        apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (defualt: :obj:`False`)
+        window_size (int): Randomly pick a window of size window_size on the time series to transform. (default: :obj:`-1`)
+        warp_size (int): The size of the window after the warp. If warp_size is larger than window_size, it means slowing down, and if warp_size is smaller than window_size, it means speeding up. (default: :obj:`24`)
+        series_dim (int): Dimension of the time series in the input tensor. (default: :obj:`-1`)
+        p (float): Probability of applying random mask on EEG signal samples. Should be between 0.0 and 1.0, where 0.0 means no mask is applied to every sample and 1.0 means that masks are applied to every sample. (default: :obj:`0.5`)
+        apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (default: :obj:`False`)
 
     .. automethod:: __call__
     '''
@@ -392,12 +392,12 @@ class RandomPCANoise(RandomEEGTransform):
         >>> (128, 9, 9)
 
     Args:
-        mean (float): The mean of the normal distribution of noise. (defualt: :obj:`0.0`)
-        std (float): The standard deviation of the normal distribution of noise. (defualt: :obj:`0.0`)
-        series_dim (int): Dimension of the time series in the input tensor. (defualt: :obj:`-1`)
+        mean (float): The mean of the normal distribution of noise. (default: :obj:`0.0`)
+        std (float): The standard deviation of the normal distribution of noise. (default: :obj:`0.0`)
+        series_dim (int): Dimension of the time series in the input tensor. (default: :obj:`-1`)
         n_components (int): Number of components to add noise. if n_components is not set, the first two components are used to add noise.
-        p (float): Probability of applying random mask on EEG signal samples. Should be between 0.0 and 1.0, where 0.0 means no mask is applied to every sample and 1.0 means that masks are applied to every sample. (defualt: :obj:`0.5`)
-        apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (defualt: :obj:`False`)
+        p (float): Probability of applying random mask on EEG signal samples. Should be between 0.0 and 1.0, where 0.0 means no mask is applied to every sample and 1.0 means that masks are applied to every sample. (default: :obj:`0.5`)
+        apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (default: :obj:`False`)
 
     .. automethod:: __call__
     '''
@@ -498,9 +498,9 @@ class RandomFlip(RandomEEGTransform):
         >>> (128, 9, 9)
 
     Args:
-        dim (int): Dimension to be flipped in the input tensor. (defualt: :obj:`-1`)
-        p (float): Probability of applying random mask on EEG signal samples. Should be between 0.0 and 1.0, where 0.0 means no mask is applied to every sample and 1.0 means that masks are applied to every sample. (defualt: :obj:`0.5`)
-        apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (defualt: :obj:`False`)
+        dim (int): Dimension to be flipped in the input tensor. (default: :obj:`-1`)
+        p (float): Probability of applying random mask on EEG signal samples. Should be between 0.0 and 1.0, where 0.0 means no mask is applied to every sample and 1.0 means that masks are applied to every sample. (default: :obj:`0.5`)
+        apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (default: :obj:`False`)
 
     .. automethod:: __call__
     '''
@@ -543,8 +543,8 @@ class RandomSignFlip(RandomEEGTransform):
         >>> (32, 128)
 
     Args:
-        p (float): Probability of applying random mask on EEG signal samples. Should be between 0.0 and 1.0, where 0.0 means no mask is applied to every sample and 1.0 means that masks are applied to every sample. (defualt: :obj:`0.5`)
-        apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (defualt: :obj:`False`)
+        p (float): Probability of applying random mask on EEG signal samples. Should be between 0.0 and 1.0, where 0.0 means no mask is applied to every sample and 1.0 means that masks are applied to every sample. (default: :obj:`0.5`)
+        apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (default: :obj:`False`)
 
     .. automethod:: __call__
     '''
@@ -582,11 +582,11 @@ class RandomShift(RandomEEGTransform):
         >>> (32, 128)
 
     Args:
-        shift_min (float or int): The minimum shift in the random transformation. (defualt: :obj:`-2.0`)
-        shift_max (float or int): The maximum shift in random transformation. (defualt: :obj:`2.0`)
-        dim (int): Dimension to be shifted in the input tensor. (defualt: :obj:`-1`)
-        p (float): Probability of applying random mask on EEG signal samples. Should be between 0.0 and 1.0, where 0.0 means no mask is applied to every sample and 1.0 means that masks are applied to every sample. (defualt: :obj:`0.5`)
-        apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (defualt: :obj:`False`)
+        shift_min (float or int): The minimum shift in the random transformation. (default: :obj:`-2.0`)
+        shift_max (float or int): The maximum shift in random transformation. (default: :obj:`2.0`)
+        dim (int): Dimension to be shifted in the input tensor. (default: :obj:`-1`)
+        p (float): Probability of applying random mask on EEG signal samples. Should be between 0.0 and 1.0, where 0.0 means no mask is applied to every sample and 1.0 means that masks are applied to every sample. (default: :obj:`0.5`)
+        apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (default: :obj:`False`)
 
     .. automethod:: __call__
     '''
@@ -644,8 +644,8 @@ class RandomChannelShuffle(RandomEEGTransform):
         >>> (32, 128)
 
     Args:
-        p (float): Probability of applying random mask on EEG signal samples. Should be between 0.0 and 1.0, where 0.0 means no mask is applied to every sample and 1.0 means that masks are applied to every sample. (defualt: :obj:`0.5`)
-        apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (defualt: :obj:`False`)
+        p (float): Probability of applying random mask on EEG signal samples. Should be between 0.0 and 1.0, where 0.0 means no mask is applied to every sample and 1.0 means that masks are applied to every sample. (default: :obj:`0.5`)
+        apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (default: :obj:`False`)
 
     .. automethod:: __call__
     '''
@@ -686,8 +686,8 @@ class RandomHemisphereChannelShuffle(RandomEEGTransform):
         >>> (32, 128)
 
     Args:
-        p (float): Probability of applying random mask on EEG signal samples. Should be between 0.0 and 1.0, where 0.0 means no mask is applied to every sample and 1.0 means that masks are applied to every sample. (defualt: :obj:`0.5`)
-        apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (defualt: :obj:`False`)
+        p (float): Probability of applying random mask on EEG signal samples. Should be between 0.0 and 1.0, where 0.0 means no mask is applied to every sample and 1.0 means that masks are applied to every sample. (default: :obj:`0.5`)
+        apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (default: :obj:`False`)
 
     .. automethod:: __call__
     '''
@@ -764,12 +764,12 @@ class RandomFrequencyShift(RandomEEGTransform):
         >>> (128, 9, 9)
 
     Args:
-        sampling_rate (int): The original sampling rate in Hz (defualt: :obj:`128`)
-        shift_min (float or int): The minimum shift in the random transformation. (defualt: :obj:`-2.0`)
-        shift_max (float or int): The maximum shift in random transformation. (defualt: :obj:`2.0`)
-        series_dim (int): Dimension of the time series in the input tensor. (defualt: :obj:`-1`)
-        p (float): Probability of applying random mask on EEG signal samples. Should be between 0.0 and 1.0, where 0.0 means no mask is applied to every sample and 1.0 means that masks are applied to every sample. (defualt: :obj:`0.5`)
-        apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (defualt: :obj:`False`)
+        sampling_rate (int): The original sampling rate in Hz (default: :obj:`128`)
+        shift_min (float or int): The minimum shift in the random transformation. (default: :obj:`-2.0`)
+        shift_max (float or int): The maximum shift in random transformation. (default: :obj:`2.0`)
+        series_dim (int): Dimension of the time series in the input tensor. (default: :obj:`-1`)
+        p (float): Probability of applying random mask on EEG signal samples. Should be between 0.0 and 1.0, where 0.0 means no mask is applied to every sample and 1.0 means that masks are applied to every sample. (default: :obj:`0.5`)
+        apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (default: :obj:`False`)
 
     .. automethod:: __call__
     '''

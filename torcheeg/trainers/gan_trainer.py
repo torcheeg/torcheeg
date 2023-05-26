@@ -102,15 +102,15 @@ class GANTrainer(BasicTrainer):
     Args:
         generator (nn.Module): The generator model for EEG signal generation, whose inputs are Gaussian distributed random vectors, outputs are generated EEG signals. The dimensions of the input vector should be defined on the :obj:`in_channel` attribute. The output layer does not need to have a softmax activation function.
         discriminator (nn.Module): The discriminator model to determine whether the EEG signal is real or generated, and the dimension of its output should be equal to the one (i.e., the score to distinguish the real and the fake). The output layer does not need to have a sigmoid activation function.
-        generator_lr (float): The learning rate of the generator. (defualt: :obj:`0.0001`)
-        discriminator_lr (float): The learning rate of the discriminator. (defualt: :obj:`0.0001`)
-        lambd (float): The weight of gradient penalty loss to trade-off between the adversarial training loss and gradient penalty loss. (defualt: :obj:`1.0`)
-        weight_decay: (float): The weight decay (L2 penalty). (defualt: :obj:`0.0`)
-        device_ids (list): Use cpu if the list is empty. If the list contains indices of multiple GPUs, it needs to be launched with :obj:`torch.distributed.launch` or :obj:`torchrun`. (defualt: :obj:`[]`)
-        ddp_sync_bn (bool): Whether to replace batch normalization in network structure with cross-GPU synchronized batch normalization. Only valid when the length of :obj:`device_ids` is greater than one. (defualt: :obj:`True`)
-        ddp_replace_sampler (bool): Whether to replace sampler in dataloader with :obj:`DistributedSampler`. Only valid when the length of :obj:`device_ids` is greater than one. (defualt: :obj:`True`)
-        ddp_val (bool): Whether to use multi-GPU acceleration for the validation set. For experiments where data input order is sensitive, :obj:`ddp_val` should be set to :obj:`False`. Only valid when the length of :obj:`device_ids` is greater than one. (defualt: :obj:`True`)
-        ddp_test (bool): Whether to use multi-GPU acceleration for the test set. For experiments where data input order is sensitive, :obj:`ddp_test` should be set to :obj:`False`. Only valid when the length of :obj:`device_ids` is greater than one. (defualt: :obj:`True`)
+        generator_lr (float): The learning rate of the generator. (default: :obj:`0.0001`)
+        discriminator_lr (float): The learning rate of the discriminator. (default: :obj:`0.0001`)
+        lambd (float): The weight of gradient penalty loss to trade-off between the adversarial training loss and gradient penalty loss. (default: :obj:`1.0`)
+        weight_decay: (float): The weight decay (L2 penalty). (default: :obj:`0.0`)
+        device_ids (list): Use cpu if the list is empty. If the list contains indices of multiple GPUs, it needs to be launched with :obj:`torch.distributed.launch` or :obj:`torchrun`. (default: :obj:`[]`)
+        ddp_sync_bn (bool): Whether to replace batch normalization in network structure with cross-GPU synchronized batch normalization. Only valid when the length of :obj:`device_ids` is greater than one. (default: :obj:`True`)
+        ddp_replace_sampler (bool): Whether to replace sampler in dataloader with :obj:`DistributedSampler`. Only valid when the length of :obj:`device_ids` is greater than one. (default: :obj:`True`)
+        ddp_val (bool): Whether to use multi-GPU acceleration for the validation set. For experiments where data input order is sensitive, :obj:`ddp_val` should be set to :obj:`False`. Only valid when the length of :obj:`device_ids` is greater than one. (default: :obj:`True`)
+        ddp_test (bool): Whether to use multi-GPU acceleration for the test set. For experiments where data input order is sensitive, :obj:`ddp_test` should be set to :obj:`False`. Only valid when the length of :obj:`device_ids` is greater than one. (default: :obj:`True`)
     
     .. automethod:: fit
     .. automethod:: test
@@ -292,7 +292,7 @@ class GANTrainer(BasicTrainer):
         Args:
             train_loader (DataLoader): Iterable DataLoader for traversing the training data batch (torch.utils.data.dataloader.DataLoader, torch_geometric.loader.DataLoader, etc).
             val_loader (DataLoader): Iterable DataLoader for traversing the validation data batch (torch.utils.data.dataloader.DataLoader, torch_geometric.loader.DataLoader, etc).
-            num_epochs (int): training epochs. (defualt: :obj:`1`)
+            num_epochs (int): training epochs. (default: :obj:`1`)
         '''
         train_loader = self.on_reveive_dataloader(train_loader, mode='train')
         val_loader = self.on_reveive_dataloader(val_loader, mode='val')
@@ -449,15 +449,15 @@ class CGANTrainer(GANTrainer):
     Args:
         generator (nn.Module): The generator model for EEG signal generation, whose inputs are Gaussian distributed random vectors, outputs are generated EEG signals. The dimensions of the input vector should be defined on the :obj:`in_channel` attribute. The output layer does not need to have a softmax activation function.
         discriminator (nn.Module): The discriminator model to determine whether the EEG signal is real or generated, and the dimension of its output should be equal to the one (i.e., the score to distinguish the real and the fake). The output layer does not need to have a sigmoid activation function.
-        generator_lr (float): The learning rate of the generator. (defualt: :obj:`0.0001`)
-        discriminator_lr (float): The learning rate of the discriminator. (defualt: :obj:`0.0001`)
-        lambd (float): The weight of gradient penalty loss to trade-off between the adversarial training loss and gradient penalty loss. (defualt: :obj:`1.0`)
-        weight_decay: (float): The weight decay (L2 penalty). (defualt: :obj:`0.0`)
-        device_ids (list): Use cpu if the list is empty. If the list contains indices of multiple GPUs, it needs to be launched with :obj:`torch.distributed.launch` or :obj:`torchrun`. (defualt: :obj:`[]`)
-        ddp_sync_bn (bool): Whether to replace batch normalization in network structure with cross-GPU synchronized batch normalization. Only valid when the length of :obj:`device_ids` is greater than one. (defualt: :obj:`True`)
-        ddp_replace_sampler (bool): Whether to replace sampler in dataloader with :obj:`DistributedSampler`. Only valid when the length of :obj:`device_ids` is greater than one. (defualt: :obj:`True`)
-        ddp_val (bool): Whether to use multi-GPU acceleration for the validation set. For experiments where data input order is sensitive, :obj:`ddp_val` should be set to :obj:`False`. Only valid when the length of :obj:`device_ids` is greater than one. (defualt: :obj:`True`)
-        ddp_test (bool): Whether to use multi-GPU acceleration for the test set. For experiments where data input order is sensitive, :obj:`ddp_test` should be set to :obj:`False`. Only valid when the length of :obj:`device_ids` is greater than one. (defualt: :obj:`True`)
+        generator_lr (float): The learning rate of the generator. (default: :obj:`0.0001`)
+        discriminator_lr (float): The learning rate of the discriminator. (default: :obj:`0.0001`)
+        lambd (float): The weight of gradient penalty loss to trade-off between the adversarial training loss and gradient penalty loss. (default: :obj:`1.0`)
+        weight_decay: (float): The weight decay (L2 penalty). (default: :obj:`0.0`)
+        device_ids (list): Use cpu if the list is empty. If the list contains indices of multiple GPUs, it needs to be launched with :obj:`torch.distributed.launch` or :obj:`torchrun`. (default: :obj:`[]`)
+        ddp_sync_bn (bool): Whether to replace batch normalization in network structure with cross-GPU synchronized batch normalization. Only valid when the length of :obj:`device_ids` is greater than one. (default: :obj:`True`)
+        ddp_replace_sampler (bool): Whether to replace sampler in dataloader with :obj:`DistributedSampler`. Only valid when the length of :obj:`device_ids` is greater than one. (default: :obj:`True`)
+        ddp_val (bool): Whether to use multi-GPU acceleration for the validation set. For experiments where data input order is sensitive, :obj:`ddp_val` should be set to :obj:`False`. Only valid when the length of :obj:`device_ids` is greater than one. (default: :obj:`True`)
+        ddp_test (bool): Whether to use multi-GPU acceleration for the test set. For experiments where data input order is sensitive, :obj:`ddp_test` should be set to :obj:`False`. Only valid when the length of :obj:`device_ids` is greater than one. (default: :obj:`True`)
     
     .. automethod:: fit
     .. automethod:: test

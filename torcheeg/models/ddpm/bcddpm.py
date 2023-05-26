@@ -141,11 +141,11 @@ class BCUNet(nn.Module):
         fake_X = unet(noise, t, y)
 
     Args:
-        in_channels (int): The feature dimension of each electrode. (defualt: :obj:`4`)
-        hid_channels (int): The basic hidden channels in the network blocks. (defualt: :obj:`64`)
-        grid_size (tuple): Spatial dimensions of grid-like EEG representation. (defualt: :obj:`(9, 9)`) 
-        beta_timesteps (int): The variance schedule controlling step sizes. (defualt: :obj:`256`)
-        num_classes (int): The number of classes to predict. (defualt: :obj:`2`)
+        in_channels (int): The feature dimension of each electrode. (default: :obj:`4`)
+        hid_channels (int): The basic hidden channels in the network blocks. (default: :obj:`64`)
+        grid_size (tuple): Spatial dimensions of grid-like EEG representation. (default: :obj:`(9, 9)`) 
+        beta_timesteps (int): The variance schedule controlling step sizes. (default: :obj:`256`)
+        num_classes (int): The number of classes to predict. (default: :obj:`2`)
     '''
     def __init__(self,
                  in_channels=4,

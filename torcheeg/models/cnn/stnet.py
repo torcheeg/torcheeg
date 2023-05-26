@@ -64,10 +64,10 @@ class STNet(nn.Module):
         model = STNet(num_classes=2, chunk_size=128, grid_size=(9, 9), dropout=0.2)
 
     Args:
-        chunk_size (int): Number of data points included in each EEG chunk, i.e., :math:`T` in the paper. (defualt: :obj:`128`)
-        grid_size (tuple): Spatial dimensions of grid-like EEG representation. (defualt: :obj:`(9, 9)`)
-        num_classes (int): The number of classes to predict. (defualt: :obj:`2`)
-        dropout (float): Probability of an element to be zeroed in the dropout layers. (defualt: :obj:`0.2`)
+        chunk_size (int): Number of data points included in each EEG chunk, i.e., :math:`T` in the paper. (default: :obj:`128`)
+        grid_size (tuple): Spatial dimensions of grid-like EEG representation. (default: :obj:`(9, 9)`)
+        num_classes (int): The number of classes to predict. (default: :obj:`2`)
+        dropout (float): Probability of an element to be zeroed in the dropout layers. (default: :obj:`0.2`)
     '''
     def __init__(self,
                  chunk_size: int = 128,

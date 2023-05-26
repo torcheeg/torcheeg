@@ -6,24 +6,68 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torchmetrics
-from torch.utils.data import DataLoader
+from torch.utils.data.dataloader import DataLoader
 
 from ..classification_trainer import ClassificationTrainer
 
 
-class DDCTrainer(ClassificationTrainer):
+def guassian_kernel(X_source,
+                    X_target,
+                    kernel_mul=2.0,
+                    num_kernels=5,
+                    sigma=None):
+    n_samples = int(X_source.shape[0]) + int(X_target.shape[0])
+    total = torch.cat([X_source, X_target], dim=0)
+    total0 = total.unsqueeze(0).expand(int(total.size(0)), int(total.size(0)),
+                                       int(total.size(1)))
+    total1 = total.unsqueeze(1).expand(int(total.size(0)), int(total.size(0)),
+                                       int(total.size(1)))
+    L2_distance = ((total0 - total1)**2).sum(2)
+    if sigma:
+        bandwidth = sigma
+    else:
+        bandwidth = torch.sum(L2_distance.data) / (n_samples**2 - n_samples)
+    bandwidth /= kernel_mul**(num_kernels // 2)
+    bandwidth_list = [bandwidth * (kernel_mul**i) for i in range(num_kernels)]
+    kernel_val = [
+        torch.exp(-L2_distance / bandwidth_temp)
+        for bandwidth_temp in bandwidth_list
+    ]
+    return sum(kernel_val)
+
+
+def maximum_mean_discrepancy(X_source,
+                             X_target,
+                             kernel_mul=2.0,
+                             num_kernels=5,
+                             sigma=None):
+    batch_size = int(X_source.shape[0])
+    kernels = guassian_kernel(X_source,
+                              X_target,
+                              kernel_mul=kernel_mul,
+                              num_kernels=num_kernels,
+                              sigma=sigma)
+    XX = kernels[:batch_size, :batch_size]
+    YY = kernels[batch_size:, batch_size:]
+    XY = kernels[:batch_size, batch_size:]
+    YX = kernels[batch_size:, :batch_size]
+    loss = torch.mean(XX + YY - XY - YX)
+    return loss
+
+
+class DANTrainer(ClassificationTrainer):
     r'''
-    The individual differences and nonstationary of EEG signals make it difficult for deep learning models trained on the training set of subjects to correctly classify test samples from unseen subjects, since the training set and test set come from different data distributions. Domain adaptation is used to address the problem of distribution drift between training and test sets and thus achieves good performance in subject-independent (cross-subject) scenarios. This class supports the implementation of Deep Domain Confusion (DDC) for deep domain adaptation.
+    The individual differences and nonstationary of EEG signals make it difficult for deep learning models trained on the training set of subjects to correctly classify test samples from unseen subjects, since the training set and test set come from different data distributions. Domain adaptation is used to address the problem of distribution drift between training and test sets and thus achieves good performance in subject-independent (cross-subject) scenarios. This class supports the implementation of Deep Adaptation Network (DAN) for deep domain adaptation.
 
-    NOTE: DDC belongs to unsupervised domain adaptation methods, which only use labeled source and unlabeled target data. This means that the target dataset does not have to return labels.
+    NOTE: DAN belongs to unsupervised domain adaptation methods, which only use labeled source and unlabeled target data. This means that the target dataset does not have to return labels.
 
-    - Paper: Tzeng E, Hoffman J, Zhang N, et al. Deep domain confusion: Maximizing for domain invariance[J]. arXiv preprint arXiv:1412.3474, 2014.
-    - URL: https://arxiv.org/abs/1412.3474
-    - Related Project: https://github.com/syorami/DDC-transfer-learning/blob/master/DDC.py
+    - Paper: Long M, Cao Y, Wang J, et al. Learning transferable features with deep adaptation networks[C]//International conference on machine learning. PMLR, 2015: 97-105.
+    - URL: https://proceedings.mlr.press/v37/long15
+    - Related Project: https://github.com/jindongwang/transferlearning/blob/cfaf1174dff7390a861cc4abd5ede37dfa1063f5/code/deep/DAN/DAN.py
 
     .. code-block:: python
 
-        trainer = DDCTrainer(extractor, classifier)
+        trainer = DANTrainer(extractor, classifier)
         trainer.fit(source_loader, target_loader, val_loader)
         trainer.test(test_loader)
 
@@ -45,13 +89,11 @@ class DDCTrainer(ClassificationTrainer):
     - :obj:`after_test_step`: executed after the test of each batch
     - :obj:`after_test_epoch`: executed after each round of test
 
-    You can override the methods of this interface to implement your own trainer:
-
     If you want to customize some operations, you just need to inherit the class and override the hook function:
 
     .. code-block:: python
 
-        class MyDDCTrainer(DDCTrainer):
+        class MyDANTrainer(DANTrainer):
             def before_training_epoch(self, epoch_id: int, num_epochs: int):
                 # Do something here.
                 super().before_training_epoch(epoch_id, num_epochs)
@@ -59,8 +101,8 @@ class DDCTrainer(ClassificationTrainer):
     If you want to use multiple GPUs for parallel computing, you need to specify the GPU indices you want to use in the python file:
     
     .. code-block:: python
-    
-        trainer = DDCTrainer(model, device_ids=[1, 2, 7])
+
+        trainer = DANTrainer(model, device_ids=[1, 2, 7])
         trainer.fit(train_loader, val_loader)
         trainer.test(test_loader)
 
@@ -77,20 +119,20 @@ class DDCTrainer(ClassificationTrainer):
             your_python_file.py
 
     Here, :obj:`nproc_per_node` is the number of GPUs you specify.
-    
+
     Args:
         extractor (nn.Module): The feature extraction model, learning the feature representation of EEG signal by forcing the correlation matrixes of source and target data close.
         classifier (nn.Module): The classification model, learning the classification task with source labeled data based on the feature of the feature extraction model. The dimension of its output should be equal to the number of categories in the dataset. The output layer does not need to have a softmax activation function.
-        lambd (float): The weight of DDC loss to trade-off between the classification loss and DDC loss. (defualt: :obj:`1.0`)
-        adaption_factor (bool): Whether to adjust the cross-domain-related loss term using the fitness factor, which was first proposed in DANN but works in many cases. (defualt: :obj:`False`)
-        num_classes (int, optional): The number of categories in the dataset. If :obj:`None`, the number of categories will be inferred from the attribute :obj:`num_classes` of the model. (defualt: :obj:`None`)
-        lr (float): The learning rate. (defualt: :obj:`0.0001`)
-        weight_decay: (float): The weight decay (L2 penalty). (defualt: :obj:`0.0`)
-        device_ids (list): Use cpu if the list is empty. If the list contains indices of multiple GPUs, it needs to be launched with :obj:`torch.distributed.launch` or :obj:`torchrun`. (defualt: :obj:`[]`)
-        ddp_sync_bn (bool): Whether to replace batch normalization in network structure with cross-GPU synchronized batch normalization. Only valid when the length of :obj:`device_ids` is greater than one. (defualt: :obj:`True`)
-        ddp_replace_sampler (bool): Whether to replace sampler in dataloader with :obj:`DistributedSampler`. Only valid when the length of :obj:`device_ids` is greater than one. (defualt: :obj:`True`)
-        ddp_val (bool): Whether to use multi-GPU acceleration for the validation set. For experiments where data input order is sensitive, :obj:`ddp_val` should be set to :obj:`False`. Only valid when the length of :obj:`device_ids` is greater than one. (defualt: :obj:`True`)
-        ddp_test (bool): Whether to use multi-GPU acceleration for the test set. For experiments where data input order is sensitive, :obj:`ddp_test` should be set to :obj:`False`. Only valid when the length of :obj:`device_ids` is greater than one. (defualt: :obj:`True`)
+        lambd (float): The weight of DAN loss to trade-off between the classification loss and DAN loss. (default: :obj:`1.0`)
+        adaption_factor (bool): Whether to adjust the cross-domain-related loss term using the fitness factor, which was first proposed in DANN but works in many cases. (default: :obj:`True`)
+        num_classes (int, optional): The number of categories in the dataset. If :obj:`None`, the number of categories will be inferred from the attribute :obj:`num_classes` of the model. (default: :obj:`None`)
+        lr (float): The learning rate. (default: :obj:`0.0001`)
+        weight_decay (float): The weight decay (L2 penalty). (default: :obj:`0.0`)
+        device_ids (list): Use cpu if the list is empty. If the list contains indices of multiple GPUs, it needs to be launched with :obj:`torch.distributed.launch` or :obj:`torchrun`. (default: :obj:`[]`)
+        ddp_sync_bn (bool): Whether to replace batch normalization in network structure with cross-GPU synchronized batch normalization. Only valid when the length of :obj:`device_ids` is greater than one. (default: :obj:`True`)
+        ddp_replace_sampler (bool): Whether to replace sampler in dataloader with :obj:`DistributedSampler`. Only valid when the length of :obj:`device_ids` is greater than one. (default: :obj:`True`)
+        ddp_val (bool): Whether to use multi-GPU acceleration for the validation set. For experiments where data input order is sensitive, :obj:`ddp_val` should be set to :obj:`False`. Only valid when the length of :obj:`device_ids` is greater than one. (default: :obj:`True`)
+        ddp_test (bool): Whether to use multi-GPU acceleration for the test set. For experiments where data input order is sensitive, :obj:`ddp_test` should be set to :obj:`False`. Only valid when the length of :obj:`device_ids` is greater than one. (default: :obj:`True`)
     
     .. automethod:: fit
     .. automethod:: test
@@ -168,27 +210,19 @@ class DDCTrainer(ClassificationTrainer):
         y_source_pred = self.modules['classifier'](X_source_feat)
         X_target_feat = self.modules['extractor'](X_target)
 
-        # Compute the loss value
-        task_loss = self.loss_fn(y_source_pred, y_source)
-        if X_source_feat.shape != X_target_feat.shape:
-            # not enough samples in source/target domain
-            return
-
-        delta = X_source_feat - X_target_feat
-        mmd = torch.mm(delta, torch.transpose(delta, 0, 1))
-        mmd_mean = mmd.mean()
-
         if self.adaption_factor:
             p = float(batch_id +
                       epoch_id * num_batches) / num_epochs / num_batches
             gamma = 2. / (1. + np.exp(-10 * p)) - 1
         else:
             gamma = 1.0
-        mmd_loss = self.lambd * gamma * mmd_mean
 
-        loss = task_loss + mmd_loss
+        dan_loss = self.lambd * gamma * maximum_mean_discrepancy(
+            X_source_feat, X_target_feat)
+        task_loss = self.loss_fn(y_source_pred, y_source)
 
-        # Backpropagation
+        loss = task_loss + dan_loss
+
         loss.backward()
         self.optimizer.step()
 
@@ -220,7 +254,7 @@ class DDCTrainer(ClassificationTrainer):
             source_loader (DataLoader): Iterable DataLoader for traversing the data batch from the source domain (torch.utils.data.dataloader.DataLoader, torch_geometric.loader.DataLoader, etc).
             target_loader (DataLoader): Iterable DataLoader for traversing the training data batch from the target domain (torch.utils.data.dataloader.DataLoader, torch_geometric.loader.DataLoader, etc). The target dataset does not have to return labels.
             val_loader (DataLoader): Iterable DataLoader for traversing the validation data batch (torch.utils.data.dataloader.DataLoader, torch_geometric.loader.DataLoader, etc).
-            num_epochs (int): training epochs. (defualt: :obj:`1`)
+            num_epochs (int): training epochs. (default: :obj:`1`)
         '''
         source_loader = self.on_reveive_dataloader(source_loader, mode='train')
         target_loader = self.on_reveive_dataloader(target_loader, mode='train')
@@ -264,7 +298,6 @@ class DDCTrainer(ClassificationTrainer):
                 self.modules[k].eval()
 
             num_batches = len(val_loader)
-
             # hook
             self.before_validation_epoch(t + 1, num_epochs, **kwargs)
             for batch_id, val_batch in enumerate(val_loader):
@@ -275,6 +308,7 @@ class DDCTrainer(ClassificationTrainer):
                                         **kwargs)
                 # hook
                 self.after_validation_step(batch_id, num_batches, **kwargs)
+                # hook
             self.after_validation_epoch(t + 1, num_epochs, **kwargs)
         return self
 
@@ -302,5 +336,6 @@ class DDCTrainer(ClassificationTrainer):
         y = test_batch[1].to(self.device)
         feat = self.modules['extractor'](X)
         pred = self.modules['classifier'](feat)
+
         self.test_loss.update(self.loss_fn(pred, y))
         self.test_accuracy.update(pred.argmax(1), y)
