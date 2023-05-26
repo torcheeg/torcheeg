@@ -1,10 +1,9 @@
 from itertools import chain
-from typing import Any, List, Tuple
+from typing import List, Tuple
 
 import pytorch_lightning as pl
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 from torch.utils.data import DataLoader
 
 from ..classifier import ClassifierTrainer
@@ -36,9 +35,9 @@ class DualDataLoader:
 
 class CORALTrainer(ClassifierTrainer):
     r'''
-    The individual differences and nonstationary of EEG signals make it difficult for deep learning models trained on the training set of subjects to correctly classify test samples from unseen subjects, since the training set and test set come from different data distributions. Domain adaptation is used to address the problem of distribution drift between training and test sets and thus achieves good performance in subject-independent (cross-subject) scenarios. This class supports the implementation of CORrelation ALignment (CORAL) for deep domain adaptation.
+    The individual differences and nonstationary nature of EEG signals make it difficult for deep learning models trained on the training set of subjects to correctly classify test samples from unseen subjects.This is because the training set and test set come from different data distributions. Domain adaptation is used to address the distribution drift between the training and test sets, thus achieving good performance in subject-independent (cross-subject) scenarios. This class supports the implementation of CORrelation ALignment (CORAL) for deep domain adaptation.
 
-    NOTE: CORAL belongs to unsupervised domain adaptation methods, which only use labeled source and unlabeled target data. This means that the target dataset does not have to return labels.
+    NOTE: CORAL belongs to unsupervised domain adaptation methods, which only use labeled source data and unlabeled target data. This means that the target dataset does not have to contain labels.
 
     - Paper: Sun B, Saenko K. Deep CORAL: Correlation alignment for deep domain adaptation[C]//European conference on computer vision. Springer, Cham, 2016: 443-450.
     - URL: https://link.springer.com/chapter/10.1007/978-3-030-04239-4_39
@@ -56,12 +55,12 @@ class CORALTrainer(ClassifierTrainer):
         trainer.test(test_loader)
 
     Args:
-        extractor (nn.Module): The feature extraction model, learning the feature representation of EEG signal by forcing the correlation matrixes of source and target data close.
-        classifier (nn.Module): The classification model, learning the classification task with source labeled data based on the feature of the feature extraction model. The dimension of its output should be equal to the number of categories in the dataset. The output layer does not need to have a softmax activation function.
-        num_classes (int, optional): The number of categories in the dataset. If :obj:`None`, the number of categories will be inferred from the attribute :obj:`num_classes` of the model. (default: :obj:`None`)
+        extractor (nn.Module): The feature extraction model learns the feature representation of the EEG signal by forcing the correlation matrixes of source and target data to be close.
+        classifier (nn.Module): The classification model learns the classification task with the source labeled data based on the feature of the feature extraction model. The dimension of its output should be equal to the number of categories in the dataset. The output layer does not need to have a softmax activation function. 
+        num_classes (int, optional): The number of categories in the dataset. (default: :obj:`None`)
         lr (float): The learning rate. (default: :obj:`0.0001`)
         weight_decay (float): The weight decay. (default: :obj:`0.0`)
-        coral_weight (float): The weight of CORAL loss. (default: :obj:`1.0`)
+        coral_weight (float): The weight of the CORAL loss. (default: :obj:`1.0`)
         devices (int): The number of devices to use. (default: :obj:`1`)
         accelerator (str): The accelerator to use. (default: :obj:`"cpu"`)
         metrics (list of str): The metrics to use. (default: :obj:`["accuracy"]`)
@@ -118,7 +117,7 @@ class CORALTrainer(ClassifierTrainer):
                              max_epochs=max_epochs,
                              *args,
                              **kwargs)
-        trainer.fit(self, train_loader, val_loader)
+        return trainer.fit(self, train_loader, val_loader)
 
     def training_step(self, batch: Tuple[torch.Tensor],
                       batch_idx: int) -> torch.Tensor:

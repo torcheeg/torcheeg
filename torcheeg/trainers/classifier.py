@@ -86,7 +86,7 @@ class ClassifierTrainer(pl.LightningModule):
                              max_epochs=max_epochs,
                              *args,
                              **kwargs)
-        trainer.fit(self, train_loader, val_loader)
+        return trainer.fit(self, train_loader, val_loader)
 
     def test(self, test_loader: DataLoader, *args,
              **kwargs) -> _EVALUATE_OUTPUT:
@@ -98,7 +98,7 @@ class ClassifierTrainer(pl.LightningModule):
                              accelerator=self.accelerator,
                              *args,
                              **kwargs)
-        trainer.test(self, test_loader)
+        return trainer.test(self, test_loader)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.model(x)

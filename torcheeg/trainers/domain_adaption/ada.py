@@ -104,9 +104,9 @@ class AssociativeLoss(nn.Module):
 
 class ADATrainer(ClassifierTrainer):
     r'''
-    The individual differences and nonstationary of EEG signals make it difficult for deep learning models trained on the training set of subjects to correctly classify test samples from unseen subjects, since the training set and test set come from different data distributions. Domain adaptation is used to address the problem of distribution drift between training and test sets and thus achieves good performance in subject-independent (cross-subject) scenarios. This class supports the implementation of Associative Domain Adaptation (ADA) for deep domain adaptation.
+    The individual differences and nonstationary nature of EEG signals make it difficult for deep learning models trained on the training set of subjects to correctly classify test samples from unseen subjects.This is because the training set and test set come from different data distributions. Domain adaptation is used to address the distribution drift between the training and test sets, thus achieving good performance in subject-independent (cross-subject) scenarios. This class supports the implementation of Associative Domain Adaptation (ADA) for deep domain adaptation.
 
-    NOTE: ADA belongs to unsupervised domain adaptation methods, which only use labeled source and unlabeled target data. This means that the target dataset does not have to return labels.
+    NOTE: ADA belongs to unsupervised domain adaptation methods, which only use labeled source data and unlabeled target data. This means that the target dataset does not have to contain labels.
 
     - Paper: Haeusser P, Frerix T, Mordvintsev A, et al. Associative domain adaptation[C]//Proceedings of the IEEE international conference on computer vision. 2017: 2765-2773.
     - URL: https://arxiv.org/abs/1708.00938
@@ -115,25 +115,25 @@ class ADATrainer(ClassifierTrainer):
     .. code-block:: python
 
         trainer = ADATrainer(extractor,
-                             classifier,
-                             num_classes=10,
-                             devices=1,
-                             visit_weight=0.6,
-                             accelerator='gpu')
+                            classifier,
+                            num_classes=10,
+                            devices=1,
+                            visit_weight=0.6,
+                            accelerator='gpu')
         trainer.fit(source_loader, target_loader, val_loader)
         trainer.test(test_loader)
 
     Args:
-        extractor (nn.Module): The feature extraction model, learning the feature representation of EEG signal by forcing the correlation matrixes of source and target data close.
-        classifier (nn.Module): The classification model, learning the classification task with source labeled data based on the feature of the feature extraction model. The dimension of its output should be equal to the number of categories in the dataset. The output layer does not need to have a softmax activation function.
-        num_classes (int, optional): The number of categories in the dataset. If :obj:`None`, the number of categories will be inferred from the attribute :obj:`num_classes` of the model. (default: :obj:`None`)
+        extractor (nn.Module): The feature extraction model learns the feature representation of the EEG signal by forcing the correlation matrixes of source and target data to be close.
+        classifier (nn.Module): The classification model learns the classification task with the source labeled data based on the feature of the feature extraction model. The dimension of its output should be equal to the number of categories in the dataset. The output layer does not need to have a softmax activation function.
+        num_classes (int, optional): The number of categories in the dataset. (default: :obj:`None`)
         lr (float): The learning rate. (default: :obj:`0.0001`)
-        lr_decay (int): The decay of learning rate. The authors choose the initial learning rate of 0.0001, which is reduced by a factor of 0.33 in the last third of training time. :obj:`lr_decay` is used to define the epoch to apply the decay of the learning rate (default: :obj:`200`)
+        lr_decay (int): The learning rate decay. The authors choose an initial learning rate of 0.0001, which is reduced by a factor of 0.33 in the last third of the training time. :obj:`lr_decay` is used to define the epoch to apply the decay of the learning rate (default: :obj:`200`)
         weight_decay (float): The weight decay. (default: :obj:`0.0`)
-        walker_weight (float): The weight of walker loss. (default: :obj:`1.0`)
-        visit_weight (float): The weight of visit loss. (default: :obj:`1.0`)
-        assoc_weight (float): The weight of associative loss. (default: :obj:`1.0`)
-        assoc_delay (int): The delay of applying associative loss. (default: :obj:`10`)
+        walker_weight (float): The weight of the walker loss. (default: :obj:`1.0`)
+        visit_weight (float): The weight of the visit loss. (default: :obj:`1.0`)
+        assoc_weight (float): The weight of the associative loss. (default: :obj:`1.0`)
+        assoc_delay (int): The delay in applying the associative loss. (default: :obj:`10`)
         devices (int): The number of devices to use. (default: :obj:`1`)
         accelerator (str): The accelerator to use. (default: :obj:`"cpu"`)
         metrics (list of str): The metrics to use. (default: :obj:`["accuracy"]`)
@@ -200,7 +200,7 @@ class ADATrainer(ClassifierTrainer):
                              max_epochs=max_epochs,
                              *args,
                              **kwargs)
-        trainer.fit(self, train_loader, val_loader)
+        return trainer.fit(self, train_loader, val_loader)
 
     def training_step(self, batch: Tuple[torch.Tensor],
                       batch_idx: int) -> torch.Tensor:
