@@ -63,7 +63,7 @@ class CORALTrainer(ClassifierTrainer):
         coral_weight (float): The weight of the CORAL loss. (default: :obj:`1.0`)
         devices (int): The number of devices to use. (default: :obj:`1`)
         accelerator (str): The accelerator to use. (default: :obj:`"cpu"`)
-        metrics (list of str): The metrics to use. (default: :obj:`["accuracy"]`)
+        metrics (list of str): The metrics to use. Available options are: 'precision', 'recall', 'f1score', 'accuracy'. (default: :obj:`["accuracy"]`)
 
     .. automethod:: fit
     .. automethod:: test

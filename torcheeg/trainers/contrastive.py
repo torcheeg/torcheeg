@@ -6,7 +6,7 @@ import torchmetrics
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
 
-from typing import Any, Tuple
+from typing import Any, Tuple, List
 
 
 class ContrastiveTrainer(pl.LightningModule):
@@ -60,7 +60,7 @@ class ContrastiveTrainer(pl.LightningModule):
         temperature (float): The temperature. (default: :obj:`0.1`)
         devices (int): The number of GPUs to use. (default: :obj:`1`)
         accelerator (str): The accelerator to use. (default: :obj:`"cpu"`)
-        metrics (List[str]): The metrics to use. (default: :obj:`["acc_top1"]`)
+        metrics (List[str]): The metrics to use. Available options are: 'acc_top1', 'acc_top5', 'acc_mean_pos'. (default: :obj:`["acc_top1"]`)
 
     .. automethod:: fit
     .. automethod:: test
@@ -72,7 +72,8 @@ class ContrastiveTrainer(pl.LightningModule):
                  weight_decay: float = 0.0,
                  temperature: float = 0.1,
                  devices: int = 1,
-                 accelerator: str = "cpu"):
+                 accelerator: str = "cpu",
+                 metrics: List[str] = ["acc_top1"]):
         super().__init__()
 
         self.extractor = extractor
@@ -81,19 +82,29 @@ class ContrastiveTrainer(pl.LightningModule):
         self.temperature = temperature
         self.devices = devices
         self.accelerator = accelerator
+        self.metrics = metrics
 
-        self.init_metrics()
+        self.init_metrics(metrics)
 
-    def init_metrics(self) -> None:
-        self.train_acc_top1 = torchmetrics.MeanMetric()
-        self.train_acc_top5 = torchmetrics.MeanMetric()
-        self.train_acc_mean_pos = torchmetrics.MeanMetric()
+    def init_metrics(self, metrics) -> None:
+        self.train_loss = torchmetrics.MeanMetric()
+        self.val_loss = torchmetrics.MeanMetric()
 
-        self.val_acc_top1 = torchmetrics.MeanMetric()
-        self.val_acc_top5 = torchmetrics.MeanMetric()
-        self.val_acc_mean_pos = torchmetrics.MeanMetric()
+        if "acc_top1" in metrics:
+            self.train_acc_top1 = torchmetrics.MeanMetric()
+            self.val_acc_top1 = torchmetrics.MeanMetric()
+        if "acc_top5" in metrics:
+            self.train_acc_top5 = torchmetrics.MeanMetric()
+            self.val_acc_top5 = torchmetrics.MeanMetric()
+        if "acc_mean_pos" in metrics:
+            self.train_acc_mean_pos = torchmetrics.MeanMetric()
+            self.val_acc_mean_pos = torchmetrics.MeanMetric()
 
-    def fit(self, train_loader: DataLoader, val_loader: DataLoader, max_epochs: int = 300, *args,
+    def fit(self,
+            train_loader: DataLoader,
+            val_loader: DataLoader,
+            max_epochs: int = 300,
+            *args,
             **kwargs) -> Any:
         r'''
         NOTE: The first element of each batch in :obj:`train_loader` and :obj:`val_loader` should be a two-tuple, representing two random transformations (views) of data. You can use :obj:`Contrastive` to achieve this functionality.
@@ -131,8 +142,6 @@ class ContrastiveTrainer(pl.LightningModule):
         nll = -cos_sim[pos_mask] + torch.logsumexp(cos_sim, dim=-1)
         nll = nll.mean()
 
-        # Logging loss
-        self.log("train_loss", nll)
         # Get ranking position of positive example
         comb_sim = torch.cat(
             [cos_sim[pos_mask][:, None],
@@ -141,47 +150,66 @@ class ContrastiveTrainer(pl.LightningModule):
             dim=-1,
         )
         sim_argsort = comb_sim.argsort(dim=-1, descending=True).argmin(dim=-1)
-        # Logging ranking metrics
-        self.log("train_acc_top1",
-                 self.train_acc_top1((sim_argsort == 0).float()),
+
+        self.log("train_loss",
+                 self.train_loss(nll),
                  prog_bar=True,
                  on_epoch=False,
                  logger=False,
                  on_step=True)
-        self.log("train_acc_top5",
-                 self.train_acc_top5((sim_argsort < 5).float()),
-                 prog_bar=True,
-                 on_epoch=False,
-                 logger=False,
-                 on_step=True)
-        self.log("train_acc_mean_pos",
-                 self.train_acc_mean_pos(1 + sim_argsort.float()),
-                 prog_bar=True,
-                 on_epoch=False,
-                 logger=False,
-                 on_step=True)
+        if "acc_top1" in self.metrics:
+            # Logging ranking metrics
+            self.log("train_acc_top1",
+                     self.train_acc_top1((sim_argsort == 0).float()),
+                     prog_bar=True,
+                     on_epoch=False,
+                     logger=False,
+                     on_step=True)
+        if "acc_top5" in self.metrics:
+            self.log("train_acc_top5",
+                     self.train_acc_top5((sim_argsort < 5).float()),
+                     prog_bar=True,
+                     on_epoch=False,
+                     logger=False,
+                     on_step=True)
+        if "acc_mean_pos" in self.metrics:
+            self.log("train_acc_mean_pos",
+                     self.train_acc_mean_pos(1 + sim_argsort.float()),
+                     prog_bar=True,
+                     on_epoch=False,
+                     logger=False,
+                     on_step=True)
 
         return nll
 
     def on_train_epoch_end(self) -> None:
-        self.log("train_acc_top1",
-                 self.train_acc_top1.compute(),
+        self.log("train_loss",
+                 self.train_loss.compute(),
                  prog_bar=False,
                  on_epoch=True,
                  on_step=False,
                  logger=True)
-        self.log("train_acc_top5",
-                 self.train_acc_top5.compute(),
-                 prog_bar=False,
-                 on_epoch=True,
-                 on_step=False,
-                 logger=True)
-        self.log("train_acc_mean_pos",
-                 self.train_acc_mean_pos.compute(),
-                 prog_bar=False,
-                 on_epoch=True,
-                 on_step=False,
-                 logger=True)
+        if "acc_top1" in self.metrics:
+            self.log("train_acc_top1",
+                     self.train_acc_top1.compute(),
+                     prog_bar=False,
+                     on_epoch=True,
+                     on_step=False,
+                     logger=True)
+        if "acc_top5" in self.metrics:
+            self.log("train_acc_top5",
+                     self.train_acc_top5.compute(),
+                     prog_bar=False,
+                     on_epoch=True,
+                     on_step=False,
+                     logger=True)
+        if "acc_mean_pos" in self.metrics:
+            self.log("train_acc_mean_pos",
+                     self.train_acc_mean_pos.compute(),
+                     prog_bar=False,
+                     on_epoch=True,
+                     on_step=False,
+                     logger=True)
 
         # print the metrics
         str = "\n[Train] "
@@ -191,9 +219,13 @@ class ContrastiveTrainer(pl.LightningModule):
         print(str + '\n')
 
         # reset the metrics
-        self.train_acc_top1.reset()
-        self.train_acc_top5.reset()
-        self.train_acc_mean_pos.reset()
+        self.train_loss.reset()
+        if "acc_top1" in self.metrics:
+            self.train_acc_top1.reset()
+        if "acc_top5" in self.metrics:
+            self.train_acc_top5.reset()
+        if "acc_mean_pos" in self.metrics:
+            self.train_acc_mean_pos.reset()
 
     def validation_step(self, batch: Tuple[torch.Tensor],
                         batch_idx: int) -> torch.Tensor:
@@ -216,8 +248,6 @@ class ContrastiveTrainer(pl.LightningModule):
         nll = -cos_sim[pos_mask] + torch.logsumexp(cos_sim, dim=-1)
         nll = nll.mean()
 
-        # Logging loss
-        self.log("val_loss", nll)
         # Get ranking position of positive example
         comb_sim = torch.cat(
             [cos_sim[pos_mask][:, None],
@@ -226,47 +256,66 @@ class ContrastiveTrainer(pl.LightningModule):
             dim=-1,
         )
         sim_argsort = comb_sim.argsort(dim=-1, descending=True).argmin(dim=-1)
-        # Logging ranking metrics
-        self.log("val_acc_top1",
-                 self.val_acc_top1((sim_argsort == 0).float()),
+
+        self.log("val_loss",
+                 self.val_loss(nll),
                  prog_bar=True,
                  on_epoch=False,
                  logger=False,
                  on_step=True)
-        self.log("val_acc_top5",
-                 self.val_acc_top5((sim_argsort < 5).float()),
-                 prog_bar=True,
-                 on_epoch=False,
-                 logger=False,
-                 on_step=True)
-        self.log("val_acc_mean_pos",
-                 self.val_acc_mean_pos(1 + sim_argsort.float()),
-                 prog_bar=True,
-                 on_epoch=False,
-                 logger=False,
-                 on_step=True)
+        if "acc_top1" in self.metrics:
+            # Logging ranking metrics
+            self.log("val_acc_top1",
+                     self.val_acc_top1((sim_argsort == 0).float()),
+                     prog_bar=True,
+                     on_epoch=False,
+                     logger=False,
+                     on_step=True)
+        if "acc_top5" in self.metrics:
+            self.log("val_acc_top5",
+                     self.val_acc_top5((sim_argsort < 5).float()),
+                     prog_bar=True,
+                     on_epoch=False,
+                     logger=False,
+                     on_step=True)
+        if "acc_mean_pos" in self.metrics:
+            self.log("val_acc_mean_pos",
+                     self.val_acc_mean_pos(1 + sim_argsort.float()),
+                     prog_bar=True,
+                     on_epoch=False,
+                     logger=False,
+                     on_step=True)
 
         return nll
 
     def on_validation_epoch_end(self) -> None:
-        self.log("val_acc_top1",
-                 self.val_acc_top1.compute(),
+        self.log("val_loss",
+                 self.val_loss.compute(),
                  prog_bar=False,
                  on_epoch=True,
                  on_step=False,
                  logger=True)
-        self.log("val_acc_top5",
-                 self.val_acc_top5.compute(),
-                 prog_bar=False,
-                 on_epoch=True,
-                 on_step=False,
-                 logger=True)
-        self.log("val_acc_mean_pos",
-                 self.val_acc_mean_pos.compute(),
-                 prog_bar=False,
-                 on_epoch=True,
-                 on_step=False,
-                 logger=True)
+        if "acc_top1" in self.metrics:
+            self.log("val_acc_top1",
+                     self.val_acc_top1.compute(),
+                     prog_bar=False,
+                     on_epoch=True,
+                     on_step=False,
+                     logger=True)
+        if "acc_top5" in self.metrics:
+            self.log("val_acc_top5",
+                     self.val_acc_top5.compute(),
+                     prog_bar=False,
+                     on_epoch=True,
+                     on_step=False,
+                     logger=True)
+        if "acc_mean_pos" in self.metrics:
+            self.log("val_acc_mean_pos",
+                     self.val_acc_mean_pos.compute(),
+                     prog_bar=False,
+                     on_epoch=True,
+                     on_step=False,
+                     logger=True)
 
         # print the metrics
         str = "\n[Train] "
@@ -276,9 +325,13 @@ class ContrastiveTrainer(pl.LightningModule):
         print(str + '\n')
 
         # reset the metrics
-        self.val_acc_top1.reset()
-        self.val_acc_top5.reset()
-        self.val_acc_mean_pos.reset()
+        self.val_loss.reset()
+        if "acc_top1" in self.metrics:
+            self.val_acc_top1.reset()
+        if "acc_top5" in self.metrics:
+            self.val_acc_top5.reset()
+        if "acc_mean_pos" in self.metrics:
+            self.val_acc_mean_pos.reset()
 
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(self.extractor.parameters(),

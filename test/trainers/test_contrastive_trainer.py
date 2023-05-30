@@ -44,12 +44,13 @@ class TestClassificationTrainer(unittest.TestCase):
         model = DummyModel()
 
         trainer = ContrastiveTrainer(model)
-        trainer.fit(train_loader, val_loader)
+        trainer.fit(train_loader, val_loader, max_epochs=1)
 
         trainer = ContrastiveTrainer(model,
                                      devices=1,
                                      accelerator='gpu')
-        trainer.fit(train_loader, val_loader)
+        trainer.fit(train_loader, val_loader,
+                                     max_epochs=1)
 
 
 if __name__ == '__main__':

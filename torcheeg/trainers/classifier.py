@@ -53,9 +53,11 @@ class ClassifierTrainer(pl.LightningModule):
 
         super().__init__()
         self.model = model
+
         self.num_classes = num_classes
         self.lr = lr
         self.weight_decay = weight_decay
+        
         self.devices = devices
         self.accelerator = accelerator
         self.metrics = metrics
