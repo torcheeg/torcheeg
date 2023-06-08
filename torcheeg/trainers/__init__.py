@@ -1,4 +1,4 @@
 from .classifier import ClassifierTrainer
 from .domain_adaption import *
-from .contrastive import ContrastiveTrainer
-from .gan import GANTrainer, CGANTrainer
+from .generative import *
+from .self_supervised import *

@@ -4,7 +4,7 @@ import torch.nn as nn
 import torch
 from torch.utils.data import Dataset
 from torch.utils.data.dataloader import DataLoader
-from torcheeg.trainers import GANTrainer, CGANTrainer
+from torcheeg.trainers import CWGANGPTrainer, WGANGPTrainer
 from torcheeg.models import BGenerator, BDiscriminator, BCGenerator, BCDiscriminator
 
 
@@ -79,9 +79,9 @@ class Classifier(nn.Module):
         return x
 
 
-class TestGANTrainer(unittest.TestCase):
+class TestWGANGPTrainer(unittest.TestCase):
 
-    def test_gan_trainer(self):
+    def test_wgan_gp_trainer(self):
         train_dataset = DummyDataset()
         val_dataset = DummyDataset()
         test_dataset = DummyDataset()
@@ -93,11 +93,11 @@ class TestGANTrainer(unittest.TestCase):
         g_model = BGenerator(in_channels=128)
         d_model = BDiscriminator(in_channels=4)
 
-        trainer = GANTrainer(g_model, d_model)
+        trainer = WGANGPTrainer(g_model, d_model)
         trainer.fit(train_loader, val_loader, max_epochs=1)
         trainer.test(test_loader)
 
-        trainer = GANTrainer(g_model,
+        trainer = WGANGPTrainer(g_model,
                              d_model,
                              metric_extractor=Extractor(),
                              metric_classifier=Classifier(),
@@ -107,7 +107,7 @@ class TestGANTrainer(unittest.TestCase):
         trainer.fit(train_loader, val_loader, max_epochs=1)
         trainer.test(test_loader)
 
-    def test_cgan_trainer(self):
+    def test_cwgan_gp_trainer(self):
         train_dataset = DummyDataset()
         val_dataset = DummyDataset()
         test_dataset = DummyDataset()
@@ -119,16 +119,16 @@ class TestGANTrainer(unittest.TestCase):
         g_model = BCGenerator(in_channels=128)
         d_model = BCDiscriminator(in_channels=4)
 
-        trainer = CGANTrainer(g_model, d_model)
+        trainer = CWGANGPTrainer(g_model, d_model)
         trainer.fit(train_loader, val_loader, max_epochs=1)
         trainer.test(test_loader)
 
-        trainer = CGANTrainer(g_model,
+        trainer = CWGANGPTrainer(g_model,
                               d_model,
                               metric_extractor=Extractor(),
                               metric_classifier=Classifier(),
                               metric_num_features=9 * 9 * 64,
-                              metrics=['fid', 'is'],
+                              metrics=['fid'],
                               accelerator="gpu")
         trainer.fit(train_loader, val_loader, max_epochs=1)
         trainer.test(test_loader)

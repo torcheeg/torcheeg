@@ -41,7 +41,27 @@ def classification_metrics(metric_list: List[str], num_classes: int):
 
 
 class ClassifierTrainer(pl.LightningModule):
+    r'''
+        A generic trainer class for EEG classification.
 
+        .. code-block:: python
+
+            trainer = ClassifierTrainer(model)
+            trainer.fit(train_loader, val_loader)
+            trainer.test(test_loader)
+
+        Args:
+            model (nn.Module): The classification model, and the dimension of its output should be equal to the number of categories in the dataset. The output layer does not need to have a softmax activation function.
+            num_classes (int, optional): The number of categories in the dataset. If :obj:`None`, the number of categories will be inferred from the attribute :obj:`num_classes` of the model. (defualt: :obj:`None`)
+            lr (float): The learning rate. (default: :obj:`0.001`)
+            weight_decay (float): The weight decay. (default: :obj:`0.0`)
+            devices (int): The number of devices to use. (default: :obj:`1`)
+            accelerator (str): The accelerator to use. Available options are: 'cpu', 'gpu'. (default: :obj:`"cpu"`)
+            metrics (list of str): The metrics to use. Available options are: 'precision', 'recall', 'f1score', 'accuracy'. (default: :obj:`["accuracy"]`)
+        
+        .. automethod:: fit
+        .. automethod:: test
+    '''
     def __init__(self,
                  model: nn.Module,
                  num_classes: int,

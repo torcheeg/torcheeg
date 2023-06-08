@@ -9,7 +9,7 @@ from torch.utils.data import DataLoader
 from typing import Any, Tuple, List
 
 
-class ContrastiveTrainer(pl.LightningModule):
+class SimCLRTrainer(pl.LightningModule):
     r'''
     The individual differences and nonstationary nature of EEG signals make it difficult for deep learning models trained on the training set of subjects to correctly classify test samples from unseen subjects.This is because the training set and test set come from different data distributions. Domain adaptation is used to address the distribution drift between the training and test sets, thus achieving good performance in subject-independent (cross-subject) scenarios. This class supports the implementation of Associative Domain Adaptation (ADA) for deep domain adaptation.
 
@@ -47,7 +47,7 @@ class ContrastiveTrainer(pl.LightningModule):
                                 num_baseline=3,
                                 num_worker=4)
         train_loader = DataLoader(train_set, batch_size=32, shuffle=True)
-        trainer = ContrastiveTrainer(extractor,
+        trainer = SimCLRTrainer(extractor,
                                      devices=1,
                                      accelerator='gpu')
         trainer.fit(train_loader, val_loader)
@@ -59,7 +59,7 @@ class ContrastiveTrainer(pl.LightningModule):
         weight_decay (float): The weight decay. (default: :obj:`0.0`)
         temperature (float): The temperature. (default: :obj:`0.1`)
         devices (int): The number of GPUs to use. (default: :obj:`1`)
-        accelerator (str): The accelerator to use. (default: :obj:`"cpu"`)
+        accelerator (str): The accelerator to use. Available options are: 'cpu', 'gpu'. (default: :obj:`"cpu"`)
         metrics (List[str]): The metrics to use. Available options are: 'acc_top1', 'acc_top5', 'acc_mean_pos'. (default: :obj:`["acc_top1"]`)
 
     .. automethod:: fit

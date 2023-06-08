@@ -135,7 +135,7 @@ class ADATrainer(ClassifierTrainer):
         assoc_weight (float): The weight of the associative loss. (default: :obj:`1.0`)
         assoc_delay (int): The delay in applying the associative loss. (default: :obj:`10`)
         devices (int): The number of devices to use. (default: :obj:`1`)
-        accelerator (str): The accelerator to use. (default: :obj:`"cpu"`)
+        accelerator (str): The accelerator to use. Available options are: 'cpu', 'gpu'. (default: :obj:`"cpu"`)
         metrics (list of str): The metrics to use. Available options are: 'precision', 'recall', 'f1score', 'accuracy'. (default: :obj:`["accuracy"]`)
 
     .. automethod:: fit
