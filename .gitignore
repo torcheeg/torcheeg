@@ -55,6 +55,4 @@ docs/source/auto_examples/
 # Local experimental folders
 /tmp_in
 /tmp_out
-/dev
-
-/ignore
+/lightning_logs

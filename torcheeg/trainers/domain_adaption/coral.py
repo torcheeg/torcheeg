@@ -7,30 +7,7 @@ import torch.nn as nn
 from torch.utils.data import DataLoader
 
 from ..classifier import ClassifierTrainer
-
-
-class DualDataLoader:
-
-    def __init__(self, ref_dataloader: DataLoader,
-                 other_dataloader: DataLoader):
-        self.ref_dataloader = ref_dataloader
-        self.other_dataloader = other_dataloader
-
-    def __iter__(self):
-        return self.dual_iterator()
-
-    def __len__(self):
-        return len(self.ref_dataloader)
-
-    def dual_iterator(self):
-        other_it = iter(self.other_dataloader)
-        for data in self.ref_dataloader:
-            try:
-                data_ = next(other_it)
-            except StopIteration:
-                other_it = iter(self.other_dataloader)
-                data_ = next(other_it)
-            yield data, data_
+from .utils import DualDataLoader
 
 
 class CORALTrainer(ClassifierTrainer):
@@ -40,7 +17,7 @@ class CORALTrainer(ClassifierTrainer):
     NOTE: CORAL belongs to unsupervised domain adaptation methods, which only use labeled source data and unlabeled target data. This means that the target dataset does not have to contain labels.
 
     - Paper: Sun B, Saenko K. Deep CORAL: Correlation alignment for deep domain adaptation[C]//European conference on computer vision. Springer, Cham, 2016: 443-450.
-    - URL: https://link.springer.com/chapter/10.1007/978-3-030-04239-4_39
+    - URL: https://arxiv.org/abs/1607.01719
     - Related Project: https://github.com/adapt-python/adapt/blob/master/adapt/feature_based/_deepCORAL.py
 
     .. code-block:: python

@@ -8,30 +8,7 @@ import torch.nn.functional as F
 from torch.utils.data import DataLoader
 
 from ..classifier import ClassifierTrainer
-
-
-class DualDataLoader:
-
-    def __init__(self, ref_dataloader: DataLoader,
-                 other_dataloader: DataLoader):
-        self.ref_dataloader = ref_dataloader
-        self.other_dataloader = other_dataloader
-
-    def __iter__(self):
-        return self.dual_iterator()
-
-    def __len__(self):
-        return len(self.ref_dataloader)
-
-    def dual_iterator(self):
-        other_it = iter(self.other_dataloader)
-        for data in self.ref_dataloader:
-            try:
-                data_ = next(other_it)
-            except StopIteration:
-                other_it = iter(self.other_dataloader)
-                data_ = next(other_it)
-            yield data, data_
+from .utils import DualDataLoader
 
 
 class WalkerLoss(nn.Module):
@@ -172,8 +149,7 @@ class ADATrainer(ClassifierTrainer):
         self.accelerator = accelerator
         self.metrics = metrics
 
-        self.assoc_fn = AssociativeLoss(self.walker_weight,
-                                                   self.visit_weight)
+        self.assoc_fn = AssociativeLoss(self.walker_weight, self.visit_weight)
         self.ce_fn = nn.CrossEntropyLoss()
 
         self.init_metrics(metrics, num_classes)
@@ -210,8 +186,7 @@ class ADATrainer(ClassifierTrainer):
         y_source_pred = self.classifier(x_source_feat)
         x_target_feat = self.extractor(x_target)
 
-        assoc = self.assoc_fn(x_source_feat,
-                                                    x_target_feat, y_source)
+        assoc = self.assoc_fn(x_source_feat, x_target_feat, y_source)
         task_loss = self.ce_fn(y_source_pred, y_source)
         # if epoch num is less than delay, only train task loss
         if self.current_epoch < self.assoc_delay:
