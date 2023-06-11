@@ -11,45 +11,16 @@ from typing import Any, Tuple, List
 
 class SimCLRTrainer(pl.LightningModule):
     r'''
-    The individual differences and nonstationary nature of EEG signals make it difficult for deep learning models trained on the training set of subjects to correctly classify test samples from unseen subjects.This is because the training set and test set come from different data distributions. Domain adaptation is used to address the distribution drift between the training and test sets, thus achieving good performance in subject-independent (cross-subject) scenarios. This class supports the implementation of Associative Domain Adaptation (ADA) for deep domain adaptation.
+    This class supports the implementation of A Simple Framework for Contrastive Learning of Visual Representations (SimCLR) for self-supervised pre-training.
 
-    NOTE: ADA belongs to unsupervised domain adaptation methods, which only use labeled source data and unlabeled target data. This means that the target dataset does not have to contain labels.
-
-    - Paper: Haeusser P, Frerix T, Mordvintsev A, et al. Associative domain adaptation[C]//Proceedings of the IEEE international conference on computer vision. 2017: 2765-2773.
-    - URL: https://arxiv.org/abs/1708.00938
-    - Related Project: https://github.com/stes/torch-assoc
+    - Paper: Chen T, Kornblith S, Norouzi M, et al. A simple framework for contrastive learning of visual representations[C]//International conference on machine learning. PMLR, 2020: 1597-1607.
+    - URL: http://proceedings.mlr.press/v119/chen20j.html
+    - Related Project: https://github.com/sthalles/SimCLR
 
     .. code-block:: python
-
-        train_set = DEAPDataset(io_path=f'./deap',
-                                root_path='./data_preprocessed_python',
-                                offline_transform=transforms.Compose([
-                                    transforms.BandDifferentialEntropy(
-                                        sampling_rate=128, apply_to_baseline=True),
-                                    transforms.BaselineRemoval(),
-                                    transforms.ToGrid(DEAP_CHANNEL_LOCATION_DICT)
-                                ]),
-                                online_transform=transforms.Compose([
-                                    transforms.ToTensor(),
-                                    transforms.Contrastive( # see here
-                                        transforms.Compose([
-                                            RandomNoise(),
-                                            RandomMask()
-                                        ])
-                                        num_views=2)
-                                ]),
-                                label_transform=transforms.Compose([
-                                    transforms.Select('valence'),
-                                    transforms.Binary(5.0),
-                                ]),
-                                chunk_size=128,
-                                baseline_chunk_size=128,
-                                num_baseline=3,
-                                num_worker=4)
-        train_loader = DataLoader(train_set, batch_size=32, shuffle=True)
         trainer = SimCLRTrainer(extractor,
-                                     devices=1,
-                                     accelerator='gpu')
+                                devices=1,
+                                accelerator='gpu')
         trainer.fit(train_loader, val_loader)
         trainer.test(test_loader)
 
@@ -65,7 +36,6 @@ class SimCLRTrainer(pl.LightningModule):
     .. automethod:: fit
     .. automethod:: test
     '''
-
     def __init__(self,
                  extractor: nn.Module,
                  lr: float = 1e-4,
