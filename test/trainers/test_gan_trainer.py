@@ -86,9 +86,9 @@ class TestWGANGPTrainer(unittest.TestCase):
         val_dataset = DummyDataset()
         test_dataset = DummyDataset()
 
-        train_loader = DataLoader(train_dataset, batch_size=1)
-        val_loader = DataLoader(val_dataset, batch_size=1)
-        test_loader = DataLoader(test_dataset, batch_size=1)
+        train_loader = DataLoader(train_dataset, batch_size=64)
+        val_loader = DataLoader(val_dataset, batch_size=64)
+        test_loader = DataLoader(test_dataset, batch_size=64)
 
         g_model = BGenerator(in_channels=128)
         d_model = BDiscriminator(in_channels=4)
@@ -98,7 +98,8 @@ class TestWGANGPTrainer(unittest.TestCase):
                              metric_extractor=Extractor(),
                              metric_classifier=Classifier(),
                              metric_num_features=9 * 9 * 64,
-                             metrics=['fid', 'is'])
+                             metrics=['fid', 'is'],
+                             accelerator='gpu')
         trainer.fit(train_loader, val_loader, max_epochs=1)
         trainer.test(test_loader)
 
@@ -119,7 +120,8 @@ class TestWGANGPTrainer(unittest.TestCase):
                               metric_extractor=Extractor(),
                               metric_classifier=Classifier(),
                               metric_num_features=9 * 9 * 64,
-                              metrics=['fid'])
+                              metrics=['fid'],
+                             accelerator='gpu')
         trainer.fit(train_loader, val_loader, max_epochs=1)
         trainer.test(test_loader)
 

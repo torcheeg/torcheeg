@@ -81,42 +81,42 @@ class Classifier(nn.Module):
 
 class TestDDPMTrainer(unittest.TestCase):
 
-    # def test_ddpm_trainer(self):
-    #     train_dataset = DummyDataset()
-    #     val_dataset = DummyDataset()
-    #     test_dataset = DummyDataset()
+    def test_ddpm_trainer(self):
+        train_dataset = DummyDataset()
+        val_dataset = DummyDataset()
+        test_dataset = DummyDataset()
 
-    #     train_loader = DataLoader(train_dataset, batch_size=1)
-    #     val_loader = DataLoader(val_dataset, batch_size=1)
-    #     test_loader = DataLoader(test_dataset, batch_size=1)
+        train_loader = DataLoader(train_dataset, batch_size=64)
+        val_loader = DataLoader(val_dataset, batch_size=64)
+        test_loader = DataLoader(test_dataset, batch_size=64)
 
-    #     model = BUNet(in_channels=4)
+        model = BUNet(in_channels=4)
 
-    #     trainer = DDPMTrainer(model,
-    #                         #  metric_extractor=Extractor(),
-    #                         #  metric_classifier=Classifier(),
-    #                         #  metric_num_features=9 * 9 * 64,
-    #                         #  metrics=['fid', 'is'],
-    #                          accelerator='gpu')
-    #     trainer.fit(train_loader, val_loader, max_epochs=1)
-    #     trainer.test(test_loader)
+        trainer = DDPMTrainer(model,
+                             metric_extractor=Extractor(),
+                             metric_classifier=Classifier(),
+                             metric_num_features=9 * 9 * 64,
+                             metrics=['fid', 'is'],
+                             accelerator='gpu')
+        trainer.fit(train_loader, val_loader, max_epochs=1)
+        trainer.test(test_loader)
 
     def test_cddpm_trainer(self):
         train_dataset = DummyDataset()
         val_dataset = DummyDataset()
         test_dataset = DummyDataset()
 
-        train_loader = DataLoader(train_dataset, batch_size=1)
-        val_loader = DataLoader(val_dataset, batch_size=1)
-        test_loader = DataLoader(test_dataset, batch_size=1)
+        train_loader = DataLoader(train_dataset, batch_size=64)
+        val_loader = DataLoader(val_dataset, batch_size=64)
+        test_loader = DataLoader(test_dataset, batch_size=64)
 
         model = BCUNet(in_channels=4)
 
         trainer = CDDPMTrainer(model,
-                            #  metric_extractor=Extractor(),
-                            #  metric_classifier=Classifier(),
-                            #  metric_num_features=9 * 9 * 64,
-                            #  metrics=['fid', 'is'],
+                             metric_extractor=Extractor(),
+                             metric_classifier=Classifier(),
+                             metric_num_features=9 * 9 * 64,
+                             metrics=['fid', 'is'],
                              accelerator='gpu')
         trainer.fit(train_loader, val_loader, max_epochs=1)
         trainer.test(test_loader)

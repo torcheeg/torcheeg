@@ -68,7 +68,6 @@ class WGANGPTrainer(pl.LightningModule):
     .. automethod:: test
     .. automethod:: sample
     '''
-
     def __init__(self,
                  generator: nn.Module,
                  discriminator: nn.Module,
@@ -132,17 +131,11 @@ class WGANGPTrainer(pl.LightningModule):
                 )
                 self.metric_num_features = self.metric_extractor.in_channels
             assert not self.metric_num_features is None, 'The metric_num_features should be specified.'
-            self.train_fid = FrechetInceptionDistance(self.metric_extractor,
-                                                      self.metric_num_features)
-            self.val_fid = FrechetInceptionDistance(self.metric_extractor,
-                                                    self.metric_num_features)
             self.test_fid = FrechetInceptionDistance(self.metric_extractor,
                                                      self.metric_num_features)
 
         if 'is' in metrics:
             assert not self.metric_extractor is None, 'The metric_classifier should be specified.'
-            self.train_is = InceptionScore(self.metric_classifier)
-            self.val_is = InceptionScore(self.metric_classifier)
             self.test_is = InceptionScore(self.metric_classifier)
 
     def fit(self,
@@ -240,14 +233,6 @@ class WGANGPTrainer(pl.LightningModule):
                  logger=False,
                  on_step=True)
 
-        if 'fid' in self.metrics:
-            self.train_fid.update(x, real=True)
-            self.train_fid.update(gen_x, real=False)
-
-        if 'is' in self.metrics:
-            self.train_is.update(gen_x)
-        # In manual optimization, `training_step` must either return a Tensor or have no return.
-
     def on_train_epoch_end(self) -> None:
         self.log("train_g_loss",
                  self.train_g_loss.compute(),
@@ -262,21 +247,6 @@ class WGANGPTrainer(pl.LightningModule):
                  on_step=False,
                  logger=True)
 
-        if 'fid' in self.metrics:
-            self.log("train_fid",
-                     self.train_fid.compute(),
-                     prog_bar=False,
-                     on_epoch=True,
-                     on_step=False,
-                     logger=True)
-        if 'is' in self.metrics:
-            self.log("train_is",
-                     self.train_is.compute()[0],
-                     prog_bar=False,
-                     on_epoch=True,
-                     on_step=False,
-                     logger=True)
-
         # print the metrics
         str = "\n[Train] "
         for key, value in self.trainer.logged_metrics.items():
@@ -287,11 +257,6 @@ class WGANGPTrainer(pl.LightningModule):
         # reset the metrics
         self.train_g_loss.reset()
         self.train_d_loss.reset()
-
-        if 'fid' in self.metrics:
-            self.train_fid.reset()
-        if 'is' in self.metrics:
-            self.train_is.reset()
 
     @torch.enable_grad()
     def validation_step(self, batch: Tuple[torch.Tensor],
@@ -315,13 +280,6 @@ class WGANGPTrainer(pl.LightningModule):
         self.val_g_loss.update(g_loss)
         self.val_d_loss.update(d_loss)
 
-        if 'fid' in self.metrics:
-            self.val_fid.update(x, real=True)
-            self.val_fid.update(gen_x, real=False)
-
-        if 'is' in self.metrics:
-            self.val_is.update(gen_x)
-
         return g_loss, d_loss
 
     def on_validation_epoch_end(self) -> None:
@@ -338,21 +296,6 @@ class WGANGPTrainer(pl.LightningModule):
                  on_step=False,
                  logger=True)
 
-        if 'fid' in self.metrics:
-            self.log("val_fid",
-                     self.val_fid.compute(),
-                     prog_bar=False,
-                     on_epoch=True,
-                     on_step=False,
-                     logger=True)
-        if 'is' in self.metrics:
-            self.log("val_is",
-                     self.val_is.compute()[0],
-                     prog_bar=False,
-                     on_epoch=True,
-                     on_step=False,
-                     logger=True)
-
         # print the metrics
         str = "\n[VAL] "
         for key, value in self.trainer.logged_metrics.items():
@@ -363,11 +306,6 @@ class WGANGPTrainer(pl.LightningModule):
         # reset the metrics
         self.val_g_loss.reset()
         self.val_d_loss.reset()
-
-        if 'fid' in self.metrics:
-            self.val_fid.reset()
-        if 'is' in self.metrics:
-            self.val_is.reset()
 
     @torch.enable_grad()
     def test_step(self, batch: Tuple[torch.Tensor],
@@ -487,7 +425,6 @@ class CWGANGPTrainer(WGANGPTrainer):
     .. automethod:: fit
     .. automethod:: test
     '''
-
     def training_step(self, batch: Tuple[torch.Tensor],
                       batch_idx: int) -> torch.Tensor:
         x, y = batch
@@ -536,14 +473,6 @@ class CWGANGPTrainer(WGANGPTrainer):
                  logger=False,
                  on_step=True)
 
-        if 'fid' in self.metrics:
-            self.train_fid.update(x, real=True)
-            self.train_fid.update(gen_x, real=False)
-
-        if 'is' in self.metrics:
-            self.train_is.update(gen_x)
-        # In manual optimization, `training_step` must either return a Tensor or have no return.
-
     @torch.enable_grad()
     def validation_step(self, batch: Tuple[torch.Tensor],
                         batch_idx: int) -> torch.Tensor:
@@ -565,13 +494,6 @@ class CWGANGPTrainer(WGANGPTrainer):
 
         self.val_g_loss.update(g_loss)
         self.val_d_loss.update(d_loss)
-
-        if 'fid' in self.metrics:
-            self.val_fid.update(x, real=True)
-            self.val_fid.update(gen_x, real=False)
-
-        if 'is' in self.metrics:
-            self.val_is.update(gen_x)
 
         return g_loss, d_loss
 

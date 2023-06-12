@@ -53,9 +53,9 @@ class TestBetaVAETrainer(unittest.TestCase):
         val_dataset = DummyDataset()
         test_dataset = DummyDataset()
 
-        train_loader = DataLoader(train_dataset, batch_size=1)
-        val_loader = DataLoader(val_dataset, batch_size=1)
-        test_loader = DataLoader(test_dataset, batch_size=1)
+        train_loader = DataLoader(train_dataset, batch_size=64)
+        val_loader = DataLoader(val_dataset, batch_size=64)
+        test_loader = DataLoader(test_dataset, batch_size=64)
 
         encoder = DummyEncoder(120, 60)
         decoder = DummyModel(60, 120)
@@ -78,9 +78,9 @@ class TestBetaVAETrainer(unittest.TestCase):
         val_dataset = DummyDataset()
         test_dataset = DummyDataset()
 
-        train_loader = DataLoader(train_dataset, batch_size=1)
-        val_loader = DataLoader(val_dataset, batch_size=1)
-        test_loader = DataLoader(test_dataset, batch_size=1)
+        train_loader = DataLoader(train_dataset, batch_size=64)
+        val_loader = DataLoader(val_dataset, batch_size=64)
+        test_loader = DataLoader(test_dataset, batch_size=64)
 
         encoder = DummyEncoder(120, 60)
         decoder = DummyModel(60, 120)

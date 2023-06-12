@@ -38,7 +38,7 @@ class BetaVAETrainer(pl.LightningModule):
         beta: (float): The weight of the KL divergence in the loss function. When beta is 1, the model is a standard VAE. (default: :obj:`1.0`)
         devices (int): The number of devices to use. (default: :obj:`1`)
         accelerator (str): The accelerator to use. Available options are: 'cpu', 'gpu'. (default: :obj:`"cpu"`)
-        metrics (list of str): The metrics to use. Available options are: 'fid', 'is'. (default: :obj:`[]`)
+        metrics (list of str): The metrics to use. Available options are: 'fid', 'is'. Due to the time-consuming generation process, these indicators will only be calculated and printed during test. (default: :obj:`[]`)
         metric_extractor (nn.Module): The feature extraction model used to calculate the FID and IS metrics. (default: :obj:`None`)
         metric_classifier (nn.Module): The classification model used to calculate the IS metric. (default: :obj:`None`)
         metric_num_features (int): The number of features extracted by the feature extraction model. (default: :obj:`None`)
@@ -47,7 +47,6 @@ class BetaVAETrainer(pl.LightningModule):
     .. automethod:: test
     .. automethod:: sample
     '''
-
     def __init__(self,
                  encoder: nn.Module,
                  decoder: nn.Module,
@@ -97,17 +96,11 @@ class BetaVAETrainer(pl.LightningModule):
                 )
                 self.metric_num_features = self.metric_extractor.in_channels
             assert not self.metric_num_features is None, 'The metric_num_features should be specified.'
-            self.train_fid = FrechetInceptionDistance(self.metric_extractor,
-                                                      self.metric_num_features)
-            self.val_fid = FrechetInceptionDistance(self.metric_extractor,
-                                                    self.metric_num_features)
             self.test_fid = FrechetInceptionDistance(self.metric_extractor,
                                                      self.metric_num_features)
 
         if 'is' in metrics:
             assert not self.metric_extractor is None, 'The metric_classifier should be specified.'
-            self.train_is = InceptionScore(self.metric_classifier)
-            self.val_is = InceptionScore(self.metric_classifier)
             self.test_is = InceptionScore(self.metric_classifier)
 
     def fit(self,
@@ -205,17 +198,6 @@ class BetaVAETrainer(pl.LightningModule):
                  logger=False,
                  on_step=True)
 
-        # sample from random instead of encoded latent
-        latent = torch.normal(mean=0, std=1, size=latent.shape).type_as(x)
-        random_rec_x = self.decoder(latent)
-
-        if 'fid' in self.metrics:
-            self.train_fid.update(x, real=True)
-            self.train_fid.update(random_rec_x, real=False)
-
-        if 'is' in self.metrics:
-            self.train_is.update(random_rec_x)
-
         return loss
 
     def on_train_epoch_end(self) -> None:
@@ -232,21 +214,6 @@ class BetaVAETrainer(pl.LightningModule):
                  on_step=False,
                  logger=True)
 
-        if 'fid' in self.metrics:
-            self.log("train_fid",
-                     self.train_fid.compute(),
-                     prog_bar=False,
-                     on_epoch=True,
-                     on_step=False,
-                     logger=True)
-        if 'is' in self.metrics:
-            self.log("train_is",
-                     self.train_is.compute()[0],
-                     prog_bar=False,
-                     on_epoch=True,
-                     on_step=False,
-                     logger=True)
-
         # print the metrics
         str = "\n[Train] "
         for key, value in self.trainer.logged_metrics.items():
@@ -257,11 +224,6 @@ class BetaVAETrainer(pl.LightningModule):
         # reset the metrics
         self.train_rec_loss.reset()
         self.train_kld_loss.reset()
-
-        if 'fid' in self.metrics:
-            self.train_fid.reset()
-        if 'is' in self.metrics:
-            self.train_is.reset()
 
     @torch.enable_grad()
     def validation_step(self, batch: Tuple[torch.Tensor],
@@ -282,22 +244,12 @@ class BetaVAETrainer(pl.LightningModule):
 
         rec_loss = self.mse_fn(rec_x, x)
         kld_loss = -0.5 * torch.sum(1 + log_var - mu.pow(2) - log_var.exp())
+        loss = rec_loss + self.beta * kld_loss
 
         self.val_rec_loss.update(rec_loss)
         self.val_kld_loss.update(kld_loss)
 
-        # sample from random instead of encoded latent
-        latent = torch.normal(mean=0, std=1, size=latent.shape).type_as(x)
-        random_rec_x = self.decoder(latent)
-
-        if 'fid' in self.metrics:
-            self.val_fid.update(x, real=True)
-            self.val_fid.update(random_rec_x, real=False)
-
-        if 'is' in self.metrics:
-            self.val_is.update(random_rec_x)
-
-        return rec_loss, kld_loss
+        return loss
 
     def on_validation_epoch_end(self) -> None:
         self.log("val_rec_loss",
@@ -313,21 +265,6 @@ class BetaVAETrainer(pl.LightningModule):
                  on_step=False,
                  logger=True)
 
-        if 'fid' in self.metrics:
-            self.log("val_fid",
-                     self.val_fid.compute(),
-                     prog_bar=False,
-                     on_epoch=True,
-                     on_step=False,
-                     logger=True)
-        if 'is' in self.metrics:
-            self.log("val_is",
-                     self.val_is.compute()[0],
-                     prog_bar=False,
-                     on_epoch=True,
-                     on_step=False,
-                     logger=True)
-
         # print the metrics
         str = "\n[VAL] "
         for key, value in self.trainer.logged_metrics.items():
@@ -338,11 +275,6 @@ class BetaVAETrainer(pl.LightningModule):
         # reset the metrics
         self.val_rec_loss.reset()
         self.val_kld_loss.reset()
-
-        if 'fid' in self.metrics:
-            self.val_fid.reset()
-        if 'is' in self.metrics:
-            self.val_is.reset()
 
     @torch.enable_grad()
     def test_step(self, batch: Tuple[torch.Tensor],
@@ -363,22 +295,23 @@ class BetaVAETrainer(pl.LightningModule):
 
         rec_loss = self.mse_fn(rec_x, x)
         kld_loss = -0.5 * torch.sum(1 + log_var - mu.pow(2) - log_var.exp())
+        loss = rec_loss + self.beta * kld_loss
 
         self.test_rec_loss.update(rec_loss)
         self.test_kld_loss.update(kld_loss)
 
         # sample from random instead of encoded latent
         latent = torch.normal(mean=0, std=1, size=latent.shape).type_as(x)
-        random_rec_x = self.decoder(latent)
+        gen_x = self.decoder(latent)
 
         if 'fid' in self.metrics:
             self.test_fid.update(x, real=True)
-            self.test_fid.update(random_rec_x, real=False)
+            self.test_fid.update(gen_x, real=False)
 
         if 'is' in self.metrics:
-            self.test_is.update(random_rec_x)
+            self.test_is.update(gen_x)
 
-        return rec_loss, kld_loss
+        return loss
 
     def on_test_epoch_end(self) -> None:
         self.log("test_rec_loss",
@@ -466,7 +399,6 @@ class CBetaVAETrainer(BetaVAETrainer):
     .. automethod:: test
     .. automethod:: sample
     '''
-
     def __init__(self,
                  encoder: nn.Module,
                  decoder: nn.Module,
@@ -517,17 +449,6 @@ class CBetaVAETrainer(BetaVAETrainer):
                  logger=False,
                  on_step=True)
 
-        # sample from random instead of encoded latent
-        latent = torch.normal(mean=0, std=1, size=latent.shape).type_as(x)
-        random_rec_x = self.decoder(latent)
-
-        if 'fid' in self.metrics:
-            self.train_fid.update(x, real=True)
-            self.train_fid.update(random_rec_x, real=False)
-
-        if 'is' in self.metrics:
-            self.train_is.update(random_rec_x)
-
         return loss
 
     @torch.enable_grad()
@@ -549,22 +470,12 @@ class CBetaVAETrainer(BetaVAETrainer):
 
         rec_loss = self.mse_fn(rec_x, x)
         kld_loss = -0.5 * torch.sum(1 + log_var - mu.pow(2) - log_var.exp())
+        loss = rec_loss + self.beta * kld_loss
 
         self.val_rec_loss.update(rec_loss)
         self.val_kld_loss.update(kld_loss)
 
-        # sample from random instead of encoded latent
-        latent = torch.normal(mean=0, std=1, size=latent.shape).type_as(x)
-        random_rec_x = self.decoder(latent)
-
-        if 'fid' in self.metrics:
-            self.val_fid.update(x, real=True)
-            self.val_fid.update(random_rec_x, real=False)
-
-        if 'is' in self.metrics:
-            self.val_is.update(random_rec_x)
-
-        return rec_loss, kld_loss
+        return loss
 
     @torch.enable_grad()
     def test_step(self, batch: Tuple[torch.Tensor],

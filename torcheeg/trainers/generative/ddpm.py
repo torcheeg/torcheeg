@@ -212,7 +212,7 @@ class DDPMTrainer(pl.LightningModule):
         logvar_init (float): The initial value of the logvar. (default: :obj:`0.0`)
         devices (int): The number of GPUs to use. (default: :obj:`1`)
         accelerator (str): The accelerator to use. Available options are: 'cpu', 'gpu'. (default: :obj:`"cpu"`)
-        metrics (List[str]): The metrics to use. The metrics to use. Available options are: 'fid', 'is'. Due to being very time-consuming, these indicators will only be calculated and printed during test. (default: :obj:`[]`)
+        metrics (list of str): The metrics to use. Available options are: 'fid', 'is'. Due to the time-consuming generation process, these indicators will only be calculated and printed during test. (default: :obj:`[]`)
         metric_extractor (nn.Module): The feature extractor model for computing the FID score. (default: :obj:`None`)
         metric_classifier (nn.Module): The classifier model for computing the IS score. (default: :obj:`None`)
         metric_num_features (int): The number of features extracted by the metric_extractor. If not specified, it will be inferred from the :obj:`in_channels` attribute of the metric_extractor. (default: :obj:`None`)
@@ -485,13 +485,6 @@ class DDPMTrainer(pl.LightningModule):
         return model_mean + nonzero_mask * (0.5 *
                                             model_log_variance).exp() * noise
 
-    def predict_step(self,
-                     batch: Tuple[torch.Tensor],
-                     batch_idx: int,
-                     dataloader_idx: int = 0) -> torch.Tensor:
-        x, _ = batch
-        return self(x)
-
     def q_sample(self, x_start: torch.Tensor, t: torch.Tensor,
                  noise: torch.Tensor) -> torch.Tensor:
         noise = default(noise, lambda: torch.randn_like(x_start))
@@ -560,10 +553,12 @@ class DDPMTrainer(pl.LightningModule):
 
         return loss, loss_dict
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        shape, device = x.shape, x.device
-        b = shape[0]
-        outputs = torch.randn(shape, device=device)
+    def forward(self, noisy: torch.Tensor) -> torch.Tensor:
+        outputs = noisy
+
+        b = noisy.shape[0]
+        device = noisy.device
+
         for i in reversed(range(0, self.num_timesteps)):
             outputs = self.p_sample(outputs,
                                     torch.full((b, ),
@@ -571,7 +566,7 @@ class DDPMTrainer(pl.LightningModule):
                                                device=device,
                                                dtype=torch.long),
                                     clip_denoised=self.clip_denoised)
-        # return outputs, intermediates
+
         return outputs
 
     def training_step(self, batch: Tuple[torch.Tensor],
@@ -635,21 +630,9 @@ class DDPMTrainer(pl.LightningModule):
                           self.num_timesteps, (x.shape[0], ),
                           device=self.device).long()
         _, loss_dict = self.p_losses(x, t)
-        # with self.ema_scope():
-        #     _, loss_dict_ema = self.p_losses(x, t)
-        #     loss_dict_ema = {
-        #         key + '_ema': loss_dict_ema[key]
-        #         for key in loss_dict_ema
-        #     }
 
         self.val_simple_loss.update(loss_dict['simple_loss'])
         self.val_vlb_loss.update(loss_dict['vlb_loss'])
-
-        # self.log_dict(loss_dict_ema,
-        #               prog_bar=False,
-        #               logger=True,
-        #               on_step=False,
-        #               on_epoch=True)
 
     def on_validation_epoch_end(self) -> None:
         self.log("val_simple_loss",
@@ -688,7 +671,8 @@ class DDPMTrainer(pl.LightningModule):
         self.test_simple_loss.update(loss_dict['simple_loss'])
         self.test_vlb_loss.update(loss_dict['vlb_loss'])
 
-        gen_x = self(x)
+        noise = torch.randn_like(x)
+        gen_x = self(noise)
 
         if 'fid' in self.metrics:
             self.test_fid.update(x, real=True)
@@ -784,6 +768,14 @@ class DDPMTrainer(pl.LightningModule):
                              **kwargs)
         return trainer.test(self, test_loader)
 
+    def predict_step(self,
+                     batch: Tuple[torch.Tensor],
+                     batch_idx: int,
+                     dataloader_idx: int = 0) -> torch.Tensor:
+        x, _ = batch
+        noise = torch.randn_like(x)
+        return self(noise)
+
 
 class CDDPMTrainer(DDPMTrainer):
     '''
@@ -821,7 +813,7 @@ class CDDPMTrainer(DDPMTrainer):
         logvar_init (float): The initial value of the logvar. (default: :obj:`0.0`)
         devices (int): The number of GPUs to use. (default: :obj:`1`)
         accelerator (str): The accelerator to use. Available options are: 'cpu', 'gpu'. (default: :obj:`"cpu"`)
-        metrics (List[str]): The metrics to use. The metrics to use. Available options are: 'fid', 'is'. Due to being very time-consuming, these indicators will only be calculated and printed during test. (default: :obj:`[]`)
+        metrics (list of str): The metrics to use. Available options are: 'fid', 'is'. Due to the time-consuming generation process, these indicators will only be calculated and printed during test. (default: :obj:`[]`)
         metric_extractor (nn.Module): The feature extractor model for computing the FID score. (default: :obj:`None`)
         metric_classifier (nn.Module): The classifier model for computing the IS score. (default: :obj:`None`)
         metric_num_features (int): The number of features extracted by the metric_extractor. If not specified, it will be inferred from the :obj:`in_channels` attribute of the metric_extractor. (default: :obj:`None`)
@@ -896,22 +888,12 @@ class CDDPMTrainer(DDPMTrainer):
         t = torch.randint(0,
                           self.num_timesteps, (x.shape[0], ),
                           device=self.device).long()
-        _, loss_dict = self.p_losses(x, t, y)
-        # with self.ema_scope():
-        #     _, loss_dict_ema = self.p_losses(x, t)
-        #     loss_dict_ema = {
-        #         key + '_ema': loss_dict_ema[key]
-        #         for key in loss_dict_ema
-        #     }
+        loss, loss_dict = self.p_losses(x, t, y)
 
         self.val_simple_loss.update(loss_dict['simple_loss'])
         self.val_vlb_loss.update(loss_dict['vlb_loss'])
 
-        # self.log_dict(loss_dict_ema,
-        #               prog_bar=False,
-        #               logger=True,
-        #               on_step=False,
-        #               on_epoch=True)
+        return loss
 
     def test_step(self, batch: Tuple[torch.Tensor],
                   batch_idx: int) -> torch.Tensor:
@@ -920,12 +902,13 @@ class CDDPMTrainer(DDPMTrainer):
         t = torch.randint(0,
                           self.num_timesteps, (x.shape[0], ),
                           device=self.device).long()
-        _, loss_dict = self.p_losses(x, t, y)
+        loss, loss_dict = self.p_losses(x, t, y)
 
         self.test_simple_loss.update(loss_dict['simple_loss'])
         self.test_vlb_loss.update(loss_dict['vlb_loss'])
 
-        gen_x = self(x, y)
+        noise = torch.randn_like(x)
+        gen_x = self(noise, y)
 
         if 'fid' in self.metrics:
             self.test_fid.update(x, real=True)
@@ -933,6 +916,8 @@ class CDDPMTrainer(DDPMTrainer):
 
         if 'is' in self.metrics:
             self.test_is.update(gen_x)
+
+        return loss
 
     def p_mean_variance(
             self, x: torch.Tensor, t: torch.Tensor, y: torch.Tensor,
@@ -979,7 +964,7 @@ class CDDPMTrainer(DDPMTrainer):
                                                  dtype=torch.long),
                                     y=y,
                                     clip_denoised=self.clip_denoised)
-        # return outputs, intermediates
+
         return outputs
 
     def predict_step(self,
@@ -987,4 +972,5 @@ class CDDPMTrainer(DDPMTrainer):
                      batch_idx: int,
                      dataloader_idx: int = 0) -> torch.Tensor:
         x, y = batch
-        return self(x, y)
+        noise = torch.randn_like(x)
+        return self(noise, y)
