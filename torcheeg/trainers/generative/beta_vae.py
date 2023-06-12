@@ -45,7 +45,6 @@ class BetaVAETrainer(pl.LightningModule):
     
     .. automethod:: fit
     .. automethod:: test
-    .. automethod:: sample
     '''
     def __init__(self,
                  encoder: nn.Module,
@@ -149,7 +148,7 @@ class BetaVAETrainer(pl.LightningModule):
                      batch: Tuple[torch.Tensor],
                      batch_idx: int,
                      dataloader_idx: int = 0,
-                     random: bool = False) -> torch.Tensor:
+                     random: bool = True) -> torch.Tensor:
         x, _ = batch
         try:
             mu, log_var = self.encoder(x)
@@ -397,7 +396,6 @@ class CBetaVAETrainer(BetaVAETrainer):
     
     .. automethod:: fit
     .. automethod:: test
-    .. automethod:: sample
     '''
     def __init__(self,
                  encoder: nn.Module,
@@ -430,7 +428,7 @@ class CBetaVAETrainer(BetaVAETrainer):
             ) from exc
 
         latent = self.reparameterize(mu, log_var)
-        rec_x = self.decoder(latent)
+        rec_x = self.decoder(latent, y)
 
         rec_loss = self.mse_fn(rec_x, x)
         kld_loss = -0.5 * torch.sum(1 + log_var - mu.pow(2) - log_var.exp())
@@ -466,7 +464,7 @@ class CBetaVAETrainer(BetaVAETrainer):
             ) from exc
 
         latent = self.reparameterize(mu, log_var)
-        rec_x = self.decoder(latent)
+        rec_x = self.decoder(latent, y)
 
         rec_loss = self.mse_fn(rec_x, x)
         kld_loss = -0.5 * torch.sum(1 + log_var - mu.pow(2) - log_var.exp())
@@ -492,7 +490,7 @@ class CBetaVAETrainer(BetaVAETrainer):
             ) from exc
 
         latent = self.reparameterize(mu, log_var)
-        rec_x = self.decoder(latent)
+        rec_x = self.decoder(latent, y)
 
         rec_loss = self.mse_fn(rec_x, x)
         kld_loss = -0.5 * torch.sum(1 + log_var - mu.pow(2) - log_var.exp())
@@ -502,22 +500,25 @@ class CBetaVAETrainer(BetaVAETrainer):
 
         # sample from random instead of encoded latent
         latent = torch.normal(mean=0, std=1, size=latent.shape).type_as(x)
-        random_rec_x = self.decoder(latent)
+        gen_x = self.decoder(latent, y)
 
         if 'fid' in self.metrics:
             self.test_fid.update(x, real=True)
-            self.test_fid.update(random_rec_x, real=False)
+            self.test_fid.update(gen_x, real=False)
 
         if 'is' in self.metrics:
-            self.test_is.update(random_rec_x)
+            self.test_is.update(gen_x)
 
         return rec_loss, kld_loss
+
+    def forward(self, latent: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
+        return self.decoder(latent, y)
 
     def predict_step(self,
                      batch: Tuple[torch.Tensor],
                      batch_idx: int,
                      dataloader_idx: int = 0,
-                     random: bool = False) -> torch.Tensor:
+                     random: bool = True) -> torch.Tensor:
         x, y = batch
         try:
             mu, log_var = self.encoder(x, y)
@@ -531,4 +532,4 @@ class CBetaVAETrainer(BetaVAETrainer):
         # sample from random instead of encoded latent
         if random:
             latent = torch.normal(mean=0, std=1, size=latent.shape).type_as(x)
-        return self(latent)
+        return self(latent, y)

@@ -571,27 +571,28 @@ class FlowNet(nn.Module):
         return z
 
 
-class BGlow(nn.Module):
+class BCGlow(nn.Module):
     r'''
-    This class implements the normalized flow model, allowing to generate samples close to the true distribution. A flow-based model is dedicated to train an encoder that encodes the input as a hidden variable and makes the hidden variable obey the standard normal distribution. By good design, the encoder should be reversible. On this basis, as soon as the encoder is trained, the corresponding decoder can be used to generate samples from a Gaussian distribution according to the inverse operation. In particular, the Glow model is a easy-to-use flow-based model that replaces the operation of permutating the channel axes by introducing a 1x1 reversible convolution.
+    This class implements a conditional normalized flow model that allows generating samples of specified classes. A flow-based model is dedicated to train an encoder that encodes the input as a hidden variable and makes the hidden variable obey the standard normal distribution. By good design, the encoder should be reversible. On this basis, as soon as the encoder is trained, the corresponding decoder can be used to generate samples from a Gaussian distribution according to the inverse operation. In particular, the Glow model is a easy-to-use flow-based model that replaces the operation of permutating the channel axes by introducing a 1x1 reversible convolution.
 
     - Paper: Kingma D P, Dhariwal P. Glow: Generative flow with invertible 1x1 convolutions[J]. Advances in neural information processing systems, 2018, 31.
     - URL: https://arxiv.org/abs/1807.03039
     - Related Project: https://github.com/y0ast/Glow-PyTorch
 
     Below is a recommended suite for use in EEG generation:
-    
+
     .. code-block:: python
 
         eeg = torch.randn(1, 4, 32, 32)
-        model = BGlow()
-        nll_loss = model(eeg)
-        fake_X = model(num=1, temperature=1.0)
+        y = torch.randint(0, 2, (2, ))
+        model = BGlow(num_classes=2)
+        nll_loss, y_logits = model(eeg, y)
+        fake_X = model.sample(y=y, temperature=1.0)
 
     Args:
         in_channels (int): The feature dimension of each electrode. (default: :obj:`4`)
-        grid_size (tuple): Spatial dimensions of grid-like EEG representation. (default: :obj:`(32, 32)`)
-        hid_channels (int): The basic hidden channels in the network blocks. (default: :obj:`64`)
+        grid_size (tuple): Spatial dimensions of grid-like EEG representation. (default: :obj:`(9, 9)`)
+        hid_channels (int): The basic hidden channels in the network blocks. (default: :obj:`512`)
         num_layers (int): The number of steps in the flow, each step contains an affine coupling layer, an invertible 1x1 conv and an actnorm layer. (default: :obj:`32`)
         num_blocks (int): Number of blocks, each block includes split, step of flow and squeeze. (default: :obj:`3`)
         actnorm_scale (float): The pre-defined scale factor in the actnorm layer. (default: :obj:`1.0`)
@@ -599,21 +600,24 @@ class BGlow(nn.Module):
         flow_coupling (str): The used flow coupling method, options include :obj:`additive` and  :obj:`affine`. (default: :obj:`affine`)
         LU_decomposed (bool): Whether to use LU decomposed 1x1 convs. (default: :obj:`True`)
         learnable_prior (bool): Whether to train top layer (prior). (default: :obj:`True`)
-
+        num_classes (int): The number of classes. During the generation process, additional category labels are provided to guide the generation of samples for the specified category. (default: :obj:`2`)
+        
     .. automethod:: sample
     '''
     def __init__(self,
                  in_channels: int = 4,
                  grid_size: Tuple[int, int] = (32, 32),
-                 hid_channels: int = 64,
+                 hid_channels: int = 512,
                  num_layers: int = 32,
                  num_blocks: int = 3,
                  actnorm_scale: float = 1.0,
                  flow_permutation: str = "invconv",
                  flow_coupling: str = "affine",
                  LU_decomposed: bool = True,
-                 learnable_prior: bool = True):
-        super(BGlow, self).__init__()
+                 learnable_prior: bool = True,
+                 num_classes: int = 2):
+        super(BCGlow, self).__init__()
+        self.num_classes = num_classes
         self.flow = FlowNet(
             in_channels=in_channels,
             grid_size=grid_size,
@@ -625,13 +629,17 @@ class BGlow(nn.Module):
             flow_coupling=flow_coupling,
             LU_decomposed=LU_decomposed,
         )
-
+        self.num_classes = num_classes
         self.learnable_prior = learnable_prior
 
         # learned prior
         if learnable_prior:
             C = self.flow.output_shapes[-1][1]
             self.learnable_prior_fn = Conv2dZeros(C * 2, C * 2)
+
+        C = self.flow.output_shapes[-1][1]
+        self.project_ycond = LinearZeros(num_classes, 2 * C)
+        self.project_class = LinearZeros(C, num_classes)
 
         self.register_buffer(
             "prior_h",
@@ -643,50 +651,64 @@ class BGlow(nn.Module):
             ]),
         )
 
-    def prior(self, num):
-        h = self.prior_h.repeat(num, 1, 1, 1)
+    def prior(self, y: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+        '''
+        Args:
+            y (torch.Tensor): The one-hot vector of the category label. The shape should be :obj:`[n, num_classes]`. Here, :obj:`n` corresponds to the batch size, and :obj:`num_classes` corresponds to the number of categories.
+        '''
+        h = self.prior_h.repeat(y.shape[0], 1, 1, 1)
+        channels = h.size(1)
 
         if self.learnable_prior:
             h = self.learnable_prior_fn(h)
 
+        yp = self.project_ycond(y)
+        h += yp.view(h.shape[0], channels, 1, 1)
+
         return split_feature(h, "split")
 
-    def forward(self, x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+    def forward(self, x: torch.Tensor,
+                y: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
         r'''
         Args:
             x (torch.Tensor): EEG signal representation. The ideal input shape is :obj:`[n, 4, 9, 9]`. Here, :obj:`n` corresponds to the batch size, :obj:`4` corresponds to the :obj:`in_channels`, and :obj:`(9, 9)` corresponds to the :obj:`grid_size`.
+            y (torch.Tensor): Category labels (int) for a batch of samples The shape should be :obj:`[n,]`. Here, :obj:`n` corresponds to the batch size.
 
         Returns:
-            torch.Tensor: the bit per dimension (BPD) negative log-likelihood.
+            torch.Tensor: The bit per dimension (BPD) negative log-likelihood.
+            torch.Tensor: The predicted logits of the category labels.
         '''
-        b, c, h, w = x.shape
+        _, c, h, w = x.shape
 
         x, logdet = uniform_binning_correction(x)
-
         z, objective = self.flow(x, logdet=logdet, reverse=False)
 
-        mean, logs = self.prior(b)
+        y = F.one_hot(y, num_classes=self.num_classes).to(x.dtype).to(x.device)
+        mean, logs = self.prior(y)
         objective += gaussian_likelihood(mean, logs, z)
+
+        y_logits = self.project_class(z.mean(2).mean(2))
 
         bpd = (-objective) / (math.log(2.0) * c * h * w)
 
-        return bpd
+        return bpd, y_logits
 
-    def sample(self, num: int, temperature: float = 1.0) -> torch.Tensor:
+    def sample(self, y: torch.Tensor, temperature: float = 1.0) -> torch.Tensor:
         r'''
         Args:
-            num (int): The number of samples to be generated.
+            y (torch.Tensor): Category labels (int) for a batch of samples The shape should be :obj:`[n,]`. Here, :obj:`n` corresponds to the batch size.
             temperature (float): The hyper-parameter, temperature, to sample from gaussian distributions. (default: :obj:`1.0`)
         Returns:
             torch.Tensor: the generated results, which should have the same shape as the input noise, i.e., :obj:`[n, 4, 9, 9]`. Here, :obj:`n` corresponds to the batch size, :obj:`4` corresponds to :obj:`in_channels`, and :obj:`(9, 9)` corresponds to :obj:`grid_size`.
         '''
-        mean, logs = self.prior(num)
+        # randomly sample z (with the labels `y`)
+        y = F.one_hot(y, num_classes=self.num_classes).float().to(y.device)
+        mean, logs = self.prior(y)
         z = gaussian_sample(mean, logs, temperature)
         x = self.flow(z, temperature=temperature, reverse=True)
         return x
 
     def set_actnorm_init(self):
-        # for loading from checkpoints
         for name, m in self.named_modules():
             if isinstance(m, ActNorm2d):
                 m.inited = True

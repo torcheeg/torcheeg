@@ -138,6 +138,7 @@ class ClassifierTrainer(pl.LightningModule):
                  on_epoch=False,
                  logger=False,
                  on_step=True)
+        
         for i, metric_value in enumerate(self.train_metrics.values()):
             self.log(f"train_{self.metrics[i]}",
                      metric_value(y_hat, y),

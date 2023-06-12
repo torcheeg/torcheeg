@@ -66,7 +66,6 @@ class WGANGPTrainer(pl.LightningModule):
     
     .. automethod:: fit
     .. automethod:: test
-    .. automethod:: sample
     '''
     def __init__(self,
                  generator: nn.Module,
