@@ -60,6 +60,9 @@ class WGANGPTrainer(pl.LightningModule):
         devices (int): The number of GPUs to use. (default: :obj:`1`)
         accelerator (str): The accelerator to use. Available options are: 'cpu', 'gpu'. (default: :obj:`"cpu"`)
         metrics (List[str]): The metrics to use. The metrics to use. Available options are: 'fid', 'is'. (default: :obj:`[]`)
+        metric_extractor (nn.Module): The feature extractor model for computing the FID score. (default: :obj:`None`)
+        metric_classifier (nn.Module): The classifier model for computing the IS score. (default: :obj:`None`)
+        metric_num_features (int): The number of features extracted by the metric_extractor. If not specified, it will be inferred from the :obj:`in_channels` attribute of the metric_extractor. (default: :obj:`None`)
     
     .. automethod:: fit
     .. automethod:: test
@@ -483,7 +486,6 @@ class CWGANGPTrainer(WGANGPTrainer):
     
     .. automethod:: fit
     .. automethod:: test
-    .. automethod:: sample
     '''
 
     def training_step(self, batch: Tuple[torch.Tensor],
