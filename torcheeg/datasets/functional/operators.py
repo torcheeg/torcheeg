@@ -8,7 +8,6 @@ from joblib import Parallel, delayed
 from tqdm import tqdm
 
 from torcheeg.io import EEGSignalIO, MetaInfoIO
-from torcheeg.datasets import BaseDataset
 
 
 def _set_files(**kwargs):
@@ -122,7 +121,7 @@ def from_existing(dataset: Any,
         dataset (Basedataset): The existing database, which can be obtained through :obj:`DEAPDataset`, :obj:`SEEDDataset`, and so on.
         io_path (str): The path to generated unified data IO, cached as an intermediate result. (default: :obj:`./io/deap`)
         transform (Callable, optional): The transformation of the EEG signals and baseline EEG signals. The input is a :obj:`np.ndarray`, and the ouput is used as the first and second value of each element in the dataset. It is executed before generating IO intermediate results. (default: :obj:`None`)
-        num_worker (str): How many subprocesses to use for data processing. (default: :obj:`0`)
+        num_worker (int): Number of subprocesses to use for data loading. 0 means that the data will be loaded in the main process. (default: :obj:`0`)
         verbose (bool): Whether to display logs during processing, such as progress bars, etc. (default: :obj:`True`)
         verbose (bool): Whether to display logs during processing, such as progress bars, etc. (default: :obj:`True`)
         io_size (int): Maximum size database may grow to; used to size the memory mapping. If database grows larger than ``map_size``, an exception will be raised and the user must close and reopen. (default: :obj:`10485760`)

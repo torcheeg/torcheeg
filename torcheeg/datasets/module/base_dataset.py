@@ -1,4 +1,5 @@
 import os
+import shutil
 from multiprocessing import Manager
 from typing import Any, Dict
 
@@ -56,33 +57,45 @@ class BaseDataset(Dataset):
 
             if self.num_worker == 0:
                 lock = MockLock()  # do nothing, just for compatibility
-                for file in tqdm(self._set_files(**kwargs),
-                                 disable=not self.verbose,
-                                 desc="[PROCESS]"):
-                    self._process_file(io_path=self.io_path,
-                                       io_size=self.io_size,
-                                       io_mode=self.io_mode,
-                                       file=file,
-                                       lock=lock,
-                                       _load_data=self._load_data,
-                                       **kwargs)
+                # if catch error, then delete the database
+                try:
+                    for file in tqdm(self._set_files(**kwargs),
+                                    disable=not self.verbose,
+                                    desc="[PROCESS]"):
+                        self._process_file(io_path=self.io_path,
+                                        io_size=self.io_size,
+                                        io_mode=self.io_mode,
+                                        file=file,
+                                        lock=lock,
+                                        _load_data=self._load_data,
+                                        **kwargs)
+                except Exception as e:
+                    # shutil to delete the database
+                    shutil.rmtree(self.io_path)
+                    raise e
             else:
                 # lock for lmdb writter, LMDB only allows single-process writes
                 manager = Manager()
                 lock = manager.Lock()
 
-                Parallel(n_jobs=self.num_worker)(
-                    delayed(self._process_file)(io_path=io_path,
-                                                io_size=io_size,
-                                                io_mode=io_mode,
-                                                file=file,
-                                                lock=lock,
-                                                _load_data=self._load_data,
-                                                **
-                                                kwargs)
-                    for file in tqdm(self._set_files(**kwargs),
-                                     disable=not self.verbose,
-                                     desc="[PROCESS]"))
+                # if catch error, then delete the database
+                try:
+                    Parallel(n_jobs=self.num_worker)(
+                        delayed(self._process_file)(io_path=io_path,
+                                                    io_size=io_size,
+                                                    io_mode=io_mode,
+                                                    file=file,
+                                                    lock=lock,
+                                                    _load_data=self._load_data,
+                                                    **
+                                                    kwargs)
+                        for file in tqdm(self._set_files(**kwargs),
+                                        disable=not self.verbose,
+                                        desc="[PROCESS]"))
+                except Exception as e:
+                    # shutil to delete the database
+                    shutil.rmtree(self.io_path)
+                    raise e
 
         print(
             f'dataset already exists at path {self.io_path}, reading from path...'

@@ -22,6 +22,8 @@ pyg_requires = [
     'torch_geometric>=2.0.3',
 ]
 
+moabb_requires = ['moabb>=0.5.0']
+
 readme = open('README.rst').read()
 
 setup(
@@ -40,6 +42,7 @@ setup(
     extras_require={
         'example': example_requires,
         'test': test_requires,
-        'pyg': pyg_requires
+        'pyg': pyg_requires,
+        'moabb': moabb_requires
     },
     install_requires=install_requires)

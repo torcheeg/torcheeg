@@ -75,7 +75,6 @@ class BaseTransform:
         format_string += ')'
         return format_string
 
-
 class EEGTransform(BaseTransform):
     def __init__(self, apply_to_baseline: bool = False):
         super(EEGTransform, self).__init__()
