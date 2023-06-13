@@ -33,6 +33,7 @@ class TestFlow(unittest.TestCase):
         # forward to calculate loss function
         mock_eeg = torch.randn(2, 4, 32, 32)
         y = torch.randint(0, 2, (2, ))
+        
         nll_loss, y_logits = model(mock_eeg, y)
         loss = nll_loss.mean() + F.cross_entropy(y_logits, y)
 

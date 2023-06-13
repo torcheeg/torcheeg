@@ -29,7 +29,7 @@ class GlowTrainer(pl.LightningModule):
         trainer.test(test_loader)
 
     Args:
-        model (nn.Module): The generative model, and the dimension of its output should be equal to the number of channels in the dataset. The output layer does not need to have a softmax activation function.
+        model (nn.Module): Normalized flow model, it needs to implement two interfaces, log_probs and sample. Among them, log_probs takes the original sample as input to calculate the log probs to the target distribution, and sample takes num and temperature as input to calculate the generated sample.
         lr (float): The learning rate. (default: :obj:`0.0001`)
         weight_decay: (float): The weight decay (L2 penalty). (default: :obj:`0.0`)
         temperature (float): The temperature. (default: :obj:`1.0`)
@@ -154,7 +154,8 @@ class GlowTrainer(pl.LightningModule):
                       batch_idx: int) -> torch.Tensor:
         x, _ = batch
 
-        loss = self.model(x).mean()
+        log_probs = self.model.log_probs(x)
+        loss = log_probs.mean()
 
         self.log("train_loss",
                  self.train_loss(loss),
@@ -188,7 +189,8 @@ class GlowTrainer(pl.LightningModule):
                         batch_idx: int) -> torch.Tensor:
         x, _ = batch
 
-        loss = self.model(x).mean()
+        log_probs = self.model.log_probs(x)
+        loss = log_probs.mean()
         self.val_loss.update(loss)
 
         return loss
@@ -216,7 +218,8 @@ class GlowTrainer(pl.LightningModule):
                   batch_idx: int) -> torch.Tensor:
         x, _ = batch
 
-        loss = self.model(x).mean()
+        log_probs = self.model.log_probs(x)
+        loss = log_probs.mean()
 
         self.test_loss.update(loss)
 
@@ -292,7 +295,7 @@ class CGlowTrainer(GlowTrainer):
         trainer.test(test_loader)
 
     Args:
-        model (nn.Module): The generative model, and the dimension of its output should be equal to the number of channels in the dataset. The output layer does not need to have a softmax activation function.
+        model (nn.Module): Normalized flow model, it needs to implement two interfaces, log_probs and sample. Among them, log_probs takes the original sample and label as input, and calculates the log probs and logits of the predicted category to the target distribution, and sample takes label and temperature as input, and calculates the generated sample.
         lr (float): The learning rate. (default: :obj:`0.0001`)
         weight_decay: (float): The weight decay (L2 penalty). (default: :obj:`0.0`)
         temperature (float): The temperature. (default: :obj:`1.0`)
@@ -380,7 +383,7 @@ class CGlowTrainer(GlowTrainer):
                       batch_idx: int) -> torch.Tensor:
         x, y = batch
 
-        kld_loss, y_logits = self.model(x, y)
+        kld_loss, y_logits = self.model.log_probs(x, y)
         kld_loss = kld_loss.mean()
         class_loss = self.ce_fn(y_logits, y)
         loss = kld_loss + self.weight_class * class_loss
@@ -430,7 +433,7 @@ class CGlowTrainer(GlowTrainer):
                         batch_idx: int) -> torch.Tensor:
         x, y = batch
 
-        kld_loss, y_logits = self.model(x, y)
+        kld_loss, y_logits = self.model.log_probs(x, y)
         kld_loss = kld_loss.mean()
         class_loss = self.ce_fn(y_logits, y)
         loss = kld_loss + self.weight_class * class_loss
@@ -470,7 +473,7 @@ class CGlowTrainer(GlowTrainer):
                   batch_idx: int) -> torch.Tensor:
         x, y = batch
 
-        kld_loss, y_logits = self.model(x, y)
+        kld_loss, y_logits = self.model.log_probs(x, y)
         kld_loss = kld_loss.mean()
         class_loss = self.ce_fn(y_logits, y)
         loss = kld_loss + self.weight_class * class_loss

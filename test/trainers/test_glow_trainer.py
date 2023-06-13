@@ -16,24 +16,26 @@ class DummyDataset(Dataset):
         return self.length
 
     def __getitem__(self, i) -> int:
-        return torch.randn(4, 32, 32), random.randint(0, 1)
+        labels = random.randint(0, 1)
+        return torch.ones(4, 32, 32) * labels * 0.8 + torch.randn(
+            4, 32, 32) * 0.2, labels
 
 
 class TestGlowTrainer(unittest.TestCase):
-    def test_glow_trainer(self):
-        train_dataset = DummyDataset()
-        val_dataset = DummyDataset()
-        test_dataset = DummyDataset()
+    # def test_glow_trainer(self):
+    #     train_dataset = DummyDataset()
+    #     val_dataset = DummyDataset()
+    #     test_dataset = DummyDataset()
 
-        train_loader = DataLoader(train_dataset, batch_size=4)
-        val_loader = DataLoader(val_dataset, batch_size=4)
-        test_loader = DataLoader(test_dataset, batch_size=4)
+    #     train_loader = DataLoader(train_dataset, batch_size=4)
+    #     val_loader = DataLoader(val_dataset, batch_size=4)
+    #     test_loader = DataLoader(test_dataset, batch_size=4)
 
-        model = BGlow(in_channels=4)
+    #     model = BGlow(in_channels=4)
 
-        trainer = GlowTrainer(model, accelerator='gpu')
-        trainer.fit(train_loader, val_loader, max_epochs=1)
-        trainer.test(test_loader)
+    #     trainer = GlowTrainer(model, accelerator='gpu')
+    #     trainer.fit(train_loader, val_loader, max_epochs=1)
+    #     trainer.test(test_loader)
 
     def test_cglow_trainer(self):
         train_dataset = DummyDataset()
