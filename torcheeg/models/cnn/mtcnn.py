@@ -42,10 +42,10 @@ class MTCNN(nn.Module):
         model = MTCNN(num_classes=2, in_channels=8, grid_size=(8, 9), dropout=0.2)
 
     Args:
-        in_channels (int): The feature dimension of each electrode, i.e., :math:`N` in the paper. (defualt: :obj:`4`)
-        grid_size (tuple): Spatial dimensions of grid-like EEG representation. (defualt: :obj:`(8, 9)`)
-        num_classes (int): The number of classes to predict. (defualt: :obj:`2`)
-        dropout (float): Probability of an element to be zeroed in the dropout layers. (defualt: :obj:`0.2`)
+        in_channels (int): The feature dimension of each electrode, i.e., :math:`N` in the paper. (default: :obj:`4`)
+        grid_size (tuple): Spatial dimensions of grid-like EEG representation. (default: :obj:`(8, 9)`)
+        num_classes (int): The number of classes to predict. (default: :obj:`2`)
+        dropout (float): Probability of an element to be zeroed in the dropout layers. (default: :obj:`0.2`)
     '''
     def __init__(self,
                  in_channels: int = 8,

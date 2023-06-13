@@ -18,8 +18,8 @@ class Downsample(EEGTransform):
 
     Args:
         num_points (int): The number of data points after downsampling.
-        axis (int, optional): The dimension to normalize, when no dimension is specified, the entire data is normalized. (defualt: :obj:`-1`)
-        apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (defualt: :obj:`False`)
+        axis (int, optional): The dimension to normalize, when no dimension is specified, the entire data is normalized. (default: :obj:`-1`)
+        apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (default: :obj:`False`)
     
     .. automethod:: __call__
     '''

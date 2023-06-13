@@ -117,14 +117,14 @@ class FBCNet(nn.Module):
                        num_S=32)
 
     Args:
-        num_electrodes (int): The number of electrodes. (defualt: :obj:`28`)
+        num_electrodes (int): The number of electrodes. (default: :obj:`28`)
         chunk_size (int): Number of data points included in each EEG chunk. (default: :obj:`1000`)
-        in_channels (int): The number of channels of the signal corresponding to each electrode. If the original signal is used as input, in_channels is set to 1; if the original signal is split into multiple sub-bands, in_channels is set to the number of bands. (defualt: :obj:`9`)
-        num_S (int): The number of spatial convolution block. (defualt: :obj:`32`)
-        num_classes (int): The number of classes to predict. (defualt: :obj:`2`)
-        temporal (str): The temporal layer used, with options including VarLayer, StdLayer, LogVarLayer, MeanLayer, and MaxLayer, used to compute statistics using different techniques in the temporal dimension. (defualt: :obj:`LogVarLayer`)
-        stride_factor (int): The stride factor. (defualt: :obj:`4`)
-        weight_norm (bool): Whether to use weight renormalization technique in Conv2dWithConstraint. (defualt: :obj:`True`)
+        in_channels (int): The number of channels of the signal corresponding to each electrode. If the original signal is used as input, in_channels is set to 1; if the original signal is split into multiple sub-bands, in_channels is set to the number of bands. (default: :obj:`9`)
+        num_S (int): The number of spatial convolution block. (default: :obj:`32`)
+        num_classes (int): The number of classes to predict. (default: :obj:`2`)
+        temporal (str): The temporal layer used, with options including VarLayer, StdLayer, LogVarLayer, MeanLayer, and MaxLayer, used to compute statistics using different techniques in the temporal dimension. (default: :obj:`LogVarLayer`)
+        stride_factor (int): The stride factor. (default: :obj:`4`)
+        weight_norm (bool): Whether to use weight renormalization technique in Conv2dWithConstraint. (default: :obj:`True`)
     '''
     def __init__(self,
                  num_electrodes: int = 20,

@@ -15,9 +15,9 @@ class BGenerator(nn.Module):
         fake_X = g_model(z)
 
     Args:
-        in_channels (int): The input feature dimension (of noise vectors). (defualt: :obj:`128`)
-        out_channels (int): The generated feature dimension of each electrode. (defualt: :obj:`4`)
-        grid_size (tuple): Spatial dimensions of grid-like EEG representation. (defualt: :obj:`(9, 9)`)
+        in_channels (int): The input feature dimension (of noise vectors). (default: :obj:`128`)
+        out_channels (int): The generated feature dimension of each electrode. (default: :obj:`4`)
+        grid_size (tuple): Spatial dimensions of grid-like EEG representation. (default: :obj:`(9, 9)`)
     '''
     def __init__(self,
                  in_channels: int = 128,
@@ -93,9 +93,9 @@ class BDiscriminator(nn.Module):
         disc_X = d_model(fake_X)
 
     Args:
-        in_channels (int): The feature dimension of each electrode. (defualt: :obj:`4`)
-        grid_size (tuple): Spatial dimensions of grid-like EEG representation. (defualt: :obj:`(9, 9)`)
-        hid_channels (int): The number of hidden nodes in the first fully connected layer. (defualt: :obj:`32`)
+        in_channels (int): The feature dimension of each electrode. (default: :obj:`4`)
+        grid_size (tuple): Spatial dimensions of grid-like EEG representation. (default: :obj:`(9, 9)`)
+        hid_channels (int): The number of hidden nodes in the first fully connected layer. (default: :obj:`32`)
     '''
     def __init__(self,
                  in_channels: int = 4,

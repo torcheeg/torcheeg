@@ -17,7 +17,7 @@ from torcheeg.datasets.constants.emotion_recognition.deap import \
     DEAP_CHANNEL_LOCATION_DICT
 from torcheeg.model_selection import KFoldGroupbyTrial
 from torcheeg.models import CCNN
-from torcheeg.trainers import ClassificationTrainer
+from torcheeg.trainers import ClassifierTrainer
 
 ###############################################################################
 # Pre-experiment Preparation to Ensure Reproducibility
@@ -55,13 +55,6 @@ seed_everything(42)
 # -----------------------------------------
 # TorchEEG provides a large number of trainers to help complete the training of classification models, generative models and cross-domain methods. Here we choose the simplest classification trainer, inherit the trainer and overload the log function to save the log using our own defined method; other hook functions can also be overloaded to meet special needs.
 #
-
-
-class MyClassificationTrainer(ClassificationTrainer):
-    def log(self, *args, **kwargs):
-        if self.is_main:
-            logger.info(*args, **kwargs)
-
 
 ######################################################################
 # Building Deep Learning Pipelines Using TorchEEG
@@ -143,10 +136,12 @@ for i, (train_dataset, val_dataset) in enumerate(k_fold.split(dataset)):
     model = CCNN(in_channels=4, grid_size=(9, 9), num_classes=2, dropout=0.5)
 
     # Initialize the trainer and use the 0-th GPU for training, or set device_ids=[] to use CPU
-    trainer = MyClassificationTrainer(model=model,
-                                      lr=1e-4,
-                                      weight_decay=1e-4,
-                                      device_ids=[0])
+    trainer = ClassifierTrainer(model=model,
+                                lr=1e-4,
+                                devices=1,
+                                accelerator='gpu',
+                                num_classes=2,
+                                weight_decay=1e-4)
 
     # Initialize several batches of training samples and test samples
     train_loader = DataLoader(train_dataset,
@@ -159,6 +154,6 @@ for i, (train_dataset, val_dataset) in enumerate(k_fold.split(dataset)):
                             num_workers=4)
 
     # Do 50 rounds of training
-    trainer.fit(train_loader, val_loader, num_epochs=50)
+    trainer.fit(train_loader, val_loader, max_epochs=50)
     trainer.test(val_loader)
     trainer.save_state_dict(f'./tmp_out/examples_deap_ccnn/weight/{i}.pth')

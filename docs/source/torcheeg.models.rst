@@ -94,6 +94,7 @@ Normalization Flow
    :template: modeltemplate.rst
 
    BGlow
+   BCGlow
 
 Diffusion Models
 ----------------------------------

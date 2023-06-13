@@ -44,14 +44,14 @@ class TSCeption(nn.Module):
                           dropout=0.5)
 
     Args:
-        num_electrodes (int): The number of electrodes. (defualt: :obj:`28`)
-        num_T (int): The number of multi-scale 1D temporal kernels in the dynamic temporal layer, i.e., :math:`T` kernels in the paper. (defualt: :obj:`15`)
-        num_S (int): The number of multi-scale 1D spatial kernels in the asymmetric spatial layer. (defualt: :obj:`15`)
-        in_channels (int): The number of channels of the signal corresponding to each electrode. If the original signal is used as input, in_channels is set to 1; if the original signal is split into multiple sub-bands, in_channels is set to the number of bands. (defualt: :obj:`1`)
-        hid_channels (int): The number of hidden nodes in the first fully connected layer. (defualt: :obj:`32`)
-        num_classes (int): The number of classes to predict. (defualt: :obj:`2`)
-        sampling_rate (int): The sampling rate of the EEG signals, i.e., :math:`f_s` in the paper. (defualt: :obj:`128`)
-        dropout (float): Probability of an element to be zeroed in the dropout layers. (defualt: :obj:`0.5`)
+        num_electrodes (int): The number of electrodes. (default: :obj:`28`)
+        num_T (int): The number of multi-scale 1D temporal kernels in the dynamic temporal layer, i.e., :math:`T` kernels in the paper. (default: :obj:`15`)
+        num_S (int): The number of multi-scale 1D spatial kernels in the asymmetric spatial layer. (default: :obj:`15`)
+        in_channels (int): The number of channels of the signal corresponding to each electrode. If the original signal is used as input, in_channels is set to 1; if the original signal is split into multiple sub-bands, in_channels is set to the number of bands. (default: :obj:`1`)
+        hid_channels (int): The number of hidden nodes in the first fully connected layer. (default: :obj:`32`)
+        num_classes (int): The number of classes to predict. (default: :obj:`2`)
+        sampling_rate (int): The sampling rate of the EEG signals, i.e., :math:`f_s` in the paper. (default: :obj:`128`)
+        dropout (float): Probability of an element to be zeroed in the dropout layers. (default: :obj:`0.5`)
     '''
     def __init__(self,
                  num_electrodes: int = 28,

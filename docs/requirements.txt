@@ -3,7 +3,7 @@ https://data.pyg.org/whl/torch-1.9.0%2Bcpu/torch_scatter-2.0.7-cp38-cp38-linux_x
 https://data.pyg.org/whl/torch-1.9.0%2Bcpu/torch_sparse-0.6.10-cp38-cp38-linux_x86_64.whl
 mne
 mne_connectivity
-sphinx
+sphinx==6.2.1
 sphinx_gallery
 docutils
 pylons-sphinx-themes
@@ -23,4 +23,5 @@ xmltodict
 networkx
 PyWavelets
 spectrum
+pytorch-lightning
 -e git+https://github.com/pytorch/pytorch_sphinx_theme.git#egg=pytorch_sphinx_theme

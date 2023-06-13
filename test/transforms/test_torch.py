@@ -1,10 +1,18 @@
 import unittest
 import torch
 import numpy as np
-from torcheeg.transforms import ToTensor, Resize, RandomNoise, RandomMask, RandomWindowSlice, RandomWindowWarp, RandomPCANoise, RandomFlip, RandomShift, RandomChannelShuffle, RandomFrequencyShift, RandomSignFlip
+from torcheeg.transforms import ToTensor, Resize, RandomNoise, RandomMask, RandomWindowSlice, RandomWindowWarp, RandomPCANoise, RandomFlip, RandomShift, RandomChannelShuffle, RandomFrequencyShift, RandomSignFlip, Contrastive
 
 
 class TestTorchTransforms(unittest.TestCase):
+    def test_contrastive(self):
+        eeg = torch.randn(32, 128)
+        transformed_eeg = Contrastive(RandomNoise(), num_views=2)(eeg=eeg)
+        self.assertEqual(tuple(transformed_eeg['eeg'][0].shape), (32, 128))
+        self.assertEqual(tuple(transformed_eeg['eeg'][1].shape), (32, 128))
+        # transformed_eeg['eeg'][0] should be different from transformed_eeg['eeg'][1]
+        self.assertFalse(torch.allclose(transformed_eeg['eeg'][0], transformed_eeg['eeg'][1]))
+
     def test_to_tensor(self):
         eeg = np.random.randn(32, 128)
         transformed_eeg = ToTensor()(eeg=eeg)

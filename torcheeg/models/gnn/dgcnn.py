@@ -117,11 +117,11 @@ class DGCNN(nn.Module):
         model = DGCNN(in_channels=5, num_electrodes=62, hid_channels=32, num_layers=2, num_classes=2)
 
     Args:
-        in_channels (int): The feature dimension of each electrode. (defualt: :obj:`5`)
-        num_electrodes (int): The number of electrodes. (defualt: :obj:`62`)
-        num_layers (int): The number of graph convolutional layers. (defualt: :obj:`2`)
-        hid_channels (int): The number of hidden nodes in the first fully connected layer. (defualt: :obj:`32`)
-        num_classes (int): The number of classes to predict. (defualt: :obj:`2`)
+        in_channels (int): The feature dimension of each electrode. (default: :obj:`5`)
+        num_electrodes (int): The number of electrodes. (default: :obj:`62`)
+        num_layers (int): The number of graph convolutional layers. (default: :obj:`2`)
+        hid_channels (int): The number of hidden nodes in the first fully connected layer. (default: :obj:`32`)
+        num_classes (int): The number of classes to predict. (default: :obj:`2`)
     '''
     def __init__(self,
                  in_channels: int = 5,

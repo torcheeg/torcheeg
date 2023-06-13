@@ -152,16 +152,16 @@ class LGGNet(nn.Module):
 
     Args:
         region_list (list): The local graph structure defined according to the 10-20 system, where the electrodes are divided into different brain regions.
-        in_channels (int): The feature dimension of each electrode. (defualt: :obj:`1`)
-        num_electrodes (int): The number of electrodes. (defualt: :obj:`32`)
+        in_channels (int): The feature dimension of each electrode. (default: :obj:`1`)
+        num_electrodes (int): The number of electrodes. (default: :obj:`32`)
         chunk_size (int): Number of data points included in each EEG chunk. (default: :obj:`128`)
-        sampling_rate (int): The sampling rate of the EEG signals, i.e., :math:`f_s` in the paper. (defualt: :obj:`128`)
-        num_T (int): The number of multi-scale 1D temporal kernels in the dynamic temporal layer, i.e., :math:`T` kernels in the paper. (defualt: :obj:`64`)
-        hid_channels (int): The number of hidden nodes in the first fully connected layer. (defualt: :obj:`32`)
-        dropout (float): Probability of an element to be zeroed in the dropout layers. (defualt: :obj:`0.5`)
-        pool_kernel_size (int): The kernel size of pooling layers in the temporal blocks (defualt: :obj:`16`)
-        pool_stride (int): The stride of pooling layers in the temporal blocks (defualt: :obj:`4`)
-        num_classes (int): The number of classes to predict. (defualt: :obj:`2`)
+        sampling_rate (int): The sampling rate of the EEG signals, i.e., :math:`f_s` in the paper. (default: :obj:`128`)
+        num_T (int): The number of multi-scale 1D temporal kernels in the dynamic temporal layer, i.e., :math:`T` kernels in the paper. (default: :obj:`64`)
+        hid_channels (int): The number of hidden nodes in the first fully connected layer. (default: :obj:`32`)
+        dropout (float): Probability of an element to be zeroed in the dropout layers. (default: :obj:`0.5`)
+        pool_kernel_size (int): The kernel size of pooling layers in the temporal blocks (default: :obj:`16`)
+        pool_stride (int): The stride of pooling layers in the temporal blocks (default: :obj:`4`)
+        num_classes (int): The number of classes to predict. (default: :obj:`2`)
     '''
     def __init__(self,
                  region_list,

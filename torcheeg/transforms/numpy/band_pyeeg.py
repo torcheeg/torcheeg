@@ -92,10 +92,10 @@ class BandApproximateEntropy(BandTransform):
         >>> (32, 4)
 
     Args:
-        M (int): A positive integer represents the length of each compared run of data. (defualt: :obj:`5`)
-        R (float): A positive real number specifies a filtering level. (defualt: :obj:`5`)
-        band_dict: (dict): Band name and the critical sampling rate or frequencies. By default, the differential entropy of the four sub-bands, theta, alpha, beta and gamma, is calculated. (defualt: :obj:`{...}`)
-        apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (defualt: :obj:`False`)
+        M (int): A positive integer represents the length of each compared run of data. (default: :obj:`5`)
+        R (float): A positive real number specifies a filtering level. (default: :obj:`5`)
+        band_dict: (dict): Band name and the critical sampling rate or frequencies. By default, the differential entropy of the four sub-bands, theta, alpha, beta and gamma, is calculated. (default: :obj:`{...}`)
+        apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (default: :obj:`False`)
     
     .. automethod:: __call__
     '''
@@ -180,10 +180,10 @@ class BandSampleEntropy(BandTransform):
         >>> (32, 4)
 
     Args:
-        M (int): A positive integer represents the length of each compared run of data. (defualt: :obj:`5`)
-        R (float): A positive real number specifies a filtering level. (defualt: :obj:`5`)
-        band_dict: (dict): Band name and the critical sampling rate or frequencies. By default, the differential entropy of the four sub-bands, theta, alpha, beta and gamma, is calculated. (defualt: :obj:`{...}`)
-        apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (defualt: :obj:`False`)
+        M (int): A positive integer represents the length of each compared run of data. (default: :obj:`5`)
+        R (float): A positive real number specifies a filtering level. (default: :obj:`5`)
+        band_dict: (dict): Band name and the critical sampling rate or frequencies. By default, the differential entropy of the four sub-bands, theta, alpha, beta and gamma, is calculated. (default: :obj:`{...}`)
+        apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (default: :obj:`False`)
     
     .. automethod:: __call__
     '''
@@ -264,11 +264,11 @@ class BandSVDEntropy(BandTransform):
         >>> (32, 4)
 
     Args:
-        Tau (int): A positive integer represents the embedding time delay which controls the number of time periods between elements of each of the new column vectors. (defualt: :obj:`1`)
-        DE (int): A positive integer represents the ength of the embedding dimension. (defualt: :obj:`1`)
-        W (np.ndarray, optional): A list of normalized singular values of the embedding matrix (can be preset for speeding up). (defualt: :obj:`None`)
-        band_dict: (dict): Band name and the critical sampling rate or frequencies. By default, the differential entropy of the four sub-bands, theta, alpha, beta and gamma, is calculated. (defualt: :obj:`{...}`)
-        apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (defualt: :obj:`False`)
+        Tau (int): A positive integer represents the embedding time delay which controls the number of time periods between elements of each of the new column vectors. (default: :obj:`1`)
+        DE (int): A positive integer represents the ength of the embedding dimension. (default: :obj:`1`)
+        W (np.ndarray, optional): A list of normalized singular values of the embedding matrix (can be preset for speeding up). (default: :obj:`None`)
+        band_dict: (dict): Band name and the critical sampling rate or frequencies. By default, the differential entropy of the four sub-bands, theta, alpha, beta and gamma, is calculated. (default: :obj:`{...}`)
+        apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (default: :obj:`False`)
     
     .. automethod:: __call__
     '''
@@ -343,10 +343,10 @@ class BandDetrendedFluctuationAnalysis(BandTransform):
         >>> (32, 4)
 
     Args:
-        Ave (float, optional): The average value of the time series. (defualt: :obj:`None`)
-        L (List[np.array]): Box sizes to partition/slice/segment the integrated sequence into boxes. At least two boxes are needed, and it should be a list of integers in ascending order. (defualt: :obj:`np.array`)
-        band_dict: (dict): Band name and the critical sampling rate or frequencies. By default, the differential entropy of the four sub-bands, theta, alpha, beta and gamma, is calculated. (defualt: :obj:`{...}`)
-        apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (defualt: :obj:`False`)
+        Ave (float, optional): The average value of the time series. (default: :obj:`None`)
+        L (List[np.array]): Box sizes to partition/slice/segment the integrated sequence into boxes. At least two boxes are needed, and it should be a list of integers in ascending order. (default: :obj:`np.array`)
+        band_dict: (dict): Band name and the critical sampling rate or frequencies. By default, the differential entropy of the four sub-bands, theta, alpha, beta and gamma, is calculated. (default: :obj:`{...}`)
+        apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (default: :obj:`False`)
     
     .. automethod:: __call__
     '''
@@ -446,9 +446,9 @@ class BandHiguchiFractalDimension(BandTransform):
         >>> (32, 4)
 
     Args:
-        K_max (int): The max number of new self-similar time series applying Higuchi's algorithm. (defualt: :obj:`6`)
-        band_dict: (dict): Band name and the critical sampling rate or frequencies. By default, the differential entropy of the four sub-bands, theta, alpha, beta and gamma, is calculated. (defualt: :obj:`{...}`)
-        apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (defualt: :obj:`False`)
+        K_max (int): The max number of new self-similar time series applying Higuchi's algorithm. (default: :obj:`6`)
+        band_dict: (dict): Band name and the critical sampling rate or frequencies. By default, the differential entropy of the four sub-bands, theta, alpha, beta and gamma, is calculated. (default: :obj:`{...}`)
+        apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (default: :obj:`False`)
     
     .. automethod:: __call__
     '''
@@ -524,10 +524,10 @@ class BandHjorth(BandTransform):
         >>> (32, 4)
 
     Args:
-        D (np.ndarray, optional): The first order differential sequence of the time series (can be preset for speeding up). (defualt: :obj:`None`)
-        mode (str): Options include mobility, complexity, and both, which are used to calculate hjorth mobility, hjorth complexity, and concatenate the two, respectively. (defualt: :obj:`mobility`)
-        band_dict: (dict): Band name and the critical sampling rate or frequencies. By default, the differential entropy of the four sub-bands, theta, alpha, beta and gamma, is calculated. (defualt: :obj:`{...}`)
-        apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (defualt: :obj:`False`)
+        D (np.ndarray, optional): The first order differential sequence of the time series (can be preset for speeding up). (default: :obj:`None`)
+        mode (str): Options include mobility, complexity, and both, which are used to calculate hjorth mobility, hjorth complexity, and concatenate the two, respectively. (default: :obj:`mobility`)
+        band_dict: (dict): Band name and the critical sampling rate or frequencies. By default, the differential entropy of the four sub-bands, theta, alpha, beta and gamma, is calculated. (default: :obj:`{...}`)
+        apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (default: :obj:`False`)
     
     .. automethod:: __call__
     '''
@@ -674,9 +674,9 @@ class BandPetrosianFractalDimension(BandTransform):
         >>> (32, 4)
 
     Args:
-        D (np.ndarray, optional): The first order differential sequence of the time series (can be preset for speeding up). (defualt: :obj:`None`)
-        band_dict: (dict): Band name and the critical sampling rate or frequencies. By default, the differential entropy of the four sub-bands, theta, alpha, beta and gamma, is calculated. (defualt: :obj:`{...}`)
-        apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (defualt: :obj:`False`)
+        D (np.ndarray, optional): The first order differential sequence of the time series (can be preset for speeding up). (default: :obj:`None`)
+        band_dict: (dict): Band name and the critical sampling rate or frequencies. By default, the differential entropy of the four sub-bands, theta, alpha, beta and gamma, is calculated. (default: :obj:`{...}`)
+        apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (default: :obj:`False`)
     
     .. automethod:: __call__
     '''
@@ -762,10 +762,10 @@ class BandBinPower(EEGTransform):
         >>> (32, 4)
 
     Args:
-        sampling_rate (int): The original sampling rate in Hz (defualt: :obj:`128`)
-        order (int): The order of the filter. (defualt: :obj:`5`)
-        band_dict: (dict): Band name and the critical sampling rate or frequencies. By default, the differential entropy of the four sub-bands, theta, alpha, beta and gamma, is calculated. (defualt: :obj:`{...}`)
-        apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (defualt: :obj:`False`)
+        sampling_rate (int): The original sampling rate in Hz (default: :obj:`128`)
+        order (int): The order of the filter. (default: :obj:`5`)
+        band_dict: (dict): Band name and the critical sampling rate or frequencies. By default, the differential entropy of the four sub-bands, theta, alpha, beta and gamma, is calculated. (default: :obj:`{...}`)
+        apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (default: :obj:`False`)
     
     .. automethod:: __call__
     '''
@@ -835,9 +835,9 @@ class BandSpectralEntropy(EEGTransform):
         >>> (32, 4)
 
     Args:
-        power_ratio (np.ndarray, optional): A list of normalized signal power in the set of sub-bands (can be preset for speeding up). (defualt: :obj:`None`)
-        band_dict: (dict): Band name and the critical sampling rate or frequencies. By default, the differential entropy of the four sub-bands, theta, alpha, beta and gamma, is calculated. (defualt: :obj:`{...}`)
-        apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (defualt: :obj:`False`)
+        power_ratio (np.ndarray, optional): A list of normalized signal power in the set of sub-bands (can be preset for speeding up). (default: :obj:`None`)
+        band_dict: (dict): Band name and the critical sampling rate or frequencies. By default, the differential entropy of the four sub-bands, theta, alpha, beta and gamma, is calculated. (default: :obj:`{...}`)
+        apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (default: :obj:`False`)
     
     .. automethod:: __call__
     '''

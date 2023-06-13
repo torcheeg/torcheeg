@@ -28,11 +28,11 @@ class ToG(EEGTransform):
     Args:
         adj (list): An adjacency matrix represented by a 2D array, each element in the adjacency matrix represents the electrode-to-electrode edge weight. Please keep the order of electrodes in the rows and columns of the adjacency matrix consistent with the EEG signal to be transformed.
         add_self_loop (bool): Whether to add self-loop edges to the graph. (default: :obj:`True`)
-        threshold (float, optional): Used to cut edges when not None. Edges whose weights exceed a threshold are retained. (defualt: :obj:`None`)
-        top_k (int, optional): Used to cut edges when not None. Keep the k edges connected to each node with the largest weights. (defualt: :obj:`None`)
-        binary (bool): Whether to binarize the weights on the edges to 0 and 1. If set to True, binarization are done after topk and threshold, the edge weights that still have values are set to 1, otherwise they are set to 0. (defualt: :obj:`False`)
-        complete_graph (bool): Whether to build as a complete graph. If False, only construct edges between electrodes based on non-zero elements; if True, construct variables between all electrodes and set the weight of non-existing edges to 0. (defualt: :obj:`False`)
-        apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (defualt: :obj:`False`)
+        threshold (float, optional): Used to cut edges when not None. Edges whose weights exceed a threshold are retained. (default: :obj:`None`)
+        top_k (int, optional): Used to cut edges when not None. Keep the k edges connected to each node with the largest weights. (default: :obj:`None`)
+        binary (bool): Whether to binarize the weights on the edges to 0 and 1. If set to True, binarization are done after topk and threshold, the edge weights that still have values are set to 1, otherwise they are set to 0. (default: :obj:`False`)
+        complete_graph (bool): Whether to build as a complete graph. If False, only construct edges between electrodes based on non-zero elements; if True, construct variables between all electrodes and set the weight of non-existing edges to 0. (default: :obj:`False`)
+        apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (default: :obj:`False`)
     
     .. automethod:: __call__
     '''
@@ -144,13 +144,13 @@ class ToDynamicG(EEGTransform):
         >>> Data(edge_index=[2, 1024], x=[32, 128], edge_weight=[1024])
 
     Args:
-        edge_func (str or Callable): Algorithms for computing functional connections. You can use the algorithms provided by TorchEEG, including gaussian_distance, absolute_pearson_correlation_coefficient and phase_locking_value. Or you can use custom functions by passing a callable object containing two parameters representing the signal of the two electrodes, and other named parameters (passed in when initializing the transform), and outputs the value of the functional connection between the two electrodes. (defualt: :obj:`gaussian_distance`)
+        edge_func (str or Callable): Algorithms for computing functional connections. You can use the algorithms provided by TorchEEG, including gaussian_distance, absolute_pearson_correlation_coefficient and phase_locking_value. Or you can use custom functions by passing a callable object containing two parameters representing the signal of the two electrodes, and other named parameters (passed in when initializing the transform), and outputs the value of the functional connection between the two electrodes. (default: :obj:`gaussian_distance`)
         add_self_loop (bool): Whether to add self-loop edges to the graph. (default: :obj:`True`)
-        threshold (float, optional): Used to cut edges when not None. Edges whose weights exceed a threshold are retained. (defualt: :obj:`None`)
-        top_k (int, optional): Used to cut edges when not None. Keep the k edges connected to each node with the largest weights. (defualt: :obj:`None`)
-        binary (bool): Whether to binarize the weights on the edges to 0 and 1. If set to True, binarization are done after topk and threshold, the edge weights that still have values are set to 1, otherwise they are set to 0. (defualt: :obj:`False`)
-        complete_graph (bool): Whether to build as a complete graph. If False, only construct edges between electrodes based on non-zero elements; if True, construct variables between all electrodes and set the weight of non-existing edges to 0. (defualt: :obj:`False`)
-        apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (defualt: :obj:`False`)
+        threshold (float, optional): Used to cut edges when not None. Edges whose weights exceed a threshold are retained. (default: :obj:`None`)
+        top_k (int, optional): Used to cut edges when not None. Keep the k edges connected to each node with the largest weights. (default: :obj:`None`)
+        binary (bool): Whether to binarize the weights on the edges to 0 and 1. If set to True, binarization are done after topk and threshold, the edge weights that still have values are set to 1, otherwise they are set to 0. (default: :obj:`False`)
+        complete_graph (bool): Whether to build as a complete graph. If False, only construct edges between electrodes based on non-zero elements; if True, construct variables between all electrodes and set the weight of non-existing edges to 0. (default: :obj:`False`)
+        apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (default: :obj:`False`)
     
     .. automethod:: __call__
     '''

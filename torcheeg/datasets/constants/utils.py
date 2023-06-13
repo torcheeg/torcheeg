@@ -69,8 +69,8 @@ def format_adj_matrix_from_standard(
     Args:
         channel_list (list): The channel name lists corresponding to the input EEG signal. If the dataset in TorchEEG is used, please refer to the CHANNEL_LIST related constants in the :obj:`torcheeg.constants` module.
         standard_channel_location_dict (dict): Electrode location information. Represented in dictionary form, where :obj:`key` corresponds to the electrode name and :obj:`value` corresponds to (x, y, z) of the electrode on the grid. please refer to STANDARD_1005_CHANNEL_LOCATION_DICT and STANDARD_1020_CHANNEL_LOCATION_DICT.
-        delta (float): The calibration constant. Due to differences in electrode coordinate scales, the values in the original paper are not recommended. 0.00056 means 20% more nodes are connected to each other. (defualt: :obj:`0.00056`)
-        global_channel_list (float): To leverage the differential asymmetry information, the authors initialize the global inter-channel relations in the adjacency matrix. (defualt: :obj:`[('FP1', 'FP2'), ('AF3', 'AF4'), ('F5', 'F6'), ('FC5', 'FC6'), ('C5', 'C6'), ('CP5', 'CP6'), ('P5', 'P6'), ('PO5', 'PO6'), ('O1', 'O2')]`)
+        delta (float): The calibration constant. Due to differences in electrode coordinate scales, the values in the original paper are not recommended. 0.00056 means 20% more nodes are connected to each other. (default: :obj:`0.00056`)
+        global_channel_list (float): To leverage the differential asymmetry information, the authors initialize the global inter-channel relations in the adjacency matrix. (default: :obj:`[('FP1', 'FP2'), ('AF3', 'AF4'), ('F5', 'F6'), ('FC5', 'FC6'), ('C5', 'C6'), ('CP5', 'CP6'), ('P5', 'P6'), ('PO5', 'PO6'), ('O1', 'O2')]`)
     '''
     node_map = {k: i for i, k in enumerate(channel_list)}
     adj_matrix = np.zeros((len(channel_list), len(channel_list)))

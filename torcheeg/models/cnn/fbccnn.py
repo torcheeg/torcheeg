@@ -28,9 +28,9 @@ class FBCCNN(nn.Module):
         model = FBCCNN(num_classes=2, in_channels=4, grid_size=(9, 9))
 
     Args:
-        in_channels (int): The feature dimension of each electrode, i.e., :math:`N` in the paper. (defualt: :obj:`4`)
-        grid_size (tuple): Spatial dimensions of grid-like EEG representation. (defualt: :obj:`(9, 9)`)
-        num_classes (int): The number of classes to predict. (defualt: :obj:`2`)
+        in_channels (int): The feature dimension of each electrode, i.e., :math:`N` in the paper. (default: :obj:`4`)
+        grid_size (tuple): Spatial dimensions of grid-like EEG representation. (default: :obj:`(9, 9)`)
+        num_classes (int): The number of classes to predict. (default: :obj:`2`)
     '''
     def __init__(self, in_channels: int = 4, grid_size: Tuple[int, int] = (9, 9), num_classes: int = 2):
         super(FBCCNN, self).__init__()

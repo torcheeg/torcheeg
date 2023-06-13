@@ -92,6 +92,11 @@ cd docs
 make clean
 sphinx-autobuild source build/html
 
+# or
+make html
+cd build/html
+python -m http.server 8000
+
 cd ..
 rm -rf src # remove pytorch_sphinx_theme
 ```

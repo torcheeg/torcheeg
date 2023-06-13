@@ -1,11 +1,60 @@
 import math
-from typing import Tuple
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
 
+def compute_same_pad(kernel_size, stride):
+    if isinstance(kernel_size, int):
+        kernel_size = [kernel_size]
+
+    if isinstance(stride, int):
+        stride = [stride]
+
+    assert len(stride) == len(
+        kernel_size
+    ), "Pass kernel size and stride both as int, or both as equal length iterable"
+
+    return [((k - 1) * s + 1) // 2 for k, s in zip(kernel_size, stride)]
+
+
+def uniform_binning_correction(x, n_bits=8):
+    """Replaces x^i with q^i(x) = U(x, x + 1.0 / 256.0).
+
+    Args:
+        x: 4-D Tensor of shape (NCHW)
+        n_bits: optional.
+    Returns:
+        x: x ~ U(x, x + 1.0 / 256)
+        objective: Equivalent to -q(x)*log(q(x)).
+    """
+    b, c, h, w = x.size()
+    n_bins = 2**n_bits
+    chw = c * h * w
+    x += torch.zeros_like(x).uniform_(0, 1.0 / n_bins)
+
+    objective = -math.log(n_bins) * chw * torch.ones(b, device=x.device)
+    return x, objective
+
+
+def split_feature(tensor, type="split"):
+    """
+    type = ["split", "cross"]
+    """
+    C = tensor.size(1)
+    if type == "split":
+        return tensor[:, :C // 2, ...], tensor[:, C // 2:, ...]
+    elif type == "cross":
+        return tensor[:, 0::2, ...], tensor[:, 1::2, ...]
+
+
 def gaussian_p(mean, logs, x):
+    """
+    lnL = -1/2 * { ln|Var| + ((X - Mu)^T)(Var^-1)(X - Mu) + kln(2*PI) }
+            k = 1 (Independent)
+            Var = logs ** 2
+    """
     c = math.log(2 * math.pi)
     return -0.5 * (logs * 2.0 + ((x - mean)**2) / torch.exp(logs * 2.0) + c)
 
@@ -16,6 +65,7 @@ def gaussian_likelihood(mean, logs, x):
 
 
 def gaussian_sample(mean, logs, temperature=1):
+    # Sample from Gaussian with temperature
     z = torch.normal(mean, torch.exp(logs) * temperature)
 
     return z
@@ -54,6 +104,13 @@ def unsqueeze2d(input, factor):
 
 
 class _ActNorm(nn.Module):
+    """
+    Activation Normalization
+    Initialize the bias and scale with a given minibatch,
+    so that the output per-channel have zero mean and unit variance for that.
+
+    After initialization, `bias` and `logs` will be trained as parameters.
+    """
     def __init__(self, num_features, scale=1.0):
         super().__init__()
         # register mean and scale
@@ -94,6 +151,10 @@ class _ActNorm(nn.Module):
             input = input * torch.exp(self.logs)
 
         if logdet is not None:
+            """
+            logs is log_std of `mean of channels`
+            so we need to multiply by number of pixels
+            """
             b, c, h, w = input.shape
 
             dlogdet = torch.sum(self.logs) * h * w
@@ -375,45 +436,13 @@ class InvertibleConv1x1(nn.Module):
             return z, logdet
 
 
-def compute_same_pad(kernel_size, stride):
-    if isinstance(kernel_size, int):
-        kernel_size = [kernel_size]
-
-    if isinstance(stride, int):
-        stride = [stride]
-
-    assert len(stride) == len(
-        kernel_size
-    ), "Pass kernel size and stride both as int, or both as equal length iterable"
-
-    return [((k - 1) * s + 1) // 2 for k, s in zip(kernel_size, stride)]
-
-
-def uniform_binning_correction(x, n_bits=8):
-    b, c, h, w = x.size()
-    n_bins = 2**n_bits
-    chw = c * h * w
-    x += torch.zeros_like(x).uniform_(0, 1.0 / n_bins)
-
-    objective = -math.log(n_bins) * chw * torch.ones(b, device=x.device)
-    return x, objective
-
-
-def split_feature(tensor, type="split"):
-    C = tensor.size(1)
-    if type == "split":
-        return tensor[:, :C // 2, ...], tensor[:, C // 2:, ...]
-    elif type == "cross":
-        return tensor[:, 0::2, ...], tensor[:, 1::2, ...]
-
-
-def get_block(in_channels, out_channels, hid_channels):
+def get_block(in_channels, out_channels, hidden_channels):
     block = nn.Sequential(
-        Conv2d(in_channels, hid_channels),
+        Conv2d(in_channels, hidden_channels),
         nn.ReLU(inplace=False),
-        Conv2d(hid_channels, hid_channels, kernel_size=(1, 1)),
+        Conv2d(hidden_channels, hidden_channels, kernel_size=(1, 1)),
         nn.ReLU(inplace=False),
-        Conv2dZeros(hid_channels, out_channels),
+        Conv2dZeros(hidden_channels, out_channels),
     )
     return block
 
@@ -422,7 +451,7 @@ class FlowStep(nn.Module):
     def __init__(
         self,
         in_channels,
-        hid_channels,
+        hidden_channels,
         actnorm_scale,
         flow_permutation,
         flow_coupling,
@@ -432,28 +461,33 @@ class FlowStep(nn.Module):
         self.flow_coupling = flow_coupling
 
         self.actnorm = ActNorm2d(in_channels, actnorm_scale)
+
+        # 2. permute
         if flow_permutation == "invconv":
             self.invconv = InvertibleConv1x1(in_channels,
                                              LU_decomposed=LU_decomposed)
             self.flow_permutation = lambda z, logdet, rev: self.invconv(
-                z, logdet, reverse=rev)
+                z, logdet, rev)
         elif flow_permutation == "shuffle":
             self.shuffle = Permute2d(in_channels, shuffle=True)
             self.flow_permutation = lambda z, logdet, rev: (
-                self.shuffle(z, reverse=rev),
+                self.shuffle(z, rev),
                 logdet,
             )
         else:
             self.reverse = Permute2d(in_channels, shuffle=False)
             self.flow_permutation = lambda z, logdet, rev: (
-                self.reverse(z, reverse=rev),
+                self.reverse(z, rev),
                 logdet,
             )
+
+        # 3. coupling
         if flow_coupling == "additive":
             self.block = get_block(in_channels // 2, in_channels // 2,
-                                   hid_channels)
+                                   hidden_channels)
         elif flow_coupling == "affine":
-            self.block = get_block(in_channels // 2, in_channels, hid_channels)
+            self.block = get_block(in_channels // 2, in_channels,
+                                   hidden_channels)
 
     def forward(self, input, logdet=None, reverse=False):
         if not reverse:
@@ -463,10 +497,14 @@ class FlowStep(nn.Module):
 
     def normal_flow(self, input, logdet):
         assert input.size(1) % 2 == 0
+
+        # 1. actnorm
         z, logdet = self.actnorm(input, logdet=logdet, reverse=False)
 
+        # 2. permute
         z, logdet = self.flow_permutation(z, logdet, False)
 
+        # 3. coupling
         z1, z2 = split_feature(z, "split")
         if self.flow_coupling == "additive":
             z2 = z2 + self.block(z1)
@@ -484,6 +522,7 @@ class FlowStep(nn.Module):
     def reverse_flow(self, input, logdet):
         assert input.size(1) % 2 == 0
 
+        # 1.coupling
         z1, z2 = split_feature(input, "split")
         if self.flow_coupling == "additive":
             z2 = z2 - self.block(z1)
@@ -496,20 +535,22 @@ class FlowStep(nn.Module):
             logdet = -torch.sum(torch.log(scale), dim=[1, 2, 3]) + logdet
         z = torch.cat((z1, z2), dim=1)
 
+        # 2. permute
         z, logdet = self.flow_permutation(z, logdet, True)
 
+        # 3. actnorm
         z, logdet = self.actnorm(z, logdet=logdet, reverse=True)
+
         return z, logdet
 
 
 class FlowNet(nn.Module):
     def __init__(
         self,
-        in_channels,
-        grid_size,
-        hid_channels,
-        num_layers,
-        num_blocks,
+        image_shape,
+        hidden_channels,
+        K,
+        L,
         actnorm_scale,
         flow_permutation,
         flow_coupling,
@@ -520,22 +561,23 @@ class FlowNet(nn.Module):
         self.layers = nn.ModuleList()
         self.output_shapes = []
 
-        self.num_layers = num_layers
-        self.num_blocks = num_blocks
+        self.K = K
+        self.L = L
 
-        H, W = grid_size
-        C = in_channels
+        H, W, C = image_shape
 
-        for i in range(num_blocks):
+        for i in range(L):
+            # 1. Squeeze
             C, H, W = C * 4, H // 2, W // 2
             self.layers.append(SqueezeLayer(factor=2))
             self.output_shapes.append([-1, C, H, W])
 
-            for _ in range(num_layers):
+            # 2. K FlowStep
+            for _ in range(K):
                 self.layers.append(
                     FlowStep(
                         in_channels=C,
-                        hid_channels=hid_channels,
+                        hidden_channels=hidden_channels,
                         actnorm_scale=actnorm_scale,
                         flow_permutation=flow_permutation,
                         flow_coupling=flow_coupling,
@@ -543,7 +585,8 @@ class FlowNet(nn.Module):
                     ))
                 self.output_shapes.append([-1, C, H, W])
 
-            if i < num_blocks - 1:
+            # 3. Split2d
+            if i < L - 1:
                 self.layers.append(Split2d(num_channels=C))
                 self.output_shapes.append([-1, C // 2, H, W])
                 C = C // 2
@@ -573,83 +616,68 @@ class FlowNet(nn.Module):
 
 class BGlow(nn.Module):
     r'''
-    A flow-based model is dedicated to train an encoder that encodes the input as a hidden variable and makes the hidden variable obey the standard normal distribution. By good design, the encoder should be reversible. On this basis, as soon as the encoder is trained, the corresponding decoder can be used to generate samples from a Gaussian distribution according to the inverse operation. In particular, the Glow model is a easy-to-use flow-based model that replaces the operation of permutating the channel axes by introducing a 1x1 reversible convolution.
+    This class implements the normalized flow model, allowing to generate samples close to the true distribution. A flow-based model is dedicated to train an encoder that encodes the input as a hidden variable and makes the hidden variable obey the standard normal distribution. By good design, the encoder should be reversible. On this basis, as soon as the encoder is trained, the corresponding decoder can be used to generate samples from a Gaussian distribution according to the inverse operation. In particular, the Glow model is a easy-to-use flow-based model that replaces the operation of permutating the channel axes by introducing a 1x1 reversible convolution.
 
     - Paper: Kingma D P, Dhariwal P. Glow: Generative flow with invertible 1x1 convolutions[J]. Advances in neural information processing systems, 2018, 31.
     - URL: https://arxiv.org/abs/1807.03039
-    - Related Project: https://github.com/y0ast/Glow-PyTorch
+    - Related Project: https://github.com/y0ast/Glow-PyTorch/
+    - Related Project: https://github.com/ikostrikov/pytorch-flows/
 
     Below is a recommended suite for use in EEG generation:
-
+    
     .. code-block:: python
 
         eeg = torch.randn(1, 4, 32, 32)
         model = BGlow()
-        z, nll_loss, y_logits = model(eeg)
-        fake_X = model(temperature=1.0, reverse=True)
-
-    Below is a recommended suite for use in conditional EEG generation:
-
-    .. code-block:: python
-
-        eeg = torch.randn(1, 4, 32, 32)
-        y = torch.randint(0, 2, (2, ))
-        model = BGlow(num_classes=2)
-        z, nll_loss, y_logits = model(eeg, y)
-        fake_X = model(y=y, temperature=1.0, reverse=True)
+        nll_loss = model(eeg)
+        fake_X = model(num=1, temperature=1.0)
 
     Args:
-        in_channels (int): The feature dimension of each electrode. (defualt: :obj:`4`)
-        grid_size (tuple): Spatial dimensions of grid-like EEG representation. (defualt: :obj:`(9, 9)`)
-        hid_channels (int): The basic hidden channels in the network blocks. (defualt: :obj:`512`)
-        num_layers (int): The number of steps in the flow, each step contains an affine coupling layer, an invertible 1x1 conv and an actnorm layer. (defualt: :obj:`32`)
-        num_blocks (int): Number of blocks, each block includes split, step of flow and squeeze. (defualt: :obj:`3`)
-        actnorm_scale (float): The pre-defined scale factor in the actnorm layer. (defualt: :obj:`1.0`)
-        flow_permutation (str): The used flow permutation method, options include :obj:`invconv`, :obj:`shuffle` and :obj:`reverse`. (defualt: :obj:`invconv`)
-        flow_coupling (str): The used flow coupling method, options include :obj:`additive` and  :obj:`affine`. (defualt: :obj:`affine`)
-        LU_decomposed (bool): Whether to use LU decomposed 1x1 convs. (defualt: :obj:`True`)
-        learnable_prior (bool): Whether to train top layer (prior). (defualt: :obj:`True`)
-        num_classes (int): The number of classes. If the number of categories is greater than 0, conditional Glow will be used. During the generation process, additional category labels are provided to guide the generation of samples for the specified category. (defualt: :obj:`-1`)
+        in_channels (int): The feature dimension of each electrode. (default: :obj:`4`)
+        grid_size (tuple): Spatial dimensions of grid-like EEG representation. (default: :obj:`(32, 32)`)
+        hid_channels (int): The basic hidden channels in the network blocks. (default: :obj:`64`)
+        num_steps (int): The number of steps in the flow, each step contains an affine coupling layer, an invertible 1x1 conv and an actnorm layer. (default: :obj:`32`)
+        num_blocks (int): Number of blocks, each block includes split, step of flow and squeeze. (default: :obj:`3`)
+        actnorm_scale (float): The pre-defined scale factor in the actnorm layer. (default: :obj:`1.0`)
+        flow_permutation (str): The used flow permutation method, options include :obj:`invconv`, :obj:`shuffle` and :obj:`reverse`. (default: :obj:`invconv`)
+        flow_coupling (str): The used flow coupling method, options include :obj:`additive` and  :obj:`affine`. (default: :obj:`affine`)
+        LU_decomposed (bool): Whether to use LU decomposed 1x1 convs. (default: :obj:`True`)
+        learnable_prior (bool): Whether to train top layer (prior). (default: :obj:`True`)
+
+    ... automethod:: log_probs
+    ... automethod:: sample
     '''
-    def __init__(self,
-                 in_channels: int = 4,
-                 grid_size: Tuple[int, int] = (32, 32),
-                 hid_channels: int = 512,
-                 num_layers: int = 32,
-                 num_blocks: int = 3,
-                 actnorm_scale: float = 1.0,
-                 flow_permutation: str = "invconv",
-                 flow_coupling: str = "affine",
-                 LU_decomposed: bool = True,
-                 learnable_prior: bool = True,
-                 num_classes: int = -1):
-        super(BGlow, self).__init__()
-        self.num_classes = num_classes
+    def __init__(
+        self,
+        in_channels: int = 4,
+        grid_size: tuple = (32, 32),
+        hidden_channels: int = 64,
+        num_steps: int = 32,
+        num_blocks: int = 3,
+        actnorm_scale: float = 1.0,
+        flow_permutation: str = "invconv",
+        flow_coupling: str = "affine",
+        LU_decomposed: bool = True,
+        learn_top: bool = True,
+    ):
+        super().__init__()
         self.flow = FlowNet(
-            in_channels=in_channels,
-            grid_size=grid_size,
-            hid_channels=hid_channels,
-            num_layers=num_layers,
-            num_blocks=num_blocks,
+            image_shape=[grid_size[0], grid_size[1], in_channels],
+            hidden_channels=hidden_channels,
+            K=num_steps,
+            L=num_blocks,
             actnorm_scale=actnorm_scale,
             flow_permutation=flow_permutation,
             flow_coupling=flow_coupling,
             LU_decomposed=LU_decomposed,
         )
-        self.num_classes = num_classes
-        self.condition = num_classes > 0
 
-        self.learnable_prior = learnable_prior
+        self.learn_top = learn_top
 
         # learned prior
-        if learnable_prior:
+        if learn_top:
             C = self.flow.output_shapes[-1][1]
-            self.learnable_prior_fn = Conv2dZeros(C * 2, C * 2)
-
-        if self.condition:
-            C = self.flow.output_shapes[-1][1]
-            self.project_ycond = LinearZeros(num_classes, 2 * C)
-            self.project_class = LinearZeros(C, num_classes)
+            self.learn_top_fn = Conv2dZeros(C * 2, C * 2)
 
         self.register_buffer(
             "prior_h",
@@ -661,81 +689,72 @@ class BGlow(nn.Module):
             ]),
         )
 
-    def prior(self, data, y_onehot=None):
-        if data is not None:
-            h = self.prior_h.repeat(data.shape[0], 1, 1, 1)
+    def prior(self, num=None):
+        if num is not None:
+            h = self.prior_h.repeat(num, 1, 1, 1)
         else:
-            if not y_onehot is None:
-                batch_size = y_onehot.shape[0]
-            else:
-                batch_size = 32
             # Hardcoded a batch size of 32 here
-            h = self.prior_h.repeat(batch_size, 1, 1, 1)
-        channels = h.size(1)
+            h = self.prior_h.repeat(32, 1, 1, 1)
 
-        if self.learnable_prior:
-            h = self.learnable_prior_fn(h)
-
-        if self.condition:
-            assert y_onehot is not None
-            yp = self.project_ycond(y_onehot)
-            h += yp.view(h.shape[0], channels, 1, 1)
+        if self.learn_top:
+            h = self.learn_top_fn(h)
 
         return split_feature(h, "split")
 
-    def forward(self,
-                x: torch.Tensor = None,
-                labels: torch.Tensor = None,
-                z: torch.Tensor = None,
-                temperature: float = 1.0,
-                reverse: bool = False):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         r'''
         Args:
-            x (torch.Tensor): EEG signal representation. The ideal input shape is :obj:`[n, 4, 9, 9]`. Here, :obj:`n` corresponds to the batch size, :obj:`4` corresponds to the :obj:`in_channels`, and :obj:`(9, 9)` corresponds to the :obj:`grid_size`.
-            labels (torch.Tensor): Category labels (int) for a batch of samples The shape should be :obj:`[n,]`. Here, :obj:`n` corresponds to the batch size.
-            z (torch.Tensor): The latent vector :obj:`z`. If it is not passed in, then it is automatically sampled from a gaussian distribution.
-            temperature (float): The hyper-parameter, temperature, to sample from gaussian distributions. (defualt: :obj:`1.0`)
-            reverse (bool): forward process (False) or reverse process (True). Among them, the forward process is used to extract the hidden variables from the EEG representation for training. The reverse process is used to sample the hidden variables from the random distribution for inverse operation to get the generated samples. With :obj:`reverse=True`, :obj:`y`, :obj:`z`, :obj:`temperature` can be specified. In :obj:`reverse=False`, :obj:`x` must be specified.
+            x (torch.Tensor): EEG signal representation. The ideal input shape is :obj:`[n, 4, 32, 32]`. Here, :obj:`n` corresponds to the batch size, :obj:`4` corresponds to the :obj:`in_channels`, and :obj:`(32, 32)` corresponds to the :obj:`grid_size`.
+            y (torch.Tensor): Category labels (int) for a batch of samples The shape should be :obj:`[n,]`. Here, :obj:`n` corresponds to the batch size.
 
         Returns:
-            torch.Tensor: (:obj:`reverse=True`) the generated results, which should have the same shape as the input noise, i.e., :obj:`[n, 4, 9, 9]`. Here, :obj:`n` corresponds to the batch size, :obj:`4` corresponds to :obj:`in_channels`, and :obj:`(9, 9)` corresponds to :obj:`grid_size`.
-            tuple: (:obj:`reverse=False`) The first term indicates the hidden variables extracted from the input. The second term is the value of the loss function for training Glow. For the third term, if a :obj:`num_classes` greater than 0 is specified, an additional classifier is used to provide the classification results of the sample. It can be used for being classified loss optimization.
+            torch.Tensor: The latent representation.
+            torch.Tensor: The bit per dimension (BPD) negative log-likelihood.
         '''
-        if labels is None:
-            y_onehot = None
-        else:
-            y_onehot = F.one_hot(labels, num_classes=self.num_classes).float()
-
-        if reverse:
-            return self.reverse_flow(z, y_onehot, temperature)
-        else:
-            return self.normal_flow(x, y_onehot)
-
-    def normal_flow(self, x, y_onehot):
         b, c, h, w = x.shape
 
         x, logdet = uniform_binning_correction(x)
 
         z, objective = self.flow(x, logdet=logdet, reverse=False)
 
-        mean, logs = self.prior(x, y_onehot)
+        mean, logs = self.prior(x.shape[0])
         objective += gaussian_likelihood(mean, logs, z)
 
-        if self.condition:
-            y_logits = self.project_class(z.mean(2).mean(2))
-        else:
-            y_logits = None
-
+        # Full objective - converted to bits per dimension
         bpd = (-objective) / (math.log(2.0) * c * h * w)
 
-        return z, bpd, y_logits
+        return z, bpd
 
-    def reverse_flow(self, z, y_onehot, temperature):
-        with torch.no_grad():
-            if z is None:
-                mean, logs = self.prior(z, y_onehot)
-                z = gaussian_sample(mean, logs, temperature)
-            x = self.flow(z, temperature=temperature, reverse=True)
+    def reverse(self,
+                z: torch.Tensor,
+                temperature: float = 1.0) -> torch.Tensor:
+        x = self.flow(z, temperature=temperature, reverse=True)
+        return x
+
+    def log_probs(self, x: torch.Tensor) -> torch.Tensor:
+        r'''
+        Args:
+            x (torch.Tensor): EEG signal representation. The ideal input shape is :obj:`[n, 4, 32, 32]`. Here, :obj:`n` corresponds to the batch size, :obj:`4` corresponds to the :obj:`in_channels`, and :obj:`(32, 32)` corresponds to the :obj:`grid_size`.
+            y (torch.Tensor): Category labels (int) for a batch of samples The shape should be :obj:`[n,]`. Here, :obj:`n` corresponds to the batch size.
+
+        Returns:
+            torch.Tensor: The bit per dimension (BPD) negative log-likelihood.
+        '''
+        _, bpd = self.forward(x)
+        return bpd
+
+    def sample(self, num: int = 1, temperature: float = 1.0) -> torch.Tensor:
+        r'''
+        Args:
+            num (int): The number of samples to generate. (default: :obj:`1`)
+            temperature (float): The hyper-parameter, temperature, to sample from gaussian distributions. (default: :obj:`1.0`)
+        Returns:
+            torch.Tensor: the generated results, which should have the same shape as the input noise, i.e., :obj:`[n, 4, 32, 32]`. Here, :obj:`n` corresponds to the batch size, :obj:`4` corresponds to :obj:`in_channels`, and :obj:`(32, 32)` corresponds to :obj:`grid_size`.
+        '''
+        mean, logs = self.prior(num)
+        z = gaussian_sample(mean, logs, temperature)
+
+        x = self.reverse(z, temperature=temperature)
         return x
 
     def set_actnorm_init(self):

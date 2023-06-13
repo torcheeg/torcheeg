@@ -6,74 +6,57 @@ torcheeg.trainers
     :local:
     :backlinks: top
 
-.. currentmodule:: torcheeg.transforms
+.. currentmodule:: torcheeg.trainers
 
-trainers.BasicTrainer
+Basic Classification
+----------------------------------
+
+.. autosummary::
+    :toctree: generated
+    :nosignatures:
+    :template: trainertemplate.rst
+
+    ClassifierTrainer
+
+Cross-domain Classification
+----------------------------------
+
+The individual differences and nonstationary of EEG signals make it difficult for deep learning models trained on the training set of subjects to correctly classify test samples from unseen subjects, since the training set and test set come from different data distributions. Domain adaptation is used to address the problem of distribution drift between training and test sets and thus achieves good performance in subject-independent (cross-subject) scenarios. 
+
+.. autosummary::
+   :toctree: generated
+   :nosignatures:
+   :template: trainertemplate.rst
+
+   CORALTrainer
+   DDCTrainer
+   DANTrainer
+   JANTrainer
+   ADATrainer
+   DANNTrainer
+
+EEG Generation
 ----------------------------------------
 
-.. autoclass:: torcheeg.trainers.BasicTrainer
+Data scarcity and data imbalance are one of the important challenges in the analysis of EEG signals. TorchEEG provides different types of generative model trainers to help train generative models to augment EEG datasets. The trainer starting with "C" represents the trainer of the category conditioned generative models, allowing the user to control the category of the generated EEG signal. The others generate samples close to real EEG signals randomly without controlling the category.
 
-trainers.ClassificationTrainer
+.. autosummary::
+   :toctree: generated
+   :nosignatures:
+   :template: trainertemplate.rst
+
+   BetaVAETrainer
+   CBetaVAETrainer
+   WGANGPTrainer
+   CWGANGPTrainer
+
+Self-supervised Algorithm for Pre-training
 ----------------------------------------
+As the cost of data collection decreases, the difficulty of obtaining unlabeled data is greatly reduced. How to use unlabeled data to train the model so that the model can learn task-independent general knowledge on large-scale datasets has attracted extensive attention. In natural language processing and computer vision, self-supervised models have made continuous progress by building pretext tasks to learn good language or visual representations. Today, self-supervised learning algorithms are also being tested for EEG analysis to train larger models.
 
-.. autoclass:: torcheeg.trainers.ClassificationTrainer
+.. autosummary::
+   :toctree: generated
+   :nosignatures:
+   :template: trainertemplate.rst
 
-trainers.CORALTrainer
-----------------------------------------
-
-.. autoclass:: torcheeg.trainers.CORALTrainer
-
-trainers.DDCTrainer
-----------------------------------------
-
-.. autoclass:: torcheeg.trainers.DDCTrainer
-
-trainers.DANNTrainer
-----------------------------------------
-
-.. autoclass:: torcheeg.trainers.DANNTrainer
-
-trainers.DANTrainer
-----------------------------------------
-
-.. autoclass:: torcheeg.trainers.DANTrainer
-
-trainers.ADATrainer
-----------------------------------------
-
-.. autoclass:: torcheeg.trainers.ADATrainer
-
-trainers.GANTrainer
-----------------------------------------
-
-.. autoclass:: torcheeg.trainers.GANTrainer
-
-trainers.CGANTrainer
-----------------------------------------
-
-.. autoclass:: torcheeg.trainers.CGANTrainer
-
-trainers.VAETrainer
-----------------------------------------
-
-.. autoclass:: torcheeg.trainers.VAETrainer
-
-trainers.CVAETrainer
-----------------------------------------
-
-.. autoclass:: torcheeg.trainers.CVAETrainer
-
-trainers.DDPMTrainer
-----------------------------------------
-
-.. autoclass:: torcheeg.trainers.DDPMTrainer
-
-trainers.CDDPMTrainer
-----------------------------------------
-
-.. autoclass:: torcheeg.trainers.CDDPMTrainer
-
-trainers.GlowTrainer
-----------------------------------------
-
-.. autoclass:: torcheeg.trainers.GlowTrainer
+   SimCLRTrainer

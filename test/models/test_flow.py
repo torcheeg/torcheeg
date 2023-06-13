@@ -3,7 +3,7 @@ import unittest
 import torch.nn.functional as F
 
 import torch
-from torcheeg.models import BGlow
+from torcheeg.models import BGlow, BCGlow
 
 
 class TestFlow(unittest.TestCase):
@@ -11,33 +11,34 @@ class TestFlow(unittest.TestCase):
         model = BGlow()
         # forward to calculate loss function
         mock_eeg = torch.randn(2, 4, 32, 32)
-        z, nll_loss, y_logits = model(mock_eeg)
+        nll_loss = model(mock_eeg)
         loss = nll_loss.mean()
 
         # sample a generated result
-        fake_X = model(temperature=1.0, reverse=True)
+        fake_X = model.sample(32, temperature=1.0)
         self.assertEqual(tuple(fake_X.shape), (32, 4, 32, 32))
 
         mock_eeg = mock_eeg.cuda()
         model = model.cuda()
 
         # forward to calculate loss function
-        z, nll_loss, y_logits = model(mock_eeg)
+        nll_loss = model(mock_eeg)
 
         # sample a generated result
-        fake_X = model(temperature=1.0, reverse=True)
+        fake_X = model.sample(32, temperature=1.0)
         self.assertEqual(tuple(fake_X.shape), (32, 4, 32, 32))
 
     def test_bcglow(self):
-        model = BGlow(num_classes=2)
+        model = BCGlow(num_classes=2)
         # forward to calculate loss function
         mock_eeg = torch.randn(2, 4, 32, 32)
         y = torch.randint(0, 2, (2, ))
-        z, nll_loss, y_logits = model(mock_eeg, y)
-        loss = F.cross_entropy(y_logits, y) + F.cross_entropy(y_logits, y)
+        
+        nll_loss, y_logits = model(mock_eeg, y)
+        loss = nll_loss.mean() + F.cross_entropy(y_logits, y)
 
         # sample a generated result
-        fake_X = model(labels=y, temperature=1.0, reverse=True)
+        fake_X = model.sample(y, temperature=1.0)
         self.assertEqual(tuple(fake_X.shape), (2, 4, 32, 32))
 
         model = model.cuda()
@@ -45,10 +46,10 @@ class TestFlow(unittest.TestCase):
         y = y.cuda()
 
         # forward to calculate loss function
-        z, nll_loss, y_logits = model(mock_eeg, y)
+        nll_loss, y_logits = model(mock_eeg, y)
 
         # sample a generated result
-        fake_X = model(labels=y, temperature=1.0, reverse=True)
+        fake_X = model.sample(y, temperature=1.0)
         self.assertEqual(tuple(fake_X.shape), (2, 4, 32, 32))
 
 

@@ -5,7 +5,7 @@ import torch
 import torch.nn as nn
 from torch.utils.data import Dataset
 from torch.utils.data.dataloader import DataLoader
-from torcheeg.trainers import ClassificationTrainer
+from torcheeg.trainers import ClassifierTrainer
 
 
 class DummyDataset(Dataset):
@@ -45,17 +45,14 @@ class TestClassificationTrainer(unittest.TestCase):
 
         model = DummyModel()
 
-        trainer = ClassificationTrainer(model, num_classes=2)
+        trainer = ClassifierTrainer(model, num_classes=2)
         trainer.fit(train_loader, val_loader)
         trainer.test(test_loader)
 
-        trainer = ClassificationTrainer(model, device_ids=[0], num_classes=2)
-        trainer.fit(train_loader, val_loader)
-        trainer.test(test_loader)
-
-        trainer = ClassificationTrainer(
+        trainer = ClassifierTrainer(
             model,
-            device_ids=[0],
+            devices=1,
+            accelerator='cpu',
             num_classes=2,
             metrics=['accuracy', 'recall', 'precision', 'f1score'])
         trainer.fit(train_loader, val_loader)
@@ -63,12 +60,21 @@ class TestClassificationTrainer(unittest.TestCase):
 
         # should catch value error for metrics 'unexpected'
         with self.assertRaises(ValueError):
-            trainer = ClassificationTrainer(model,
-                                            device_ids=[0],
-                                            num_classes=2,
-                                            metrics=['unexpected'])
+            trainer = ClassifierTrainer(model,
+                                        accelerator='cpu',
+                                        num_classes=2,
+                                        metrics=['unexpected'])
             trainer.fit(train_loader, val_loader)
             trainer.test(test_loader)
+
+        trainer = ClassifierTrainer(
+            model,
+            devices=1,
+            accelerator='gpu',
+            num_classes=2,
+            metrics=['accuracy', 'recall', 'precision', 'f1score'])
+        trainer.fit(train_loader, val_loader)
+        trainer.test(test_loader)
 
 
 if __name__ == '__main__':

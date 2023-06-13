@@ -45,15 +45,15 @@ class EEGNet(nn.Module):
                        num_classes=2)
 
     Args:
-        chunk_size (int): Number of data points included in each EEG chunk, i.e., :math:`T` in the paper. (defualt: :obj:`151`)
-        num_electrodes (int): The number of electrodes, i.e., :math:`C` in the paper. (defualt: :obj:`60`)
-        F1 (int): The filter number of block 1, i.e., :math:`F_1` in the paper. (defualt: :obj:`8`)
-        F2 (int): The filter number of block 2, i.e., :math:`F_2` in the paper. (defualt: :obj:`16`)
-        D (int): The depth multiplier (number of spatial filters), i.e., :math:`D` in the paper. (defualt: :obj:`2`)
-        num_classes (int): The number of classes to predict, i.e., :math:`N` in the paper. (defualt: :obj:`2`)
-        kernel_1 (int): The filter size of block 1. (defualt: :obj:`64`)
-        kernel_2 (int): The filter size of block 2. (defualt: :obj:`64`)
-        dropout (float): Probability of an element to be zeroed in the dropout layers. (defualt: :obj:`0.25`)
+        chunk_size (int): Number of data points included in each EEG chunk, i.e., :math:`T` in the paper. (default: :obj:`151`)
+        num_electrodes (int): The number of electrodes, i.e., :math:`C` in the paper. (default: :obj:`60`)
+        F1 (int): The filter number of block 1, i.e., :math:`F_1` in the paper. (default: :obj:`8`)
+        F2 (int): The filter number of block 2, i.e., :math:`F_2` in the paper. (default: :obj:`16`)
+        D (int): The depth multiplier (number of spatial filters), i.e., :math:`D` in the paper. (default: :obj:`2`)
+        num_classes (int): The number of classes to predict, i.e., :math:`N` in the paper. (default: :obj:`2`)
+        kernel_1 (int): The filter size of block 1. (default: :obj:`64`)
+        kernel_2 (int): The filter size of block 2. (default: :obj:`64`)
+        dropout (float): Probability of an element to be zeroed in the dropout layers. (default: :obj:`0.25`)
     '''
     def __init__(self,
                  chunk_size: int = 151,
