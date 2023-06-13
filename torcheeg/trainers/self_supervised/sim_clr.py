@@ -18,6 +18,7 @@ class SimCLRTrainer(pl.LightningModule):
     - Related Project: https://github.com/sthalles/SimCLR
 
     .. code-block:: python
+    
         trainer = SimCLRTrainer(extractor,
                                 devices=1,
                                 accelerator='gpu')
@@ -34,7 +35,6 @@ class SimCLRTrainer(pl.LightningModule):
         metrics (List[str]): The metrics to use. Available options are: 'acc_top1', 'acc_top5', 'acc_mean_pos'. (default: :obj:`["acc_top1"]`)
 
     .. automethod:: fit
-    .. automethod:: test
     '''
     def __init__(self,
                  extractor: nn.Module,
