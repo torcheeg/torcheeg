@@ -108,3 +108,4 @@ Label Transforms
     BinaryOneVSRest
     BinariesToCategory
     StringToInt
+    Mapping
