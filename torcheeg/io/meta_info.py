@@ -83,4 +83,6 @@ class MetaInfoIO:
         Returns:
             pd.DataFrame: The EEG descriptions.
         '''
+        if os.path.getsize(self.io_path) == 0:
+            return pd.DataFrame()
         return pd.read_csv(self.io_path)
