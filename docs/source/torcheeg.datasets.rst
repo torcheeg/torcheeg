@@ -37,6 +37,16 @@ Personal Identification Datasets
 
     M3CVDataset
 
+Mother of all BCI Benchmarks
+---------------------------------------------------------
+
+.. autosummary::
+    :toctree: generated
+    :nosignatures:
+    :template: datasettemplate.rst
+
+    moabb.MOABBDataset
+
 Steady-state Visual Evoked Potential Datasets
 ---------------------------------------------------------
 

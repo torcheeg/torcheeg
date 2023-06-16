@@ -73,7 +73,7 @@ class SEEDFeatureDataset(BaseDataset):
     .. code-block:: python
     
         if __name__ == '__main__':
-            dataset = SEEDFeatureDataset(io_path=f'./seed',
+            dataset = SEEDFeatureDataset(io_path=f'./seed_feature',
                               root_path='./ExtractedFeatures',
                               feature=['de_movingAve'],
                               offline_transform=transforms.ToGrid(SEED_CHANNEL_LOCATION_DICT),
@@ -88,7 +88,7 @@ class SEEDFeatureDataset(BaseDataset):
             # coresponding baseline signal (torch_geometric.data.Data),
             # label (int)
 
-    Args:
+    Args:  
         root_path (str): Downloaded data files in matlab (unzipped ExtractedFeatures.zip) formats (default: :obj:`'./ExtractedFeatures'`)
         feature (list): A list of selected feature names. The selected features corresponding to each electrode will be concatenated together. Feature names supported by the SEED dataset include de_movingAve, de_LDS, psd_movingAve, and etc. If you want to know other supported feature names, please refer to :obj:`SEEDFeatureDataset.feature_list` (default: :obj:`['de_movingAve']`)
         num_channel (int): Number of channels used, of which the first 62 channels are EEG signals. (default: :obj:`62`)
@@ -100,7 +100,7 @@ class SEEDFeatureDataset(BaseDataset):
         io_path (str): The path to generated unified data IO, cached as an intermediate result. (default: :obj:`./io/seed_feature`)
         io_size (int): Maximum size database may grow to; used to size the memory mapping. If database grows larger than ``map_size``, an exception will be raised and the user must close and reopen. (default: :obj:`10485760`)
         io_mode (str): Storage mode of EEG signal. When io_mode is set to :obj:`lmdb`, TorchEEG provides an efficient database (LMDB) for storing EEG signals. LMDB may not perform well on limited operating systems, where a file system based EEG signal storage is also provided. When io_mode is set to :obj:`pickle`, pickle-based persistence files are used. (default: :obj:`lmdb`)
-        num_worker (str): How many subprocesses to use for data processing. (default: :obj:`0`)
+        num_worker (int): Number of subprocesses to use for data loading. 0 means that the data will be loaded in the main process. (default: :obj:`0`)
         verbose (bool): Whether to display logs during processing, such as progress bars, etc. (default: :obj:`True`)
         in_memory (bool): Whether to load the entire dataset into memory. If :obj:`in_memory` is set to True, then the first time an EEG sample is read, the entire dataset is loaded into memory for subsequent retrieval. Otherwise, the dataset is stored on disk to avoid the out-of-memory problem. (default: :obj:`False`)    
     '''
