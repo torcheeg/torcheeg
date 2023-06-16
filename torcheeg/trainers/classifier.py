@@ -82,7 +82,7 @@ class ClassifierTrainer(pl.LightningModule):
         self.accelerator = accelerator
         self.metrics = metrics
 
-        self._ce_fn = nn.CrossEntropyLoss()
+        self.ce_fn = nn.CrossEntropyLoss()
 
         self.init_metrics(metrics, num_classes)
 
@@ -129,7 +129,7 @@ class ClassifierTrainer(pl.LightningModule):
                       batch_idx: int) -> torch.Tensor:
         x, y = batch
         y_hat = self(x)
-        loss = self._ce_fn(y_hat, y)
+        loss = self.ce_fn(y_hat, y)
 
         # log to prog_bar
         self.log("train_loss",
@@ -179,8 +179,8 @@ class ClassifierTrainer(pl.LightningModule):
                         batch_idx: int) -> torch.Tensor:
         x, y = batch
         y_hat = self(x)
-        loss = self._ce_fn(y_hat, y)
-
+        loss = self.ce_fn(y_hat, y)
+        
         self.val_loss.update(loss)
         self.val_metrics.update(y_hat, y)
         return loss
@@ -214,7 +214,7 @@ class ClassifierTrainer(pl.LightningModule):
                   batch_idx: int) -> torch.Tensor:
         x, y = batch
         y_hat = self(x)
-        loss = self._ce_fn(y_hat, y)
+        loss = self.ce_fn(y_hat, y)
 
         self.test_loss.update(loss)
         self.test_metrics.update(y_hat, y)

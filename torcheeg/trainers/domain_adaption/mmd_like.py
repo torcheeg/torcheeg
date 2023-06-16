@@ -68,7 +68,7 @@ class _MMDLikeTrainer(ClassifierTrainer):
         self.metrics = metrics
         self.init_metrics(metrics, num_classes)
 
-        self._ce_fn = nn.CrossEntropyLoss()
+        self.ce_fn = nn.CrossEntropyLoss()
 
         self.num_batches = None  # init in 'fit' method
         self.non_warmup_epochs = None  # init in 'fit' method
@@ -141,7 +141,7 @@ class _MMDLikeTrainer(ClassifierTrainer):
 
         domain_loss = self._domain_loss_fn(x_source_feat, x_target_feat)
 
-        task_loss = self._ce_fn(y_source_pred, y_source)
+        task_loss = self.ce_fn(y_source_pred, y_source)
         
         if self.current_epoch >= self.warmup_epochs:
             loss = task_loss + self.scheduled_weight_domain * domain_loss

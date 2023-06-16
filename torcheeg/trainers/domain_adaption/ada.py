@@ -155,7 +155,7 @@ class ADATrainer(_MMDLikeTrainer):
         domain_loss = self._domain_loss_fn(x_source_feat, x_target_feat,
                                            y_source)
 
-        task_loss = self._ce_fn(y_source_pred, y_source)
+        task_loss = self.ce_fn(y_source_pred, y_source)
         if self.current_epoch >= self.warmup_epochs:
             loss = task_loss + self.scheduled_weight_domain * domain_loss
         else:

@@ -2,7 +2,7 @@ import unittest
 
 import torch
 
-from torcheeg.models import SimpleViT, ArjunViT, VanillaTransformer, ViT
+from torcheeg.models import SimpleViT, ArjunViT, VanillaTransformer, ViT, Conformer
 
 
 class TestTransformer(unittest.TestCase):
@@ -58,6 +58,17 @@ class TestTransformer(unittest.TestCase):
         model = model.cuda()
         pred = model(eeg).cpu()
         self.assertEqual(tuple(pred.shape), (1, 2))
+
+    def test_conformer(self):
+        eeg = torch.randn(2, 1, 32, 128)
+        model = Conformer(num_electrodes=32, sampling_rate=128, num_classes=2)
+        pred = model(eeg)
+        self.assertEqual(tuple(pred.shape), (2, 2))
+
+        eeg = eeg.cuda()
+        model = model.cuda()
+        pred = model(eeg).cpu()
+        self.assertEqual(tuple(pred.shape), (2, 2))
 
 
 if __name__ == '__main__':

@@ -33,6 +33,7 @@ class MetaInfoIO:
     def __init__(self, io_path: str) -> None:
         self.io_path = io_path
         if not os.path.exists(self.io_path):
+            os.makedirs(os.path.dirname(io_path), exist_ok=True)
             open(self.io_path, 'x').close()
             self.write_pointer = 0
         else:

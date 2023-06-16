@@ -76,7 +76,7 @@ class MOABBDataset(BaseDataset):
         self.__dict__.update(params)
 
     @staticmethod
-    def _load_data(file: Any = None,
+    def process_record(file: Any = None,
                    offline_transform: Union[None, Callable] = None,
                    dataset: _MOABBDataset = None,
                    paradigm: _MOABBParadigm = None,
@@ -124,8 +124,7 @@ class MOABBDataset(BaseDataset):
 
                 yield {'eeg': t_eeg, 'key': clip_id, 'info': record_info}
 
-    @staticmethod
-    def _set_files(dataset: _MOABBDataset,
+    def set_records(self, dataset: _MOABBDataset,
                    io_path: str = './io/moabb',
                    **kwargs):
         subject_id_list = dataset.subject_list
@@ -146,7 +145,8 @@ class MOABBDataset(BaseDataset):
         info = self.read_info(index)
 
         eeg_index = str(info['clip_id'])
-        eeg = self.read_eeg(eeg_index)
+        eeg_record = str(info['_record_id'])
+        eeg = self.read_eeg(eeg_record, eeg_index)
 
         signal = eeg
         label = info

@@ -158,7 +158,7 @@ class SEEDIVDataset(BaseDataset):
         self.__dict__.update(params)
 
     @staticmethod
-    def _load_data(file: Any = None,
+    def process_record(file: Any = None,
                    chunk_size: int = 800,
                    overlap: int = 0,
                    num_channel: int = 62,
@@ -273,8 +273,7 @@ class SEEDIVDataset(BaseDataset):
                     assert 'eeg' in obj and 'key' in obj and 'info' in obj, 'after_trial must return a list of dictionaries, where each dictionary corresponds to an EEG sample, containing `eeg`, `key` and `info` as keys.'
                     yield obj
 
-    @staticmethod
-    def _set_files(root_path: str = './eeg_raw_data', **kwargs):
+    def set_records(self, root_path: str = './eeg_raw_data', **kwargs):
         session_list = ['1', '2', '3']
         file_path_list = []
         for session in session_list:
@@ -288,7 +287,8 @@ class SEEDIVDataset(BaseDataset):
         info = self.read_info(index)
 
         eeg_index = str(info['clip_id'])
-        eeg = self.read_eeg(eeg_index)
+        eeg_record = str(info['_record_id'])
+        eeg = self.read_eeg(eeg_record, eeg_index)
 
         signal = eeg
         label = info

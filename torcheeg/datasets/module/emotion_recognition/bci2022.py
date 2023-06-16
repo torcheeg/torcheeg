@@ -240,7 +240,7 @@ class BCI2022Dataset(BaseDataset):
         self.__dict__.update(params)
 
     @staticmethod
-    def _load_data(file: Any = None,
+    def process_record(file: Any = None,
                    chunk_size: int = 250,
                    overlap: int = 0,
                    channel_num: int = 30,
@@ -346,8 +346,7 @@ class BCI2022Dataset(BaseDataset):
                 start_at = None
                 end_at = None
 
-    @staticmethod
-    def _set_files(root_path: str = './data_preprocessed_python', **kwargs):
+    def set_records(self, root_path: str = './data_preprocessed_python', **kwargs):
         outputs = []
         for train_set_batch in [
                 'TrainSet_first_batch', 'TrainSet_second_batch'
@@ -364,7 +363,8 @@ class BCI2022Dataset(BaseDataset):
         info = self.read_info(index)
 
         eeg_index = str(info['clip_id'])
-        eeg = self.read_eeg(eeg_index)
+        eeg_record = str(info['_record_id'])
+        eeg = self.read_eeg(eeg_record, eeg_index)
 
         signal = eeg
         label = info

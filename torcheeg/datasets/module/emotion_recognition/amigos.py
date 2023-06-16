@@ -177,7 +177,7 @@ class AMIGOSDataset(BaseDataset):
         self.__dict__.update(params)
 
     @staticmethod
-    def _load_data(file: Any = None,
+    def process_record(file: Any = None,
                    root_path: str = './data_preprocessed',
                    chunk_size: int = 128,
                    overlap: int = 0,
@@ -309,18 +309,18 @@ class AMIGOSDataset(BaseDataset):
                     assert 'eeg' in obj and 'key' in obj and 'info' in obj, 'after_trial must return a list of dictionaries, where each dictionary corresponds to an EEG sample, containing `eeg`, `key` and `info` as keys.'
                     yield obj
 
-    @staticmethod
-    def _set_files(root_path: str = './data_preprocessed', **kwargs):
+    def set_records(self, root_path: str = './data_preprocessed', **kwargs):
         return os.listdir(root_path)
 
     def __getitem__(self, index: int) -> Tuple[any, any, int, int, int]:
         info = self.read_info(index)
 
         eeg_index = str(info['clip_id'])
-        eeg = self.read_eeg(eeg_index)
+        eeg_record = str(info['_record_id'])
+        eeg = self.read_eeg(eeg_record, eeg_index)
 
         baseline_index = str(info['baseline_id'])
-        baseline = self.read_eeg(baseline_index)
+        baseline = self.read_eeg(eeg_record, baseline_index)
 
         signal = eeg
         label = info

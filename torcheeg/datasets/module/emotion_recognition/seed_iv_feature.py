@@ -133,7 +133,7 @@ class SEEDIVFeatureDataset(BaseDataset):
         self.__dict__.update(params)
 
     @staticmethod
-    def _load_data(feature: list = ['de_movingAve'],
+    def process_record(feature: list = ['de_movingAve'],
                    num_channel: int = 62,
                    offline_transform: Union[None, Callable] = None,
                    before_trial: Union[None, Callable] = None,
@@ -245,8 +245,7 @@ class SEEDIVFeatureDataset(BaseDataset):
                     assert 'eeg' in obj and 'key' in obj and 'info' in obj, 'after_trial must return a list of dictionaries, where each dictionary corresponds to an EEG sample, containing `eeg`, `key` and `info` as keys.'
                     yield obj
 
-    @staticmethod
-    def _set_files(root_path: str = './eeg_feature_smooth', **kwargs):
+    def set_records(self, root_path: str = './eeg_feature_smooth', **kwargs):
 
         session_list = ['1', '2', '3']
         file_path_list = []
@@ -262,7 +261,8 @@ class SEEDIVFeatureDataset(BaseDataset):
         info = self.read_info(index)
 
         eeg_index = str(info['clip_id'])
-        eeg = self.read_eeg(eeg_index)
+        eeg_record = str(info['_record_id'])
+        eeg = self.read_eeg(eeg_record, eeg_index)
 
         signal = eeg
         label = info

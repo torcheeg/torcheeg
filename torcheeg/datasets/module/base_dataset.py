@@ -1,8 +1,7 @@
 import os
 import shutil
-from multiprocessing import Manager
 from typing import Any, Dict
-
+import pandas as pd
 from joblib import Parallel, delayed
 from torch.utils.data import Dataset
 from tqdm import tqdm
@@ -21,7 +20,6 @@ class MockLock():
 
 
 class BaseDataset(Dataset):
-
     def __init__(self,
                  io_path: str = None,
                  io_size: int = 10485760,
@@ -46,52 +44,35 @@ class BaseDataset(Dataset):
             # make the root dictionary
             os.makedirs(self.io_path, exist_ok=True)
 
-            # init sub-folders
-            meta_info_io_path = os.path.join(self.io_path, 'info.csv')
-            eeg_signal_io_path = os.path.join(self.io_path, 'eeg')
-
-            MetaInfoIO(meta_info_io_path)
-            EEGSignalIO(eeg_signal_io_path,
-                        io_size=self.io_size,
-                        io_mode=self.io_mode)
-
             if self.num_worker == 0:
-                lock = MockLock()  # do nothing, just for compatibility
-                # if catch error, then delete the database
                 try:
-                    for file in tqdm(self._set_files(**kwargs),
-                                    disable=not self.verbose,
-                                    desc="[PROCESS]"):
-                        self._process_file(io_path=self.io_path,
-                                        io_size=self.io_size,
-                                        io_mode=self.io_mode,
-                                        file=file,
-                                        lock=lock,
-                                        _load_data=self._load_data,
-                                        **kwargs)
+                    for file in tqdm(self.set_records(**kwargs),
+                                     disable=not self.verbose,
+                                     desc="[PROCESS]"):
+                        self.save_record(io_path=self.io_path,
+                                             io_size=self.io_size,
+                                             io_mode=self.io_mode,
+                                             file=file,
+                                             process_record=self.process_record,
+                                             **kwargs)
                 except Exception as e:
                     # shutil to delete the database
                     shutil.rmtree(self.io_path)
                     raise e
             else:
-                # lock for lmdb writter, LMDB only allows single-process writes
-                manager = Manager()
-                lock = manager.Lock()
-
                 # if catch error, then delete the database
                 try:
                     Parallel(n_jobs=self.num_worker)(
-                        delayed(self._process_file)(io_path=io_path,
-                                                    io_size=io_size,
-                                                    io_mode=io_mode,
-                                                    file=file,
-                                                    lock=lock,
-                                                    _load_data=self._load_data,
-                                                    **
-                                                    kwargs)
-                        for file in tqdm(self._set_files(**kwargs),
-                                        disable=not self.verbose,
-                                        desc="[PROCESS]"))
+                        delayed(self.save_record)(
+                            io_path=io_path,
+                            io_size=io_size,
+                            io_mode=io_mode,
+                            file=file,
+                            process_record=self.process_record,
+                            **kwargs)
+                        for file in tqdm(self.set_records(**kwargs),
+                                         disable=not self.verbose,
+                                         desc="[PROCESS]"))
                 except Exception as e:
                     # shutil to delete the database
                     shutil.rmtree(self.io_path)
@@ -101,18 +82,12 @@ class BaseDataset(Dataset):
             f'dataset already exists at path {self.io_path}, reading from path...'
         )
 
-        meta_info_io_path = os.path.join(self.io_path, 'info.csv')
-        eeg_signal_io_path = os.path.join(self.io_path, 'eeg')
+        # get the global io
+        self.eeg_io_router, self.info = self.get_pointer(io_path=io_path,
+                                                            io_size=io_size,
+                                                            io_mode=io_mode)
 
-        info_io = MetaInfoIO(meta_info_io_path)
-        self.eeg_io = EEGSignalIO(eeg_signal_io_path,
-                                  io_size=self.io_size,
-                                  io_mode=self.io_mode)
-
-        self.info = info_io.read_all()
-
-    @staticmethod
-    def _set_files(**kwargs):
+    def set_records(self, **kwargs):
         '''
         The block method for generating the database. It is used to describe which data blocks need to be processed to generate the database. It is called in parallel by :obj:`joblib.Parallel` in :obj:`__init__` of the class.
 
@@ -122,60 +97,94 @@ class BaseDataset(Dataset):
 
         .. code-block:: python
 
-            def _set_files(root_path: str = None, **kwargs):
-                # e.g., return file name list for _load_data to process
+        def set_records(self, root_path: str = None, **kwargs):
+                # e.g., return file name list for process_record to process
                 return os.listdir(root_path)
 
         '''
         raise NotImplementedError(
-            "Method _set_files is not implemented in class BaseDataset")
+            "Method set_records is not implemented in class BaseDataset")
+
+    def get_pointer(self, io_path: str, io_size: int, io_mode: str):
+        '''
+        The method for initializing the database. It is used to describe how to initialize the database. It is called in :obj:`__init__` of the class.
+        '''
+        # get all records
+        records = os.listdir(io_path)
+        # filter the records with the prefix '_record_'
+        records = list(filter(lambda x: '_record_' in x, records))
+
+        # for every record, get the io_path, and init the info_io and eeg_io
+        eeg_io_router = {}
+        info_merged = None
+        
+        for record in records:
+            meta_info_io_path = os.path.join(io_path, record, 'info.csv')
+            eeg_signal_io_path = os.path.join(io_path, record, 'eeg')
+            info_io = MetaInfoIO(meta_info_io_path)
+            eeg_io = EEGSignalIO(eeg_signal_io_path,
+                                 io_size=io_size,
+                                 io_mode=io_mode)
+            eeg_io_router[record] = eeg_io
+            info_df = info_io.read_all()
+
+            assert '_record_id' not in info_df.columns, \
+                "column '_record_id' is a forbidden reserved word and is used to index the corresponding IO. Please replace your '_record_id' with another name."
+            info_df['_record_id'] = record
+
+            if info_merged is None:
+                info_merged = info_df
+            else:
+                info_merged = pd.concat([info_merged, info_df],
+                                        ignore_index=True)
+        return eeg_io_router, info_merged
 
     @staticmethod
-    def _process_file(io_path: str = None,
-                      io_size: int = 10485760,
-                      io_mode: str = 'lmdb',
-                      file: Any = None,
-                      lock: Any = None,
-                      _load_data=None,
-                      **kwargs):
+    def save_record(io_path: str = None,
+                        io_size: int = 10485760,
+                        io_mode: str = 'lmdb',
+                        file: Any = None,
+                        process_record=None,
+                        **kwargs):
 
-        meta_info_io_path = os.path.join(io_path, 'info.csv')
-        eeg_signal_io_path = os.path.join(io_path, 'eeg')
+        meta_info_io_path = os.path.join(io_path, f'_record_{str(file)}',
+                                         'info.csv')
+        eeg_signal_io_path = os.path.join(io_path, f'_record_{str(file)}',
+                                          'eeg')
 
         info_io = MetaInfoIO(meta_info_io_path)
         eeg_io = EEGSignalIO(eeg_signal_io_path,
                              io_size=io_size,
                              io_mode=io_mode)
 
-        gen = _load_data(file=file, **kwargs)
-        # loop for data yield by _load_data, until to the end of the data
+        gen = process_record(file=file, **kwargs)
+        # loop for data yield by process_record, until to the end of the data
         while True:
             try:
-                # call _load_data of the class
+                # call process_record of the class
                 # get the current class name
                 obj = next(gen)
 
             except StopIteration:
                 break
 
-            with lock:
-                if 'eeg' in obj and 'key' in obj:
-                    eeg_io.write_eeg(obj['eeg'], obj['key'])
-                if 'info' in obj:
-                    info_io.write_info(obj['info'])
+            if 'eeg' in obj and 'key' in obj:
+                eeg_io.write_eeg(obj['eeg'], obj['key'])
+            if 'info' in obj:
+                info_io.write_info(obj['info'])
 
     @staticmethod
-    def _load_data(file: Any = None, **kwargs):
+    def process_record(file: Any = None, **kwargs):
         '''
         The IO method for generating the database. It is used to describe how files are processed to generate the database. It is called in parallel by :obj:`joblib.Parallel` in :obj:`__init__` of the class.
 
         Args:
-            file (Any): The file to be processed. It is an element in the list returned by _set_files. (default: :obj:`Any`)
+            file (Any): The file to be processed. It is an element in the list returned by set_records. (default: :obj:`Any`)
             **kwargs: The arguments derived from :obj:`__init__` of the class.
 
         .. code-block:: python
 
-            def _load_data(file: Any = None, chunk_size: int = 128, **kwargs):
+            def process_record(file: Any = None, chunk_size: int = 128, **kwargs):
                 # process file
                 eeg = np.ndarray((chunk_size, 64, 128), dtype=np.float32)
                 key = '1'
@@ -194,21 +203,23 @@ class BaseDataset(Dataset):
         '''
 
         raise NotImplementedError(
-            "Method _load_data is not implemented in class BaseDataset")
+            "Method process_record is not implemented in class BaseDataset")
 
-    def read_eeg(self, key: str) -> Any:
+    def read_eeg(self, record: str, key: str) -> Any:
         r'''
         Query the corresponding EEG signal in the EEGSignalIO according to the the given :obj:`key`. If :obj:`self.in_memory` is set to :obj:`True`, then EEGSignalIO will be read into memory and directly index the specified EEG signal in memory with the given :obj:`key` on subsequent reads.
 
         Args:
+            record (str): The record id of the EEG signal to be queried.
             key (str): The index of the EEG signal to be queried.
             
         Returns:
             any: The EEG signal sample.
         '''
+        eeg_io = self.eeg_io_router[record]
         if self.in_memory:
-            return self.eeg_io.read_eeg_in_memory(key)
-        return self.eeg_io.read_eeg(key)
+            return eeg_io.read_eeg_in_memory(key)
+        return eeg_io.read_eeg(key)
 
     def read_info(self, index: int) -> Dict:
         r'''
@@ -233,16 +244,17 @@ class BaseDataset(Dataset):
         Returns:
             bool: True if the database IO exists, otherwise False.
         '''
-        meta_info_io_path = os.path.join(io_path, 'info.csv')
-        eeg_signal_io_path = eeg_signal_io_path = os.path.join(io_path, 'eeg')
 
-        return os.path.exists(meta_info_io_path) and os.path.exists(
-            eeg_signal_io_path)
+        return os.path.exists(io_path)
 
     def __getitem__(self, index: int) -> any:
-        raise NotImplementedError(
-            "Method __getitem__ is not implemented in class " +
-            self.__class__.__name__)
+        info = self.read_info(index)
+
+        eeg_index = str(info['clip_id'])
+        eeg_record = str(info['_record_id'])
+        eeg = self.read_eeg(eeg_record, eeg_index)
+
+        return eeg, info
 
     def __len__(self):
         return len(self.info)
@@ -251,11 +263,11 @@ class BaseDataset(Dataset):
         cls = self.__class__
         result = cls.__new__(cls)
         result.__dict__.update(self.__dict__)
-        eeg_signal_io_path = os.path.join(self.io_path, 'eeg')
 
-        result.eeg_io = EEGSignalIO(eeg_signal_io_path,
-                                    io_size=self.io_size,
-                                    io_mode=self.io_mode)
+        result.eeg_io_router, result.info = self.get_pointer(
+            io_path=result.io_path,
+            io_size=result.io_size,
+            io_mode=result.io_mode)
         return result
 
     @property

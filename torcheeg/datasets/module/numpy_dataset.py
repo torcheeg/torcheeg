@@ -146,18 +146,18 @@ class NumpyDataset(BaseDataset):
 
             if self.num_worker == 0:
                 lock = MockLock()  # do nothing, just for compatibility
-                for file in tqdm(self._set_files(X=X,
+                for file in tqdm(self.set_records(X=X,
                                                  y=y,
                                                  io_path=io_path,
                                                  **params),
                                  disable=not self.verbose,
                                  desc="[PROCESS]"):
-                    self._process_file(io_path=self.io_path,
+                    self.save_record(io_path=self.io_path,
                                        io_size=self.io_size,
                                        io_mode=self.io_mode,
                                        file=file,
                                        lock=lock,
-                                       _load_data=self._load_data,
+                                       process_record=self.process_record,
                                        **params)
             else:
                 # lock for lmdb writter, LMDB only allows single-process writes
@@ -165,14 +165,14 @@ class NumpyDataset(BaseDataset):
                 lock = manager.Lock()
 
                 Parallel(n_jobs=self.num_worker)(
-                    delayed(self._process_file)(io_path=io_path,
+                    delayed(self.save_record)(io_path=io_path,
                                                 io_size=io_size,
                                                 io_mode=io_mode,
                                                 file=file,
                                                 lock=lock,
-                                                _load_data=self._load_data,
+                                                process_record=self.process_record,
                                                 **params)
-                    for file in tqdm(self._set_files(
+                    for file in tqdm(self.set_records(
                         X=X, y=y, io_path=io_path, **params),
                                      disable=not self.verbose,
                                      desc="[PROCESS]"))
@@ -192,7 +192,7 @@ class NumpyDataset(BaseDataset):
         self.info = info_io.read_all()
 
     @staticmethod
-    def _load_data(file: Any = None,
+    def process_record(file: Any = None,
                    before_trial: Union[None, Callable] = None,
                    offline_transform: Union[None, Callable] = None,
                    after_trial: Union[None, Callable] = None,
@@ -237,8 +237,7 @@ class NumpyDataset(BaseDataset):
                 assert 'eeg' in obj and 'key' in obj and 'info' in obj, 'after_trial must return a list of dictionaries, where each dictionary corresponds to an EEG sample, containing `eeg`, `key` and `info` as keys.'
                 yield obj
 
-    @staticmethod
-    def _set_files(X: Union[np.ndarray, List[str]] = None,
+    def set_records(self, X: Union[np.ndarray, List[str]] = None,
                    y: Union[np.ndarray, List[str]] = None,
                    io_path: str = None,
                    num_samples_per_worker: int = 100,
@@ -288,7 +287,8 @@ class NumpyDataset(BaseDataset):
         info = self.read_info(index)
 
         eeg_index = str(info['clip_id'])
-        eeg = self.read_eeg(eeg_index)
+        eeg_record = str(info['_record_id'])
+        eeg = self.read_eeg(eeg_record, eeg_index)
 
         signal = eeg
         label = info

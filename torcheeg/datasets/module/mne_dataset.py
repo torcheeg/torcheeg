@@ -205,18 +205,18 @@ class MNEDataset(BaseDataset):
 
             if self.num_worker == 0:
                 lock = MockLock()  # do nothing, just for compatibility
-                for file in tqdm(self._set_files(epochs_list=epochs_list,
+                for file in tqdm(self.set_records(epochs_list=epochs_list,
                                                  metadata_list=metadata_list,
                                                  io_path=io_path,
                                                  **params),
                                  disable=not self.verbose,
                                  desc="[PROCESS]"):
-                    self._process_file(io_path=self.io_path,
+                    self.save_record(io_path=self.io_path,
                                        io_size=self.io_size,
                                        io_mode=self.io_mode,
                                        file=file,
                                        lock=lock,
-                                       _load_data=self._load_data,
+                                       process_record=self.process_record,
                                        **params)
             else:
                 # lock for lmdb writter, LMDB only allows single-process writes
@@ -224,14 +224,14 @@ class MNEDataset(BaseDataset):
                 lock = manager.Lock()
 
                 Parallel(n_jobs=self.num_worker)(
-                    delayed(self._process_file)(io_path=io_path,
+                    delayed(self.save_record)(io_path=io_path,
                                                 io_size=io_size,
                                                 io_mode=io_mode,
                                                 file=file,
                                                 lock=lock,
-                                                _load_data=self._load_data,
+                                                process_record=self.process_record,
                                                 **params)
-                    for file in tqdm(self._set_files(
+                    for file in tqdm(self.set_records(
                         epochs_list=epochs_list,
                         metadata_list=metadata_list,
                         io_path=io_path,
@@ -254,7 +254,7 @@ class MNEDataset(BaseDataset):
         self.info = info_io.read_all()
 
     @staticmethod
-    def _load_data(file: Any = None,
+    def process_record(file: Any = None,
                    chunk_size: int = -1,
                    overlap: int = 0,
                    num_channel: int = -1,
@@ -346,8 +346,7 @@ class MNEDataset(BaseDataset):
                     assert 'eeg' in obj and 'key' in obj and 'info' in obj, 'after_trial must return a list of dictionaries, where each dictionary corresponds to an EEG sample, containing `eeg`, `key` and `info` as keys.'
                     yield obj
 
-    @staticmethod
-    def _set_files(epochs_list: Union[List[str], List[mne.Epochs]],
+    def set_records(self, epochs_list: Union[List[str], List[mne.Epochs]],
                    metadata_list: List[Dict[str, Any]], io_path: str, **kwargs):
         epochs_metadata_block_id_list = []
         for block_id, (epochs,
@@ -369,7 +368,8 @@ class MNEDataset(BaseDataset):
         info = self.read_info(index)
 
         eeg_index = str(info['clip_id'])
-        eeg = self.read_eeg(eeg_index)
+        eeg_record = str(info['_record_id'])
+        eeg = self.read_eeg(eeg_record, eeg_index)
 
         signal = eeg
         label = info

@@ -96,7 +96,7 @@ class FolderDataset(BaseDataset):
         self.__dict__.update(params)
 
     @staticmethod
-    def _load_data(file: Any = None,
+    def process_record(file: Any = None,
                    offline_transform: Union[None, Callable] = None,
                    read_fn: Union[None, Callable] = None,
                    **kwargs):
@@ -130,8 +130,7 @@ class FolderDataset(BaseDataset):
 
             yield {'eeg': t_eeg, 'key': clip_id, 'info': record_info}
 
-    @staticmethod
-    def _set_files(root_path: str = './folder',
+    def set_records(self, root_path: str = './folder',
                    structure: str = 'subject_in_label',
                    **kwargs):
         # get all the subfolders
@@ -160,7 +159,8 @@ class FolderDataset(BaseDataset):
         info = self.read_info(index)
 
         eeg_index = str(info['clip_id'])
-        eeg = self.read_eeg(eeg_index)
+        eeg_record = str(info['_record_id'])
+        eeg = self.read_eeg(eeg_record, eeg_index)
 
         signal = eeg
         label = info

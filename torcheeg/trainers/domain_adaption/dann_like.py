@@ -83,7 +83,7 @@ class _DANNLikeTrainer(ClassifierTrainer):
         self.metrics = metrics
         self.init_metrics(metrics, num_classes)
 
-        self._ce_fn = nn.CrossEntropyLoss()
+        self.ce_fn = nn.CrossEntropyLoss()
 
         self.num_batches = None  # init in 'fit' method
         self.non_warmup_epochs = None  # init in 'fit' method
@@ -160,12 +160,12 @@ class _DANNLikeTrainer(ClassifierTrainer):
                                                 self.scheduled_alpha)
         y_target_disc = self.domain_classifier(x_target_feat_r)
 
-        task_loss = self._ce_fn(y_source_pred, y_source)
-        domain_loss = self._ce_fn(
+        task_loss = self.ce_fn(y_source_pred, y_source)
+        domain_loss = self.ce_fn(
             y_source_disc,
             torch.zeros(len(y_source_disc),
                         dtype=torch.long,
-                        device=x_source.device)) + self._ce_fn(
+                        device=x_source.device)) + self.ce_fn(
                             y_target_disc,
                             torch.ones(len(y_target_disc),
                                         dtype=torch.long,
