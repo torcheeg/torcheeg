@@ -7,7 +7,7 @@ from typing import Any, Callable, Dict, Tuple, Union
 import mne
 import numpy as np
 
-from ..base_dataset import BaseDataset
+from ..large_dataset import LargeDataset
 
 
 def _read_edf_header(file_path):
@@ -85,7 +85,7 @@ def _parse_metadata_from_path(file_path):
     }
 
 
-class TUHTUEGDataset(BaseDataset):
+class TUHTUEGDataset(LargeDataset):
     r'''
     The TUH EEG Corpus (TUEG): A rich archive of 26,846 clinical EEG recordings collected at Temple University Hospital (TUH) from 2002 - 2017. This class generates training samples and test samples according to the given parameters, and caches the generated results in a unified input and output format (IO). Due to the large scale of the data set, this class does not support offline data preprocessing for the time being to avoid taking up too much hard disk space. The relevant information of the dataset is as follows:
     
@@ -145,16 +145,12 @@ class TUHTUEGDataset(BaseDataset):
         overlap (int): The number of overlapping data points between different chunks when dividing EEG chunks. (default: :obj:`0`)
         num_channel (int): Number of channels used, of which the first 21 channels are EEG signals. (default: :obj:`21`)
         online_transform (Callable, optional): The transformation of the EEG signals and baseline EEG signals. The input is a :obj:`np.ndarray`, and the ouput is used as the first and second value of each element in the dataset. (default: :obj:`None`)
-        offline_transform (Callable, optional): The usage is the same as :obj:`online_transform`, but executed before generating IO intermediate results. (default: :obj:`None`)
         label_transform (Callable, optional): The transformation of the label. The input is an information dictionary, and the ouput is used as the third value of each element in the dataset. (default: :obj:`None`)
         before_trial (Callable, optional): The hook performed on the trial to which the sample belongs. It is performed before the offline transformation and thus typically used to implement context-dependent sample transformations, such as moving averages, etc. The input of this hook function is a 2D EEG signal with shape (number of electrodes, number of data points), whose ideal output shape is also (number of electrodes, number of data points).
         after_trial (Callable, optional): The hook performed on the trial to which the sample belongs. It is performed after the offline transformation and thus typically used to implement context-dependent sample transformations, such as moving averages, etc. The input and output of this hook function should be a sequence of dictionaries representing a sequence of EEG samples. Each dictionary contains two key-value pairs, indexed by :obj:`eeg` (the EEG signal matrix) and :obj:`key` (the index in the database) respectively.
         io_path (str): The path to generated unified data IO, cached as an intermediate result. (default: :obj:`./io/tuh_tueg`)
-        io_size (int): Maximum size database may grow to; used to size the memory mapping. If database grows larger than ``map_size``, an exception will be raised and the user must close and reopen. (default: :obj:`10485760`)
-        io_mode (str): Storage mode of EEG signal. When io_mode is set to :obj:`lmdb`, TorchEEG provides an efficient database (LMDB) for storing EEG signals. LMDB may not perform well on limited operating systems, where a file system based EEG signal storage is also provided. When io_mode is set to :obj:`pickle`, pickle-based persistence files are used. (default: :obj:`lmdb`)
         num_worker (int): Number of subprocesses to use for data loading. 0 means that the data will be loaded in the main process. (default: :obj:`0`)
         verbose (bool): Whether to display logs during processing, such as progress bars, etc. (default: :obj:`True`)
-        in_memory (bool): Whether to load the entire dataset into memory. If :obj:`in_memory` is set to True, then the first time an EEG sample is read, the entire dataset is loaded into memory for subsequent retrieval. Otherwise, the dataset is stored on disk to avoid the out-of-memory problem. (default: :obj:`False`)
     '''
     def __init__(self,
                  root_path: str = './edf',
@@ -162,16 +158,12 @@ class TUHTUEGDataset(BaseDataset):
                  overlap: int = 0,
                  num_channel: int = 21,
                  online_transform: Union[None, Callable] = None,
-                 offline_transform: Union[None, Callable] = None,
                  label_transform: Union[None, Callable] = None,
                  before_trial: Union[None, Callable] = None,
                  after_trial: Union[Callable, None] = None,
                  io_path: str = './io/tuh_tueg',
-                 io_size: int = 10485760,
-                 io_mode: str = 'lmdb',
                  num_worker: int = 0,
-                 verbose: bool = True,
-                 in_memory: bool = False):
+                 verbose: bool = True):
         if before_trial is None:
             before_trial = self.default_before_trial
         # pass all arguments to super class
@@ -181,16 +173,12 @@ class TUHTUEGDataset(BaseDataset):
             'overlap': overlap,
             'num_channel': num_channel,
             'online_transform': online_transform,
-            'offline_transform': offline_transform,
             'label_transform': label_transform,
             'before_trial': before_trial,
             'after_trial': after_trial,
             'io_path': io_path,
-            'io_size': io_size,
-            'io_mode': io_mode,
             'num_worker': num_worker,
-            'verbose': verbose,
-            'in_memory': in_memory
+            'verbose': verbose
         }
         super().__init__(**params)
         # save all arguments to __dict__
@@ -236,7 +224,7 @@ class TUHTUEGDataset(BaseDataset):
         # # Average reference projection was added, but has not been applied yet. Use the apply_proj method to apply it.
         # raw.apply_proj()
         return raw
-    
+
     @staticmethod
     def process_record(file: Any = None,
                        num_channel: int = 21,
@@ -275,13 +263,6 @@ class TUHTUEGDataset(BaseDataset):
         file_name = os.path.basename(file).split('.')[0]
         trial_queue = []
         while end_at <= trial_length:
-            clip_sample = raw.get_data(start=start_at, stop=end_at)
-            clip_sample = clip_sample[:num_channel, :]
-
-            if not offline_transform is None:
-                t = offline_transform(eeg=clip_sample)
-                t_eeg = t['eeg']
-
             record_info = copy.deepcopy(info)
             record_info['start_at'] = start_at
             record_info['end_at'] = end_at
@@ -289,13 +270,9 @@ class TUHTUEGDataset(BaseDataset):
             record_info['clip_id'] = clip_id
 
             if not after_trial is None:
-                trial_queue.append({
-                    'eeg': t_eeg,
-                    'key': clip_id,
-                    'info': record_info
-                })
+                trial_queue.append({'key': clip_id, 'info': record_info})
             else:
-                yield {'eeg': t_eeg, 'key': clip_id, 'info': record_info}
+                yield {'key': clip_id, 'info': record_info}
 
             start_at = start_at + step
             end_at = start_at + chunk_size
@@ -310,22 +287,66 @@ class TUHTUEGDataset(BaseDataset):
                 yield obj
 
     def set_records(self, root_path: str = './edf', **kwargs):
-        return list(glob.glob(os.path.join(root_path, '**/*.edf'), recursive=True))
+        return list(
+            glob.glob(os.path.join(root_path, '**/*.edf'), recursive=True))
+
+    def read_eeg(self, record: str) -> Any:
+        r'''
+        Query the corresponding EEG signal in the EEGSignalIO according to the the given :obj:`key`. If :obj:`self.in_memory` is set to :obj:`True`, then EEGSignalIO will be read into memory and directly index the specified EEG signal in memory with the given :obj:`key` on subsequent reads.
+        '''
+        _file_path = record['file_path']
+        _start_at = record['start_at']
+        _end_at = record['end_at']
+
+        raw = mne.io.read_raw_edf(_file_path, preload=True)
+        if not self.before_trial is None:
+            raw = self.before_trial(raw)
+
+        if self.after_trial is None:
+            eeg = raw.get_data(start=_start_at, stop=_end_at)
+            eeg = eeg[:self.num_channel, :]
+        else:
+            trial_queue = []
+            trial_length = len(raw)
+            start_at = 0
+            chunk_size = self.chunk_size
+            if chunk_size <= 0:
+                chunk_size = trial_length - start_at
+
+            # chunk with chunk size
+            end_at = start_at + chunk_size
+            # calculate moving step
+            step = chunk_size - self.overlap
+
+            while end_at <= trial_length:
+                eeg = raw.get_data(start=start_at, stop=end_at)
+                eeg = eeg[:self.num_channel, :]
+                trial_queue.append({
+                    'eeg': eeg,
+                    'start_at': start_at,
+                    'end_at': end_at
+                })
+                start_at = start_at + step
+                end_at = start_at + chunk_size
+
+            trial_queue = self.after_trial(trial_queue)
+            for obj in trial_queue:
+                if _start_at == obj['start_at'] and _end_at == obj['end_at']:
+                    eeg = obj['eeg']
+                    break
+
+        return eeg
 
     def __getitem__(self, index: int) -> Tuple:
         info = self.read_info(index)
-        eeg_index = str(info['clip_id'])
         eeg_record = str(info['_record_id'])
-        eeg = self.read_eeg(eeg_record, eeg_index)
-
-        baseline_index = str(info['baseline_id'])
-        baseline = self.read_eeg(eeg_record, baseline_index)
+        eeg = self.read_eeg(eeg_record)
 
         signal = eeg
         label = info
 
         if self.online_transform:
-            signal = self.online_transform(eeg=eeg, baseline=baseline)['eeg']
+            signal = self.online_transform(eeg=eeg)['eeg']
 
         if self.label_transform:
             label = self.label_transform(y=info)['y']
@@ -341,7 +362,6 @@ class TUHTUEGDataset(BaseDataset):
                 'overlap': self.overlap,
                 'num_channel': self.num_channel,
                 'online_transform': self.online_transform,
-                'offline_transform': self.offline_transform,
                 'label_transform': self.label_transform,
                 'before_trial': self.before_trial,
                 'after_trial': self.after_trial,
