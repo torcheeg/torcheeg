@@ -7,7 +7,7 @@ from typing import Any, Callable, Dict, Tuple, Union
 import mne
 import numpy as np
 
-from ..large_dataset import LargeDataset
+from torch.utils.data import IterableDataset
 
 
 def _read_edf_header(file_path):
@@ -85,7 +85,7 @@ def _parse_metadata_from_path(file_path):
     }
 
 
-class TUHTUEGDataset(LargeDataset):
+class TUHTUEGDataset(IterableDataset):
     r'''
     The TUH EEG Corpus (TUEG): A rich archive of 26,846 clinical EEG recordings collected at Temple University Hospital (TUH) from 2002 - 2017. This class generates training samples and test samples according to the given parameters, and caches the generated results in a unified input and output format (IO). Due to the large scale of the data set, this class does not support offline data preprocessing for the time being to avoid taking up too much hard disk space. The relevant information of the dataset is as follows:
     
@@ -148,9 +148,6 @@ class TUHTUEGDataset(LargeDataset):
         label_transform (Callable, optional): The transformation of the label. The input is an information dictionary, and the ouput is used as the third value of each element in the dataset. (default: :obj:`None`)
         before_trial (Callable, optional): The hook performed on the trial to which the sample belongs. It is performed before the offline transformation and thus typically used to implement context-dependent sample transformations, such as moving averages, etc. The input of this hook function is a 2D EEG signal with shape (number of electrodes, number of data points), whose ideal output shape is also (number of electrodes, number of data points).
         after_trial (Callable, optional): The hook performed on the trial to which the sample belongs. It is performed after the offline transformation and thus typically used to implement context-dependent sample transformations, such as moving averages, etc. The input and output of this hook function should be a sequence of dictionaries representing a sequence of EEG samples. Each dictionary contains two key-value pairs, indexed by :obj:`eeg` (the EEG signal matrix) and :obj:`key` (the index in the database) respectively.
-        io_path (str): The path to generated unified data IO, cached as an intermediate result. (default: :obj:`./io/tuh_tueg`)
-        num_worker (int): Number of subprocesses to use for data loading. 0 means that the data will be loaded in the main process. (default: :obj:`0`)
-        verbose (bool): Whether to display logs during processing, such as progress bars, etc. (default: :obj:`True`)
     '''
     def __init__(self,
                  root_path: str = './edf',
@@ -160,12 +157,12 @@ class TUHTUEGDataset(LargeDataset):
                  online_transform: Union[None, Callable] = None,
                  label_transform: Union[None, Callable] = None,
                  before_trial: Union[None, Callable] = None,
-                 after_trial: Union[Callable, None] = None,
-                 io_path: str = './io/tuh_tueg',
-                 num_worker: int = 0,
-                 verbose: bool = True):
+                 after_trial: Union[Callable, None] = None):
+        super().__init__()
+
         if before_trial is None:
             before_trial = self.default_before_trial
+
         # pass all arguments to super class
         params = {
             'root_path': root_path,
@@ -175,14 +172,13 @@ class TUHTUEGDataset(LargeDataset):
             'online_transform': online_transform,
             'label_transform': label_transform,
             'before_trial': before_trial,
-            'after_trial': after_trial,
-            'io_path': io_path,
-            'num_worker': num_worker,
-            'verbose': verbose
+            'after_trial': after_trial
         }
-        super().__init__(**params)
         # save all arguments to __dict__
         self.__dict__.update(params)
+
+        # set records
+        self.records = self.set_records(**params)
 
     @staticmethod
     def default_before_trial(raw: mne.io.Raw) -> mne.io.Raw:
@@ -263,6 +259,9 @@ class TUHTUEGDataset(LargeDataset):
         file_name = os.path.basename(file).split('.')[0]
         trial_queue = []
         while end_at <= trial_length:
+            clip_sample = raw.get_data(start=start_at, stop=end_at)
+            clip_sample = clip_sample[:num_channel, :]
+
             record_info = copy.deepcopy(info)
             record_info['start_at'] = start_at
             record_info['end_at'] = end_at
@@ -270,9 +269,9 @@ class TUHTUEGDataset(LargeDataset):
             record_info['clip_id'] = clip_id
 
             if not after_trial is None:
-                trial_queue.append({'key': clip_id, 'info': record_info})
+                trial_queue.append({'eeg': clip_sample, 'info': record_info})
             else:
-                yield {'key': clip_id, 'info': record_info}
+                yield {'eeg': clip_sample, 'info': record_info}
 
             start_at = start_at + step
             end_at = start_at + chunk_size
@@ -290,85 +289,18 @@ class TUHTUEGDataset(LargeDataset):
         return list(
             glob.glob(os.path.join(root_path, '**/*.edf'), recursive=True))
 
-    def read_eeg(self, record: str) -> Any:
-        r'''
-        Query the corresponding EEG signal in the EEGSignalIO according to the the given :obj:`key`. If :obj:`self.in_memory` is set to :obj:`True`, then EEGSignalIO will be read into memory and directly index the specified EEG signal in memory with the given :obj:`key` on subsequent reads.
-        '''
-        _file_path = record['file_path']
-        _start_at = record['start_at']
-        _end_at = record['end_at']
+    def __iter__(self) -> Tuple:
+        # get records
+        records = self.records
+        # iter records and call process_record
+        for record in records:
+            for obj in self.process_record(file=record, **self.__dict__):
+                signal = obj['eeg']
+                label = obj['info']
+                if self.online_transform:
+                    signal = self.online_transform(eeg=signal)['eeg']
 
-        raw = mne.io.read_raw_edf(_file_path, preload=True)
-        if not self.before_trial is None:
-            raw = self.before_trial(raw)
+                if self.label_transform:
+                    label = self.label_transform(y=label)['y']
 
-        if self.after_trial is None:
-            eeg = raw.get_data(start=_start_at, stop=_end_at)
-            eeg = eeg[:self.num_channel, :]
-        else:
-            trial_queue = []
-            trial_length = len(raw)
-            start_at = 0
-            chunk_size = self.chunk_size
-            if chunk_size <= 0:
-                chunk_size = trial_length - start_at
-
-            # chunk with chunk size
-            end_at = start_at + chunk_size
-            # calculate moving step
-            step = chunk_size - self.overlap
-
-            while end_at <= trial_length:
-                eeg = raw.get_data(start=start_at, stop=end_at)
-                eeg = eeg[:self.num_channel, :]
-                trial_queue.append({
-                    'eeg': eeg,
-                    'start_at': start_at,
-                    'end_at': end_at
-                })
-                start_at = start_at + step
-                end_at = start_at + chunk_size
-
-            trial_queue = self.after_trial(trial_queue)
-            for obj in trial_queue:
-                if _start_at == obj['start_at'] and _end_at == obj['end_at']:
-                    eeg = obj['eeg']
-                    break
-
-        return eeg
-
-    def __getitem__(self, index: int) -> Tuple:
-        info = self.read_info(index)
-        eeg_record = str(info['_record_id'])
-        eeg = self.read_eeg(eeg_record)
-
-        signal = eeg
-        label = info
-
-        if self.online_transform:
-            signal = self.online_transform(eeg=eeg)['eeg']
-
-        if self.label_transform:
-            label = self.label_transform(y=info)['y']
-
-        return signal, label
-
-    @property
-    def repr_body(self) -> Dict:
-        return dict(
-            super().repr_body, **{
-                'root_path': self.root_path,
-                'chunk_size': self.chunk_size,
-                'overlap': self.overlap,
-                'num_channel': self.num_channel,
-                'online_transform': self.online_transform,
-                'label_transform': self.label_transform,
-                'before_trial': self.before_trial,
-                'after_trial': self.after_trial,
-                'io_path': self.io_path,
-                'io_size': self.io_size,
-                'io_mode': self.io_mode,
-                'num_worker': self.num_worker,
-                'verbose': self.verbose,
-                'in_memory': self.in_memory
-            })
+                yield signal, label
