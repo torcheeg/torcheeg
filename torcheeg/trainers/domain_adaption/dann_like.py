@@ -1,3 +1,4 @@
+import logging
 from itertools import chain
 from typing import List, Tuple
 
@@ -10,6 +11,8 @@ from torch.autograd import Function
 from torch.utils.data import DataLoader
 
 from ..classifier import ClassifierTrainer, classification_metrics
+
+log = logging.getLogger(__name__)
 
 
 class DualDataLoader:
@@ -168,8 +171,8 @@ class _DANNLikeTrainer(ClassifierTrainer):
                         device=x_source.device)) + self.ce_fn(
                             y_target_disc,
                             torch.ones(len(y_target_disc),
-                                        dtype=torch.long,
-                                        device=x_target.device))
+                                       dtype=torch.long,
+                                       device=x_target.device))
 
         if self.current_epoch >= self.warmup_epochs:
             loss = task_loss + self.weight_domain * domain_loss

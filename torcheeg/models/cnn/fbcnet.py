@@ -205,3 +205,6 @@ class FBCNet(nn.Module):
         x = torch.flatten(x, start_dim=1)
         x = self.last_layer(x)
         return x
+
+    def feature_dim(self):
+        return self.num_S * self.in_channels * self.stride_factor

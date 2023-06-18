@@ -1,4 +1,5 @@
 import os
+import logging
 from multiprocessing import Manager
 from typing import Any, Callable, Dict, List, Tuple, Union
 
@@ -11,8 +12,8 @@ from torcheeg.io import EEGSignalIO, MetaInfoIO
 
 from .base_dataset import BaseDataset
 
-MAX_QUEUE_SIZE = 1024
 
+log = logging.getLogger(__name__)
 
 class MockLock():
     def __enter__(self):

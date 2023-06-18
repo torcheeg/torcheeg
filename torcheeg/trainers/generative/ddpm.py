@@ -1,3 +1,4 @@
+import logging
 import warnings
 from contextlib import contextmanager
 from functools import partial
@@ -15,6 +16,8 @@ from torchmetrics.image.inception import InceptionScore
 from .utils import FrechetInceptionDistance
 
 _EVALUATE_OUTPUT = List[Dict[str, float]]  # 1 dict per DataLoader
+
+log = logging.getLogger(__name__)
 
 
 def extract_into_tensor(a: torch.Tensor, t: int,

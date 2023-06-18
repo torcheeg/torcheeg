@@ -1,3 +1,4 @@
+import logging
 from typing import Any, Dict, List, Tuple
 
 import pytorch_lightning as pl
@@ -9,6 +10,7 @@ from torchmetrics import MetricCollection
 
 _EVALUATE_OUTPUT = List[Dict[str, float]]  # 1 dict per DataLoader
 
+log = logging.getLogger(__name__)
 
 def classification_metrics(metric_list: List[str], num_classes: int):
     allowed_metrics = ['precision', 'recall', 'f1score', 'accuracy']

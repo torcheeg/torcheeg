@@ -1,13 +1,17 @@
+import logging
 import os
-from typing import Any, List, Callable, Dict, Tuple, Union
 from multiprocessing import Manager
+from typing import Any, Callable, Dict, List, Tuple, Union
+
+import numpy as np
 from joblib import Parallel, delayed
 from tqdm import tqdm
-import numpy as np
 
 from torcheeg.io import EEGSignalIO, MetaInfoIO
 
 from .base_dataset import BaseDataset
+
+log = logging.getLogger(__name__)
 
 
 class MockLock():
@@ -147,35 +151,34 @@ class NumpyDataset(BaseDataset):
             if self.num_worker == 0:
                 lock = MockLock()  # do nothing, just for compatibility
                 for file in tqdm(self.set_records(X=X,
-                                                 y=y,
-                                                 io_path=io_path,
-                                                 **params),
+                                                  y=y,
+                                                  io_path=io_path,
+                                                  **params),
                                  disable=not self.verbose,
                                  desc="[PROCESS]"):
                     self.save_record(io_path=self.io_path,
-                                       io_size=self.io_size,
-                                       io_mode=self.io_mode,
-                                       file=file,
-                                       lock=lock,
-                                       process_record=self.process_record,
-                                       **params)
+                                     io_size=self.io_size,
+                                     io_mode=self.io_mode,
+                                     file=file,
+                                     lock=lock,
+                                     process_record=self.process_record,
+                                     **params)
             else:
                 # lock for lmdb writter, LMDB only allows single-process writes
                 manager = Manager()
                 lock = manager.Lock()
 
-                Parallel(n_jobs=self.num_worker)(
-                    delayed(self.save_record)(io_path=io_path,
-                                                io_size=io_size,
-                                                io_mode=io_mode,
-                                                file=file,
-                                                lock=lock,
-                                                process_record=self.process_record,
-                                                **params)
-                    for file in tqdm(self.set_records(
+                Parallel(n_jobs=self.num_worker)(delayed(self.save_record)(
+                    io_path=io_path,
+                    io_size=io_size,
+                    io_mode=io_mode,
+                    file=file,
+                    lock=lock,
+                    process_record=self.process_record,
+                    **params) for file in tqdm(self.set_records(
                         X=X, y=y, io_path=io_path, **params),
-                                     disable=not self.verbose,
-                                     desc="[PROCESS]"))
+                                               disable=not self.verbose,
+                                               desc="[PROCESS]"))
 
         print(
             f'dataset already exists at path {self.io_path}, reading from path...'
@@ -193,10 +196,10 @@ class NumpyDataset(BaseDataset):
 
     @staticmethod
     def process_record(file: Any = None,
-                   before_trial: Union[None, Callable] = None,
-                   offline_transform: Union[None, Callable] = None,
-                   after_trial: Union[None, Callable] = None,
-                   **kwargs):
+                       before_trial: Union[None, Callable] = None,
+                       offline_transform: Union[None, Callable] = None,
+                       after_trial: Union[None, Callable] = None,
+                       **kwargs):
         X_file_path, y_file_path, file_id = file
         X = np.load(X_file_path)
         y = np.load(y_file_path)
@@ -237,11 +240,12 @@ class NumpyDataset(BaseDataset):
                 assert 'eeg' in obj and 'key' in obj and 'info' in obj, 'after_trial must return a list of dictionaries, where each dictionary corresponds to an EEG sample, containing `eeg`, `key` and `info` as keys.'
                 yield obj
 
-    def set_records(self, X: Union[np.ndarray, List[str]] = None,
-                   y: Union[np.ndarray, List[str]] = None,
-                   io_path: str = None,
-                   num_samples_per_worker: int = 100,
-                   **kwargs):
+    def set_records(self,
+                    X: Union[np.ndarray, List[str]] = None,
+                    y: Union[np.ndarray, List[str]] = None,
+                    io_path: str = None,
+                    num_samples_per_worker: int = 100,
+                    **kwargs):
         # check if X is a list of str
         X_str = isinstance(X, list) and all([isinstance(x, str) for x in X])
         y_str = isinstance(y, list) and all([isinstance(y, str) for y in y])

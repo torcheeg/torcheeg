@@ -5,7 +5,7 @@ import torch
 import torch.nn as nn
 from torch.utils.data import Dataset
 from torch.utils.data.dataloader import DataLoader
-from torcheeg.trainers import ContrastiveTrainer
+from torcheeg.trainers import SimCLRTrainer, BYOLTrainer
 
 
 class DummyDataset(Dataset):
@@ -22,7 +22,7 @@ class DummyDataset(Dataset):
 
 class DummyModel(nn.Module):
 
-    def __init__(self, in_channels=120, out_channels=2):
+    def __init__(self, in_channels=120, out_channels=10):
         super().__init__()
         self.in_channels = in_channels
         self.out_channels = out_channels
@@ -32,9 +32,9 @@ class DummyModel(nn.Module):
         return self.fc(x)
 
 
-class TestClassificationTrainer(unittest.TestCase):
+class TestSelfSupervisedTrainer(unittest.TestCase):
 
-    def test_classification_trainer(self):
+    def test_sim_clr_trainer(self):
         train_dataset = DummyDataset()
         val_dataset = DummyDataset()
 
@@ -43,14 +43,21 @@ class TestClassificationTrainer(unittest.TestCase):
 
         model = DummyModel()
 
-        trainer = ContrastiveTrainer(model)
+        trainer = SimCLRTrainer(model, extract_channels=10)
         trainer.fit(train_loader, val_loader, max_epochs=1)
 
-        trainer = ContrastiveTrainer(model,
-                                     devices=1,
-                                     accelerator='gpu')
-        trainer.fit(train_loader, val_loader,
-                                     max_epochs=1)
+    def test_byol_trainer(self):
+        train_dataset = DummyDataset()
+        val_dataset = DummyDataset()
+
+        train_loader = DataLoader(train_dataset, batch_size=2)
+        val_loader = DataLoader(val_dataset, batch_size=2)
+
+        model = DummyModel()
+
+        trainer = BYOLTrainer(model, extract_channels=10)
+        trainer.fit(train_loader, val_loader, max_epochs=1)
+
 
 
 if __name__ == '__main__':

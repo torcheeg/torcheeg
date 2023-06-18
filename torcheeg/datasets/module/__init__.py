@@ -5,3 +5,4 @@ from .mne_dataset import MNEDataset
 from .numpy_dataset import NumpyDataset
 from .personal_identification import *
 from .sspev import *
+from .clinical import *

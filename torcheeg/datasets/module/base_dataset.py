@@ -1,6 +1,8 @@
+import logging
 import os
 import shutil
 from typing import Any, Dict
+
 import pandas as pd
 from joblib import Parallel, delayed
 from torch.utils.data import Dataset
@@ -9,6 +11,8 @@ from tqdm import tqdm
 from torcheeg.io import EEGSignalIO, MetaInfoIO
 
 MAX_QUEUE_SIZE = 1024
+
+log = logging.getLogger(__name__)
 
 
 class MockLock():
@@ -50,29 +54,27 @@ class BaseDataset(Dataset):
                                      disable=not self.verbose,
                                      desc="[PROCESS]"):
                         self.save_record(io_path=self.io_path,
-                                             io_size=self.io_size,
-                                             io_mode=self.io_mode,
-                                             file=file,
-                                             process_record=self.process_record,
-                                             **kwargs)
+                                         io_size=self.io_size,
+                                         io_mode=self.io_mode,
+                                         file=file,
+                                         process_record=self.process_record,
+                                         **kwargs)
                 except Exception as e:
                     # shutil to delete the database
                     shutil.rmtree(self.io_path)
                     raise e
             else:
-                # if catch error, then delete the database
+                # catch the exception
                 try:
-                    Parallel(n_jobs=self.num_worker)(
-                        delayed(self.save_record)(
-                            io_path=io_path,
-                            io_size=io_size,
-                            io_mode=io_mode,
-                            file=file,
-                            process_record=self.process_record,
-                            **kwargs)
-                        for file in tqdm(self.set_records(**kwargs),
-                                         disable=not self.verbose,
-                                         desc="[PROCESS]"))
+                    Parallel(n_jobs=self.num_worker)(delayed(self.save_record)(
+                        io_path=io_path,
+                        io_size=io_size,
+                        io_mode=io_mode,
+                        file=file,
+                        process_record=self.process_record,
+                        **kwargs) for file in tqdm(self.set_records(**kwargs),
+                                                   disable=not self.verbose,
+                                                   desc="[PROCESS]"))
                 except Exception as e:
                     # shutil to delete the database
                     shutil.rmtree(self.io_path)
@@ -84,8 +86,8 @@ class BaseDataset(Dataset):
 
         # get the global io
         self.eeg_io_router, self.info = self.get_pointer(io_path=io_path,
-                                                            io_size=io_size,
-                                                            io_mode=io_mode)
+                                                         io_size=io_size,
+                                                         io_mode=io_mode)
 
     def set_records(self, **kwargs):
         '''
@@ -117,7 +119,7 @@ class BaseDataset(Dataset):
         # for every record, get the io_path, and init the info_io and eeg_io
         eeg_io_router = {}
         info_merged = None
-        
+
         for record in records:
             meta_info_io_path = os.path.join(io_path, record, 'info.csv')
             eeg_signal_io_path = os.path.join(io_path, record, 'eeg')
@@ -141,11 +143,11 @@ class BaseDataset(Dataset):
 
     @staticmethod
     def save_record(io_path: str = None,
-                        io_size: int = 10485760,
-                        io_mode: str = 'lmdb',
-                        file: Any = None,
-                        process_record=None,
-                        **kwargs):
+                    io_size: int = 10485760,
+                    io_mode: str = 'lmdb',
+                    file: Any = None,
+                    process_record=None,
+                    **kwargs):
 
         meta_info_io_path = os.path.join(io_path, f'_record_{str(file)}',
                                          'info.csv')
@@ -255,6 +257,19 @@ class BaseDataset(Dataset):
         eeg = self.read_eeg(eeg_record, eeg_index)
 
         return eeg, info
+
+    def get_labels(self) -> list:
+        '''
+        Get the labels of the dataset.
+
+        Returns:
+            list: The list of labels.
+        '''
+        labels = []
+        for i in range(len(self)):
+            _, label = self.__getitem__(i)
+            labels.append(label)
+        return labels
 
     def __len__(self):
         return len(self.info)

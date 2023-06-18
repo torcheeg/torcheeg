@@ -1,12 +1,17 @@
 import os
+import mne
+import logging
+import numpy as np
 import itertools
 from typing import Any, Callable, Dict, Tuple, Union
+import pandas as pd
 
 from ..module.base_dataset import BaseDataset
 
 from moabb.datasets.base import BaseDataset as _MOABBDataset
 from moabb.paradigms.base import BaseParadigm as _MOABBParadigm
 
+log = logging.getLogger(__name__)
 
 class MOABBDataset(BaseDataset):
     '''
@@ -86,6 +91,11 @@ class MOABBDataset(BaseDataset):
             'in_memory': in_memory
         }
         params.update(kwargs)
+
+        if not paradigm.is_valid(dataset):
+            message = f"Dataset {dataset.code} is not valid for paradigm"
+            raise AssertionError(message)
+        
         super().__init__(**params)
         # save all arguments to __dict__
         self.__dict__.update(params)
@@ -100,10 +110,6 @@ class MOABBDataset(BaseDataset):
                        before_trial: Union[None, Callable] = None,
                        after_trial: Union[None, Callable] = None,
                        **kwargs):
-
-        if not paradigm.is_valid(dataset):
-            message = f"Dataset {dataset.code} is not valid for paradigm"
-            raise AssertionError(message)
 
         subject_id, session_id = file
 
@@ -151,7 +157,7 @@ class MOABBDataset(BaseDataset):
                     record_info = {
                         'subject_id': subject_id,
                         'session_id': session_id,
-                        'run_id': run_id,
+                        'trial_id': run_id,
                         'roi_id': roi_id,
                         'clip_id': clip_id,
                         'label': label,

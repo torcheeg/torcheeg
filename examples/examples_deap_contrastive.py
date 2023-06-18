@@ -17,7 +17,7 @@ from torcheeg.datasets.constants.emotion_recognition.deap import \
     DEAP_CHANNEL_LOCATION_DICT
 from torcheeg.model_selection import KFoldGroupbyTrial
 from torcheeg.models import CCNN
-from torcheeg.trainers import ClassifierTrainer, ContrastiveTrainer
+from torcheeg.trainers import ClassifierTrainer, SimCLRTrainer
 
 ###############################################################################
 # Pre-experiment Preparation to Ensure Reproducibility
@@ -191,7 +191,7 @@ for i, ((train_dataset, val_dataset), (contras_train_dataset,
                             shuffle=True,
                             num_workers=4)
 
-    trainer = ContrastiveTrainer(extractor=model,
+    trainer = SimCLRTrainer(extractor=model,
                                  lr=1e-4,
                                  devices=1,
                                  accelerator='gpu')

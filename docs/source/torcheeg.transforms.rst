@@ -58,6 +58,7 @@ Numpy-based Transforms
     Concatenate
     MapChunk
     Downsample
+    RearrangeElectrode
 
 .. currentmodule:: torcheeg.transforms
 
