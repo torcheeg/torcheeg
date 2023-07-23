@@ -116,6 +116,8 @@ class SEEDFeatureDataset(BaseDataset):
                  label_transform: Union[None, Callable] = None,
                  before_trial: Union[None, Callable] = None,
                  after_trial: Union[Callable, None] = None,
+                 after_session: Union[Callable, None] = None,
+                 after_subject: Union[Callable, None] = None,
                  io_path: str = './io/seed_feature',
                  io_size: int = 10485760,
                  io_mode: str = 'lmdb',
@@ -132,6 +134,8 @@ class SEEDFeatureDataset(BaseDataset):
             'label_transform': label_transform,
             'before_trial': before_trial,
             'after_trial': after_trial,
+            'after_session': after_session,
+            'after_subject': after_subject,
             'io_path': io_path,
             'io_size': io_size,
             'io_mode': io_mode,
@@ -145,14 +149,14 @@ class SEEDFeatureDataset(BaseDataset):
 
     @staticmethod
     def process_record(file: Any = None,
-                   root_path: str = './ExtractedFeatures',
-                   feature: list = ['de_movingAve'],
-                   num_channel: int = 62,
-                   before_trial: Union[None, Callable] = None,
-                   offline_transform: Union[None, Callable] = None,
-                   after_trial: Union[None, Callable] = None,
-                   **kwargs):
-        file_name = file
+                       root_path: str = './ExtractedFeatures',
+                       feature: list = ['de_movingAve'],
+                       num_channel: int = 62,
+                       before_trial: Union[None, Callable] = None,
+                       offline_transform: Union[None, Callable] = None,
+                       after_trial: Union[None, Callable] = None,
+                       **kwargs):
+        file_name, session_id = file
 
         subject = int(os.path.basename(file_name).split('.')[0].split('_')
                       [0])  # subject (15)
@@ -171,21 +175,19 @@ class SEEDFeatureDataset(BaseDataset):
             int(re.findall(r"de_movingAve(\d+)", key)[0])
             for key in samples.keys() if 'de_movingAve' in key
         ]
-
         write_pointer = 0
         # loop for each trial
         for trial_id in trial_ids:
             # extract baseline signals
             trial_samples = []
             for cur_feature in feature:
-                trial_samples.append(samples[
-                    cur_feature +
-                    str(trial_id)])  # channel(62), timestep(n), bands(5)
+                trial_samples.append(
+                    samples[cur_feature + str(trial_id)].transpose(
+                        (1, 0, 2)))  # timestep(n), channel(62), bands(5)
             trial_samples = np.concatenate(
                 trial_samples,
-                axis=-1)[:
-                         num_channel]  # channel(62), timestep(n), features(5*k)
-            trial_samples = trial_samples.transpose((1, 0, 2))
+                axis=-1)[:, :
+                         num_channel]  # timestep(n*k), channel(62), features(5)
 
             if before_trial:
                 trial_samples = before_trial(trial_samples)
@@ -195,10 +197,10 @@ class SEEDFeatureDataset(BaseDataset):
                 'subject_id': subject,
                 'trial_id': trial_id,
                 'emotion': int(labels[trial_id - 1]),
-                'date': date
+                'date': date,
+                'session_id': session_id
             }
 
-            trial_queue = []
             for i, clip_sample in enumerate(trial_samples):
                 t_eeg = clip_sample
                 if not offline_transform is None:
@@ -214,27 +216,34 @@ class SEEDFeatureDataset(BaseDataset):
                     'clip_id': clip_id
                 }
                 record_info.update(trial_meta_info)
-                if after_trial:
-                    trial_queue.append({
-                        'eeg': t_eeg,
-                        'key': clip_id,
-                        'info': record_info
-                    })
-                else:
-                    yield {'eeg': t_eeg, 'key': clip_id, 'info': record_info}
+                yield {'eeg': t_eeg, 'key': clip_id, 'info': record_info}
 
-            if len(trial_queue) and after_trial:
-                trial_queue = after_trial(trial_queue)
-                for obj in trial_queue:
-                    assert 'eeg' in obj and 'key' in obj and 'info' in obj, 'after_trial must return a list of dictionaries, where each dictionary corresponds to an EEG sample, containing `eeg`, `key` and `info` as keys.'
-                    yield obj
-
-    def set_records(self, **kwargs):
-        root_path = kwargs.pop('root_path', './ExtractedFeatures')  # str
+    def set_records(self, root_path: str = './ExtractedFeatures', **kwargs):
         file_list = os.listdir(root_path)
         skip_set = ['label.mat', 'readme.txt']
         file_list = [f for f in file_list if f not in skip_set]
-        return file_list
+
+        # get subject_id
+        subject_id_list = set()
+        for file_name in file_list:
+            subject_id = int(file_name.split('_')[0])
+            subject_id_list.add(subject_id)
+        subject_id_list = list(subject_id_list)
+
+        # get session_id
+        file_name_session_id_list = []
+        for subject_id in subject_id_list:
+            subject_file_list = [
+                file_name for file_name in file_list
+                if int(file_name.split('_')[0]) == subject_id
+            ]
+            # sort the subject_file_list, based on the date
+            subject_file_list.sort(key=lambda x: int(x.split('_')[1][:-4]))
+            # get file and corresponding session_id
+            for i, file_name in enumerate(subject_file_list):
+                file_name_session_id_list.append((file_name, i))
+
+        return file_name_session_id_list
 
     def __getitem__(self, index: int) -> Tuple[any, any, int, int, int]:
         info = self.read_info(index)

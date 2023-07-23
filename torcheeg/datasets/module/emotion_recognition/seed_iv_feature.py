@@ -105,6 +105,8 @@ class SEEDIVFeatureDataset(BaseDataset):
                  label_transform: Union[None, Callable] = None,
                  before_trial: Union[None, Callable] = None,
                  after_trial: Union[Callable, None] = None,
+                 after_session: Union[Callable, None] = None,
+                 after_subject: Union[Callable, None] = None,
                  io_path: str = './io/seed_iv_feature',
                  io_size: int = 10485760,
                  io_mode: str = 'lmdb',
@@ -121,6 +123,8 @@ class SEEDIVFeatureDataset(BaseDataset):
             'label_transform': label_transform,
             'before_trial': before_trial,
             'after_trial': after_trial,
+            'after_session': after_session,
+            'after_subject': after_subject,
             'io_path': io_path,
             'io_size': io_size,
             'io_mode': io_mode,
@@ -134,12 +138,12 @@ class SEEDIVFeatureDataset(BaseDataset):
 
     @staticmethod
     def process_record(feature: list = ['de_movingAve'],
-                   num_channel: int = 62,
-                   offline_transform: Union[None, Callable] = None,
-                   before_trial: Union[None, Callable] = None,
-                   after_trial: Union[Callable, None] = None,
-                   file: Any = None,
-                   **kwargs):
+                       num_channel: int = 62,
+                       offline_transform: Union[None, Callable] = None,
+                       before_trial: Union[None, Callable] = None,
+                       after_trial: Union[Callable, None] = None,
+                       file: Any = None,
+                       **kwargs):
         file_path = file  # an element from file name list
 
         session_id = os.path.basename(os.path.dirname(file_path))
@@ -179,7 +183,6 @@ class SEEDIVFeatureDataset(BaseDataset):
             ]
         ]  # The labels with 0, 1, 2, and 3 denote the ground truth, neutral, sad, fear, and happy emotions, respectively.
         session_labels = labels[int(session_id) - 1]
-
         trial_ids = [
             int(re.findall(r"de_movingAve(\d+)", key)[0])
             for key in samples.keys() if 'de_movingAve' in key
@@ -230,21 +233,8 @@ class SEEDIVFeatureDataset(BaseDataset):
                     'clip_id': clip_id
                 }
                 record_info.update(trial_meta_info)
-                if after_trial:
-                    trial_queue.append({
-                        'eeg': t_eeg,
-                        'key': clip_id,
-                        'info': record_info
-                    })
-                else:
-                    yield {'eeg': t_eeg, 'key': clip_id, 'info': record_info}
-
-            if len(trial_queue) and after_trial:
-                trial_queue = after_trial(trial_queue)
-                for obj in trial_queue:
-                    assert 'eeg' in obj and 'key' in obj and 'info' in obj, 'after_trial must return a list of dictionaries, where each dictionary corresponds to an EEG sample, containing `eeg`, `key` and `info` as keys.'
-                    yield obj
-
+                yield {'eeg': t_eeg, 'key': clip_id, 'info': record_info}
+                
     def set_records(self, root_path: str = './eeg_feature_smooth', **kwargs):
 
         session_list = ['1', '2', '3']

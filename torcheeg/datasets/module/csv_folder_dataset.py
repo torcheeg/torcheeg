@@ -1,6 +1,5 @@
-from pathlib import Path
 from typing import Any, Callable, Dict, Tuple, Union
-
+import pandas as pd
 import mne
 import numpy as np
 
@@ -16,69 +15,45 @@ def default_read_fn(file_path, **kwargs):
     return epochs
 
 
-class FolderDataset(BaseDataset):
+class CSVFolderDataset(BaseDataset):
     '''
-    Read EEG samples and their corresponding labels from a fixed folder structure. This class allows two kinds of common file structures, :obj:`subject_in_label` and :obj:`label_in_subject`. Here, :obj:`subject_in_label` corresponds to the following file structure:
+    Read meta information from CSV file and read EEG data from folder according to the meta information. The CSV file should contain the following columns:
+
+    - ``subject_id`` (Optional): The subject id of the EEG data. Commonly used in training and testing dataset split.
+    - ``label`` (Optional): The label of the EEG data. Commonly used in training and testing dataset split.
+    - ``file_path`` (Required): The path to the EEG data file.
 
     .. code-block:: python
 
-        tree
-        # outputs
-        label01
-        |- sub01.edf
-        |- sub02.edf
-        label02
-        |- sub01.edf
-        |- sub02.edf
+        # data.csv
+        # | subject_id | trial_id | label | file_path                 |
+        # | ---------- | -------  | ----- | ------------------------- |
+        # | sub1       | 0        | 0     | './data/label1/sub1.fif' |
+        # | sub1       | 1        | 1     | './data/label2/sub1.fif' |
+        # | sub1       | 2        | 2     | './data/label3/sub1.fif' |
+        # | sub2       | 0        | 0     | './data/label1/sub2.fif' |
+        # | sub2       | 1        | 1     | './data/label2/sub2.fif' |
+        # | sub2       | 2        | 2     | './data/label3/sub2.fif' |
 
-    And :obj:`label_in_subject` corresponds to the following file structure:
+        def default_read_fn(file_path, **kwargs):
+            # Load EEG file
+            raw = mne.io.read_raw(file_path)
+            # Convert raw to epochs
+            epochs = mne.make_fixed_length_epochs(raw, duration=1)
+            # Return EEG data
+            return epochs
 
-    .. code-block:: python
-
-        tree
-        # outputs
-        sub01
-        |- label01.edf
-        |- label02.edf
-        sub02
-        |- label01.edf
-        |- label02.edf
-
-    An example dataset for GNN-based methods:
-
-    .. code-block:: python
-    
-        sfreq = 128  # Sampling rate
-        n_channels = 14  # Number of channels
-        duration = 5  # Data collected for 5 seconds
-        for i in range(num_files):
-            n_samples = sfreq * duration
-            data = np.random.randn(n_channels, n_samples)
-
-            ch_names = [f'ch_{i+1:03}' for i in range(n_channels)]
-            ch_types = ['eeg'] * n_channels
-            info = mne.create_info(ch_names, sfreq, ch_types)
-            raw = mne.io.RawArray(data, info)
-
-            file_name = f'sub{i+1}.fif'
-            file_path = os.path.join('./root_folder/', file_name)
-            raw.save(file_path)
-
-        label_map = {'folder1': 0, 'folder2': 1}
-        dataset = FolderDataset(io_path='./folder',
-                                root_path='./root_folder',
-                                structure='subject_in_label',
-                                num_channel=14,
-                                online_transform=transforms.ToTensor(),
-                                label_transform=transforms.Compose([
-                                    transforms.Select('label'),
-                                    transforms.Lambda(lambda x: label_map[x])
-                                ]),
-                                num_worker=4)
+        dataset = CSVFolderDataset(csv_path='./data.csv',
+                                   read_fn=default_read_fn,
+                                   online_transform=transforms.ToTensor(),
+                                   label_transform=transforms.Select('label'),
+                                   num_worker=4)
 
     Args:
-        root_path (str): The path to the root folder. (default: :obj:`'./folder'`)
-        structure (str): Folder structure, which affects how labels and subjects are mapped to EEG signal samples. Please refer to the above description of the structure of the two folders to select the correct parameters. (default: :obj:`'subject_in_label'`)
+        csv_path (str): The path to the CSV file.
+        num_channel (int): Number of channels in the EEG signal. (default: :obj:`14`)
+        chunk_size (int): Number of data points included in each EEG chunk as training or test samples. If set to -1, the EEG signal of a trial is used as a sample of a chunk. (default: :obj:`128`)
+        overlap (int): The number of overlapping data points between different chunks when dividing EEG chunks. (default: :obj:`0`)
         read_fn (Callable): Method for reading files in a folder. By default, this class provides methods for reading files using :obj:`mne.io.read_raw`. At the same time, we allow users to pass in custom file reading methods. The first input parameter of whose is file_path, and other parameters are additional parameters passed in when the class is initialized. For example, you can pass :obj:`chunk_size=32` to :obj:`FolderDataset`, then :obj:`chunk_size` will be received here.
         online_transform (Callable, optional): The transformation of the EEG signals and baseline EEG signals. The input is a :obj:`np.ndarray`, and the ouput is used as the first and second value of each element in the dataset. (default: :obj:`None`)
         offline_transform (Callable, optional): The usage is the same as :obj:`online_transform`, but executed before generating IO intermediate results. (default: :obj:`None`)
@@ -91,8 +66,7 @@ class FolderDataset(BaseDataset):
         in_memory (bool): Whether to load the entire dataset into memory. If :obj:`in_memory` is set to True, then the first time an EEG sample is read, the entire dataset is loaded into memory for subsequent retrieval. Otherwise, the dataset is stored on disk to avoid the out-of-memory problem. (default: :obj:`False`)
     '''
     def __init__(self,
-                 root_path: str = './folder',
-                 structure: str = 'subject_in_label',
+                 csv_path: str = './data.csv',
                  read_fn: Union[None, Callable] = default_read_fn,
                  online_transform: Union[None, Callable] = None,
                  offline_transform: Union[None, Callable] = None,
@@ -106,8 +80,7 @@ class FolderDataset(BaseDataset):
                  **kwargs):
         # pass all arguments to super class
         params = {
-            'root_path': root_path,
-            'structure': structure,
+            'csv_path': csv_path,
             'read_fn': read_fn,
             'online_transform': online_transform,
             'offline_transform': offline_transform,
@@ -126,11 +99,12 @@ class FolderDataset(BaseDataset):
 
     @staticmethod
     def process_record(file: Any = None,
-                   offline_transform: Union[None, Callable] = None,
-                   read_fn: Union[None, Callable] = None,
-                   **kwargs):
+                       offline_transform: Union[None, Callable] = None,
+                       read_fn: Union[None, Callable] = None,
+                       **kwargs):
 
-        file_path, subject_id, label = file
+        trial_info = file
+        file_path = trial_info['file_path']
 
         trial_samples = read_fn(file_path, **kwargs)
         events = [i[0] for i in trial_samples.events]
@@ -145,43 +119,28 @@ class FolderDataset(BaseDataset):
                 t = offline_transform(eeg=trial_signal)
                 t_eeg = t['eeg']
 
-            clip_id = f'{subject_id}_{label}_{write_pointer}'
+            clip_id = f'{file_path}_{write_pointer}'
             write_pointer += 1
 
             record_info = {
-                'subject_id': subject_id,
+                **trial_info,
                 'start_at': events[i],
                 'end_at': events[i + 1],
-                'clip_id': clip_id,
-                'label': label
+                'clip_id': clip_id
             }
 
             yield {'eeg': t_eeg, 'key': clip_id, 'info': record_info}
 
-    def set_records(self, root_path: str = './folder',
-                   structure: str = 'subject_in_label',
-                   **kwargs):
-        # get all the subfolders
-        subfolders = [str(i) for i in Path(root_path).iterdir() if i.is_dir()]
-        # get all the files in the subfolders
-        file_path_list = []
-        for subfolder in subfolders:
-            file_path_list += [
-                str(i) for i in Path(subfolder).iterdir() if i.is_file()
-            ]
-        # get the subject id
-        if structure == 'subject_in_label':
-            # get the file name without the extension
-            subjects = [i.split('/')[-1].split('.')[0] for i in file_path_list]
-            labels = [i.split('/')[-2] for i in file_path_list]
-        elif structure == 'label_in_subject':
-            subjects = [i.split('/')[-2] for i in file_path_list]
-            labels = [i.split('/')[-1].split('.')[0] for i in file_path_list]
-        else:
-            raise ValueError('Unknown folder mode: {}'.format(structure))
+    def set_records(self, csv_path: str = './data.csv', **kwargs):
+        # read csv
+        df = pd.read_csv(csv_path)
 
-        file_path_subject_label = list(zip(file_path_list, subjects, labels))
-        return file_path_subject_label
+        assert 'file_path' in df.columns, 'file_path is required in csv file.'
+
+        # df to a list of dict, each dict is a row
+        df_list = df.to_dict('records')
+
+        return df_list
 
     def __getitem__(self, index: int) -> Tuple[any, any, int, int, int]:
         info = self.read_info(index)
@@ -205,10 +164,8 @@ class FolderDataset(BaseDataset):
     def repr_body(self) -> Dict:
         return dict(
             super().repr_body, **{
-                'root_path': self.root_path,
-                'chunk_size': self.chunk_size,
-                'overlap': self.overlap,
-                'num_channel': self.num_channel,
+                'csv_path': self.csv_path,
+                'read_fn': self.read_fn,
                 'online_transform': self.online_transform,
                 'offline_transform': self.offline_transform,
                 'label_transform': self.label_transform,

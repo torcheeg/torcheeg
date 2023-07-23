@@ -6,6 +6,24 @@ import torch.nn as nn
 from .mmd_like import _MMDLikeTrainer
 
 
+def compute_covariance(data):
+    n = data.size(0)
+
+    device = data.device
+
+    ones_vector = torch.ones(n).resize(1, n).to(device=device)
+
+    one_onto_D = torch.mm(ones_vector, data)
+    mult_right_terms = torch.mm(one_onto_D.t(), one_onto_D)
+    mult_right_terms = torch.div(mult_right_terms, n)
+
+    mult_left_terms = torch.mm(data.t(), data)
+    covariance_matrix = 1 / (n - 1) * torch.add(mult_left_terms, -1 *
+                                                (mult_right_terms))
+
+    return covariance_matrix
+
+
 class CORALTrainer(_MMDLikeTrainer):
     r'''
     This class supports the implementation of CORrelation ALignment (CORAL) for deep domain adaptation.
@@ -51,45 +69,44 @@ class CORALTrainer(_MMDLikeTrainer):
                  lr: float = 1e-4,
                  weight_decay: float = 0.0,
                  weight_domain: float = 1.0,
-                 weight_scheduler: bool = False,
-                 lr_scheduler: bool = False,
+                 weight_scheduler: bool = True,
+                 lr_scheduler_gamma: float = 0.0,
+                 lr_scheduler_decay: float = 0.75,
                  warmup_epochs: int = 0,
                  devices: int = 1,
                  accelerator: str = "cpu",
                  metrics: List[str] = ["accuracy"]):
-        super(CORALTrainer, self).__init__(extractor=extractor,
-                                              classifier=classifier,
-                                              num_classes=num_classes,
-                                              lr=lr,
-                                              weight_decay=weight_decay,
-                                              weight_domain=weight_domain,
-                                              weight_scheduler=weight_scheduler,
-                                              lr_scheduler=lr_scheduler,
-                                              warmup_epochs=warmup_epochs,
-                                              devices=devices,
-                                              accelerator=accelerator,
-                                              metrics=metrics)
+        super(CORALTrainer,
+              self).__init__(extractor=extractor,
+                             classifier=classifier,
+                             num_classes=num_classes,
+                             lr=lr,
+                             weight_decay=weight_decay,
+                             weight_domain=weight_domain,
+                             weight_scheduler=weight_scheduler,
+                             lr_scheduler_gamma=lr_scheduler_gamma,
+                             lr_scheduler_decay=lr_scheduler_decay,
+                             warmup_epochs=warmup_epochs,
+                             devices=devices,
+                             accelerator=accelerator,
+                             metrics=metrics)
 
     def _domain_loss_fn(self, x_source_feat: torch.Tensor,
                         x_target_feat: torch.Tensor) -> torch.Tensor:
 
-        # Compute the loss value
-        batch_size = x_source_feat.shape[1]
+        d = x_source_feat.size(
+            1)  # d-dimensional vectors (same for source, target)
 
-        # source covariance
-        x_source_devi = torch.mean(x_source_feat, 1,
-                                   keepdim=True) - x_source_feat
-        x_source_cova = torch.matmul(torch.transpose(x_source_devi, 0, 1),
-                                     x_source_devi)
+        source_covariance = compute_covariance(x_source_feat)
+        target_covariance = compute_covariance(x_target_feat)
 
-        # target covariance
-        x_target_devi = torch.mean(x_target_feat, 1,
-                                   keepdim=True) - x_target_feat
-        x_target_cova = torch.matmul(torch.transpose(x_target_devi, 0, 1),
-                                     x_target_devi)
-        # frobenius norm between source and target
-        loss = torch.mean(
-            torch.mul((x_source_cova - x_target_cova),
-                      (x_source_cova - x_target_cova))) / (4 * batch_size * 4)
+        # take Frobenius norm (https://pytorch.org/docs/stable/torch.html)
+        loss = torch.norm(torch.mul((source_covariance - target_covariance),
+                                    (source_covariance - target_covariance)),
+                          p="fro")
 
+        # loss = torch.norm(torch.mm((source_covariance-target_covariance),
+        # 							(source_covariance-target_covariance)), p="fro")
+
+        loss = loss / (4 * d * d)
         return loss

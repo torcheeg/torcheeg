@@ -1,3 +1,4 @@
+import logging
 import warnings
 from itertools import chain
 from typing import Any, Dict, List, Tuple
@@ -13,6 +14,7 @@ from .utils import FrechetInceptionDistance
 
 _EVALUATE_OUTPUT = List[Dict[str, float]]  # 1 dict per DataLoader
 
+log = logging.getLogger(__name__)
 
 class BetaVAETrainer(pl.LightningModule):
     r'''

@@ -1,4 +1,5 @@
 import os
+import logging
 import re
 from typing import Any, Callable, Dict, List, Tuple, Union
 
@@ -8,6 +9,7 @@ from ...constants.emotion_recognition.amigos import (
     AMIGOS_ADJACENCY_MATRIX, AMIGOS_CHANNEL_LOCATION_DICT)
 from ..base_dataset import BaseDataset
 
+log = logging.getLogger(__name__)
 
 class AMIGOSDataset(BaseDataset):
     r'''
@@ -144,6 +146,8 @@ class AMIGOSDataset(BaseDataset):
                  label_transform: Union[None, Callable] = None,
                  before_trial: Union[None, Callable] = None,
                  after_trial: Union[Callable, None] = None,
+                 after_session: Union[Callable, None] = None,
+                 after_subject: Union[Callable, None] = None,
                  io_path: str = './io/amigos',
                  io_size: int = 10485760,
                  io_mode: str = 'lmdb',
@@ -165,6 +169,8 @@ class AMIGOSDataset(BaseDataset):
             'label_transform': label_transform,
             'before_trial': before_trial,
             'after_trial': after_trial,
+            'after_session': after_session,
+            'after_subject': after_subject,
             'io_path': io_path,
             'io_size': io_size,
             'io_mode': io_mode,
@@ -228,7 +234,7 @@ class AMIGOSDataset(BaseDataset):
                 # 3 of the participants (08,24,28<->32) of the previous experiment did not watch a set of 4 long affective
                 if sum(trial_samples.shape) != sum(trial_rating.shape):
                     print(
-                        f'[WARNING] Find EEG signals without labels, or labels without EEG signals. Please check the {trial_id + 1}-th experiment of the {subject}-th subject in the file {file_name}. TorchEEG currently skipped the mismatched data.'
+                        f'Find EEG signals without labels, or labels without EEG signals. Please check the {trial_id + 1}-th experiment of the {subject}-th subject in the file {file_name}. TorchEEG currently skipped the mismatched data.'
                     )
                 continue
 
@@ -291,23 +297,10 @@ class AMIGOSDataset(BaseDataset):
                     'clip_id': clip_id
                 }
                 record_info.update(trial_meta_info)
-                if after_trial:
-                    trial_queue.append({
-                        'eeg': t_eeg,
-                        'key': clip_id,
-                        'info': record_info
-                    })
-                else:
-                    yield {'eeg': t_eeg, 'key': clip_id, 'info': record_info}
+                yield {'eeg': t_eeg, 'key': clip_id, 'info': record_info}
 
                 start_at = start_at + step
                 end_at = start_at + chunk_size
-
-            if len(trial_queue) and after_trial:
-                trial_queue = after_trial(trial_queue)
-                for obj in trial_queue:
-                    assert 'eeg' in obj and 'key' in obj and 'info' in obj, 'after_trial must return a list of dictionaries, where each dictionary corresponds to an EEG sample, containing `eeg`, `key` and `info` as keys.'
-                    yield obj
 
     def set_records(self, root_path: str = './data_preprocessed', **kwargs):
         return os.listdir(root_path)

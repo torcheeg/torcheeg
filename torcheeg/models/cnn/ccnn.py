@@ -55,18 +55,8 @@ class CCNN(nn.Module):
         )
         self.lin2 = nn.Linear(1024, self.num_classes)
 
-    @property
     def feature_dim(self):
-        with torch.no_grad():
-            mock_eeg = torch.zeros(1, self.in_channels, *self.grid_size)
-
-            mock_eeg = self.conv1(mock_eeg)
-            mock_eeg = self.conv2(mock_eeg)
-            mock_eeg = self.conv3(mock_eeg)
-            mock_eeg = self.conv4(mock_eeg)
-            mock_eeg = mock_eeg.flatten(start_dim=1)
-
-            return mock_eeg.shape[1]
+        return self.grid_size[0] * self.grid_size[1] * 64
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         r'''
@@ -82,6 +72,7 @@ class CCNN(nn.Module):
         x = self.conv4(x)
 
         x = x.flatten(start_dim=1)
+
         x = self.lin1(x)
         x = self.lin2(x)
         return x

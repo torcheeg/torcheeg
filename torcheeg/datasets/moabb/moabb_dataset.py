@@ -1,12 +1,17 @@
 import os
+import mne
+import logging
+import numpy as np
 import itertools
 from typing import Any, Callable, Dict, Tuple, Union
+import pandas as pd
 
 from ..module.base_dataset import BaseDataset
 
 from moabb.datasets.base import BaseDataset as _MOABBDataset
 from moabb.paradigms.base import BaseParadigm as _MOABBParadigm
 
+log = logging.getLogger(__name__)
 
 class MOABBDataset(BaseDataset):
     '''
@@ -58,6 +63,8 @@ class MOABBDataset(BaseDataset):
                  label_transform: Union[None, Callable] = None,
                  before_trial: Union[None, Callable] = None,
                  after_trial: Union[Callable, None] = None,
+                 after_session: Union[Callable, None] = None,
+                 after_subject: Union[Callable, None] = None,
                  io_path: str = './io/moabb',
                  io_size: int = 10485760,
                  io_mode: str = 'lmdb',
@@ -77,6 +84,8 @@ class MOABBDataset(BaseDataset):
             'label_transform': label_transform,
             'before_trial': before_trial,
             'after_trial': after_trial,
+            'after_session': after_session,
+            'after_subject': after_subject,
             'io_path': io_path,
             'io_size': io_size,
             'io_mode': io_mode,
@@ -86,6 +95,11 @@ class MOABBDataset(BaseDataset):
             'in_memory': in_memory
         }
         params.update(kwargs)
+
+        if not paradigm.is_valid(dataset):
+            message = f"Dataset {dataset.code} is not valid for paradigm"
+            raise AssertionError(message)
+        
         super().__init__(**params)
         # save all arguments to __dict__
         self.__dict__.update(params)
@@ -93,17 +107,13 @@ class MOABBDataset(BaseDataset):
     @staticmethod
     def process_record(file: Any = None,
                        chunk_size: int = -1,
-                       overlap: int = -1,
+                       overlap: int = 0,
                        offline_transform: Union[None, Callable] = None,
                        dataset: _MOABBDataset = None,
                        paradigm: _MOABBParadigm = None,
                        before_trial: Union[None, Callable] = None,
                        after_trial: Union[None, Callable] = None,
                        **kwargs):
-
-        if not paradigm.is_valid(dataset):
-            message = f"Dataset {dataset.code} is not valid for paradigm"
-            raise AssertionError(message)
 
         subject_id, session_id = file
 
@@ -133,8 +143,6 @@ class MOABBDataset(BaseDataset):
                     chunk_size = roi_signal.shape[1] - start_at
                 end_at = start_at + chunk_size
 
-                if overlap <= 0:
-                    overlap = 0
                 step = chunk_size - overlap
 
                 while end_at <= roi_signal.shape[1]:
@@ -151,7 +159,7 @@ class MOABBDataset(BaseDataset):
                     record_info = {
                         'subject_id': subject_id,
                         'session_id': session_id,
-                        'run_id': run_id,
+                        'trial_id': run_id,
                         'roi_id': roi_id,
                         'clip_id': clip_id,
                         'label': label,

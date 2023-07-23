@@ -1,7 +1,7 @@
 import unittest
 import torch
 import numpy as np
-from torcheeg.transforms import ToTensor, Resize, RandomNoise, RandomMask, RandomWindowSlice, RandomWindowWarp, RandomPCANoise, RandomFlip, RandomShift, RandomChannelShuffle, RandomFrequencyShift, RandomSignFlip, Contrastive
+from torcheeg.transforms import ToTensor, Resize, RandomNoise, RandomMask, RandomWindowSlice, RandomWindowWarp, RandomPCANoise, RandomFlip, RandomShift, RandomChannelShuffle, RandomFrequencyShift, RandomSignFlip, Contrastive, RandomMaskGrid, RandomMask2D
 
 
 class TestTorchTransforms(unittest.TestCase):
@@ -105,6 +105,16 @@ class TestTorchTransforms(unittest.TestCase):
         eeg = torch.randn(128, 9, 9)
         transformed_eeg = RandomFrequencyShift(p=1.0, series_dim=0)(eeg=eeg)
         self.assertEqual(tuple(transformed_eeg['eeg'].shape), (128, 9, 9))
+
+    def test_random_mask_2d(self):
+        eeg = torch.randn(1, 32, 128)
+        transformed_eeg = RandomMask2D()(eeg=eeg)
+        self.assertEqual(transformed_eeg['eeg'].shape, (1, 32, 128))
+    
+    def test_random_mask_grid(self):
+        eeg = torch.randn(32, 9, 9)
+        transformed_eeg = RandomMaskGrid()(eeg=eeg)
+        self.assertEqual(transformed_eeg['eeg'].shape, (32, 9, 9))
 
 
 if __name__ == '__main__':

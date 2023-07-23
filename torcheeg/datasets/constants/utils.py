@@ -25,6 +25,8 @@ def format_channel_location_dict(channel_list, location_list):
         if len(np.argwhere(location_list == channel)):
             location = (np.argwhere(location_list == channel)[0]).tolist()
             output[channel] = location
+        else:
+            output[channel] = None
     return output
 
 

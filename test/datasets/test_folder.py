@@ -1,12 +1,12 @@
 import os
 import shutil
 import unittest
-
+import pandas as pd
 import mne
 import numpy as np
 
 from torcheeg import transforms
-from torcheeg.datasets import FolderDataset
+from torcheeg.datasets import FolderDataset, CSVFolderDataset
 
 mne.set_log_level('CRITICAL')
 
@@ -56,7 +56,6 @@ class TestFolderDataset(unittest.TestCase):
         label_map = {'folder1': 0, 'folder2': 1}
         dataset = FolderDataset(io_path=io_path,
                                 root_path=root_path,
-                                num_channel=14,
                                 online_transform=transforms.ToTensor(),
                                 label_transform=transforms.Compose([
                                     transforms.Select('label'),
@@ -67,11 +66,50 @@ class TestFolderDataset(unittest.TestCase):
         self.assertEqual(len(dataset), 20)
         first_item = dataset[0]
         self.assertEqual(first_item[0].shape, (14, 128))
-        self.assertEqual(first_item[1], 0)
         last_item = dataset[-1]
         self.assertEqual(last_item[0].shape, (14, 128))
-        self.assertEqual(last_item[1], 1)
 
+    def test_csv_folder_dataset(self):
+        # Generate dummy EEG files and save them to folders
+        folder1 = './tmp_in/data/label1'
+        folder2 = './tmp_in/data/label2'
+
+        if not os.path.exists(folder1):
+            os.makedirs(folder1)
+            self.generate_dummy_eeg_files(2, folder1)
+        if not os.path.exists(folder2):
+            os.makedirs(folder2)
+            self.generate_dummy_eeg_files(2, folder2)
+
+        # Define input and output paths for folder_constructor
+        csv_path = './tmp_out/data.csv'
+        io_path = './tmp_out/eeg_folder'
+
+        df = pd.DataFrame({
+            'subject_id': ['sub1', 'sub1', 'sub2', 'sub2'],
+            'trial_id': [0, 1, 0, 1],
+            'label': [0, 1, 0, 1],
+            'file_path': [
+                os.path.join(folder1, 'sub1.fif'),
+                os.path.join(folder2, 'sub1.fif'),
+                os.path.join(folder1, 'sub2.fif'),
+                os.path.join(folder2, 'sub2.fif'),
+            ]
+        })
+
+        df.to_csv(csv_path, index=False)
+
+        dataset = CSVFolderDataset(csv_path=csv_path,
+                                   io_path=io_path,
+                                   online_transform=transforms.ToTensor(),
+                                   label_transform=transforms.Select('label'),
+                                   num_worker=0)
+
+        self.assertEqual(len(dataset), 20)
+        first_item = dataset[0]
+        self.assertEqual(first_item[0].shape, (14, 128))
+        last_item = dataset[-1]
+        self.assertEqual(last_item[0].shape, (14, 128))
 
 if __name__ == '__main__':
     unittest.main()

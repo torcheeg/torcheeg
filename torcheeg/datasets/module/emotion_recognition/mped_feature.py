@@ -195,7 +195,6 @@ class MPEDFeatureDataset(BaseDataset):
             }
             num_clips = trial_samples.shape[1]
 
-            trial_queue = []
             for clip_id in range(num_clips):
                 # PSD: (62, 5)
                 # Hjorth: (62, 3 * 6)
@@ -214,20 +213,7 @@ class MPEDFeatureDataset(BaseDataset):
                 # record meta info for each signal
                 record_info = {'clip_id': clip_id}
                 record_info.update(trial_meta_info)
-                if after_trial:
-                    trial_queue.append({
-                        'eeg': t_eeg,
-                        'key': clip_id,
-                        'info': record_info
-                    })
-                else:
-                    yield {'eeg': t_eeg, 'key': clip_id, 'info': record_info}
-
-            if len(trial_queue) and after_trial:
-                trial_queue = after_trial(trial_queue)
-                for obj in trial_queue:
-                    assert 'eeg' in obj and 'key' in obj and 'info' in obj, 'after_trial must return a list of dictionaries, where each dictionary corresponds to an EEG sample, containing `eeg`, `key` and `info` as keys.'
-                    yield obj
+                yield {'eeg': t_eeg, 'key': clip_id, 'info': record_info}
 
     def set_records(self, root_path: str = './EEG_feature',
                    feature: list = ['PSD'],

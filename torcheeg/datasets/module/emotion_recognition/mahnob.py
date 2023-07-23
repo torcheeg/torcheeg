@@ -153,6 +153,8 @@ class MAHNOBDataset(BaseDataset):
                  label_transform: Union[None, Callable] = None,
                  before_trial: Union[None, Callable] = None,
                  after_trial: Union[Callable, None] = None,
+                 after_session: Union[Callable, None] = None,
+                 after_subject: Union[Callable, None] = None,
                  io_path: str = './io/mahnob',
                  io_size: int = 10485760,
                  io_mode: str = 'lmdb',
@@ -174,6 +176,8 @@ class MAHNOBDataset(BaseDataset):
             'label_transform': label_transform,
             'before_trial': before_trial,
             'after_trial': after_trial,
+            'after_session': after_session,
+            'after_subject': after_subject,
             'io_path': io_path,
             'io_size': io_size,
             'io_mode': io_mode,
@@ -198,7 +202,6 @@ class MAHNOBDataset(BaseDataset):
                 num_trial_sample: int = 30,
                 offline_transform: Union[None, Callable] = None,
                 before_trial: Union[None, Callable] = None,
-                after_trial: Union[None, Callable] = None,
                **kwargs):
         file_name = file
 
@@ -278,7 +281,6 @@ class MAHNOBDataset(BaseDataset):
         if not (num_trial_sample <= 0):
             max_len = min(num_trial_sample * chunk_size, trial_samples.shape[1])
 
-        trial_queue = []
         while end_at <= max_len:
             clip_sample = trial_samples[:, start_at:end_at]
 
@@ -309,14 +311,7 @@ class MAHNOBDataset(BaseDataset):
                 'clip_id': clip_id
             }
             record_info.update(trial_meta_info)
-            if after_trial:
-                trial_queue.append({
-                    'eeg': t_eeg,
-                    'key': clip_id,
-                    'info': record_info
-                })
-            else:
-                yield {
+            yield {
                     'eeg': t_eeg,
                     'key': clip_id,
                     'info': record_info
@@ -324,12 +319,6 @@ class MAHNOBDataset(BaseDataset):
 
             start_at = start_at + step
             end_at = start_at + chunk_size
-
-        if len(trial_queue) and after_trial:
-            trial_queue = after_trial(trial_queue)
-            for obj in trial_queue:
-                assert 'eeg' in obj and 'key' in obj and 'info' in obj, 'after_trial must return a list of dictionaries, where each dictionary corresponds to an EEG sample, containing `eeg`, `key` and `info` as keys.'
-                yield obj
 
     def set_records(self, root_path: str = './Sessions', **kwargs):
         return os.listdir(root_path)

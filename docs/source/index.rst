@@ -38,9 +38,12 @@ Transformers.
    :maxdepth: 1
    :caption: Tutorials:
 
-   introduction_by_example
-   implementing_gnns_with_pyg
-   managing_experiments_with_pytorch_lightning
+   Deep Learning Workflow <auto_examples/examples_pipeline>
+   Introduction to datasets <auto_examples/examples_datasets>
+   Introduction to transforms <auto_examples/examples_transforms>
+   Introduction to models <auto_examples/examples_models>
+   Introduction to trainers <auto_examples/examples_trainers>
+   Vanilla PyTorch Workflow <auto_examples/examples_vanilla_torch>
    Expand to See More Examples <auto_examples/index>
 
 .. toctree::

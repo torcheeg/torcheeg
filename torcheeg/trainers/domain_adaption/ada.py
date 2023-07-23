@@ -120,25 +120,28 @@ class ADATrainer(_MMDLikeTrainer):
                  weight_visit: float = 1.0,
                  weight_domain: float = 1.0,
                  weight_decay: float = 0.0,
-                 weight_scheduler: bool = False,
-                 lr_scheduler: bool = False,
+                 weight_scheduler: bool = True,
+                 lr_scheduler_gamma: float = 0.0,
+                 lr_scheduler_decay: float = 0.75,
                  warmup_epochs: int = 0,
                  devices: int = 1,
                  accelerator: str = "cpu",
                  metrics: List[str] = ["accuracy"]):
 
-        super(ADATrainer, self).__init__(extractor=extractor,
-                                         classifier=classifier,
-                                         num_classes=num_classes,
-                                         lr=lr,
-                                         weight_decay=weight_decay,
-                                         weight_domain=weight_domain,
-                                         weight_scheduler=weight_scheduler,
-                                         lr_scheduler=lr_scheduler,
-                                         warmup_epochs=warmup_epochs,
-                                         devices=devices,
-                                         accelerator=accelerator,
-                                         metrics=metrics)
+        super(ADATrainer,
+              self).__init__(extractor=extractor,
+                             classifier=classifier,
+                             num_classes=num_classes,
+                             lr=lr,
+                             weight_decay=weight_decay,
+                             weight_domain=weight_domain,
+                             weight_scheduler=weight_scheduler,
+                             lr_scheduler_gamma=lr_scheduler_gamma,
+                             lr_scheduler_decay=lr_scheduler_decay,
+                             warmup_epochs=warmup_epochs,
+                             devices=devices,
+                             accelerator=accelerator,
+                             metrics=metrics)
         self.weight_walker = weight_walker
         self.weight_visit = weight_visit
 
