@@ -267,10 +267,11 @@ class BCI2022Dataset(BaseDataset):
         video_id = None
         start_at = None
         end_at = None
-
+        chunk_size_original = chunk_size
         # loop for each trial
         for i, event in enumerate(events):
-
+            # restore chunk size
+            chunk_size = chunk_size_original
             if event in list(range(1, 29)):
                 # Video events 1-28: Different events correspond to different experimental video materials
                 video_id = event
