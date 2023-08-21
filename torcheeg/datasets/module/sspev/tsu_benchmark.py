@@ -201,12 +201,14 @@ class TSUBenckmarkDataset(BaseDataset):
 
                 start_at = 0
                 if chunk_size <= 0:
-                    chunk_size = block_samples.shape[1] - start_at
+                    dynamic_chunk_size = block_samples.shape[1] - start_at
+                else:
+                    dynamic_chunk_size = chunk_size
 
                 # chunk with chunk size
-                end_at = chunk_size
+                end_at = dynamic_chunk_size
                 # calculate moving step
-                step = chunk_size - overlap
+                step = dynamic_chunk_size - overlap
 
                 block_queue = []
                 while end_at <= block_samples.shape[1]:
@@ -240,7 +242,7 @@ class TSUBenckmarkDataset(BaseDataset):
                         }
 
                     start_at = start_at + step
-                    end_at = start_at + chunk_size
+                    end_at = start_at + dynamic_chunk_size
 
                 if len(block_queue) and after_trial:
                     block_queue = after_trial(block_queue)

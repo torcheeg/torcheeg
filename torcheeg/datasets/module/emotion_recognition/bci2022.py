@@ -267,11 +267,10 @@ class BCI2022Dataset(BaseDataset):
         video_id = None
         start_at = None
         end_at = None
-        chunk_size_original = chunk_size
+        
         # loop for each trial
         for i, event in enumerate(events):
-            # restore chunk size
-            chunk_size = chunk_size_original
+            
             if event in list(range(1, 29)):
                 # Video events 1-28: Different events correspond to different experimental video materials
                 video_id = event
@@ -295,9 +294,12 @@ class BCI2022Dataset(BaseDataset):
 
                 cur_start_at = start_at
                 if chunk_size <= 0:
-                    chunk_size = end_at - start_at
-                cur_end_at = cur_start_at + chunk_size
-                step = chunk_size - overlap
+                    dynamic_chunk_size = end_at - start_at
+                else:
+                    dynamic_chunk_size = chunk_size
+
+                cur_end_at = cur_start_at + dynamic_chunk_size
+                step = dynamic_chunk_size - overlap
 
                 if before_trial:
                     samples[:channel_num, cur_start_at:end_at] = before_trial(
@@ -324,7 +326,7 @@ class BCI2022Dataset(BaseDataset):
                         }
 
                     cur_start_at = cur_start_at + step
-                    cur_end_at = cur_start_at + chunk_size
+                    cur_end_at = cur_start_at + dynamic_chunk_size
 
                 # prepare for the next trial
                 trial_id += 1

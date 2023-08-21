@@ -191,13 +191,10 @@ class DEAPDataset(BaseDataset):
         subject_id = file_name
 
         write_pointer = 0
-        chunk_size_original = chunk_size
-        # loop for each trial
+        
         for trial_id in range(len(samples)):
-            # restore chunk_size modified in loop
-            chunk_size = chunk_size_original
-            # extract baseline signals
 
+            # extract baseline signals
             trial_samples = samples[
                 trial_id, :num_channel]  # channel(32), timestep(63*128)
             if before_trial:
@@ -219,12 +216,14 @@ class DEAPDataset(BaseDataset):
 
             start_at = baseline_chunk_size * num_baseline
             if chunk_size <= 0:
-                chunk_size = trial_samples.shape[1] - start_at
+                dynamic_chunk_size = trial_samples.shape[1] - start_at
+            else:
+                dynamic_chunk_size = chunk_size
 
             # chunk with chunk size
-            end_at = start_at + chunk_size
+            end_at = start_at + dynamic_chunk_size
             # calculate moving step
-            step = chunk_size - overlap
+            step = dynamic_chunk_size - overlap
 
             while end_at <= trial_samples.shape[1]:
                 clip_sample = trial_samples[:, start_at:end_at]
@@ -258,7 +257,7 @@ class DEAPDataset(BaseDataset):
                 yield {'eeg': t_eeg, 'key': clip_id, 'info': record_info}
 
                 start_at = start_at + step
-                end_at = start_at + chunk_size
+                end_at = start_at + dynamic_chunk_size
 
     def set_records(self, root_path: str = './data_preprocessed_python',
         **kwargs):
