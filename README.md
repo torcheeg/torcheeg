@@ -260,6 +260,13 @@ If you would like to contribute new datasets, deep learning methods, and extensi
             <br />
             <sub><b>The Gitter Badger</b></sub>
         </a>
+    </td>
+    <td align="center">
+        <a href="https://github.com/arrogant-R">
+            <img src="https://avatars.githubusercontent.com/u/83148307?v=4" width="100;" alt="arrogant-R"/>
+            <br />
+            <sub><b>Null</b></sub>
+        </a>
     </td></tr>
 </table>
 <!-- readme: collaborators,contributors -end -->
