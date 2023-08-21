@@ -191,8 +191,11 @@ class DEAPDataset(BaseDataset):
         subject_id = file_name
 
         write_pointer = 0
+        chunk_size_original = chunk_size
         # loop for each trial
         for trial_id in range(len(samples)):
+            # restore chunk_size modified in loop
+            chunk_size = chunk_size_original
             # extract baseline signals
 
             trial_samples = samples[

@@ -218,9 +218,11 @@ class AMIGOSDataset(BaseDataset):
         max_len = len(samples)
         if not (num_trial <= 0):
             max_len = min(len(samples), num_trial)
-
+        chunk_size_original = chunk_size
         # loop for each trial
         for trial_id in range(max_len):
+            # restore chunk_size as passed by the user
+            chunk_size = chunk_size_original
             # extract baseline signals
             trial_samples = samples[trial_id]
 
