@@ -189,10 +189,11 @@ class SEEDDataset(BaseDataset):
             verify_compressed_data_integrity=False)['label'][0]
 
         trial_ids = [key for key in samples.keys() if 'eeg' in key]
-
+        chunk_size_original = chunk_size
         write_pointer = 0
         # loop for each trial
         for trial_id in trial_ids:
+            chunk_size = chunk_size_original
             # extract baseline signals
             trial_samples = samples[trial_id]  # channel(62), timestep(n*200)
             if before_trial:

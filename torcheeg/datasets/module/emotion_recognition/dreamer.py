@@ -186,8 +186,11 @@ class DREAMERDataset(BaseDataset):
                                                                       0])  # 18
 
         write_pointer = 0
+        chunk_size_original = chunk_size
         # loop for each trial
         for trial_id in range(trial_len):
+            # restore chunk_size parameter (modified within the loop)
+            chunk_size = chunk_size_original
             # extract baseline signals
             trial_baseline_sample = mat_data['DREAMER'][0, 0]['Data'][
                 0, subject]['EEG'][0, 0]['baseline'][0, 0][trial_id, 0]
