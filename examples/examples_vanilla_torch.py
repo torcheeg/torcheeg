@@ -2,8 +2,7 @@
 Training Models Using Vanilla PyTorch
 ======================================
 
-Certain users tend to veer away from trainers. This article provides a
-guide on how to train models using PyTorch features.
+For those who prefer working directly with PyTorch's native functionalities instead of using third-party trainers, this tutorial provides a complete guide on how to train models using standard PyTorch features.
 
 """
 
@@ -21,13 +20,13 @@ import os
 import time
 import logging
 
-os.makedirs('./tmp_out/examples_vanilla_torch/log', exist_ok=True)
+os.makedirs('./examples_vanilla_torch/log', exist_ok=True)
 logger = logging.getLogger('Training models with vanilla PyTorch')
 logger.setLevel(logging.DEBUG)
 console_handler = logging.StreamHandler()
 timeticks = time.strftime("%Y-%m-%d-%H-%M-%S", time.localtime())
 file_handler = logging.FileHandler(
-    os.path.join('./tmp_out/examples_vanilla_torch/log', f'{timeticks}.log'))
+    os.path.join('./examples_vanilla_torch/log', f'{timeticks}.log'))
 logger.addHandler(console_handler)
 logger.addHandler(file_handler)
 
@@ -78,7 +77,7 @@ from torcheeg.datasets.constants.emotion_recognition.deap import \
     DEAP_CHANNEL_LOCATION_DICT
 
 dataset = DEAPDataset(
-    io_path=f'./tmp_out/examples_vanilla_torch/deap',
+    io_path=f'./examples_vanilla_torch/deap',
     root_path='./tmp_in/data_preprocessed_python',
     offline_transform=transforms.Compose([
         transforms.BandDifferentialEntropy(apply_to_baseline=True),
@@ -106,7 +105,7 @@ dataset = DEAPDataset(
 from torcheeg.model_selection import KFoldPerSubject
 
 k_fold = KFoldPerSubject(n_splits=10,
-                         split_path='./tmp_out/examples_vanilla_torch/split',
+                         split_path='./examples_vanilla_torch/split',
                          shuffle=True)
 
 
@@ -204,7 +203,7 @@ for i, (train_dataset, test_dataset) in enumerate(k_fold.split(dataset)):
     train_dataset, val_dataset = train_test_split(
         train_dataset,
         test_size=0.2,
-        split_path=f'./tmp_out/examples_vanilla_torch/split{i}',
+        split_path=f'./examples_vanilla_torch/split{i}',
         shuffle=True)
     train_loader = DataLoader(train_dataset,
                               batch_size=batch_size,
@@ -220,12 +219,12 @@ for i, (train_dataset, test_dataset) in enumerate(k_fold.split(dataset)):
         if val_acc > best_val_acc:
             best_val_acc = val_acc
             torch.save(model.state_dict(),
-                       f'./tmp_out/examples_vanilla_torch/model{i}.pt')
+                       f'./examples_vanilla_torch/model{i}.pt')
 
     test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
 
     # load the best model to test on test set
-    model.load_state_dict(torch.load(f'./tmp_out/examples_vanilla_torch/model{i}.pt'))
+    model.load_state_dict(torch.load(f'./examples_vanilla_torch/model{i}.pt'))
     test_acc, test_loss = valid(test_loader, model, loss_fn)
 
     # log the test result
