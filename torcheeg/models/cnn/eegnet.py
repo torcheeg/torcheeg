@@ -99,9 +99,8 @@ class EEGNet(nn.Module):
             nn.BatchNorm2d(self.F2, momentum=0.01, affine=True, eps=1e-3), nn.ELU(), nn.AvgPool2d((1, 8), stride=8),
             nn.Dropout(p=dropout))
 
-        self.lin = nn.Linear(self.F2 * self.feature_dim, num_classes, bias=False)
+        self.lin = nn.Linear(self.feature_dim(), num_classes, bias=False)
 
-    @property
     def feature_dim(self):
         with torch.no_grad():
             mock_eeg = torch.zeros(1, 1, self.num_electrodes, self.chunk_size)
@@ -109,7 +108,7 @@ class EEGNet(nn.Module):
             mock_eeg = self.block1(mock_eeg)
             mock_eeg = self.block2(mock_eeg)
 
-        return mock_eeg.shape[3]
+        return self.F2 * mock_eeg.shape[3]
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         r'''

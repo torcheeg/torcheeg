@@ -1,3 +1,4 @@
+import logging
 from typing import Any, Dict, List, Tuple
 
 import pytorch_lightning as pl
@@ -8,6 +9,8 @@ from torch.utils.data import DataLoader
 from torchmetrics import MetricCollection
 
 _EVALUATE_OUTPUT = List[Dict[str, float]]  # 1 dict per DataLoader
+
+log = logging.getLogger(__name__)
 
 
 def classification_metrics(metric_list: List[str], num_classes: int):
@@ -77,12 +80,12 @@ class ClassifierTrainer(pl.LightningModule):
         self.num_classes = num_classes
         self.lr = lr
         self.weight_decay = weight_decay
-        
+
         self.devices = devices
         self.accelerator = accelerator
         self.metrics = metrics
 
-        self._ce_fn = nn.CrossEntropyLoss()
+        self.ce_fn = nn.CrossEntropyLoss()
 
         self.init_metrics(metrics, num_classes)
 
@@ -95,7 +98,11 @@ class ClassifierTrainer(pl.LightningModule):
         self.val_metrics = classification_metrics(metrics, num_classes)
         self.test_metrics = classification_metrics(metrics, num_classes)
 
-    def fit(self, train_loader: DataLoader, val_loader: DataLoader, max_epochs: int = 300, *args,
+    def fit(self,
+            train_loader: DataLoader,
+            val_loader: DataLoader,
+            max_epochs: int = 300,
+            *args,
             **kwargs) -> Any:
         r'''
         Args:
@@ -129,7 +136,7 @@ class ClassifierTrainer(pl.LightningModule):
                       batch_idx: int) -> torch.Tensor:
         x, y = batch
         y_hat = self(x)
-        loss = self._ce_fn(y_hat, y)
+        loss = self.ce_fn(y_hat, y)
 
         # log to prog_bar
         self.log("train_loss",
@@ -138,7 +145,7 @@ class ClassifierTrainer(pl.LightningModule):
                  on_epoch=False,
                  logger=False,
                  on_step=True)
-        
+
         for i, metric_value in enumerate(self.train_metrics.values()):
             self.log(f"train_{self.metrics[i]}",
                      metric_value(y_hat, y),
@@ -179,7 +186,7 @@ class ClassifierTrainer(pl.LightningModule):
                         batch_idx: int) -> torch.Tensor:
         x, y = batch
         y_hat = self(x)
-        loss = self._ce_fn(y_hat, y)
+        loss = self.ce_fn(y_hat, y)
 
         self.val_loss.update(loss)
         self.val_metrics.update(y_hat, y)
@@ -214,7 +221,7 @@ class ClassifierTrainer(pl.LightningModule):
                   batch_idx: int) -> torch.Tensor:
         x, y = batch
         y_hat = self(x)
-        loss = self._ce_fn(y_hat, y)
+        loss = self.ce_fn(y_hat, y)
 
         self.test_loss.update(loss)
         self.test_metrics.update(y_hat, y)
@@ -246,7 +253,9 @@ class ClassifierTrainer(pl.LightningModule):
         self.test_metrics.reset()
 
     def configure_optimizers(self):
-        optimizer = torch.optim.Adam(self.model.parameters(),
+        parameters = list(self.model.parameters())
+        trainable_parameters = list(filter(lambda p: p.requires_grad, parameters))
+        optimizer = torch.optim.Adam(trainable_parameters,
                                      lr=self.lr,
                                      weight_decay=self.weight_decay)
         return optimizer

@@ -133,6 +133,8 @@ class DREAMERDataset(BaseDataset):
                  label_transform: Union[None, Callable] = None,
                  before_trial: Union[None, Callable] = None,
                  after_trial: Union[Callable, None] = None,
+                 after_session: Union[Callable, None] = None,
+                 after_subject: Union[Callable, None] = None,
                  io_path: str = './io/dreamer',
                  io_size: int = 10485760,
                  io_mode: str = 'lmdb',
@@ -152,6 +154,8 @@ class DREAMERDataset(BaseDataset):
             'label_transform': label_transform,
             'before_trial': before_trial,
             'after_trial': after_trial,
+            'after_session': after_session,
+            'after_subject': after_subject,
             'io_path': io_path,
             'io_size': io_size,
             'io_mode': io_mode,
@@ -164,7 +168,7 @@ class DREAMERDataset(BaseDataset):
         self.__dict__.update(params)
 
     @staticmethod
-    def _load_data(file: Any = None,
+    def process_record(file: Any = None,
                    mat_path: str = './DREAMER.mat',
                    chunk_size: int = 128,
                    overlap: int = 0,
@@ -262,26 +266,12 @@ class DREAMERDataset(BaseDataset):
                     'clip_id': clip_id
                 }
                 record_info.update(trial_meta_info)
-                if after_trial:
-                    trial_queue.append({
-                        'eeg': t_eeg,
-                        'key': clip_id,
-                        'info': record_info
-                    })
-                else:
-                    yield {'eeg': t_eeg, 'key': clip_id, 'info': record_info}
+                yield {'eeg': t_eeg, 'key': clip_id, 'info': record_info}
 
                 start_at = start_at + step
                 end_at = start_at + chunk_size
 
-            if len(trial_queue) and after_trial:
-                trial_queue = after_trial(trial_queue)
-                for obj in trial_queue:
-                    assert 'eeg' in obj and 'key' in obj and 'info' in obj, 'after_trial must return a list of dictionaries, where each dictionary corresponds to an EEG sample, containing `eeg`, `key` and `info` as keys.'
-                    yield obj
-
-    @staticmethod
-    def _set_files(mat_path: str = './DREAMER.mat', **kwargs):
+    def set_records(self, mat_path: str = './DREAMER.mat', **kwargs):
 
         mat_data = scio.loadmat(mat_path,
                                 verify_compressed_data_integrity=False)
@@ -293,10 +283,11 @@ class DREAMERDataset(BaseDataset):
         info = self.read_info(index)
 
         eeg_index = str(info['clip_id'])
-        eeg = self.read_eeg(eeg_index)
+        eeg_record = str(info['_record_id'])
+        eeg = self.read_eeg(eeg_record, eeg_index)
 
         baseline_index = str(info['baseline_id'])
-        baseline = self.read_eeg(baseline_index)
+        baseline = self.read_eeg(eeg_record, baseline_index)
 
         signal = eeg
         label = info

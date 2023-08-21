@@ -4,7 +4,7 @@ import torch.nn as nn
 
 class TSCeption(nn.Module):
     r'''
-    Continuous Convolutional Neural Network (CCNN). For more details, please refer to the following information.
+    TSCeption. For more details, please refer to the following information.
 
     - Paper: Ding Y, Robinson N, Zhang S, et al. Tsception: Capturing temporal dynamics and spatial asymmetry from EEG for emotion recognition[J]. arXiv preprint arXiv:2104.02935, 2021.
     - URL: https://arxiv.org/abs/2104.02935
@@ -122,3 +122,6 @@ class TSCeption(nn.Module):
         out = torch.squeeze(torch.mean(out, dim=-1), dim=-1)
         out = self.fc(out)
         return out
+
+    def feature_dim(self):
+        return self.num_S

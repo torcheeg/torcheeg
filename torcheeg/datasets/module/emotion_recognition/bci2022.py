@@ -240,7 +240,7 @@ class BCI2022Dataset(BaseDataset):
         self.__dict__.update(params)
 
     @staticmethod
-    def _load_data(file: Any = None,
+    def process_record(file: Any = None,
                    chunk_size: int = 250,
                    overlap: int = 0,
                    channel_num: int = 30,
@@ -299,8 +299,6 @@ class BCI2022Dataset(BaseDataset):
                 cur_end_at = cur_start_at + chunk_size
                 step = chunk_size - overlap
 
-                trial_queue = []
-
                 if before_trial:
                     samples[:channel_num, cur_start_at:end_at] = before_trial(
                         samples[:channel_num, cur_start_at:end_at])
@@ -319,14 +317,7 @@ class BCI2022Dataset(BaseDataset):
                         'clip_id': clip_id
                     }
                     record_info.update(trial_meta_info)
-                    if after_trial:
-                        trial_queue.append({
-                            'eeg': t_eeg,
-                            'key': clip_id,
-                            'info': record_info
-                        })
-                    else:
-                        yield {
+                    yield {
                             'eeg': t_eeg,
                             'key': clip_id,
                             'info': record_info
@@ -335,20 +326,13 @@ class BCI2022Dataset(BaseDataset):
                     cur_start_at = cur_start_at + step
                     cur_end_at = cur_start_at + chunk_size
 
-                if len(trial_queue) and after_trial:
-                    trial_queue = after_trial(trial_queue)
-                    for obj in trial_queue:
-                        assert 'eeg' in obj and 'key' in obj and 'info' in obj, 'after_trial must return a list of dictionaries, where each dictionary corresponds to an EEG sample, containing `eeg`, `key` and `info` as keys.'
-                        yield obj
-
                 # prepare for the next trial
                 trial_id += 1
                 video_id = None
                 start_at = None
                 end_at = None
 
-    @staticmethod
-    def _set_files(root_path: str = './data_preprocessed_python', **kwargs):
+    def set_records(self, root_path: str = './data_preprocessed_python', **kwargs):
         outputs = []
         for train_set_batch in [
                 'TrainSet_first_batch', 'TrainSet_second_batch'
@@ -365,7 +349,8 @@ class BCI2022Dataset(BaseDataset):
         info = self.read_info(index)
 
         eeg_index = str(info['clip_id'])
-        eeg = self.read_eeg(eeg_index)
+        eeg_record = str(info['_record_id'])
+        eeg = self.read_eeg(eeg_record, eeg_index)
 
         signal = eeg
         label = info

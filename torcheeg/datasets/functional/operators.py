@@ -1,3 +1,4 @@
+import logging
 import math
 import os
 import shutil
@@ -9,8 +10,10 @@ from tqdm import tqdm
 
 from torcheeg.io import EEGSignalIO, MetaInfoIO
 
+log = logging.getLogger(__name__)
 
-def _set_files(**kwargs):
+
+def set_records(self, **kwargs):
     root_path = kwargs.pop('root_path', '.')  # str
     num_samples_per_worker = kwargs.pop('num_samples_per_worker', '.')  # str
 
@@ -26,12 +29,12 @@ def _set_files(**kwargs):
     return block_list
 
 
-def _load_data(block,
-           io_path: str = None,
-           io_size: int = 10485760,
-           io_mode: str = 'lmdb',
-           lock: Any = None,
-           **kwargs):
+def process_record(block,
+                   io_path: str = None,
+                   io_size: int = 10485760,
+                   io_mode: str = 'lmdb',
+                   lock: Any = None,
+                   **kwargs):
     start_id, end_id = block
 
     transform = kwargs.pop('transform', None)
@@ -162,21 +165,23 @@ def from_existing(dataset: Any,
 
         if num_worker == 0:
             lock = MockLock()  # do nothing, just for compatibility
-            for block in tqdm(_set_files(**params),
+            for block in tqdm(set_records(**params),
                               disable=not verbose,
                               desc="[PROCESS]"):
-                _load_data(block=block, lock=lock, **params)
+                process_record(block=block, lock=lock, **params)
         else:
             # lock for lmdb writter, LMDB only allows single-process writes
             manager = Manager()
             lock = manager.Lock()
 
             Parallel(n_jobs=num_worker)(
-                delayed(_load_data)(block=block, lock=lock, **params)
-                for block in tqdm(
-                    _set_files(**params), disable=not verbose, desc="[PROCESS]"))
+                delayed(process_record)(block=block, lock=lock, **params)
+                for block in tqdm(set_records(**params),
+                                  disable=not verbose,
+                                  desc="[PROCESS]"))
     else:
-        print(f'dataset already exists at path {io_path}, reading from path...')
+        print(
+            f'dataset already exists at path {io_path}, reading from path...')
 
     return type(dataset)(io_path=io_path,
                          offline_transform=transform,

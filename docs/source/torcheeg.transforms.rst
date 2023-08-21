@@ -58,6 +58,8 @@ Numpy-based Transforms
     Concatenate
     MapChunk
     Downsample
+    RearrangeElectrode
+    Flatten
 
 .. currentmodule:: torcheeg.transforms
 
@@ -108,3 +110,4 @@ Label Transforms
     BinaryOneVSRest
     BinariesToCategory
     StringToInt
+    Mapping

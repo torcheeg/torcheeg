@@ -185,3 +185,19 @@ class EEGSignalIO:
             self._in_memory = self.to_dict()
 
         return self._in_memory[key]
+
+    def write_eeg_in_memory(self, eeg: any, key: str) -> None:
+        r'''
+        Write EEG signal to memory.
+
+        .. warning::
+            This method will write all the data in EEGSignalIO into memory, which may cause memory overflow. Thus, it is only recommended for fast reading of small-scale datasets.
+
+        Args:
+            eeg (any): EEG signal samples to be written into the database.
+            key (str): The key of the EEG signal to be inserted, if not specified, it will be an auto-incrementing
+        '''
+        if self._in_memory is None:
+            self._in_memory = self.to_dict()
+        
+        self._in_memory[key] = eeg

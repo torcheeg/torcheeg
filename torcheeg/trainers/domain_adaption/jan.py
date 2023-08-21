@@ -76,7 +76,7 @@ class JANTrainer(_MMDLikeTrainer):
         mul_kernel (tuple of float): The kernel multiplier for the Gaussian kernel. (default: :obj:`(2.0, 2.0)`)
         num_kernel (tuple of int): The number of kernels for the Gaussian kernel. (default: :obj:`(5, 1)`)
         weight_domain (float): The weight of the associative loss (default: :obj:`1.0`)
-        weight_scheduler (bool): Whether to use a scheduler for the weight of the associative loss, growing from 0 to 1 following the schedule from the DANN paper. (default: :obj:`False`)
+        lr_scheduler (bool): Whether to use a scheduler for the weight of the associative loss, growing from 0 to 1 following the schedule from the DANN paper. (default: :obj:`False`)
         lr_scheduler (bool): Whether to use a scheduler for the learning rate, as defined in the DANN paper. (default: :obj:`False`)
         warmup_epochs (int): The number of epochs for the warmup phase, during which the weight of the associative loss is 0. (default: :obj:`0`)
         devices (int): The number of devices to use. (default: :obj:`1`)
@@ -95,25 +95,28 @@ class JANTrainer(_MMDLikeTrainer):
                  mul_kernel=(2.0, 2.0),
                  num_kernel=(5, 1),
                  weight_domain: float = 1.0,
-                 weight_scheduler: bool = False,
-                 lr_scheduler: bool = False,
+                 weight_scheduler: bool = True,
+                 lr_scheduler_gamma: float = 0.0,
+                 lr_scheduler_decay: float = 0.75,
                  warmup_epochs: int = 0,
                  devices: int = 1,
                  accelerator: str = "cpu",
                  metrics: List[str] = ["accuracy"]):
 
-        super(JANTrainer, self).__init__(extractor=extractor,
-                                         classifier=classifier,
-                                         num_classes=num_classes,
-                                         lr=lr,
-                                         weight_decay=weight_decay,
-                                         weight_domain=weight_domain,
-                                         weight_scheduler=weight_scheduler,
-                                         lr_scheduler=lr_scheduler,
-                                         warmup_epochs=warmup_epochs,
-                                         devices=devices,
-                                         accelerator=accelerator,
-                                         metrics=metrics)
+        super(JANTrainer,
+              self).__init__(extractor=extractor,
+                             classifier=classifier,
+                             num_classes=num_classes,
+                             lr=lr,
+                             weight_decay=weight_decay,
+                             weight_domain=weight_domain,
+                             weight_scheduler=weight_scheduler,
+                             lr_scheduler_gamma=lr_scheduler_gamma,
+                             lr_scheduler_decay=lr_scheduler_decay,
+                             warmup_epochs=warmup_epochs,
+                             devices=devices,
+                             accelerator=accelerator,
+                             metrics=metrics)
         self.mul_kernel = mul_kernel
         self.num_kernel = num_kernel
 
@@ -129,7 +132,7 @@ class JANTrainer(_MMDLikeTrainer):
         domain_loss = self._domain_loss_fn(x_source_feat, x_target_feat,
                                            y_source_pred, y_target_pred)
 
-        task_loss = self._ce_fn(y_source_pred, y_source)
+        task_loss = self.ce_fn(y_source_pred, y_source)
 
         if self.current_epoch >= self.warmup_epochs:
             loss = task_loss + self.scheduled_weight_domain * domain_loss

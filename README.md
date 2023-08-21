@@ -7,7 +7,7 @@
 [gitter-image]: https://badges.gitter.im/torcheeg/community.svg
 [gitter-url]: https://gitter.im/torcheeg/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge
 
-![TorchEEG Logo](https://github.com/tczhangzhi/torcheeg/blob/main/docs/source/_static/torcheeg_logo_dark.png)
+![TorchEEG Logo](https://github.com/torcheeg/torcheeg/blob/main/docs/source/_static/torcheeg_logo_dark.png)
 
 --------------------------------------------------------------------------------
 
@@ -16,7 +16,7 @@
 [![Downloads][pepy-image]][pepy-url]
 [![Join the Chat][gitter-image]][gitter-url]
 
-**[Documentation](https://torcheeg.readthedocs.io/)** | **[TorchEEG Examples](https://github.com/tczhangzhi/torcheeg/tree/main/examples)**
+**[Documentation](https://torcheeg.readthedocs.io/)** | **[TorchEEG Examples](https://github.com/torcheeg/torcheeg/tree/main/examples)**
 
 TorchEEG is a library built on PyTorch for EEG signal analysis. TorchEEG aims to provide a plug-and-play EEG analysis tool, so that researchers can quickly reproduce EEG analysis work and start new EEG analysis research without paying attention to technical details unrelated to the research focus.
 
@@ -63,7 +63,7 @@ pip install torcheeg
 In case you want to experiment with the latest TorchEEG features which are not fully released yet, please run the following command to install from the main branch on github:
 
 ```bash
-pip install git+https://github.com/tczhangzhi/torcheeg.git
+pip install git+https://github.com/torcheeg/torcheeg.git
 ```
 
 ### Plugin
@@ -138,25 +138,32 @@ We list currently supported datasets, transforms, data splitting, and deep learn
 
 ## Quickstart
 
-In this quick tour, we highlight the ease of starting an EEG analysis research with only modifying a few lines of [PyTorch tutorial](https://pytorch.org/tutorials/beginner/basics/quickstart_tutorial.html).
+In this quick tour, we highlight the ease of starting an EEG analysis research with only a few lines.
 
 The `torcheeg.datasets` module contains dataset classes for many real-world EEG datasets. In this tutorial, we use the `DEAP` dataset. We first go to the official website to apply for data download permission according to the introduction of [DEAP dataset](https://www.eecs.qmul.ac.uk/mmv/datasets/deap/), and download the dataset. Next, we need to specify the download location of the dataset in the `root_path` parameter. For the DEAP dataset, we specify the path to the `data_preprocessed_python` folder, e.g. `./tmp_in/data_preprocessed_python`.
 
 ```python
 from torcheeg.datasets import DEAPDataset
-from torcheeg.datasets.constants.emotion_recognition.deap import DEAP_CHANNEL_LOCATION_DICT
+from torcheeg import transforms
 
-dataset = DEAPDataset(io_path=f'./tmp_out/deap',
-                      root_path='./tmp_in/data_preprocessed_python',
-                      offline_transform=transforms.Compose(
-                          [transforms.BandDifferentialEntropy(),
-                           transforms.ToGrid(DEAP_CHANNEL_LOCATION_DICT)]),
-                      online_transform=transforms.Compose([transforms.BaselineRemoval(),
-                                                           transforms.ToTensor()]),
-                      label_transform=transforms.Compose([
-                          transforms.Select('valence'),
-                          transforms.Binary(5.0),
-                      ]), num_worker=4)
+from torcheeg.datasets.constants.emotion_recognition.deap import \
+    DEAP_CHANNEL_LOCATION_DICT
+
+dataset = DEAPDataset(
+    io_path=f'./tmp_out/examples_pipeline/deap',
+    root_path='./tmp_in/data_preprocessed_python',
+    offline_transform=transforms.Compose([
+        transforms.BandDifferentialEntropy(apply_to_baseline=True),
+        transforms.ToGrid(DEAP_CHANNEL_LOCATION_DICT, apply_to_baseline=True)
+    ]),
+    online_transform=transforms.Compose(
+        [transforms.BaselineRemoval(),
+         transforms.ToTensor()]),
+    label_transform=transforms.Compose([
+        transforms.Select('valence'),
+        transforms.Binary(5.0),
+    ]),
+    num_worker=8)
 ```
 
 The `DEAPDataset` API further contains three parameters: `online_transform`, `offline_transform`, and `label_transform`, which are used to modify samples and labels, respectively.
@@ -168,123 +175,47 @@ Here, `offline_transform` will only be called once when the dataset is initializ
 Next, we need to divide the dataset into a training set and a test set. In the field of EEG analysis, commonly used data partitioning methods include k-fold cross-validation and leave-one-out cross-validation. In this tutorial, we use k-fold cross-validation on the entire dataset (`KFold`) as an example of dataset splitting.
 
 ```python
-from torcheeg.model_selection import KFold
+from torcheeg.datasets import KFoldGroupbyTrial
 
-k_fold = KFold(n_splits=10,
-                      split_path=f'./tmp_out/split',
-                      shuffle=True,
-                      random_state=42)
+k_fold = KFoldGroupbyTrial(n_splits=10,
+                           split_path='./tmp_out/examples_pipeline/split',
+                           shuffle=True,
+                           random_state=42)
 ```
 
-Let\'s define a simple but effective CNN model according to [CCNN](https://link.springer.com/chapter/10.1007/978-3-030-04239-4_39):
+We loop through each cross-validation set, and for each one, we initialize the CCNN model and define its hyperparameters. For instance, each EEG sample contains 4-channel features from 4 sub-bands, and the grid size is 9x9. We then train the model for 50 epochs using the `ClassifierTrainer`.
 
 ```python
-class CNN(torch.nn.Module):
-    def __init__(self, in_channels=4, num_classes=3):
-        super().__init__()
-        self.conv1 = nn.Sequential(
-            nn.ZeroPad2d((1, 2, 1, 2)),
-            nn.Conv2d(in_channels, 64, kernel_size=4, stride=1),
-            nn.ReLU()
-        )
-        self.conv2 = nn.Sequential(
-            nn.ZeroPad2d((1, 2, 1, 2)),
-            nn.Conv2d(64, 128, kernel_size=4, stride=1),
-            nn.ReLU()
-        )
-        self.conv3 = nn.Sequential(
-            nn.ZeroPad2d((1, 2, 1, 2)),
-            nn.Conv2d(128, 256, kernel_size=4, stride=1),
-            nn.ReLU()
-        )
-        self.conv4 = nn.Sequential(
-            nn.ZeroPad2d((1, 2, 1, 2)),
-            nn.Conv2d(256, 64, kernel_size=4, stride=1),
-            nn.ReLU()
-        )
+from torch.utils.data import DataLoader
+from torcheeg.models import CCNN
 
-        self.lin1 = nn.Linear(9 * 9 * 64, 1024)
-        self.lin2 = nn.Linear(1024, num_classes)
+from torcheeg.trainers import ClassifierTrainer
 
-    def forward(self, x):
-        x = self.conv1(x)
-        x = self.conv2(x)
-        x = self.conv3(x)
-        x = self.conv4(x)
+import pytorch_lightning as pl
 
-        x = x.flatten(start_dim=1)
-        x = self.lin1(x)
-        x = self.lin2(x)
-        return x
-```
-
-Specify the device and loss function used during training and test.
-
-```python
-device = "cuda" if torch.cuda.is_available() else "cpu"
-loss_fn = nn.CrossEntropyLoss()
-batch_size = 64
-```
-
-The training and validation scripts for the model are taken from the  [PyTorch tutorial](https://pytorch.org/tutorials/beginner/basics/quickstart_tutorial.html) without much modification. Usually, the value of `batch` contains two parts; the first part refers to the result of `online_transform`, which generally corresponds to the `Tensor` sequence representing EEG signals. The second part refers to the result of `label_transform`, a sequence of integers representing the label.
-
-```python
-def train(dataloader, model, loss_fn, optimizer):
-    size = len(dataloader.dataset)
-    model.train()
-    for batch_idx, batch in enumerate(dataloader):
-        X = batch[0].to(device)
-        y = batch[1].to(device)
-
-        # Compute prediction error
-        pred = model(X)
-        loss = loss_fn(pred, y)
-
-        # Backpropagation
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
-
-        if batch_idx % 100 == 0:
-            loss, current = loss.item(), batch_idx * len(X)
-            print(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
-
-
-def valid(dataloader, model, loss_fn):
-    size = len(dataloader.dataset)
-    num_batches = len(dataloader)
-    model.eval()
-    val_loss, correct = 0, 0
-    with torch.no_grad():
-        for batch in dataloader:
-            X = batch[0].to(device)
-            y = batch[1].to(device)
-
-            pred = model(X)
-            val_loss += loss_fn(pred, y).item()
-            correct += (pred.argmax(1) == y).type(torch.float).sum().item()
-    val_loss /= num_batches
-    correct /= size
-    print(f"Test Error: \n Accuracy: {(100*correct):>0.1f}%, Avg loss: {val_loss:>8f} \n")
-```
-
-Traverse `k` folds and train the model separately for testing. It is worth noting that, in general, we need to specify `shuffle=True` for the `DataLoader` of the training data set to avoid the deviation of the model training caused by consecutive labels of the same category.
-
-```python
 for i, (train_dataset, val_dataset) in enumerate(k_fold.split(dataset)):
+    train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True)
+    val_loader = DataLoader(val_dataset, batch_size=64, shuffle=False)
 
-    model = CNN().to(device)
-    optimizer = torch.optim.Adam(model.parameters(), lr=1e-4)
+    model = CCNN(num_classes=2, in_channels=4, grid_size=(9, 9))
 
-    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
-    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
-
-    epochs = 50
-    for t in range(epochs):
-        print(f"Epoch {t+1}\n-------------------------------")
-        train(train_loader, model, loss_fn, optimizer)
-        valid(val_loader, model, loss_fn)
-    print("Done!")
+    trainer = ClassifierTrainer(model=model,
+                                num_classes=2,
+                                lr=1e-4,
+                                weight_decay=1e-4,
+                                accelerator="gpu")
+    trainer.fit(train_loader,
+                val_loader,
+                max_epochs=50,
+                default_root_dir=f'./tmp_out/examples_pipeline/model/{i}',
+                callbacks=[pl.callbacks.ModelCheckpoint(save_last=True)],
+                enable_progress_bar=True,
+                enable_model_summary=True,
+                limit_val_batches=0.0)
+    score = trainer.test(val_loader,
+                         enable_progress_bar=True,
+                         enable_model_summary=True)[0]
+    print(f'Fold {i} test accuracy: {score["test_accuracy"]:.4f}')
 ```
 
 For more specific usage of each module, please refer to [the documentation]((https://torcheeg.readthedocs.io/)).
@@ -335,4 +266,4 @@ If you would like to contribute new datasets, deep learning methods, and extensi
 
 ## License
 
-TorchEEG has a MIT license, as found in the [LICENSE](https://github.com/tczhangzhi/torcheeg/blob/main/LICENSE) file.
+TorchEEG has a MIT license, as found in the [LICENSE](https://github.com/torcheeg/torcheeg/blob/main/LICENSE) file.

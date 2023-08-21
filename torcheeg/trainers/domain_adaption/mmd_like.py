@@ -1,6 +1,6 @@
 from itertools import chain
 from typing import List, Tuple
-
+import logging
 import numpy as np
 import pytorch_lightning as pl
 import torch
@@ -42,8 +42,9 @@ class _MMDLikeTrainer(ClassifierTrainer):
                  lr: float = 1e-4,
                  weight_decay: float = 0.0,
                  weight_domain: float = 1.0,
-                 weight_scheduler: bool = False,
-                 lr_scheduler: bool = False,
+                 weight_scheduler: bool = True,
+                 lr_scheduler_gamma: float = 0.0,
+                 lr_scheduler_decay: float = 0.75,
                  warmup_epochs: int = 0,
                  devices: int = 1,
                  accelerator: str = "cpu",
@@ -57,7 +58,10 @@ class _MMDLikeTrainer(ClassifierTrainer):
         self.weight_decay = weight_decay
         self.weight_domain = weight_domain
         self.weight_scheduler = weight_scheduler
-        self.lr_scheduler = lr_scheduler
+
+        self.lr_scheduler_gamma = lr_scheduler_gamma
+        self.lr_scheduler_decay = lr_scheduler_decay
+        self.lr_scheduler = not lr_scheduler_gamma == 0.0
         self.warmup_epochs = warmup_epochs
 
         self.devices = devices
@@ -68,7 +72,7 @@ class _MMDLikeTrainer(ClassifierTrainer):
         self.metrics = metrics
         self.init_metrics(metrics, num_classes)
 
-        self._ce_fn = nn.CrossEntropyLoss()
+        self.ce_fn = nn.CrossEntropyLoss()
 
         self.num_batches = None  # init in 'fit' method
         self.non_warmup_epochs = None  # init in 'fit' method
@@ -122,7 +126,8 @@ class _MMDLikeTrainer(ClassifierTrainer):
             self.weight_factor = 2.0 / (1.0 + np.exp(-10 * p)) - 1
 
             if self.lr_scheduler:
-                self.lr_factor = 1.0 / ((1.0 + 10 * p)**0.75)
+                self.lr_factor = 1.0 / ((1.0 + self.lr_scheduler_gamma * p)**
+                                        self.lr_scheduler_decay)
 
         if self.weight_scheduler:
             self.scheduled_weight_domain = self.weight_domain * self.weight_factor
@@ -141,21 +146,21 @@ class _MMDLikeTrainer(ClassifierTrainer):
 
         domain_loss = self._domain_loss_fn(x_source_feat, x_target_feat)
 
-        task_loss = self._ce_fn(y_source_pred, y_source)
-        
+        task_loss = self.ce_fn(y_source_pred, y_source)
+
         if self.current_epoch >= self.warmup_epochs:
             loss = task_loss + self.scheduled_weight_domain * domain_loss
         else:
             loss = task_loss
 
         self.log("train_domain_loss",
-                 self.train_domain_loss(loss),
+                 self.train_domain_loss(domain_loss),
                  prog_bar=True,
                  on_epoch=False,
                  logger=False,
                  on_step=True)
         self.log("train_task_loss",
-                 self.train_task_loss(loss),
+                 self.train_task_loss(task_loss),
                  prog_bar=True,
                  on_epoch=False,
                  logger=False,
@@ -209,8 +214,12 @@ class _MMDLikeTrainer(ClassifierTrainer):
         return x
 
     def configure_optimizers(self):
-        optimizer = torch.optim.Adam(chain(self.extractor.parameters(),
-                                           self.classifier.parameters()),
+        optimizer = torch.optim.Adam([{
+            "params": self.extractor.parameters()
+        }, {
+            "params": self.classifier.parameters(),
+            "lr": 10 * self.lr
+        }],
                                      lr=self.lr,
                                      weight_decay=self.weight_decay)
         if self.lr_scheduler:

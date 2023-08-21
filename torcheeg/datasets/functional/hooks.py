@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def before_trial_normalize(data: np.ndarray, eps: float = 1e-6):
+def before_trial_normalize(data: np.ndarray, eps: float = 1e-6, axis=0):
     r'''
     A common hook function used to normalize the signal of the whole trial before dividing it into chunks.
 
@@ -32,8 +32,8 @@ def before_trial_normalize(data: np.ndarray, eps: float = 1e-6):
     Returns:
         np.ndarray: The normalized results of a trial.
     '''
-    min_v = data.min(axis=-1, keepdims=True)
-    max_v = data.max(axis=-1, keepdims=True)
+    min_v = data.min(axis=axis, keepdims=True)
+    max_v = data.max(axis=axis, keepdims=True)
     return (data - min_v) / (max_v - min_v + eps)
 
 

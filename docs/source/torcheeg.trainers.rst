@@ -60,3 +60,4 @@ As the cost of data collection decreases, the difficulty of obtaining unlabeled 
    :template: trainertemplate.rst
 
    SimCLRTrainer
+   BYOLTrainer

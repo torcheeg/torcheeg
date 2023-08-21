@@ -1,6 +1,6 @@
 import unittest
 
-from torcheeg.transforms import Select, Binary, BinariesToCategory, StringToInt, BinaryOneVSRest, FixCategory
+from torcheeg.transforms import Select, Binary, BinariesToCategory, StringToInt, BinaryOneVSRest, FixCategory, Mapping
 
 
 class TestLabelTransforms(unittest.TestCase):
@@ -40,6 +40,14 @@ class TestLabelTransforms(unittest.TestCase):
     def test_fix_category(self):
         self.assertEqual(FixCategory(value=0)(y=3)['y'], 0)
         self.assertEqual(FixCategory(value=[0, 1])(y=[1, 2])['y'], [0, 1])
+
+    def test_mapping(self):
+        transform = Mapping({
+            'left_hand': 0,
+            'right_hand': 1,
+        })
+        self.assertEqual(transform(y='left_hand')['y'], 0)
+        self.assertEqual(transform(y=['left_hand', 'right_hand'])['y'], [0, 1])
 
 
 if __name__ == '__main__':

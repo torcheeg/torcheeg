@@ -1,12 +1,15 @@
-import torch
-import pytorch_lightning as pl
-import torch.nn as nn
+import logging
+from itertools import chain
+from typing import Any, List, Tuple
 
-import torchmetrics
+import pytorch_lightning as pl
+import torch
+import torch.nn as nn
 import torch.nn.functional as F
+import torchmetrics
 from torch.utils.data import DataLoader
 
-from typing import Any, Tuple, List
+log = logging.getLogger(__name__)
 
 
 class SimCLRTrainer(pl.LightningModule):
@@ -18,15 +21,46 @@ class SimCLRTrainer(pl.LightningModule):
     - Related Project: https://github.com/sthalles/SimCLR
 
     .. code-block:: python
-    
+
         trainer = SimCLRTrainer(extractor,
                                 devices=1,
                                 accelerator='gpu')
         trainer.fit(train_loader, val_loader)
-        trainer.test(test_loader)
+
+    NOTE: The first element of each batch in :obj:`train_loader` and :obj:`val_loader` should be a two-tuple, representing two random transformations (views) of data. You can use :obj:`Contrastive` to achieve this functionality.
+
+    .. code-block:: python
+
+        contras_dataset = DEAPDataset(
+            io_path=f'./io/deap',
+            root_path='./data_preprocessed_python',
+            offline_transform=transforms.Compose([
+                transforms.BandDifferentialEntropy(sampling_rate=128,
+                                                apply_to_baseline=True),
+                transforms.BaselineRemoval(),
+                transforms.ToGrid(DEAP_CHANNEL_LOCATION_DICT)
+            ]),
+            online_transform=transforms.Compose([
+                transforms.ToTensor(),
+                transforms.Contrastive(transforms.Compose( # see here
+                    [transforms.RandomMask(p=0.5),
+                    transforms.RandomNoise(p=0.5)]),
+                                    num_views=2)
+            ]),
+            chunk_size=128,
+            baseline_chunk_size=128,
+            num_baseline=3)
+
+        trainer = SimCLRTrainer(extractor,
+                                devices=1,
+                                accelerator='gpu')
+        trainer.fit(train_loader, val_loader)
 
     Args:
         extractor (nn.Module): The feature extraction model learns the feature representation of the EEG signal by forcing the correlation matrixes of source and target data to be close.
+        extract_channels (int): The feature dimensions of the output of the feature extraction model.
+        proj_channels (int): The feature dimensions of the output of the projection head. (default: :obj:`256`)
+        proj_hid_channels (int): The feature dimensions of the hidden layer of the projection head. (default: :obj:`512`)
         lr (float): The learning rate. (default: :obj:`0.0001`)
         weight_decay (float): The weight decay. (default: :obj:`0.0`)
         temperature (float): The temperature. (default: :obj:`0.1`)
@@ -38,6 +72,9 @@ class SimCLRTrainer(pl.LightningModule):
     '''
     def __init__(self,
                  extractor: nn.Module,
+                 extract_channels: int,
+                 proj_channels: int = 256,
+                 proj_hid_channels: int = 512,
                  lr: float = 1e-4,
                  weight_decay: float = 0.0,
                  temperature: float = 0.1,
@@ -47,6 +84,8 @@ class SimCLRTrainer(pl.LightningModule):
         super().__init__()
 
         self.extractor = extractor
+        self.projector = self.MLP(extract_channels, proj_hid_channels,
+                                  proj_channels)
         self.lr = lr
         self.weight_decay = weight_decay
         self.temperature = temperature
@@ -55,6 +94,14 @@ class SimCLRTrainer(pl.LightningModule):
         self.metrics = metrics
 
         self.init_metrics(metrics)
+
+    def MLP(self, in_channels: int, hid_channels: int, out_channels: int):
+        return nn.Sequential(
+            nn.Linear(in_channels, hid_channels),
+            nn.BatchNorm1d(hid_channels),
+            nn.ReLU(inplace=True),
+            nn.Linear(hid_channels, out_channels),
+        )
 
     def init_metrics(self, metrics) -> None:
         self.train_loss = torchmetrics.MeanMetric()
@@ -97,6 +144,7 @@ class SimCLRTrainer(pl.LightningModule):
         xs = torch.cat(xs, dim=0)
 
         feats = self.extractor(xs)
+        feats = self.projector(feats)
         cos_sim = F.cosine_similarity(feats[:, None, :],
                                       feats[None, :, :],
                                       dim=-1)
@@ -120,7 +168,6 @@ class SimCLRTrainer(pl.LightningModule):
             dim=-1,
         )
         sim_argsort = comb_sim.argsort(dim=-1, descending=True).argmin(dim=-1)
-
         self.log("train_loss",
                  self.train_loss(nll),
                  prog_bar=True,
@@ -203,6 +250,7 @@ class SimCLRTrainer(pl.LightningModule):
         xs = torch.cat(xs, dim=0)
 
         feats = self.extractor(xs)
+        feats = self.projector(feats)
         cos_sim = F.cosine_similarity(feats[:, None, :],
                                       feats[None, :, :],
                                       dim=-1)
@@ -288,7 +336,7 @@ class SimCLRTrainer(pl.LightningModule):
                      logger=True)
 
         # print the metrics
-        str = "\n[Train] "
+        str = "\n[VAL] "
         for key, value in self.trainer.logged_metrics.items():
             if key.startswith("val_"):
                 str += f"{key}: {value:.3f} "
@@ -304,7 +352,9 @@ class SimCLRTrainer(pl.LightningModule):
             self.val_acc_mean_pos.reset()
 
     def configure_optimizers(self):
-        optimizer = torch.optim.Adam(self.extractor.parameters(),
-                                     lr=self.lr,
-                                     weight_decay=self.weight_decay)
+        optimizer = torch.optim.Adam(
+            chain(self.extractor.parameters(), self.projector.parameters()),
+            lr=self.lr,
+            weight_decay=self.weight_decay,
+        )
         return optimizer

@@ -135,6 +135,8 @@ class SEEDDataset(BaseDataset):
                  label_transform: Union[None, Callable] = None,
                  before_trial: Union[None, Callable] = None,
                  after_trial: Union[Callable, None] = None,
+                 after_session: Union[Callable, None] = None,
+                 after_subject: Union[Callable, None] = None,
                  io_path: str = './io/seed',
                  io_size: int = 10485760,
                  io_mode: str = 'lmdb',
@@ -152,6 +154,8 @@ class SEEDDataset(BaseDataset):
             'label_transform': label_transform,
             'before_trial': before_trial,
             'after_trial': after_trial,
+            'after_session': after_session,
+            'after_subject': after_subject,
             'io_path': io_path,
             'io_size': io_size,
             'io_mode': io_mode,
@@ -164,7 +168,7 @@ class SEEDDataset(BaseDataset):
         self.__dict__.update(params)
 
     @staticmethod
-    def _load_data(file: Any = None,
+    def process_record(file: Any = None,
                    root_path: str = './Preprocessed_EEG',
                    chunk_size: int = 200,
                    overlap: int = 0,
@@ -217,7 +221,6 @@ class SEEDDataset(BaseDataset):
             # calculate moving step
             step = chunk_size - overlap
 
-            trial_queue = []
             while end_at <= trial_samples.shape[1]:
                 clip_sample = trial_samples[:num_channel, start_at:end_at]
 
@@ -235,26 +238,12 @@ class SEEDDataset(BaseDataset):
                     'clip_id': clip_id
                 }
                 record_info.update(trial_meta_info)
-                if after_trial:
-                    trial_queue.append({
-                        'eeg': t_eeg,
-                        'key': clip_id,
-                        'info': record_info
-                    })
-                else:
-                    yield {'eeg': t_eeg, 'key': clip_id, 'info': record_info}
+                yield {'eeg': t_eeg, 'key': clip_id, 'info': record_info}
 
                 start_at = start_at + step
                 end_at = start_at + chunk_size
 
-            if len(trial_queue) and after_trial:
-                trial_queue = after_trial(trial_queue)
-                for obj in trial_queue:
-                    assert 'eeg' in obj and 'key' in obj and 'info' in obj, 'after_trial must return a list of dictionaries, where each dictionary corresponds to an EEG sample, containing `eeg`, `key` and `info` as keys.'
-                    yield obj
-
-    @staticmethod
-    def _set_files(root_path: str = './Preprocessed_EEG', **kwargs):
+    def set_records(self, root_path: str = './Preprocessed_EEG', **kwargs):
         file_list = os.listdir(root_path)
         skip_set = ['label.mat', 'readme.txt']
         file_list = [f for f in file_list if f not in skip_set]
@@ -264,7 +253,8 @@ class SEEDDataset(BaseDataset):
         info = self.read_info(index)
 
         eeg_index = str(info['clip_id'])
-        eeg = self.read_eeg(eeg_index)
+        eeg_record = str(info['_record_id'])
+        eeg = self.read_eeg(eeg_record, eeg_index)
 
         signal = eeg
         label = info
