@@ -255,17 +255,17 @@ If you would like to contribute new datasets, deep learning methods, and extensi
         </a>
     </td>
     <td align="center">
-        <a href="https://github.com/arrogant-R">
-            <img src="https://avatars.githubusercontent.com/u/83148307?v=4" width="100;" alt="arrogant-R"/>
-            <br />
-            <sub><b>arrogant-R</b></sub>
-        </a>
-    </td>
-    <td align="center">
         <a href="https://github.com/gitter-badger">
             <img src="https://avatars.githubusercontent.com/u/8518239?v=4" width="100;" alt="gitter-badger"/>
             <br />
             <sub><b>The Gitter Badger</b></sub>
+        </a>
+    </td>
+    <td align="center">
+        <a href="https://github.com/arrogant-R">
+            <img src="https://avatars.githubusercontent.com/u/83148307?v=4" width="100;" alt="arrogant-R"/>
+            <br />
+            <sub><b>Arrogant-R</b></sub>
         </a>
     </td></tr>
 </table>
