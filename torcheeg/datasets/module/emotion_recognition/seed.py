@@ -193,11 +193,11 @@ class SEEDDataset(BaseDataset):
             verify_compressed_data_integrity=False)['label'][0]
 
         trial_ids = [key for key in samples.keys() if 'eeg' in key]
-        chunk_size_original = chunk_size
+        
         write_pointer = 0
         # loop for each trial
         for trial_id in trial_ids:
-            chunk_size = chunk_size_original
+            
             # extract baseline signals
             trial_samples = samples[trial_id]  # channel(62), timestep(n*200)
             if before_trial:
@@ -214,12 +214,14 @@ class SEEDDataset(BaseDataset):
             # extract experimental signals
             start_at = 0
             if chunk_size <= 0:
-                chunk_size = trial_samples.shape[1] - start_at
+                dynamic_chunk_size = trial_samples.shape[1] - start_at
+            else:
+                dynamic_chunk_size = chunk_size
 
             # chunk with chunk size
-            end_at = chunk_size
+            end_at = dynamic_chunk_size
             # calculate moving step
-            step = chunk_size - overlap
+            step = dynamic_chunk_size - overlap
 
             while end_at <= trial_samples.shape[1]:
                 clip_sample = trial_samples[:num_channel, start_at:end_at]
@@ -241,7 +243,7 @@ class SEEDDataset(BaseDataset):
                 yield {'eeg': t_eeg, 'key': clip_id, 'info': record_info}
 
                 start_at = start_at + step
-                end_at = start_at + chunk_size
+                end_at = start_at + dynamic_chunk_size
 
     def set_records(self, root_path: str = './Preprocessed_EEG', **kwargs):
         file_list = os.listdir(root_path)

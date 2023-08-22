@@ -190,11 +190,9 @@ class DREAMERDataset(BaseDataset):
                                                                       0])  # 18
 
         write_pointer = 0
-        chunk_size_original = chunk_size
+        
         # loop for each trial
         for trial_id in range(trial_len):
-            # restore chunk_size parameter (modified within the loop)
-            chunk_size = chunk_size_original
             # extract baseline signals
             trial_baseline_sample = mat_data['DREAMER'][0, 0]['Data'][
                 0, subject]['EEG'][0, 0]['baseline'][0, 0][trial_id, 0]
@@ -229,14 +227,15 @@ class DREAMERDataset(BaseDataset):
 
             start_at = 0
             if chunk_size <= 0:
-                chunk_size = trial_samples.shape[1] - start_at
+                dynamic_chunk_size = trial_samples.shape[1] - start_at
+            else:
+                dynamic_chunk_size = chunk_size
 
             # chunk with chunk size
-            end_at = chunk_size
+            end_at = dynamic_chunk_size
             # calculate moving step
-            step = chunk_size - overlap
+            step = dynamic_chunk_size - overlap
 
-            trial_queue = []
             while end_at <= trial_samples.shape[1]:
                 clip_sample = trial_samples[:, start_at:end_at]
 
@@ -269,7 +268,7 @@ class DREAMERDataset(BaseDataset):
                 yield {'eeg': t_eeg, 'key': clip_id, 'info': record_info}
 
                 start_at = start_at + step
-                end_at = start_at + chunk_size
+                end_at = start_at + dynamic_chunk_size
 
     def set_records(self, mat_path: str = './DREAMER.mat', **kwargs):
 

@@ -63,7 +63,7 @@ class TestFolderDataset(unittest.TestCase):
                                 ]),
                                 num_worker=0)
 
-        self.assertEqual(len(dataset), 20)
+        self.assertEqual(len(dataset), 40)
         first_item = dataset[0]
         self.assertEqual(first_item[0].shape, (14, 128))
         last_item = dataset[-1]
