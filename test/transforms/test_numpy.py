@@ -1,11 +1,16 @@
 import unittest
 
 import numpy as np
-from torcheeg.transforms import ToGrid, ToInterpolatedGrid, To2d, MeanStdNormalize, MinMaxNormalize, BandSignal, BandDifferentialEntropy, BandPowerSpectralDensity, BandMeanAbsoluteDeviation, BandKurtosis, BandSkewness, Concatenate, MapChunk, PickElectrode, CWTSpectrum, ARRCoefficient, PearsonCorrelation, PhaseLockingCorrelation, BandApproximateEntropy, BandSampleEntropy, BandSVDEntropy, BandDetrendedFluctuationAnalysis, BandHiguchiFractalDimension, BandHjorth, BandHurst, BandPetrosianFractalDimension, BandBinPower, BandSpectralEntropy, DWTDecomposition, Downsample, Compose
+from torcheeg.transforms import ToGrid, ToInterpolatedGrid, To2d, MeanStdNormalize, MinMaxNormalize, BandSignal, BandDifferentialEntropy, BandPowerSpectralDensity, BandMeanAbsoluteDeviation, BandKurtosis, BandSkewness, Concatenate, MapChunk, PickElectrode, CWTSpectrum, ARRCoefficient, PearsonCorrelation, PhaseLockingCorrelation, BandApproximateEntropy, BandSampleEntropy, BandSVDEntropy, BandDetrendedFluctuationAnalysis, BandHiguchiFractalDimension, BandHjorth, BandHurst, BandPetrosianFractalDimension, BandBinPower, BandSpectralEntropy, DWTDecomposition, Downsample, Compose, RearrangeElectrode, Flatten
 from torcheeg.datasets.constants import DEAP_CHANNEL_LOCATION_DICT, DEAP_CHANNEL_LIST, M3CV_CHANNEL_LOCATION_DICT
 
 
 class TestNumpyTransforms(unittest.TestCase):
+    def test_flatten(self):
+        eeg = np.random.randn(62, 5)
+        transformed_eeg = Flatten()(eeg=eeg)
+        self.assertEqual(transformed_eeg['eeg'].shape, (310,))
+
     def test_dwt_decomposition(self):
         eeg = np.random.randn(32, 1000)
         transformed_eeg = DWTDecomposition()(eeg=eeg)
@@ -214,6 +219,17 @@ class TestNumpyTransforms(unittest.TestCase):
         eeg = np.random.randn(32, 128)
         transformed_eeg = Downsample(num_points=32, axis=-1)(eeg=eeg)
         self.assertEqual(transformed_eeg['eeg'].shape, (32, 32))
+
+    def test_rearrange_electrode(self):
+        src_eeg = np.random.rand(3, 128)
+        tgt_eeg = RearrangeElectrode(source=['FP1', 'F3', 'F7'],
+                                 target=['F3', 'F7', 'FP1', 'AF2'],
+                                 missing='mean')(eeg=src_eeg)['eeg']
+        self.assertEqual(tgt_eeg.shape, (4, 128))
+
+        self.assertEqual(src_eeg[0, :].tolist(), tgt_eeg[2, :].tolist())
+        self.assertEqual(src_eeg[1, :].tolist(), tgt_eeg[0, :].tolist())
+        self.assertEqual(src_eeg[2, :].tolist(), tgt_eeg[1, :].tolist())
 
 
 if __name__ == '__main__':

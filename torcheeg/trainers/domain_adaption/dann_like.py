@@ -1,3 +1,4 @@
+import logging
 from itertools import chain
 from typing import List, Tuple
 
@@ -10,6 +11,8 @@ from torch.autograd import Function
 from torch.utils.data import DataLoader
 
 from ..classifier import ClassifierTrainer, classification_metrics
+
+log = logging.getLogger(__name__)
 
 
 class DualDataLoader:
@@ -57,7 +60,8 @@ class _DANNLikeTrainer(ClassifierTrainer):
                  weight_decay: float = 0.0,
                  weight_domain: float = 1.0,
                  alpha_scheduler: bool = True,
-                 lr_scheduler: bool = False,
+                 lr_scheduler_gamma: float = 0.0,
+                 lr_scheduler_decay: float = 0.75,
                  warmup_epochs: int = 0,
                  devices: int = 1,
                  accelerator: str = "cpu",
@@ -72,7 +76,9 @@ class _DANNLikeTrainer(ClassifierTrainer):
         self.weight_decay = weight_decay
         self.weight_domain = weight_domain
         self.alpha_scheduler = alpha_scheduler
-        self.lr_scheduler = lr_scheduler
+        self.lr_scheduler = not lr_scheduler_gamma == 0.0
+        self.lr_scheduler_gamma = lr_scheduler_gamma
+        self.lr_scheduler_decay = lr_scheduler_decay
         self.warmup_epochs = warmup_epochs
 
         self.devices = devices
@@ -83,7 +89,7 @@ class _DANNLikeTrainer(ClassifierTrainer):
         self.metrics = metrics
         self.init_metrics(metrics, num_classes)
 
-        self._ce_fn = nn.CrossEntropyLoss()
+        self.ce_fn = nn.CrossEntropyLoss()
 
         self.num_batches = None  # init in 'fit' method
         self.non_warmup_epochs = None  # init in 'fit' method
@@ -138,7 +144,8 @@ class _DANNLikeTrainer(ClassifierTrainer):
                 self.scheduled_alpha = 2.0 / (1.0 + np.exp(-10 * p)) - 1
 
             if self.lr_scheduler:
-                self.lr_factor = 1.0 / ((1.0 + 10 * p)**0.75)
+                self.lr_factor = 1.0 / ((1.0 + self.lr_scheduler_gamma * p)**
+                                        self.lr_scheduler_decay)
 
     def _domain_loss_fn(self, x_source_feat: torch.Tensor,
                         x_target_feat: torch.Tensor) -> torch.Tensor:
@@ -160,16 +167,16 @@ class _DANNLikeTrainer(ClassifierTrainer):
                                                 self.scheduled_alpha)
         y_target_disc = self.domain_classifier(x_target_feat_r)
 
-        task_loss = self._ce_fn(y_source_pred, y_source)
-        domain_loss = self._ce_fn(
+        task_loss = self.ce_fn(y_source_pred, y_source)
+        domain_loss = self.ce_fn(
             y_source_disc,
             torch.zeros(len(y_source_disc),
                         dtype=torch.long,
-                        device=x_source.device)) + self._ce_fn(
+                        device=x_source.device)) + self.ce_fn(
                             y_target_disc,
                             torch.ones(len(y_target_disc),
-                                        dtype=torch.long,
-                                        device=x_target.device))
+                                       dtype=torch.long,
+                                       device=x_target.device))
 
         if self.current_epoch >= self.warmup_epochs:
             loss = task_loss + self.weight_domain * domain_loss

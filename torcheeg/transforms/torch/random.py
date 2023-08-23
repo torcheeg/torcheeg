@@ -131,6 +131,112 @@ class RandomMask(RandomEEGTransform):
         return dict(super().repr_body, **{'ratio': self.ratio})
 
 
+class RandomMask2D(RandomEEGTransform):
+    '''
+    Overlay the EEG signal using a random mask, and the value of the overlaid data points was set to 0.0. The mask is applied to the three dimensions of the input tensor, where the first dimension represents the number of channels (bands, or something like that), the second dimension denotes the number of electrodes and the second dimension represents the number of time points. The mask is applied to the electrode dimension.
+    
+    .. code-block:: python
+
+        transform = RandomMask()
+        transform(eeg=torch.randn(1, 32, 128))['eeg'].shape
+        >>> (1, 32, 128)
+
+    Args:
+        ratio (float): The proportion of data points covered by the mask out of all data points for each EEG signal sample. (default: :obj:`0.5`)
+        p (float): Probability of applying random mask on EEG signal samples. Should be between 0.0 and 1.0, where 0.0 means no mask is applied to every sample and 1.0 means that masks are applied to every sample. (default: :obj:`0.5`)
+        apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (default: :obj:`False`)
+
+    .. automethod:: __call__
+    '''
+    def __init__(self,
+                 ratio: float = 0.5,
+                 p: float = 0.5,
+                 apply_to_baseline: bool = False):
+        super(RandomMask2D, self).__init__(p=p,
+                                           apply_to_baseline=apply_to_baseline)
+        self.ratio = ratio
+
+    def __call__(self,
+                 *args,
+                 eeg: torch.Tensor,
+                 baseline: Union[torch.Tensor, None] = None,
+                 **kwargs) -> Dict[str, torch.Tensor]:
+        r'''
+        Args:
+            eeg (torch.Tensor): The input EEG signal.
+            baseline (torch.Tensor, optional) : The corresponding baseline signal, if apply_to_baseline is set to True and baseline is passed, the baseline signal will be transformed with the same way as the experimental signal.
+
+        Returns:
+            torch.Tensor: The output EEG signal after applying a random mask.
+        '''
+        return super().__call__(*args, eeg=eeg, baseline=baseline, **kwargs)
+
+    def random_apply(self, eeg: torch.Tensor, **kwargs) -> torch.Tensor:
+        # mask at the electrode dimension
+        mask = torch.rand(eeg.shape[1], device=eeg.device)
+        mask = (mask < self.ratio).to(eeg.dtype)
+        # to the same shape of eeg
+        mask = mask.unsqueeze(0).unsqueeze(2).repeat(eeg.shape[0], 1,
+                                                     eeg.shape[2])
+        return eeg * mask
+
+    @property
+    def repr_body(self) -> Dict:
+        return dict(super().repr_body, **{'ratio': self.ratio})
+
+
+class RandomMaskGrid(RandomEEGTransform):
+    '''
+    Overlay the EEG signal using a random mask, and the value of the overlaid data points was set to 0.0. The mask is applied to the last three dimensions of the input tensor, where the second dimension represents the height of the grid and the third dimension represents the width of the grid. The mask is applied to the height and width dimensions.
+    
+    .. code-block:: python
+
+        transform = RandomMaskGrid()
+        transform(eeg=torch.randn(4, 9, 9))['eeg'].shape
+        >>> (4, 9, 9)
+
+    Args:
+        ratio (float): The proportion of data points covered by the mask out of all data points for each EEG signal sample. (default: :obj:`0.5`)
+        p (float): Probability of applying random mask on EEG signal samples. Should be between 0.0 and 1.0, where 0.0 means no mask is applied to every sample and 1.0 means that masks are applied to every sample. (default: :obj:`0.5`)
+        apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (default: :obj:`False`)
+
+    .. automethod:: __call__
+    '''
+    def __init__(self,
+                 ratio: float = 0.5,
+                 p: float = 0.5,
+                 apply_to_baseline: bool = False):
+        super(RandomMaskGrid,
+              self).__init__(p=p, apply_to_baseline=apply_to_baseline)
+        self.ratio = ratio
+
+    def __call__(self,
+                 *args,
+                 eeg: torch.Tensor,
+                 baseline: Union[torch.Tensor, None] = None,
+                 **kwargs) -> Dict[str, torch.Tensor]:
+        r'''
+        Args:
+            eeg (torch.Tensor): The input EEG signal.
+            baseline (torch.Tensor, optional) : The corresponding baseline signal, if apply_to_baseline is set to True and baseline is passed, the baseline signal will be transformed with the same way as the experimental signal.
+
+        Returns:
+            torch.Tensor: The output EEG signal after applying a random mask.
+        '''
+        return super().__call__(*args, eeg=eeg, baseline=baseline, **kwargs)
+
+    def random_apply(self, eeg: torch.Tensor, **kwargs) -> torch.Tensor:
+        # mask at the electrode dimension
+        mask = torch.rand(eeg.shape[1], eeg.shape[2], device=eeg.device)
+        mask = (mask < self.ratio).to(eeg.dtype)
+        mask = mask.unsqueeze(0).repeat(eeg.shape[0], 1, 1)
+        return eeg * mask
+
+    @property
+    def repr_body(self) -> Dict:
+        return dict(super().repr_body, **{'ratio': self.ratio})
+
+
 class RandomWindowSlice(RandomEEGTransform):
     '''
     Randomly applies a slice transformation with a given probability, where the original time series is sliced by a window, and the sliced data is scaled to the original size. It is worth noting that the random position where each channel slice starts is the same.

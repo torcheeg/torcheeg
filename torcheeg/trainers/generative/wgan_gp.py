@@ -1,3 +1,4 @@
+import logging
 import warnings
 from typing import Any, Dict, List, Tuple
 
@@ -12,6 +13,8 @@ from torchmetrics.image.inception import InceptionScore
 from .utils import FrechetInceptionDistance
 
 _EVALUATE_OUTPUT = List[Dict[str, float]]  # 1 dict per DataLoader
+
+log = logging.getLogger(__name__)
 
 
 def gradient_penalty(model, real, fake, *args, **kwargs):

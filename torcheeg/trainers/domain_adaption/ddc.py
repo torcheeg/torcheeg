@@ -6,8 +6,7 @@ import torch.nn as nn
 from .mmd_like import _MMDLikeTrainer
 
 
-def maximum_mean_discrepancy_linear(x_source,
-                             x_target):
+def maximum_mean_discrepancy_linear(x_source, x_target):
     delta = x_source - x_target
     loss = torch.mean(torch.mm(delta, torch.transpose(delta, 0, 1)))
     return loss
@@ -58,24 +57,27 @@ class DDCTrainer(_MMDLikeTrainer):
                  lr: float = 1e-4,
                  weight_decay: float = 0.0,
                  weight_domain: float = 1.0,
-                 weight_scheduler: bool = False,
-                 lr_scheduler: bool = False,
+                 weight_scheduler: bool = True,
+                 lr_scheduler_gamma: float = 0.0,
+                 lr_scheduler_decay: float = 0.75,
                  warmup_epochs: int = 0,
                  devices: int = 1,
                  accelerator: str = "cpu",
                  metrics: List[str] = ["accuracy"]):
-        super(DDCTrainer, self).__init__(extractor=extractor,
-                                         classifier=classifier,
-                                         num_classes=num_classes,
-                                         lr=lr,
-                                         weight_decay=weight_decay,
-                                         weight_domain=weight_domain,
-                                         weight_scheduler=weight_scheduler,
-                                         lr_scheduler=lr_scheduler,
-                                         warmup_epochs=warmup_epochs,
-                                         devices=devices,
-                                         accelerator=accelerator,
-                                         metrics=metrics)
+        super(DDCTrainer,
+              self).__init__(extractor=extractor,
+                             classifier=classifier,
+                             num_classes=num_classes,
+                             lr=lr,
+                             weight_decay=weight_decay,
+                             weight_domain=weight_domain,
+                             weight_scheduler=weight_scheduler,
+                             lr_scheduler_gamma=lr_scheduler_gamma,
+                             lr_scheduler_decay=lr_scheduler_decay,
+                             warmup_epochs=warmup_epochs,
+                             devices=devices,
+                             accelerator=accelerator,
+                             metrics=metrics)
 
     def _domain_loss_fn(self, x_source_feat: torch.Tensor,
                         x_target_feat: torch.Tensor) -> torch.Tensor:

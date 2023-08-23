@@ -1,11 +1,8 @@
-import os
 from pathlib import Path
 from typing import Any, Callable, Dict, Tuple, Union
 
 import mne
 import numpy as np
-
-from torcheeg.io import EEGSignalIO, MetaInfoIO
 
 from .base_dataset import BaseDataset
 
@@ -46,6 +43,38 @@ class FolderDataset(BaseDataset):
         sub02
         |- label01.edf
         |- label02.edf
+
+    An example dataset for GNN-based methods:
+
+    .. code-block:: python
+    
+        sfreq = 128  # Sampling rate
+        n_channels = 14  # Number of channels
+        duration = 5  # Data collected for 5 seconds
+        for i in range(num_files):
+            n_samples = sfreq * duration
+            data = np.random.randn(n_channels, n_samples)
+
+            ch_names = [f'ch_{i+1:03}' for i in range(n_channels)]
+            ch_types = ['eeg'] * n_channels
+            info = mne.create_info(ch_names, sfreq, ch_types)
+            raw = mne.io.RawArray(data, info)
+
+            file_name = f'sub{i+1}.fif'
+            file_path = os.path.join('./root_folder/', file_name)
+            raw.save(file_path)
+
+        label_map = {'folder1': 0, 'folder2': 1}
+        dataset = FolderDataset(io_path='./folder',
+                                root_path='./root_folder',
+                                structure='subject_in_label',
+                                num_channel=14,
+                                online_transform=transforms.ToTensor(),
+                                label_transform=transforms.Compose([
+                                    transforms.Select('label'),
+                                    transforms.Lambda(lambda x: label_map[x])
+                                ]),
+                                num_worker=4)
 
     Args:
         root_path (str): The path to the root folder. (default: :obj:`'./folder'`)
@@ -96,7 +125,7 @@ class FolderDataset(BaseDataset):
         self.__dict__.update(params)
 
     @staticmethod
-    def _load_data(file: Any = None,
+    def process_record(file: Any = None,
                    offline_transform: Union[None, Callable] = None,
                    read_fn: Union[None, Callable] = None,
                    **kwargs):
@@ -121,7 +150,6 @@ class FolderDataset(BaseDataset):
 
             record_info = {
                 'subject_id': subject_id,
-                'trial_id': i,
                 'start_at': events[i],
                 'end_at': events[i + 1],
                 'clip_id': clip_id,
@@ -130,8 +158,7 @@ class FolderDataset(BaseDataset):
 
             yield {'eeg': t_eeg, 'key': clip_id, 'info': record_info}
 
-    @staticmethod
-    def _set_files(root_path: str = './folder',
+    def set_records(self, root_path: str = './folder',
                    structure: str = 'subject_in_label',
                    **kwargs):
         # get all the subfolders
@@ -160,7 +187,8 @@ class FolderDataset(BaseDataset):
         info = self.read_info(index)
 
         eeg_index = str(info['clip_id'])
-        eeg = self.read_eeg(eeg_index)
+        eeg_record = str(info['_record_id'])
+        eeg = self.read_eeg(eeg_record, eeg_index)
 
         signal = eeg
         label = info

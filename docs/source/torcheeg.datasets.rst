@@ -65,9 +65,8 @@ Customized Datasets
     :nosignatures:
     :template: datasettemplate.rst
 
-    NumpyDataset
-    MNEDataset
     FolderDataset
+    CSVFolderDataset
 
 Hooks
 ---------------------------------------------------------

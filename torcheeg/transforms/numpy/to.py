@@ -68,7 +68,10 @@ class ToGrid(EEGTransform):
 
         loc_x_list = []
         loc_y_list = []
-        for _, (loc_y, loc_x) in channel_location_dict.items():
+        for _, locs in channel_location_dict.items():
+            if locs is None:
+                continue
+            (loc_y, loc_x) = locs
             loc_x_list.append(loc_x)
             loc_y_list.append(loc_y)
 
@@ -94,7 +97,10 @@ class ToGrid(EEGTransform):
         # num_electrodes x timestep
         outputs = np.zeros([self.height, self.width, eeg.shape[-1]])
         # 9 x 9 x timestep
-        for i, (loc_y, loc_x) in enumerate(self.channel_location_dict.values()):
+        for i, locs in enumerate(self.channel_location_dict.values()):
+            if locs is None:
+                continue
+            (loc_y, loc_x) = locs
             outputs[loc_y][loc_x] = eeg[i]
 
         outputs = outputs.transpose(2, 0, 1)

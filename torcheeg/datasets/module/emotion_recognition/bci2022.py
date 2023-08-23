@@ -240,7 +240,7 @@ class BCI2022Dataset(BaseDataset):
         self.__dict__.update(params)
 
     @staticmethod
-    def _load_data(file: Any = None,
+    def process_record(file: Any = None,
                    chunk_size: int = 250,
                    overlap: int = 0,
                    channel_num: int = 30,
@@ -267,10 +267,10 @@ class BCI2022Dataset(BaseDataset):
         video_id = None
         start_at = None
         end_at = None
-
+        
         # loop for each trial
         for i, event in enumerate(events):
-
+            
             if event in list(range(1, 29)):
                 # Video events 1-28: Different events correspond to different experimental video materials
                 video_id = event
@@ -294,11 +294,12 @@ class BCI2022Dataset(BaseDataset):
 
                 cur_start_at = start_at
                 if chunk_size <= 0:
-                    chunk_size = end_at - start_at
-                cur_end_at = cur_start_at + chunk_size
-                step = chunk_size - overlap
+                    dynamic_chunk_size = end_at - start_at
+                else:
+                    dynamic_chunk_size = chunk_size
 
-                trial_queue = []
+                cur_end_at = cur_start_at + dynamic_chunk_size
+                step = dynamic_chunk_size - overlap
 
                 if before_trial:
                     samples[:channel_num, cur_start_at:end_at] = before_trial(
@@ -318,27 +319,14 @@ class BCI2022Dataset(BaseDataset):
                         'clip_id': clip_id
                     }
                     record_info.update(trial_meta_info)
-                    if after_trial:
-                        trial_queue.append({
-                            'eeg': t_eeg,
-                            'key': clip_id,
-                            'info': record_info
-                        })
-                    else:
-                        yield {
+                    yield {
                             'eeg': t_eeg,
                             'key': clip_id,
                             'info': record_info
                         }
 
                     cur_start_at = cur_start_at + step
-                    cur_end_at = cur_start_at + chunk_size
-
-                if len(trial_queue) and after_trial:
-                    trial_queue = after_trial(trial_queue)
-                    for obj in trial_queue:
-                        assert 'eeg' in obj and 'key' in obj and 'info' in obj, 'after_trial must return a list of dictionaries, where each dictionary corresponds to an EEG sample, containing `eeg`, `key` and `info` as keys.'
-                        yield obj
+                    cur_end_at = cur_start_at + dynamic_chunk_size
 
                 # prepare for the next trial
                 trial_id += 1
@@ -346,8 +334,7 @@ class BCI2022Dataset(BaseDataset):
                 start_at = None
                 end_at = None
 
-    @staticmethod
-    def _set_files(root_path: str = './data_preprocessed_python', **kwargs):
+    def set_records(self, root_path: str = './data_preprocessed_python', **kwargs):
         outputs = []
         for train_set_batch in [
                 'TrainSet_first_batch', 'TrainSet_second_batch'
@@ -364,7 +351,8 @@ class BCI2022Dataset(BaseDataset):
         info = self.read_info(index)
 
         eeg_index = str(info['clip_id'])
-        eeg = self.read_eeg(eeg_index)
+        eeg_record = str(info['_record_id'])
+        eeg = self.read_eeg(eeg_record, eeg_index)
 
         signal = eeg
         label = info

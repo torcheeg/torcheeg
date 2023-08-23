@@ -156,7 +156,7 @@ class TSUBenckmarkDataset(BaseDataset):
         self.__dict__.update(params)
 
     @staticmethod
-    def _load_data(file: Any = None,
+    def process_record(file: Any = None,
                    root_path: str = './TSUBenchmark',
                    chunk_size: int = 250,
                    overlap: int = 0,
@@ -201,12 +201,14 @@ class TSUBenckmarkDataset(BaseDataset):
 
                 start_at = 0
                 if chunk_size <= 0:
-                    chunk_size = block_samples.shape[1] - start_at
+                    dynamic_chunk_size = block_samples.shape[1] - start_at
+                else:
+                    dynamic_chunk_size = chunk_size
 
                 # chunk with chunk size
-                end_at = chunk_size
+                end_at = dynamic_chunk_size
                 # calculate moving step
-                step = chunk_size - overlap
+                step = dynamic_chunk_size - overlap
 
                 block_queue = []
                 while end_at <= block_samples.shape[1]:
@@ -240,7 +242,7 @@ class TSUBenckmarkDataset(BaseDataset):
                         }
 
                     start_at = start_at + step
-                    end_at = start_at + chunk_size
+                    end_at = start_at + dynamic_chunk_size
 
                 if len(block_queue) and after_trial:
                     block_queue = after_trial(block_queue)
@@ -248,8 +250,7 @@ class TSUBenckmarkDataset(BaseDataset):
                         assert 'eeg' in obj and 'key' in obj and 'info' in obj, 'after_trial must return a list of dictionaries, where each dictionary corresponds to an EEG sample, containing `eeg`, `key` and `info` as keys.'
                         yield obj
 
-    @staticmethod
-    def _set_files(**kwargs):
+    def set_records(self, **kwargs):
         root_path = kwargs.pop('root_path', './TSUBenchmark')  # str
 
         file_list = os.listdir(root_path)
@@ -264,7 +265,8 @@ class TSUBenckmarkDataset(BaseDataset):
         info = self.read_info(index)
 
         eeg_index = str(info['clip_id'])
-        eeg = self.read_eeg(eeg_index)
+        eeg_record = str(info['_record_id'])
+        eeg = self.read_eeg(eeg_record, eeg_index)
 
         signal = eeg
         label = info
