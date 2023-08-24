@@ -2,7 +2,7 @@
 Introduction to the trainers Module
 ===================================
 
-TorchEEG offers a suite of trainers, built on Pytorch-lightning, for
+Welcome to the guide on TorchEEG's ``trainers`` Module! This module provides you with a suite of trainers, built on Pytorch-lightning, for
 model training. These trainers are designed to handle a wide array of
 models, ranging from discriminative to generative ones, and are equipped
 with capabilities for contrast learning and fine-tuning. They are also
@@ -15,6 +15,9 @@ existing ones.
 
 
 ######################################################################
+# Discriminative Models with ClassifierTrainer
+# ----------------------------------------------
+#
 # The simplest yet highly effective method for discriminative models
 # involves utilizing a classification loss function, such as cross-entropy
 # for EEG signal recognition training, encapsulated in the
@@ -35,8 +38,8 @@ from torcheeg.trainers import ClassifierTrainer
 import pytorch_lightning as pl
 
 dataset = DEAPDataset(
-    io_path=f'./tmp_out/examples_trainers_1/deap',
-    root_path='./tmp_in/data_preprocessed_python',
+    io_path=f'./examples_trainers_1/deap',
+    root_path='./data_preprocessed_python',
     offline_transform=transforms.Compose([
         transforms.BandDifferentialEntropy(apply_to_baseline=True),
         transforms.ToGrid(DEAP_CHANNEL_LOCATION_DICT, apply_to_baseline=True)
@@ -51,7 +54,7 @@ dataset = DEAPDataset(
     num_worker=8)
 
 k_fold = KFoldGroupbyTrial(n_splits=10,
-                           split_path='./tmp_out/examples_trainers_1/split',
+                           split_path='./examples_trainers_1/split',
                            shuffle=True,
                            random_state=42)
 
@@ -65,11 +68,12 @@ for i, (train_dataset, val_dataset) in enumerate(k_fold.split(dataset)):
                                 num_classes=2,
                                 lr=1e-4,
                                 weight_decay=1e-4,
+                                devices=1,
                                 accelerator="gpu")
     trainer.fit(train_loader,
                 val_loader,
                 max_epochs=50,
-                default_root_dir=f'./tmp_out/examples_trainers_1/model/{i}',
+                default_root_dir=f'./examples_trainers_1/model/{i}',
                 callbacks=[pl.callbacks.ModelCheckpoint(save_last=True)],
                 enable_progress_bar=True,
                 enable_model_summary=True,
@@ -129,6 +133,9 @@ trainer = ClassifierTrainer(model=model,
 
 
 ######################################################################
+# Domain Adaptation Methods
+# ----------------------------------------------
+#
 # A challenging aspect of EEG-based emotion recognition is the
 # cross-subject problem. Even when evoked by the same stimulus, the
 # distribution of EEG signal patterns among different individuals may
@@ -160,8 +167,8 @@ from torcheeg.trainers import CORALTrainer
 import pytorch_lightning as pl
 
 dataset = DEAPDataset(
-    io_path=f'./tmp_out/examples_trainers_2/deap',
-    root_path='./tmp_in/data_preprocessed_python',
+    io_path=f'./examples_trainers_2/deap',
+    root_path='./data_preprocessed_python',
     offline_transform=transforms.Compose([
         transforms.BandDifferentialEntropy(apply_to_baseline=True),
         transforms.ToGrid(DEAP_CHANNEL_LOCATION_DICT, apply_to_baseline=True)
@@ -175,7 +182,7 @@ dataset = DEAPDataset(
     ]),
     num_worker=8)
 
-k_fold = LeaveOneSubjectOut(split_path='./tmp_out/examples_trainers_2/split',
+k_fold = LeaveOneSubjectOut(split_path='./examples_trainers_2/split',
                             shuffle=True,
                             random_state=42)
 
@@ -214,7 +221,7 @@ for i, (train_dataset, val_dataset) in enumerate(k_fold.split(dataset)):
                 target_loader,
                 target_loader,
                 max_epochs=50,
-                default_root_dir=f'./tmp_out/examples_trainers_2/model/{i}',
+                default_root_dir=f'./examples_trainers_2/model/{i}',
                 callbacks=[pl.callbacks.ModelCheckpoint(save_last=True)],
                 enable_progress_bar=True,
                 enable_model_summary=True,
@@ -226,6 +233,9 @@ for i, (train_dataset, val_dataset) in enumerate(k_fold.split(dataset)):
 
 
 ######################################################################
+# Generative Models
+# ----------------------------------------------
+#
 # For generative models, we provide trainers for models including VAE,
 # GAN, Normalizing Flow, and Diffusion Model. These trainers aim to train
 # models to generate EEG signals that closely mimic the real distribution.

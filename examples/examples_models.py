@@ -1,15 +1,16 @@
 """
-An Introduction to the models Module
+Introduction to the models Module
 ====================================
 
-The models module serves as a valuable repository containing an array of
-both discriminative and generative models, meticulously replicated from
-respective studies.
+Welcome to the guide on TorchEEG's ``models`` Module! This module provides you with a variety of both discriminative and generative models. Each model has been meticulously replicated from its respective research studies, offering a toolkit for EEG signal analysis.
 
 """
 
 
 ######################################################################
+# Discriminative Models
+# ----------------------------------------------
+#
 # Regarding discriminative models, the models module houses
 # implementations of Convolutional Neural Networks (CNNs), such as EEGNet
 # and TSception. These models create a variety of spatial, temporal, or
@@ -115,7 +116,10 @@ pred = model(eeg)
 
 
 ######################################################################
-# In addition, we provide a variety of generative models known for their
+# Generative Models
+# ----------------------------------------------
+#
+# We also provide a variety of generative models known for their
 # impressive advancements in computer vision, natural language processing,
 # and other domains. When applied to EEG analysis, four categories of
 # generative models are offered as sturdy benchmarks for researchers. The

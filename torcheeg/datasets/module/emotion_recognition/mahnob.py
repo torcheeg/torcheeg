@@ -270,16 +270,18 @@ class MAHNOBDataset(BaseDataset):
 
         start_at = 0
         if chunk_size <= 0:
-            chunk_size = trial_samples.shape[1] - start_at
+            dynamic_chunk_size = trial_samples.shape[1] - start_at
+        else:
+            dynamic_chunk_size = chunk_size
 
         # chunk with chunk size
-        end_at = chunk_size
+        end_at = dynamic_chunk_size
         # calculate moving step
-        step = chunk_size - overlap
+        step = dynamic_chunk_size - overlap
 
         max_len = trial_samples.shape[1]
         if not (num_trial_sample <= 0):
-            max_len = min(num_trial_sample * chunk_size, trial_samples.shape[1])
+            max_len = min(num_trial_sample * dynamic_chunk_size, trial_samples.shape[1])
 
         while end_at <= max_len:
             clip_sample = trial_samples[:, start_at:end_at]
@@ -318,7 +320,7 @@ class MAHNOBDataset(BaseDataset):
                 }
 
             start_at = start_at + step
-            end_at = start_at + chunk_size
+            end_at = start_at + dynamic_chunk_size
 
     def set_records(self, root_path: str = './Sessions', **kwargs):
         return os.listdir(root_path)

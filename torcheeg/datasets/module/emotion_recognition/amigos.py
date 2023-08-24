@@ -218,9 +218,10 @@ class AMIGOSDataset(BaseDataset):
         max_len = len(samples)
         if not (num_trial <= 0):
             max_len = min(len(samples), num_trial)
-
+            
         # loop for each trial
         for trial_id in range(max_len):
+            
             # extract baseline signals
             trial_samples = samples[trial_id]
 
@@ -258,16 +259,16 @@ class AMIGOSDataset(BaseDataset):
                 num_channel, num_baseline,
                 baseline_chunk_size).mean(axis=1)  # channel(14), timestep(128)
 
-            trial_queue = []
-
             start_at = baseline_chunk_size * num_baseline
             if chunk_size <= 0:
-                chunk_size = trial_samples.shape[1] - start_at
+                dynamic_chunk_size = trial_samples.shape[1] - start_at
+            else:
+                dynamic_chunk_size = chunk_size
 
             # chunk with chunk size
-            end_at = start_at + chunk_size
+            end_at = start_at + dynamic_chunk_size
             # calculate moving step
-            step = chunk_size - overlap
+            step = dynamic_chunk_size - overlap
 
             while end_at <= trial_samples.shape[1]:
                 clip_sample = trial_samples[:num_channel, start_at:end_at]
@@ -300,7 +301,7 @@ class AMIGOSDataset(BaseDataset):
                 yield {'eeg': t_eeg, 'key': clip_id, 'info': record_info}
 
                 start_at = start_at + step
-                end_at = start_at + chunk_size
+                end_at = start_at + dynamic_chunk_size
 
     def set_records(self, root_path: str = './data_preprocessed', **kwargs):
         return os.listdir(root_path)
