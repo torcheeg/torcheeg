@@ -122,6 +122,8 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 # training process
 def train(dataloader, model, loss_fn, optimizer):
     size = len(dataloader.dataset)
+    record_step = int(len(dataloader) / 10)
+
     model.train()
     for batch_idx, batch in enumerate(dataloader):
         X = batch[0].to(device)
@@ -136,7 +138,7 @@ def train(dataloader, model, loss_fn, optimizer):
         loss.backward()
         optimizer.step()
 
-        if batch_idx % 100 == 0:
+        if batch_idx % record_step == 0:
             loss, current = loss.item(), batch_idx * len(X)
             logger.info(f"Loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
 
