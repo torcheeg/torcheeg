@@ -89,7 +89,7 @@ print(transformed_label)
 transformed_label=transforms.Binary(threshold=5.0)(y=transformed_label)['y']
 print(transformed_label)
 
-######################################################################
+#############################g#########################################
 # Process transforms bring several transformers together, crafting the
 # overall processes. For instance, Compose allows the output of one
 # transformation to be the input of the next, thus chaining multiple

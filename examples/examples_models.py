@@ -38,8 +38,8 @@ pred = model(eeg)
 # 
 
 from torcheeg.datasets import DEAPDataset
-from torcheeg.transforms import transforms
-from torcheeg.utils import DEAP_CHANNEL_LIST
+from torcheeg import transforms
+from torcheeg.datasets.constants import DEAP_CHANNEL_LIST
 
 dataset = DEAPDataset(io_path=f'./deap',
                     root_path='./data_preprocessed_python',
@@ -70,6 +70,9 @@ model = TSCeption(num_classes=2,
                   num_S=15,
                   hid_channels=32,
                   dropout=0.5)
+x= dataset[0][0]
+x= torch.unsqueeze(x,dim=0)
+print(model(x))
 
 
 ######################################################################
@@ -176,10 +179,12 @@ model = BCGlow(num_classes=2)
 mock_eeg = torch.randn(2, 4, 32, 32)
 y = torch.randint(0, 2, (2, ))
 
+y=y.float()
 nll_loss, y_logits = model(mock_eeg, y)
 loss = nll_loss.mean() + F.cross_entropy(y_logits, y)
 
 # sample a generated result
+y= y.to(torch.int64)
 fake_X = model.sample(y, temperature=1.0)
 
 
