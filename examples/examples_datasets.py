@@ -55,9 +55,9 @@ print(dataset[0])
 #
 
 import torch
-from torcheeg.utils import plot_2d_tensor
+from torcheeg.utils import plot_3d_tensor
 
-img = plot_2d_tensor(torch.tensor(dataset[0][0]))
+img = plot_3d_tensor(torch.tensor(dataset[0][0]))
 
 ######################################################################
 #

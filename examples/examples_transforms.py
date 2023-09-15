@@ -86,7 +86,7 @@ info = {'valence': 4.5, 'arousal': 5.5, 'subject_id': 7}
 transformed_label = transforms.Select(key='valence')(y=info)['y']
 print(transformed_label)
 
-transforms.Binary(threshold=5.0)(y=transformed_label)['y']
+transformed_label = transforms.Binary(threshold=5.0)(y=transformed_label)['y']
 print(transformed_label)
 
 ######################################################################
