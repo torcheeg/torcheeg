@@ -27,7 +27,7 @@ existing ones.
 from torcheeg.datasets import DEAPDataset
 from torcheeg import transforms
 
-from torcheeg.datasets import KFoldGroupbyTrial
+from torcheeg.model_selection import KFoldGroupbyTrial
 from torcheeg.datasets.constants.emotion_recognition.deap import \
     DEAP_CHANNEL_LOCATION_DICT
 from torch.utils.data import DataLoader
@@ -156,7 +156,7 @@ trainer = ClassifierTrainer(model=model,
 from torcheeg.datasets import DEAPDataset
 from torcheeg import transforms
 
-from torcheeg.datasets import LeaveOneSubjectOut
+from torcheeg.model_selection import LeaveOneSubjectOut
 from torcheeg.datasets.constants.emotion_recognition.deap import \
     DEAP_CHANNEL_LOCATION_DICT
 from torch.utils.data import DataLoader
@@ -182,9 +182,7 @@ dataset = DEAPDataset(
     ]),
     num_worker=8)
 
-k_fold = LeaveOneSubjectOut(split_path='./examples_trainers_2/split',
-                            shuffle=True,
-                            random_state=42)
+k_fold = LeaveOneSubjectOut(split_path='./examples_trainers_2/split')
 
 
 class Extractor(CCNN):
