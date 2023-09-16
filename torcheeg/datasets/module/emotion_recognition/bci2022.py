@@ -2,11 +2,6 @@ import os
 from typing import Any, Callable, Dict, Tuple, Union
 
 import joblib
-
-from torcheeg.io import EEGSignalIO, MetaInfoIO
-
-from ...constants.emotion_recognition.bci2022 import (
-    BCI2022_ADJACENCY_MATRIX, BCI2022_CHANNEL_LOCATION_DICT)
 from ..base_dataset import BaseDataset
 
 FIRST_BATCH_CHANNEL = [
@@ -198,8 +193,6 @@ class BCI2022Dataset(BaseDataset):
         verbose (bool): Whether to display logs during processing, such as progress bars, etc. (default: :obj:`True`)
         in_memory (bool): Whether to load the entire dataset into memory. If :obj:`in_memory` is set to True, then the first time an EEG sample is read, the entire dataset is loaded into memory for subsequent retrieval. Otherwise, the dataset is stored on disk to avoid the out-of-memory problem. (default: :obj:`False`)    
     '''
-    channel_location_dict = BCI2022_CHANNEL_LOCATION_DICT
-    adjacency_matrix = BCI2022_ADJACENCY_MATRIX
 
     def __init__(self,
                  root_path: str = './2022EmotionPublic/TrainSet/',
@@ -246,7 +239,6 @@ class BCI2022Dataset(BaseDataset):
                    channel_num: int = 30,
                    before_trial: Union[None, Callable] = None,
                    offline_transform: Union[None, Callable] = None,
-                   after_trial: Union[None, Callable] = None,
                    **kwargs):
 
         file_name = os.path.basename(file)  # an element from file name list

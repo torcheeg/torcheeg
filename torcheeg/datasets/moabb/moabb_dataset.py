@@ -171,24 +171,11 @@ class MOABBDataset(BaseDataset):
                     start_at = start_at + step
                     end_at = start_at + chunk_size
 
-                    if after_trial is not None:
-                        trial_queue.append({
-                            'eeg': t_eeg,
-                            'key': clip_id,
-                            'info': record_info
-                        })
-                    else:
-                        yield {
+                    yield {
                             'eeg': t_eeg,
                             'key': clip_id,
                             'info': record_info
                         }
-
-            if len(trial_queue) and after_trial is not None:
-                trial_queue = after_trial(trial_queue)
-                for obj in trial_queue:
-                    assert 'eeg' in obj and 'key' in obj and 'info' in obj, 'after_trial must return a list of dictionaries, where each dictionary corresponds to an EEG sample, containing `eeg`, `key` and `info` as keys.'
-                    yield obj
 
     def set_records(self,
                     dataset: _MOABBDataset,

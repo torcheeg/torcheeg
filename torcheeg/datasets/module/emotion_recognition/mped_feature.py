@@ -3,11 +3,6 @@ from typing import Any, Callable, Dict, Tuple, Union
 
 import numpy as np
 import scipy.io as scio
-
-from torcheeg.io import EEGSignalIO, MetaInfoIO
-
-from ...constants.emotion_recognition.mped import (MPED_ADJACENCY_MATRIX,
-                                                   MPED_CHANNEL_LOCATION_DICT)
 from ..base_dataset import BaseDataset
 
 
@@ -100,8 +95,6 @@ class MPEDFeatureDataset(BaseDataset):
         verbose (bool): Whether to display logs during processing, such as progress bars, etc. (default: :obj:`True`)
         in_memory (bool): Whether to load the entire dataset into memory. If :obj:`in_memory` is set to True, then the first time an EEG sample is read, the entire dataset is loaded into memory for subsequent retrieval. Otherwise, the dataset is stored on disk to avoid the out-of-memory problem. (default: :obj:`False`)    
     '''
-    channel_location_dict = MPED_CHANNEL_LOCATION_DICT
-    adjacency_matrix = MPED_ADJACENCY_MATRIX
 
     def __init__(self,
                  root_path: str = './EEG_feature',
@@ -146,7 +139,6 @@ class MPEDFeatureDataset(BaseDataset):
                    num_channel: int = 62,
                    before_trial: Union[None, Callable] = None,
                    offline_transform: Union[None, Callable] = None,
-                   after_trial: Union[None, Callable] = None,
                    **kwargs):
         file_name = file
 

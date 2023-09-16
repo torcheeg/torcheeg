@@ -3,12 +3,6 @@ import re
 from typing import Any, Callable, Dict, Tuple, Union
 
 import scipy.io as scio
-
-from torcheeg.io import EEGSignalIO, MetaInfoIO
-
-from ...constants.ssvep.tsu_benchmark import (TSUBENCHMARK_ADJACENCY_MATRIX,
-                                              TSUBENCHMARK_CHANNEL_LOCATION_DICT
-                                              )
 from ..base_dataset import BaseDataset
 
 
@@ -114,8 +108,6 @@ class TSUBenckmarkDataset(BaseDataset):
         verbose (bool): Whether to display logs during processing, such as progress bars, etc. (default: :obj:`True`)
     
     '''
-    channel_location_dict = TSUBENCHMARK_CHANNEL_LOCATION_DICT
-    adjacency_matrix = TSUBENCHMARK_ADJACENCY_MATRIX
 
     def __init__(self,
                  root_path: str = './TSUBenchmark',
@@ -163,7 +155,6 @@ class TSUBenckmarkDataset(BaseDataset):
                    num_channel: int = 64,
                    offline_transform: Union[None, Callable] = None,
                    before_trial: Union[None, Callable] = None,
-                   after_trial: Union[None, Callable] = None,
                    **kwargs):
         file_name = file
 
@@ -228,14 +219,7 @@ class TSUBenckmarkDataset(BaseDataset):
                         'clip_id': clip_id
                     }
                     record_info.update(block_meta_info)
-                    if after_trial:
-                        block_queue.append({
-                            'eeg': t_eeg,
-                            'key': clip_id,
-                            'info': record_info
-                        })
-                    else:
-                        yield {
+                    yield {
                             'eeg': t_eeg,
                             'key': clip_id,
                             'info': record_info
@@ -243,12 +227,6 @@ class TSUBenckmarkDataset(BaseDataset):
 
                     start_at = start_at + step
                     end_at = start_at + dynamic_chunk_size
-
-                if len(block_queue) and after_trial:
-                    block_queue = after_trial(block_queue)
-                    for obj in block_queue:
-                        assert 'eeg' in obj and 'key' in obj and 'info' in obj, 'after_trial must return a list of dictionaries, where each dictionary corresponds to an EEG sample, containing `eeg`, `key` and `info` as keys.'
-                        yield obj
 
     def set_records(self, **kwargs):
         root_path = kwargs.pop('root_path', './TSUBenchmark')  # str

@@ -2,13 +2,9 @@ import glob
 import json
 import os
 from typing import Any, Callable, Dict, Tuple, Union
-from torcheeg.io import EEGSignalIO, MetaInfoIO
 
 import mne
 import xmltodict
-
-from ...constants.emotion_recognition.mahnob import (
-    MAHNOB_ADJACENCY_MATRIX, MAHNOB_CHANNEL_LOCATION_DICT)
 from ..base_dataset import BaseDataset
 
 
@@ -136,8 +132,6 @@ class MAHNOBDataset(BaseDataset):
         verbose (bool): Whether to display logs during processing, such as progress bars, etc. (default: :obj:`True`)
         in_memory (bool): Whether to load the entire dataset into memory. If :obj:`in_memory` is set to True, then the first time an EEG sample is read, the entire dataset is loaded into memory for subsequent retrieval. Otherwise, the dataset is stored on disk to avoid the out-of-memory problem. (default: :obj:`False`)    
     '''
-    channel_location_dict = MAHNOB_CHANNEL_LOCATION_DICT
-    adjacency_matrix = MAHNOB_ADJACENCY_MATRIX
 
     def __init__(self,
                  root_path: str = './Sessions',

@@ -1,7 +1,7 @@
 import os
 import pickle as pkl
-from typing import Any, Callable, Dict, Tuple, Union
 
+from typing import Any, Callable, Dict, Tuple, Union
 from ..base_dataset import BaseDataset
 
 
@@ -177,7 +177,6 @@ class DEAPDataset(BaseDataset):
                    num_baseline: int = 3,
                    baseline_chunk_size: int = 128,
                    before_trial: Union[None, Callable] = None,
-                   after_trial: Union[Callable, None] = None,
                    offline_transform: Union[None, Callable] = None,
                    **kwargs):
         file_name = file  # an element from file name list

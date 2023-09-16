@@ -4,11 +4,6 @@ from typing import Any, Callable, Dict, Tuple, Union
 
 import numpy as np
 import scipy.io as scio
-
-from torcheeg.io import EEGSignalIO, MetaInfoIO
-
-from ...constants.emotion_recognition.seed import (SEED_ADJACENCY_MATRIX,
-                                                   SEED_CHANNEL_LOCATION_DICT)
 from ..base_dataset import BaseDataset
 
 
@@ -104,8 +99,6 @@ class SEEDFeatureDataset(BaseDataset):
         verbose (bool): Whether to display logs during processing, such as progress bars, etc. (default: :obj:`True`)
         in_memory (bool): Whether to load the entire dataset into memory. If :obj:`in_memory` is set to True, then the first time an EEG sample is read, the entire dataset is loaded into memory for subsequent retrieval. Otherwise, the dataset is stored on disk to avoid the out-of-memory problem. (default: :obj:`False`)    
     '''
-    channel_location_dict = SEED_CHANNEL_LOCATION_DICT
-    adjacency_matrix = SEED_ADJACENCY_MATRIX
 
     def __init__(self,
                  root_path: str = './ExtractedFeatures',
@@ -154,7 +147,6 @@ class SEEDFeatureDataset(BaseDataset):
                        num_channel: int = 62,
                        before_trial: Union[None, Callable] = None,
                        offline_transform: Union[None, Callable] = None,
-                       after_trial: Union[None, Callable] = None,
                        **kwargs):
         file_name, session_id = file
 
