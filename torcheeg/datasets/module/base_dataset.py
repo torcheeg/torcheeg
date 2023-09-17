@@ -17,6 +17,7 @@ log = logging.getLogger(__name__)
 
 
 class MockLock():
+
     def __enter__(self):
         pass
 
@@ -25,6 +26,7 @@ class MockLock():
 
 
 class BaseDataset(Dataset):
+
     def __init__(self,
                  io_path: str = None,
                  io_size: int = 10485760,
@@ -97,15 +99,17 @@ class BaseDataset(Dataset):
             self.eeg_io_router, self.info = self.get_pointer(io_path=io_path,
                                                              io_size=io_size,
                                                              io_mode=io_mode)
-            # catch the exception
-            try:
-                self.post_process_record(after_trial=after_trial,
-                                         after_session=after_session,
-                                         after_subject=after_subject)
-            except Exception as e:
-                # shutil to delete the database
-                shutil.rmtree(self.io_path)
-                raise e
+
+            if self.after_trial is not None or self.after_session is not None or self.after_subject is not None:
+                # catch the exception
+                try:
+                    self.post_process_record(after_trial=after_trial,
+                                             after_session=after_session,
+                                             after_subject=after_subject)
+                except Exception as e:
+                    # shutil to delete the database
+                    shutil.rmtree(self.io_path)
+                    raise e
         else:
             print(
                 f'dataset already exists at path {self.io_path}, reading from path...'

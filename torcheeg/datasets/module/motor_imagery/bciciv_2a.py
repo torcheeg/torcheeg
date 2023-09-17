@@ -8,6 +8,7 @@ from ..base_dataset import BaseDataset
 
 log = logging.getLogger(__name__)
 
+
 class BCICIV2aDataset(BaseDataset):
     r'''
     A dataset for motor imagery, BCI Competition 2008 Graz data set A (BCICIV_2a). This class generates training samples and test samples according to the given parameters, and caches the generated results in a unified input and output format (IO). The relevant information of the dataset is as follows:
@@ -57,6 +58,7 @@ class BCICIV2aDataset(BaseDataset):
 
     Args:
         root_path (str): Downloaded data files in matlab (unzipped BCICIV_2a_mat.zip) formats (default: :obj:`'./BCICIV_2a_mat'`)
+        offset (int): The number of data points to be discarded at the beginning of each trial. (default: :obj:`0`)
         chunk_size (int): Number of data points included in each EEG chunk as training or test samples. If set to -1, the EEG signal of a trial is used as a sample of a chunk. (default: :obj:`7 * 250`)
         overlap (int): The number of overlapping data points between different chunks when dividing EEG chunks. (default: :obj:`0`)
         num_channel (int): Number of channels used, of which the first 14 channels are EEG signals. (default: :obj:`22`)
@@ -76,6 +78,7 @@ class BCICIV2aDataset(BaseDataset):
 
     def __init__(self,
                  root_path: str = './BCICIV_2a_mat',
+                 offset: int = 0,
                  chunk_size: int = 7 * 250,
                  overlap: int = 0,
                  num_channel: int = 22,
@@ -96,6 +99,7 @@ class BCICIV2aDataset(BaseDataset):
         # pass all arguments to super class
         params = {
             'root_path': root_path,
+            'offset': offset,
             'chunk_size': chunk_size,
             'overlap': overlap,
             'num_channel': num_channel,
@@ -120,18 +124,19 @@ class BCICIV2aDataset(BaseDataset):
 
     @staticmethod
     def process_record(file: Any = None,
-                   chunk_size: int = 128,
-                   overlap: int = 0,
-                   num_channel: int = 14,
-                   skip_trial_with_artifacts: bool = False,
-                   before_trial: Union[None, Callable] = None,
-                   offline_transform: Union[None, Callable] = None,
-                   **kwargs):
-        
+                       offset: int = 0,
+                       chunk_size: int = 128,
+                       overlap: int = 0,
+                       num_channel: int = 14,
+                       skip_trial_with_artifacts: bool = False,
+                       before_trial: Union[None, Callable] = None,
+                       offline_transform: Union[None, Callable] = None,
+                       **kwargs):
+
         if chunk_size <= 0:
             dynamic_chunk_size = 7 * 250
         else:
-            dynamic_chunk_size = chunk_size
+            dynamic_chunk_size = int(chunk_size)
 
         # get file name without extension
         file_name = os.path.splitext(os.path.basename(file))[0]
@@ -144,27 +149,33 @@ class BCICIV2aDataset(BaseDataset):
 
         for run_id in range(0, a_data.size):
             # a_data: (1, 9) struct, 1-3: 25 channel EOG test (eyes open, eyes closed, movement), 4-9: 6 runs
-            
+
             a_data1 = a_data[0, run_id]
-            a_data2= [a_data1[0,0]]
-            a_data3= a_data2[0]
-            a_X 		= a_data3[0]
-            a_trial 	= a_data3[1]
-            a_y 		= a_data3[2]
+            a_data2 = [a_data1[0, 0]]
+            a_data3 = a_data2[0]
+            a_X = a_data3[0]
+            a_trial = a_data3[1]
+            a_y = a_data3[2]
             a_artifacts = a_data3[5]
 
-            a_X = np.transpose(a_X) # to channel number, data point number
+            a_X = np.transpose(a_X)  # to channel number, data point number
             if before_trial:
                 a_X = before_trial(a_X)
 
             # for EOG test, a_trial is []
             for trial_id in range(0, a_trial.size):
-                trial_meta_info = {'subject_id': subject, 'trial_id': trial_id, 'session': session, 'subject': subject, 'run': run_id}
+                trial_meta_info = {
+                    'subject_id': subject,
+                    'trial_id': trial_id,
+                    'session': session,
+                    'subject': subject,
+                    'run': run_id
+                }
 
-                if(a_artifacts[trial_id] != 0 and skip_trial_with_artifacts):
+                if (a_artifacts[trial_id] != 0 and skip_trial_with_artifacts):
                     continue
 
-                start_at = int(a_trial[trial_id])
+                start_at = int(a_trial[trial_id] + offset)
                 end_at = start_at + dynamic_chunk_size
                 step = dynamic_chunk_size - overlap
 
@@ -179,14 +190,14 @@ class BCICIV2aDataset(BaseDataset):
                     clip_id = f'{file_name}_{write_pointer}'
 
                     record_info = {
-                            'start_at': start_at,
-                            'end_at': end_at,
-                            'clip_id': clip_id
-                        }
+                        'start_at': start_at,
+                        'end_at': end_at,
+                        'clip_id': clip_id
+                    }
                     record_info.update(trial_meta_info)
 
                     t_eeg = a_X[:num_channel, start_at:end_at]
-                    if not offline_transform is None:
+                    if offline_transform is not None:
                         t = offline_transform(eeg=t_eeg)
                         t_eeg = t['eeg']
 
@@ -202,7 +213,9 @@ class BCICIV2aDataset(BaseDataset):
 
     def set_records(self, root_path: str = './BCICIV_2a_mat', **kwargs):
         file_name_list = os.listdir(root_path)
-        file_path_list = [os.path.join(root_path, file) for file in file_name_list]
+        file_path_list = [
+            os.path.join(root_path, file) for file in file_name_list
+        ]
 
         return file_path_list
 
