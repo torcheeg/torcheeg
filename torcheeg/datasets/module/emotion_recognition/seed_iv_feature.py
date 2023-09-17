@@ -4,11 +4,6 @@ from typing import Any, Callable, Dict, Tuple, Union
 
 import numpy as np
 import scipy.io as scio
-
-from torcheeg.io import EEGSignalIO, MetaInfoIO
-
-from ...constants.emotion_recognition.seed_iv import (
-    SEED_IV_ADJACENCY_MATRIX, SEED_IV_CHANNEL_LOCATION_DICT)
 from ..base_dataset import BaseDataset
 
 
@@ -93,8 +88,6 @@ class SEEDIVFeatureDataset(BaseDataset):
         verbose (bool): Whether to display logs during processing, such as progress bars, etc. (default: :obj:`True`)
         in_memory (bool): Whether to load the entire dataset into memory. If :obj:`in_memory` is set to True, then the first time an EEG sample is read, the entire dataset is loaded into memory for subsequent retrieval. Otherwise, the dataset is stored on disk to avoid the out-of-memory problem. (default: :obj:`False`)    
     '''
-    channel_location_dict = SEED_IV_CHANNEL_LOCATION_DICT
-    adjacency_matrix = SEED_IV_ADJACENCY_MATRIX
 
     def __init__(self,
                  root_path: str = './eeg_feature_smooth',
@@ -141,7 +134,6 @@ class SEEDIVFeatureDataset(BaseDataset):
                        num_channel: int = 62,
                        offline_transform: Union[None, Callable] = None,
                        before_trial: Union[None, Callable] = None,
-                       after_trial: Union[Callable, None] = None,
                        file: Any = None,
                        **kwargs):
         file_path = file  # an element from file name list

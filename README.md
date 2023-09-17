@@ -241,6 +241,13 @@ If you would like to contribute new datasets, deep learning methods, and extensi
         </a>
     </td>
     <td align="center">
+        <a href="https://github.com/arrogant-R">
+            <img src="https://avatars.githubusercontent.com/u/83148307?v=4" width="100;" alt="arrogant-R"/>
+            <br />
+            <sub><b>Arrogant-R</b></sub>
+        </a>
+    </td>
+    <td align="center">
         <a href="https://github.com/talhaanwarch">
             <img src="https://avatars.githubusercontent.com/u/37379131?v=4" width="100;" alt="talhaanwarch"/>
             <br />
@@ -252,13 +259,6 @@ If you would like to contribute new datasets, deep learning methods, and extensi
             <img src="https://avatars.githubusercontent.com/u/48720814?v=4" width="100;" alt="MicheleBarsotti"/>
             <br />
             <sub><b>Meekele_b</b></sub>
-        </a>
-    </td>
-    <td align="center">
-        <a href="https://github.com/arrogant-R">
-            <img src="https://avatars.githubusercontent.com/u/83148307?v=4" width="100;" alt="arrogant-R"/>
-            <br />
-            <sub><b>arrogant-R</b></sub>
         </a>
     </td>
     <td align="center">

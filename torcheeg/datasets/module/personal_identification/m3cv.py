@@ -4,8 +4,6 @@ from typing import Any, Callable, Dict, Tuple, Union
 import pandas as pd
 import scipy.io as scio
 
-from torcheeg.io import EEGSignalIO, MetaInfoIO
-
 from ..base_dataset import BaseDataset
 
 
@@ -171,7 +169,6 @@ class M3CVDataset(BaseDataset):
                    num_channel: int = 64,
                    offline_transform: Union[None, Callable] = None,
                    before_trial: Union[None, Callable] = None,
-                   after_trial: Union[None, Callable] = None,
                    **kwargs):
         start_idx, end_idx = file
 
@@ -231,23 +228,10 @@ class M3CVDataset(BaseDataset):
                     'clip_id': clip_id
                 }
                 record_info.update(epoch_meta_info)
-                if after_trial:
-                    trial_queue.append({
-                        'eeg': t_eeg,
-                        'key': clip_id,
-                        'info': record_info
-                    })
-                else:
-                    yield {'eeg': t_eeg, 'key': clip_id, 'info': record_info}
+                yield {'eeg': t_eeg, 'key': clip_id, 'info': record_info}
 
                 start_at = start_at + step
                 end_at = start_at + dynamic_chunk_size
-
-            if len(trial_queue) and after_trial:
-                trial_queue = after_trial(trial_queue)
-                for obj in trial_queue:
-                    assert 'eeg' in obj and 'key' in obj and 'info' in obj, 'after_trial must return a list of dictionaries, where each dictionary corresponds to an EEG sample, containing `eeg`, `key` and `info` as keys.'
-                    yield obj
 
     def set_records(self, root_path: str = './aistudio',
                    subset: str = 'Enrollment',
