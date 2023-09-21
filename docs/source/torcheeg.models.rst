@@ -73,6 +73,8 @@ Generative Adversarial Network
    BDiscriminator
    BCGenerator
    BCDiscriminator
+   EEGfuseNet
+   EFDiscriminator   
 
 Variational Auto Encoder
 ----------------------------------
