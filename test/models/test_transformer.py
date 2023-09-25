@@ -2,7 +2,7 @@ import unittest
 
 import torch
 
-from torcheeg.models import SimpleViT, ArjunViT, VanillaTransformer, ViT, Conformer
+from torcheeg.models import SimpleViT, ArjunViT, VanillaTransformer, ViT, Conformer,ATCNet
 
 
 class TestTransformer(unittest.TestCase):
@@ -69,6 +69,18 @@ class TestTransformer(unittest.TestCase):
         model = model.cuda()
         pred = model(eeg).cpu()
         self.assertEqual(tuple(pred.shape), (2, 2))
+    
+    def test_atcnet(self):
+        eeg = torch.randn(2,32,1000)
+        model = ATCNet(num_classes=3,in_channels=32,chunk_size=1000)
+        pred = model(eeg)
+        self.assertEqual(tuple(pred.shape),(2,3))
+
+        eeg = eeg.cuda(0)
+        model = model.cuda(0)
+        pred = model(eeg)
+        self.assertEqual(tuple(pred.shape),(2,3))
+
 
 
 if __name__ == '__main__':

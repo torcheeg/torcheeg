@@ -61,6 +61,7 @@ Transformer
    ArjunViT
    VanillaTransformer
    ViT
+   ATCNet
 
 Generative Adversarial Network
 ----------------------------------
