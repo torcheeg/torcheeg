@@ -15,7 +15,7 @@ class EEGfuseNet(nn.Module):
         fake_X,deep_feature=g_model(X)
 
     Args:
-        in_channels (int): The input feature dimension. (default: :obj:`128`)
+        in_channels (int): The input feature dimension. (default: :obj:`32`)
         hidden_dim  (int): Hidden dim of BI-GRU. (default: :obj:`16`)
         n_layers (int): The number of layers of BI-GRU. (default: :obj:`1`)
         n_filters (int): The number of filters of CNN based encoder. (default: :obj:`1`)
@@ -170,10 +170,10 @@ class EFDiscriminator(nn.Module):
         p_real,p_fake = d_model(X),d_model(fake_X)
 
     Args:
-        in_channels (int): The input feature dimension. (default: :obj:`128`)
+        in_channels (int): The input feature dimension. (default: :obj:`32`)
         n_layers (int): The number of layers of BI-GRU. (default: :obj:`1`)
         n_filters (int): The number of filters in CNN based encoder. (default: :obj:`1`)
-        chunk_size (int): Number of data points included in each EEG chunk. (default: :obj:`128`)
+        chunk_size (int): Number of data points included in each EEG chunk. (default: :obj:`384`)
     '''
     def __init__(self,
                     in_channels:int = 32,
