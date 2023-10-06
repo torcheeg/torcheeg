@@ -10,9 +10,9 @@ class ATCNet(nn.Module):
     - URL: https://github.com/Altaheri/EEG-ATCNet
 
     .. code-block:: python
-        g_model=EEGfuseNet(in_channels=20,hidden_dim=16,n_layers=1,n_filters=1,chunk_size=128)
+        model = ATCNet(num_classes=4,in_channels=22,chunk_size=128)
         X = torch.rand(128,20,128)
-        fake_X,deep_feature=g_model(X)
+        p = model(X)
 
     Args:
         num_classes (int): The number of classes to predict. (default: :obj:`4`)
