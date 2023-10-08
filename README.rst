@@ -299,7 +299,7 @@ this tutorial, we use k-fold cross-validation on the entire dataset
 
 .. code:: python
 
-   from torcheeg.datasets import KFoldGroupbyTrial
+   from torcheeg.model_selection import KFoldGroupbyTrial
 
    k_fold = KFoldGroupbyTrial(n_splits=10,
                               split_path='./tmp_out/examples_pipeline/split',
