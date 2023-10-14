@@ -10,8 +10,8 @@ class ATCNet(nn.Module):
     - URL: https://github.com/Altaheri/EEG-ATCNet
 
     .. code-block:: python
-        model = ATCNet(num_classes=4,in_channels=22,chunk_size=128)
-        X = torch.rand(128,20,128)
+        model = ATCNet(num_classes=4,in_elec=22,chunk_size=128)
+        X = torch.rand(128,22,128)
         p = model(X)
 
     Args:
