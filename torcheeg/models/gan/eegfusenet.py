@@ -10,43 +10,45 @@ class EEGfuseNet(nn.Module):
     - URL: https://github.com/KAZABANA/EEGfusenet
 
     .. code-block:: python
-        g_model=EEGfuseNet(in_channels=20,hidden_dim=16,n_layers=1,n_filters=1,chunk_size=128)
-        X = torch.rand(128,20,128)
+        g_model=EEGfuseNet(num_electrodes=20,hid_channels_gru=16,num_layers_gru=1,hid_channels_cnn=1,chunk_size=128)
+        X = torch.rand(2,1,20,128)
         fake_X,deep_feature=g_model(X)
 
     Args:
-        in_channels (int): The input feature dimension. (default: :obj:`32`)
-        hidden_dim  (int): Hidden dim of BI-GRU. (default: :obj:`16`)
-        n_layers (int): The number of layers of BI-GRU. (default: :obj:`1`)
-        n_filters (int): The number of filters of CNN based encoder. (default: :obj:`1`)
-        chunk_size (int): Number of data points included in each EEG chunk.the size of the input EEG signal is( batch size × Channel × Time) (default: :obj:`128`)
+        in_channels (int): The number of channels of the signal corresponding to each electrode. If the original signal is used as input, in_channels is set to 1; if the original signal is split into multiple sub-bands, in_channels is set to the number of bands. (default: :obj:`1`)
+        num_electrodes (int): The number of electordes in input data. (default: :obj:`32`)
+        hid_channels_gru (int): The number of hidden nodes in BI-GRU (default: :obj:`16`)
+        num_layers_gru (int): The number of layers of BI-GRU. (default: :obj:`1`)
+        hid_channels_cnn (int): The number of filters of CNN based encoder. (default: :obj:`1`)
+        chunk_size (int): The number of data points included in each EEG chunk.the size of the input EEG signal is( batch size × Channel × Time) (default: :obj:`384`)
     '''
     def __init__(self,
-                    in_channels: int = 32,
-                    hidden_dim: int = 16,
-                    n_layers: int = 1,
-                    n_filters: int = 1,
+                    in_channels: int = 1,
+                    num_electrodes: int = 32,
+                    hid_channels_gru: int = 16,
+                    num_layers_gru: int = 1,
+                    hid_channels_cnn: int = 1,
                     chunk_size:int = 384 ):  
         super(EEGfuseNet, self).__init__()
         
         
-        self.n_filters = n_filters
-        self.hidden_dim =  hidden_dim
+        self.hid_channels_cnn = hid_channels_cnn
+        self.hid_channels_gru =  hid_channels_gru
         self.length = chunk_size/32
 
-        self.conv1 = nn.Conv2d(1, 16*n_filters, (1, int(chunk_size/2+1)),stride = 1, padding = (0,int(chunk_size/4)))
-        self.batchNorm1 = nn.BatchNorm2d(16*n_filters, False)
+        self.conv1 = nn.Conv2d(in_channels, 16*hid_channels_cnn, (1, int(chunk_size/2+1)),stride = 1, padding = (0,int(chunk_size/4)))
+        self.batchNorm1 = nn.BatchNorm2d(16*hid_channels_cnn, False)
         
-        self.depthwiseconv2 = nn.Conv2d(16*n_filters,32*n_filters,(in_channels,1),padding = 0)
-        self.batchNorm2 = nn.BatchNorm2d(32*n_filters,False)
+        self.depthwiseconv2 = nn.Conv2d(16*hid_channels_cnn,32*hid_channels_cnn,(num_electrodes,1),padding = 0)
+        self.batchNorm2 = nn.BatchNorm2d(32*hid_channels_cnn,False)
         self.pooling1 = nn.MaxPool2d((1,4),return_indices =True,ceil_mode=True)
     
-        self.separa1conv3 = nn.Conv2d(32*n_filters,32*n_filters,(1, int(chunk_size/8+1)),
+        self.separa1conv3 = nn.Conv2d(32*hid_channels_cnn,32*hid_channels_cnn,(1, int(chunk_size/8+1)),
                                         stride=1,
                                         padding=(0,int(chunk_size/16)),
-                                        groups=int(32*n_filters)) 
-        self.separa2conv4 = nn.Conv2d(32*n_filters,16*n_filters,1) 
-        self.batchNorm3 = nn.BatchNorm2d(16*n_filters,False)
+                                        groups=int(32*hid_channels_cnn)) 
+        self.separa2conv4 = nn.Conv2d(32*hid_channels_cnn,16*hid_channels_cnn,1) 
+        self.batchNorm3 = nn.BatchNorm2d(16*hid_channels_cnn,False)
         self.pooling2 = nn.MaxPool2d((1,8), 
                                         return_indices =True,
                                         ceil_mode=True)
@@ -54,44 +56,44 @@ class EEGfuseNet(nn.Module):
         self.dropout2 = nn.Dropout(p=0.25)
         self.dropout3 = nn.Dropout(p=0.25)
         self.dropout4 = nn.Dropout(p=0.25)
-        self.fc1 = nn.Linear(16*n_filters,16*n_filters)
+        self.fc1 = nn.Linear(16*hid_channels_cnn,16*hid_channels_cnn)
         
-        self.fc2 = nn.Linear(hidden_dim*2*n_filters,
-                                hidden_dim*n_filters)
+        self.fc2 = nn.Linear(hid_channels_gru*2*hid_channels_cnn,
+                                hid_channels_gru*hid_channels_cnn)
         
-        self.fc3 = nn.Linear(hidden_dim*n_filters,
-                                hidden_dim*2*n_filters)
+        self.fc3 = nn.Linear(hid_channels_gru*hid_channels_cnn,
+                                hid_channels_gru*2*hid_channels_cnn)
         
-        self.fc4 = nn.Linear(2*16*n_filters,
-                                16*n_filters)
+        self.fc4 = nn.Linear(2*16*hid_channels_cnn,
+                                16*hid_channels_cnn)
 
-        self.gru_en = nn.GRU(16*n_filters,hidden_dim*n_filters,n_layers,
+        self.gru_en = nn.GRU(16*hid_channels_cnn,hid_channels_gru*hid_channels_cnn,num_layers_gru,
                                 batch_first=True,
                                 bidirectional=True)
         
-        self.gru_de = nn.GRU(2*hidden_dim*n_filters,16*n_filters,n_layers,
+        self.gru_de = nn.GRU(2*hid_channels_gru*hid_channels_cnn,16*hid_channels_cnn,num_layers_gru,
                                 batch_first=True,
                                 bidirectional=True)
         
-        self.lstm = nn.LSTM(16*n_filters,hidden_dim*n_filters,n_layers,
+        self.lstm = nn.LSTM(16*hid_channels_cnn,hid_channels_gru*hid_channels_cnn,num_layers_gru,
                             batch_first=True,
                             bidirectional=True)
 
         self.unpooling2 = nn.MaxUnpool2d((1, 8))
-        self.batchnorm4 = nn.BatchNorm2d(32*n_filters,False)
-        self.desepara2conv4 =  nn.ConvTranspose2d(16*n_filters,32*n_filters,1)
-        self.desepara1conv3 =  nn.ConvTranspose2d( 32*n_filters, 32*n_filters, (1, int(chunk_size/8+1)),
+        self.batchnorm4 = nn.BatchNorm2d(32*hid_channels_cnn,False)
+        self.desepara2conv4 =  nn.ConvTranspose2d(16*hid_channels_cnn,32*hid_channels_cnn,1)
+        self.desepara1conv3 =  nn.ConvTranspose2d( 32*hid_channels_cnn, 32*hid_channels_cnn, (1, int(chunk_size/8+1)),
                                                     stride=1,
                                                     padding=(0,int(chunk_size/16)),
-                                                    groups= 32*n_filters )
+                                                    groups= 32*hid_channels_cnn )
     
         self.unpooling1 = nn.MaxUnpool2d((1, 4))
-        self.batchnorm5 = nn.BatchNorm2d(16*n_filters, False)#
-        self.dedepthsepara1conv3 = nn.ConvTranspose2d(32*n_filters,16*n_filters, 
-                                                      (in_channels, 1), 
+        self.batchnorm5 = nn.BatchNorm2d(16*hid_channels_cnn, False)#
+        self.dedepthsepara1conv3 = nn.ConvTranspose2d(32*hid_channels_cnn,16*hid_channels_cnn, 
+                                                      (num_electrodes, 1), 
                                                       stride= 1, 
                                                       padding=0)
-        self.deconv1 = nn.ConvTranspose2d(16*n_filters, 1, (1, int(chunk_size/2+1)), 
+        self.deconv1 = nn.ConvTranspose2d(16*hid_channels_cnn, 1, (1, int(chunk_size/2+1)), 
                                             stride = 1, 
                                             padding =(0,int(chunk_size/4)))
     def forward(self,x):
@@ -102,7 +104,6 @@ class EEGfuseNet(nn.Module):
         Returns:
             torch.Tensor[size of batch, number of electrodes, length of EEG signal]，torch.Tensor[size of batch, length of deep feature code]: The first value is generated EEG signals. The second value is batch of extracted deep features,which used in the unsupervised EEG decoding, can represent the entire input EEG signals \ cross time points covering not only the EEG characteristics but also the EEG characteristics in the sequential information.
         '''
-        x = x.unsqueeze(1)
 
         x = self.conv1(x)
         x = self.batchNorm1(x)
@@ -152,7 +153,6 @@ class EEGfuseNet(nn.Module):
         x = self.batchnorm5(x)
 
         x = self.deconv1(x)
-        x = x.squeeze(1)
         return x,code
 
 class EFDiscriminator(nn.Module):
@@ -163,46 +163,46 @@ class EFDiscriminator(nn.Module):
     - URL: https://github.com/KAZABANA/EEGfusenet
 
     .. code-block:: python
-        g_model=EEGfuseNet(in_channels=20,hidden_dim=16,n_layers=1,n_filters=1,chunk_size=128)
-        d_model = EFDiscriminator(in_channels=20,n_layers=1,n_filters=1,chunk_size=128)
-        X = torch.rand(128,20,128)
+        g_model=EEGfuseNet(num_electrodes=20,hid_channels_gru=16,num_layers_gru=1,hid_channels_cnn=1,chunk_size=128)
+        d_model = EFDiscriminator(num_electrodes=20,hid_channels_cnn=1,chunk_size=128)
+        X = torch.rand(128,1,20,128)
         fake_X,deep_feature=g_model(X)
         p_real,p_fake = d_model(X),d_model(fake_X)
 
     Args:
-        in_channels (int): The input feature dimension. (default: :obj:`32`)
-        n_layers (int): The number of layers of BI-GRU. (default: :obj:`1`)
-        n_filters (int): The number of filters in CNN based encoder. (default: :obj:`1`)
+        in_channels (int): The number of channels of the signal corresponding to each electrode. If the original signal is used as input, in_channels is set to 1; if the original signal is split into multiple sub-bands, in_channels is set to the number of bands. (default: :obj:`1`)
+        num_electrodes (int): The number of electrodes. (default: :obj:`32`)
+        hid_channels_cnn (int): The number of filters in CNN based encoder. (default: :obj:`1`)
         chunk_size (int): Number of data points included in each EEG chunk. (default: :obj:`384`)
     '''
     def __init__(self,
-                    in_channels:int = 32,
-                    n_layers:int = 1,
-                    n_filters:int = 1,
+                    in_channels: int = 1,
+                    num_electrodes:int = 32,
+                    hid_channels_cnn:int = 1,
                     chunk_size:int = 384):
         super(EFDiscriminator, self).__init__()
-        self.conv1 = nn.Conv2d(1, 8*n_filters, (1, int(chunk_size/2+1)),
+        self.conv1 = nn.Conv2d(in_channels, 8*hid_channels_cnn, (1, int(chunk_size/2+1)),
                                 stride = 1,
                                 padding = 'same')
-        self.batchNorm1 =nn.BatchNorm2d(8*n_filters, False)
+        self.batchNorm1 =nn.BatchNorm2d(8*hid_channels_cnn, False)
         self.length=chunk_size/32
 
        
-        self.depthwiseconv2 = nn.Conv2d(8* n_filters, 16*n_filters ,(in_channels,1), padding = 0)  
-        self.batchNorm2 = nn.BatchNorm2d( 16*n_filters, False )
+        self.depthwiseconv2 = nn.Conv2d(8* hid_channels_cnn, 16*hid_channels_cnn ,(num_electrodes,1), padding = 0)  
+        self.batchNorm2 = nn.BatchNorm2d( 16*hid_channels_cnn, False )
         self.pooling1 = nn.MaxPool2d((1,4),
                                         return_indices=False ,
                                         ceil_mode = True)
 
-        self.separa1conv3 = nn.Conv2d(16*n_filters, 16*n_filters,
+        self.separa1conv3 = nn.Conv2d(16*hid_channels_cnn, 16*hid_channels_cnn,
                                         (1, int(chunk_size/8+1)),
                                         stride=1,padding='same',
-                                        groups=16*n_filters )
+                                        groups=16*hid_channels_cnn )
 
-        self.separa2conv4 = nn.Conv2d(16*n_filters,8*n_filters,1) 
-        self.batchNorm3 = nn.BatchNorm2d(8*n_filters,False)
+        self.separa2conv4 = nn.Conv2d(16*hid_channels_cnn,8*hid_channels_cnn,1) 
+        self.batchNorm3 = nn.BatchNorm2d(8*hid_channels_cnn,False)
         self.pooling2 = nn.MaxPool2d((1,8), return_indices = False)
-        self.fc1 = nn.Linear(int(self.length)*8*n_filters,1)
+        self.fc1 = nn.Linear(int(self.length)*8*hid_channels_cnn,1)
     
     def forward(self,x):
         r'''
@@ -212,7 +212,6 @@ class EFDiscriminator(nn.Module):
         Returns:
             torch.Tensor[size of batch, 1]: The possibilities that model judging the corresponding input signals is real. 
         '''        
-        x = x.unsqueeze(1)
         x = self.conv1(x)
         x = self.batchNorm1(x)
         x = self.depthwiseconv2(x)

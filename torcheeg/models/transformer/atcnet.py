@@ -15,9 +15,11 @@ class ATCNet(nn.Module):
         p = model(X)
 
     Args:
+        in_channels (int): The number of channels of the signal corresponding to each electrode. If the original signal is used as input, in_channels is set to 1; if the original signal is split into multiple sub-bands, in_channels is set to the number of bands. (default: :obj:`1`)
+        num_electrodes (int): The number of electrodes. (default: :obj:`32`)
         num_classes (int): The number of classes to predict. (default: :obj:`4`)
         num_windows (int): The number of sliding windows after conv block. (default: :obj:`3`)
-        in_channels (int): The input feature dimension，which stand for the number of electrodes if the input is EEG signal. (default: :obj:`128`)
+        num_electrodes (int): The number of electrodes if the input is EEG signal. (default: :obj:`22`)
         conv_poolSize (int):  The size of the second average pooling layer kernel in the conv block. (default: :obj:`7`)
         F1 (int): The channel size of the temporal feature maps in conv block. (default: :obj:`16`)
         D (int): The number of second conv layer's filters linked to each temporal feature map in the previous layer in conv block. (default: :obj:`2`)
@@ -26,9 +28,10 @@ class ATCNet(nn.Module):
         chunk_size (int): The Number of data points included in each EEG chunk. (default: :obj:`1125`)
     '''
     def __init__(self,
+                    in_channels: int = 1,
                     num_classes: int = 4,
                     num_windows: int = 3,
-                    in_channels: int = 22,
+                    num_electrodes: int = 22,
                     conv_poolSize: int = 7,
                     F1: int = 16,
                     D: int =2,
@@ -37,9 +40,10 @@ class ATCNet(nn.Module):
                     chunk_size: int = 1125,
                     ):  
         super(ATCNet, self).__init__()
+        self.in_channels = in_channels
         self.num_classes = num_classes
         self.num_windows = num_windows
-        self.in_channels = in_channels
+        self.num_electrodes = num_electrodes
         self.poolSize = conv_poolSize
         self.F1 = F1
         self.D = D
@@ -49,9 +53,9 @@ class ATCNet(nn.Module):
         F2 = F1*D
 
         self.conv_block = nn.Sequential(
-            nn.Conv2d(1,F1,(1,int(chunk_size/2+1)),stride=1,padding = 'same',bias=False),
+            nn.Conv2d(in_channels,F1,(1,int(chunk_size/2+1)),stride=1,padding = 'same',bias=False),
             nn.BatchNorm2d(F1, False),
-            nn.Conv2d(F1,F2,(in_channels,1),padding = 0,groups=F1),
+            nn.Conv2d(F1,F2,(num_electrodes,1),padding = 0,groups=F1),
             nn.BatchNorm2d(F2,False),
             nn.ELU(),
             nn.AvgPool2d((1,8)),
@@ -66,8 +70,7 @@ class ATCNet(nn.Module):
         
     def __build_model(self):
         with torch.no_grad():
-            x = torch.zeros(2,self.in_channels,self.chunk_size)
-            x = x.unsqueeze(1)
+            x = torch.zeros(2,self.in_channels,self.num_electrodes,self.chunk_size)
             x = self.conv_block(x)
             x = x[:,:,-1,:]
             x = x.permute(0,2,1)
@@ -108,10 +111,10 @@ class ATCNet(nn.Module):
     def __add_msa_drop(self,index):
         self.add_module('msa_drop'+str(index),nn.Dropout(0.3))
 
-    def __add_tcn(self,index:int,in_channels:int):
+    def __add_tcn(self,index:int,num_electrodes:int):
         self.add_module('tcn'+str(index), 
            nn.Sequential(
-            nn.Conv1d(in_channels,32,self.tcn_kernelsize,padding='same'),
+            nn.Conv1d(num_electrodes,32,self.tcn_kernelsize,padding='same'),
             nn.BatchNorm1d(32),
             nn.ELU(),
             nn.Dropout(0.3),
@@ -135,8 +138,6 @@ class ATCNet(nn.Module):
         Returns:
             torch.Tensor[size of batch, number of classes]: The predicted probability that the samples belong to the classes.
         '''
-        #self.dev = self.device
-        x = x.unsqueeze(1)
         x = self.conv_block(x)
         x = x[:,:,-1,:]
         x = x.permute(0,2,1)
