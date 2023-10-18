@@ -142,9 +142,10 @@ dataset = BCICIV2aDataset(io_path=f'./bciciv_2a',
                               ]))                             
 model = ATCNet(num_classes=4,
                num_windows=3,
-               in_channels=22,
+               num_electrodes=22,
                chunk_size=1750)
 x = dataset[0][0]
+x = torch.unsqueeze(x,dim=0)
 pred = model(x)
 
 
@@ -247,11 +248,19 @@ fake_X = unet(mock_eeg, t, y)
 
 from torcheeg.models import EEGfuseNet,EFDiscriminator
 
-fusenet = EEGfuseNet(32,16,1,1,384)
-eeg = torch.randn(2, 32, 384) 
+fusenet = EEGfuseNet(in_channels=1,
+                     num_electrodes=32,
+                     hid_channels_gru=16,
+                     num_layers_gru= 1,
+                     hid_channels_cnn=1,
+                     chunk_size=384)
+eeg = torch.randn(2,1, 32, 384) 
 # simply input the EEG signal to output generated samples and deep fusion codes
 fake_X,deep_code = fusenet(eeg)
 
-discriminator = EFDiscriminator(32,1,1,384)
+discriminator = EFDiscriminator(in_channels=1,
+                                num_electrodes=32,
+                                hid_channels_cnn=1,
+                                chunk_size=384)
 p_real = discriminator(eeg)
 p_fake = discriminator(fake_X)
