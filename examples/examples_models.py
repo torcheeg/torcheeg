@@ -119,6 +119,37 @@ pred = model(eeg)
 
 
 ######################################################################
+# Some studies have shown that attention based models have achieved good 
+# classification performance in EEG, such as Altaheri et al.'s ATCNet, 
+# which uses moving windows in the model structure and utilizes 
+# multiheadattention to process data within the window.This model achieved 
+# excellent results in data set 2a of the BCI Competition IV.
+#
+
+from torcheeg.models import ATCNet
+from torcheeg.datasets import BCICIV2aDataset
+from torcheeg import transforms
+
+dataset = BCICIV2aDataset(io_path=f'./bciciv_2a',
+                              root_path='./BCICIV_2a_mat',
+                              online_transform=transforms.Compose([
+                                  transforms.To2d(),
+                                  transforms.ToTensor()
+                              ]),
+                              label_transform=transforms.Compose([
+                                  transforms.Select('label'),
+                                  transforms.Lambda(lambda x: x - 1)
+                              ]))                             
+model = ATCNet(num_classes=4,
+               num_windows=3,
+               num_electrodes=22,
+               chunk_size=1750)
+x = dataset[0][0]
+x = torch.unsqueeze(x,dim=0)
+pred = model(x)
+
+
+######################################################################
 # Generative Models
 # ----------------------------------------------
 #
@@ -203,3 +234,33 @@ mock_eeg = torch.randn(2, 4, 9, 9)
 t = torch.randint(low=1, high=1000, size=(2, ))
 y = torch.randint(low=0, high=2, size=(1, ))
 fake_X = unet(mock_eeg, t, y)
+
+
+######################################################################
+# Eegtorch provides other types of models, such as eegfusenet, which combines 
+# the functions of EEG encoding and generating new samples. At the same time, 
+# eefusenet is an unsupervised learning model that can extract deep feature 
+# encoding from input EEG signals and ultimately generate similar new samples. 
+# Eegfusenet uses a approach similar to traditional gan models to identify 
+# whether samples is real: EFDiscriminator, which ultimately improves the quality 
+# of sample generation through eegfuset after adversarial training.
+#
+
+from torcheeg.models import EEGfuseNet,EFDiscriminator
+
+fusenet = EEGfuseNet(in_channels=1,
+                     num_electrodes=32,
+                     hid_channels_gru=16,
+                     num_layers_gru= 1,
+                     hid_channels_cnn=1,
+                     chunk_size=384)
+eeg = torch.randn(2,1, 32, 384) 
+# simply input the EEG signal to output generated samples and deep fusion codes
+fake_X,deep_code = fusenet(eeg)
+
+discriminator = EFDiscriminator(in_channels=1,
+                                num_electrodes=32,
+                                hid_channels_cnn=1,
+                                chunk_size=384)
+p_real = discriminator(eeg)
+p_fake = discriminator(fake_X)

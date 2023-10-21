@@ -61,6 +61,7 @@ Transformer
    ArjunViT
    VanillaTransformer
    ViT
+   ATCNet
 
 Generative Adversarial Network
 ----------------------------------
@@ -73,6 +74,8 @@ Generative Adversarial Network
    BDiscriminator
    BCGenerator
    BCDiscriminator
+   EEGfuseNet
+   EFDiscriminator   
 
 Variational Auto Encoder
 ----------------------------------
