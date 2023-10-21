@@ -10,8 +10,8 @@ class ATCNet(nn.Module):
     - URL: https://github.com/Altaheri/EEG-ATCNet
 
     .. code-block:: python
-        model = ATCNet(num_classes=4,in_elec=22,chunk_size=128)
-        X = torch.rand(128,22,128)
+        model = ATCNet(in_channels=1,num_classes=4,num_windows=3,num_electrodes=22,chunk_size=128)
+        X = torch.rand(2,1,22,128) # (batch_size, in_channels, num_electrodes,chunk_size) 
         p = model(X)
 
     Args:
@@ -20,10 +20,10 @@ class ATCNet(nn.Module):
         num_classes (int): The number of classes to predict. (default: :obj:`4`)
         num_windows (int): The number of sliding windows after conv block. (default: :obj:`3`)
         num_electrodes (int): The number of electrodes if the input is EEG signal. (default: :obj:`22`)
-        conv_poolSize (int):  The size of the second average pooling layer kernel in the conv block. (default: :obj:`7`)
+        conv_pool_size (int):  The size of the second average pooling layer kernel in the conv block. (default: :obj:`7`)
         F1 (int): The channel size of the temporal feature maps in conv block. (default: :obj:`16`)
         D (int): The number of second conv layer's filters linked to each temporal feature map in the previous layer in conv block. (default: :obj:`2`)
-        tcn_kernelsize (int): The size of conv layers kernel in the TCN block. (default: :obj:`4`)
+        tcn_kernel_size (int): The size of conv layers kernel in the TCN block. (default: :obj:`4`)
         tcn_depth (int): The times of TCN loop. (default: :obj:`2`)
         chunk_size (int): The Number of data points included in each EEG chunk. (default: :obj:`1125`)
     '''
@@ -32,10 +32,10 @@ class ATCNet(nn.Module):
                     num_classes: int = 4,
                     num_windows: int = 3,
                     num_electrodes: int = 22,
-                    conv_poolSize: int = 7,
+                    conv_pool_size: int = 7,
                     F1: int = 16,
                     D: int =2,
-                    tcn_kernelsize: int = 4,
+                    tcn_kernel_size: int = 4,
                     tcn_depth: int = 2,
                     chunk_size: int = 1125,
                     ):  
@@ -44,10 +44,10 @@ class ATCNet(nn.Module):
         self.num_classes = num_classes
         self.num_windows = num_windows
         self.num_electrodes = num_electrodes
-        self.poolSize = conv_poolSize
+        self.pool_size = conv_pool_size
         self.F1 = F1
         self.D = D
-        self.tcn_kernelsize = tcn_kernelsize
+        self.tcn_kernel_size = tcn_kernel_size
         self.tcn_depth = tcn_depth
         self.chunk_size = chunk_size
         F2 = F1*D
@@ -63,7 +63,7 @@ class ATCNet(nn.Module):
             nn.Conv2d(F2,F2,(1,16),bias=False,padding='same'),
             nn.BatchNorm2d(F2,False),
             nn.ELU(),
-            nn.AvgPool2d((1,self.poolSize)),
+            nn.AvgPool2d((1,self.pool_size)),
             nn.Dropout2d(0.1)
         )
         self.__build_model()
@@ -114,11 +114,11 @@ class ATCNet(nn.Module):
     def __add_tcn(self,index:int,num_electrodes:int):
         self.add_module('tcn'+str(index), 
            nn.Sequential(
-            nn.Conv1d(num_electrodes,32,self.tcn_kernelsize,padding='same'),
+            nn.Conv1d(num_electrodes,32,self.tcn_kernel_size,padding='same'),
             nn.BatchNorm1d(32),
             nn.ELU(),
             nn.Dropout(0.3),
-            nn.Conv1d(32,32,self.tcn_kernelsize,padding = 'same'),
+            nn.Conv1d(32,32,self.tcn_kernel_size,padding = 'same'),
             nn.BatchNorm1d(32),
             nn.ELU(),
             nn.Dropout(0.3) )

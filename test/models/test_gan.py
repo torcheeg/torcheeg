@@ -1,7 +1,6 @@
 import unittest
 
 import torch
-
 from torcheeg.models import BCGenerator, BCDiscriminator, BGenerator, BDiscriminator,EEGfuseNet,EFDiscriminator
 
 class TestGAN(unittest.TestCase):
