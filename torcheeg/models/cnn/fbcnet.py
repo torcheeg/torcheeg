@@ -1,35 +1,6 @@
 import torch
 import torch.nn as nn
-
-
-class Conv2dWithConstraint(nn.Conv2d):
-    def __init__(self, *args, weight_norm=True, max_norm=1, **kwargs):
-        self.max_norm = max_norm
-        self.weight_norm = weight_norm
-        super(Conv2dWithConstraint, self).__init__(*args, **kwargs)
-
-    def forward(self, x):
-        if self.weight_norm:
-            self.weight.data = torch.renorm(self.weight.data,
-                                            p=2,
-                                            dim=0,
-                                            maxnorm=self.max_norm)
-        return super(Conv2dWithConstraint, self).forward(x)
-
-
-class LinearWithConstraint(nn.Linear):
-    def __init__(self, *args, weight_norm=True, max_norm=1, **kwargs):
-        self.max_norm = max_norm
-        self.weight_norm = weight_norm
-        super(LinearWithConstraint, self).__init__(*args, **kwargs)
-
-    def forward(self, x):
-        if self.weight_norm:
-            self.weight.data = torch.renorm(self.weight.data,
-                                            p=2,
-                                            dim=0,
-                                            maxnorm=self.max_norm)
-        return super(LinearWithConstraint, self).forward(x)
+from .custom_layer import MixedConv2d,Conv2dWithConstraint,LinearWithConstraint
 
 
 class VarLayer(nn.Module):
@@ -208,3 +179,143 @@ class FBCNet(nn.Module):
 
     def feature_dim(self):
         return self.num_S * self.in_channels * self.stride_factor
+
+
+class FBMSNet(nn.Module):
+    r'''
+    FBMSNet, a novel multiscale temporal convolutional neural network for MI decoding tasks, employs Mixed Conv to extract multiscale temporal features which  enhance the intra-class compactness and improve the inter-class separability with the joint supervision of the center loss andcenter loss.
+
+    - Paper: FBMSNet: A Filter-Bank Multi-Scale Convolutional Neural Network for EEG-Based Motor Imagery Decoding
+    - URL: https://ieeexplore.ieee.org/document/9837422
+    - Related Project: https://github.com/Want2Vanish/FBMSNet
+
+    Below is a recommended suite for use in emotion recognition tasks:
+
+    .. code-block:: python
+
+        band_dict = { str(i):[4*i,4*(i+1)] for i in range(1,10) }   
+        ## bandict =  [[4,8],[8,12]...] each element is the upper and lower bounds of bandpass filtering.
+        
+        dataset =BCICIV2aDataset(io_path=f'./tmp_out/bciciv2a/band_9_filters',
+                                root_path='./BCICIV_2a_mat',
+                                chunk_size=512,
+                                offline_transform=transforms.BandSignal(band_dict=band_dict,
+                                                                        sampling_rate=250),
+                                online_transform=transforms.ToTensor(),
+                                label_transform=transforms.Compose([
+                                transforms.Select('label'),
+                                transforms.Lambda(lambda x:x-1),
+                    ]))
+        data = Dataloader(dataset)
+                    
+        model = FBMSNet( num_classes=4,
+                         num_electrodes=22,
+                         chunk_size=512,
+                         in_channels=9 )
+
+        x,y = next(iter(data))
+        pred,deap_feature = model(x)
+
+    Args:
+        num_electrodes (int): The number of electrodes. 
+        chunk_size (int): Number of data points included in each EEG chunk. 
+        in_channels (int): The number of channels of the signal corresponding to each electrode. If the original signal is used as input, in_channels is set to 1; if the original signal is split into multiple sub-bands, in_channels is set to the number of bands. (default: :obj:`9`)
+        num_classes (int): The number of classes to predict. (default: :obj:`4`)
+        stride_factor (int): The stride factor. Please make sure the chunk_size parameter is a  multiple of stride_factor parameter in order to init model successfully. (default: :obj:`4`)
+        temporal (str): The temporal layer used, with options including VarLayer, StdLayer, LogVarLayer, MeanLayer, and MaxLayer, used to compute statistics using different techniques in the temporal dimension. (default: :obj:`LogVarLayer`)
+        num_feature (int): The number of Mixed Conv output channels which can stand for various kinds of feature. (default: :obj:`36`)
+        dilatability (int): The expansion multiple of the channels after the input bands pass through spatial convolutional blocks. (default: :obj:`8`
+    
+    '''
+
+    def __init__(self, 
+                 in_channels:int ,
+                 num_electrodes: int, 
+                 chunk_size: int, 
+                 num_classes: int = 4,
+                 stride_factor: int = 4, 
+                 temporal: str ='LogVarLayer',
+                 num_feature: int = 36, 
+                 dilatability: int = 8 ):
+
+        super(FBMSNet, self).__init__()
+        
+        self.in_channels = in_channels
+        self.num_electrodes = num_electrodes
+        self.chunk_size = chunk_size
+        self.stride_factor = stride_factor
+
+
+        try:
+            self.mixConv2d = nn.Sequential(
+                MixedConv2d(in_channels=in_channels, out_channels=num_feature, kernel_size=[(1,15),(1,31),(1,63),(1,125)],
+                            stride=1, padding='', dilation=1, depthwise=False),
+                nn.BatchNorm2d(num_feature),
+            )
+            self.scb = self.SCB(in_chan=num_feature, out_chan=num_feature*dilatability, num_electrodes=int(num_electrodes))
+
+            # Formulate the temporal agreegator
+            if temporal == 'VarLayer':
+                self.temporal_layer = VarLayer(dim=3)
+            elif temporal == 'StdLayer':
+                self.temporal_layer = StdLayer(dim=3)
+            elif temporal == 'LogVarLayer':
+                self.temporal_layer = LogVarLayer(dim=3)
+            elif temporal == 'MeanLayer':
+                self.temporal_layer = MeanLayer(dim=3)
+            elif temporal == 'MaxLayer':
+                self.temporal_layer = MaxLayer(dim=3)
+            else:
+                raise NotImplementedError
+            size = self.feature_dim(in_channels,num_electrodes, chunk_size)
+
+            self.fc = self.LastBlock(size[1],num_classes)
+        except:
+            raise Exception("Model init failed: The Chunksize must be a  multiple of stride_factor.Please modify values of stride_factor or chunk_size.")
+
+
+    def SCB(self, in_chan, out_chan, num_electrodes, weight_norm=True, *args, **kwargs):
+        return nn.Sequential(
+            Conv2dWithConstraint(in_chan, out_chan, (num_electrodes, 1), groups=in_chan,
+                                 max_norm=2, weight_norm=weight_norm, padding=0),
+            nn.BatchNorm2d(out_chan),
+            swish()
+        )
+    
+    def LastBlock(self, inF, outF, weight_norm=True, *args, **kwargs):
+        return nn.Sequential(
+            LinearWithConstraint(inF, outF, max_norm=0.5, weight_norm=weight_norm, *args, **kwargs),
+            nn.LogSoftmax(dim=1))
+
+    
+    def forward(self, x):
+        r'''
+        Args:
+            x (torch.Tensor): EEG signal representation, the ideal input shape is :obj:`[n, in_channel, num_electrodes, chunk_size ]`. Here, :obj:`n` corresponds to the batch size
+
+        Returns:
+            torch.Tensor[size of batch,number of classes],torch.Tensor[size of batch, length of deep feature code]: The first value is the predicted probability that the samples belong to the classes. The second value is the extracted deep features in the network.
+        '''
+        if len(x.shape) == 5:
+            x = torch.squeeze(x.permute((0, 4, 2, 3, 1)), dim=4)
+        y = self.mixConv2d(x)
+        x = self.scb(y)
+        x = x.reshape([*x.shape[0:2], self.stride_factor, int(x.shape[3] / self.stride_factor)])
+        x = self.temporal_layer(x)
+        f = torch.flatten(x, start_dim=1)
+        c = self.fc(f)
+        return c, f
+
+
+
+    def feature_dim(self, in_channels,num_electrodes, chunk_size):
+        data = torch.ones((1, in_channels, num_electrodes, chunk_size))
+        x = self.mixConv2d(data)
+        x = self.scb(x)
+        x = x.reshape([*x.shape[0:2], self.stride_factor, -1])
+        x = self.temporal_layer(x)
+        x = torch.flatten(x, start_dim=1)
+        return x.size()
+    
+    
+
