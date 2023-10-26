@@ -1,9 +1,10 @@
 import torch
 import torch.nn as nn
-from .custom_layer import MixedConv2d,Conv2dWithConstraint,LinearWithConstraint
+from .custom_layer import MixedConv2d, Conv2dWithConstraint, LinearWithConstraint
 
 
 class VarLayer(nn.Module):
+
     def __init__(self, dim):
         super(VarLayer, self).__init__()
         self.dim = dim
@@ -13,6 +14,7 @@ class VarLayer(nn.Module):
 
 
 class StdLayer(nn.Module):
+
     def __init__(self, dim):
         super(StdLayer, self).__init__()
         self.dim = dim
@@ -22,6 +24,7 @@ class StdLayer(nn.Module):
 
 
 class LogVarLayer(nn.Module):
+
     def __init__(self, dim):
         super(LogVarLayer, self).__init__()
         self.dim = dim
@@ -32,6 +35,7 @@ class LogVarLayer(nn.Module):
 
 
 class MeanLayer(nn.Module):
+
     def __init__(self, dim):
         super(MeanLayer, self).__init__()
         self.dim = dim
@@ -41,6 +45,7 @@ class MeanLayer(nn.Module):
 
 
 class MaxLayer(nn.Module):
+
     def __init__(self, dim):
         super(MaxLayer, self).__init__()
         self.dim = dim
@@ -51,6 +56,7 @@ class MaxLayer(nn.Module):
 
 
 class swish(nn.Module):
+
     def __init__(self):
         super(swish, self).__init__()
 
@@ -97,6 +103,7 @@ class FBCNet(nn.Module):
         stride_factor (int): The stride factor. (default: :obj:`4`)
         weight_norm (bool): Whether to use weight renormalization technique in Conv2dWithConstraint. (default: :obj:`True`)
     '''
+
     def __init__(self,
                  num_electrodes: int = 20,
                  chunk_size: int = 1000,
@@ -157,7 +164,8 @@ class FBCNet(nn.Module):
             LinearWithConstraint(in_channels,
                                  out_channels,
                                  max_norm=0.5,
-                                 weight_norm=weight_norm), nn.LogSoftmax(dim=1))
+                                 weight_norm=weight_norm),
+            nn.LogSoftmax(dim=1))
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         r'''
@@ -189,17 +197,24 @@ class FBMSNet(nn.Module):
     - URL: https://ieeexplore.ieee.org/document/9837422
     - Related Project: https://github.com/Want2Vanish/FBMSNet
 
-    Below is a recommended suite for use in emotion recognition tasks:
+    Below is a example to explain how to use this model. Firstly we should transform eeg signal to several nonoverlapping frequency bands by :obj:`torcheeg.transforms.BandSignal` 
 
     .. code-block:: python
 
-        band_dict = { str(i):[4*i,4*(i+1)] for i in range(1,10) }   
-        ## bandict =  [[4,8],[8,12]...] each element is the upper and lower bounds of bandpass filtering.
-        
+        # Define 9 nonoverlapping frequency bands, each with a 4 Hz bandwidth and spanning from 4 to 40 Hz.
+        Freq_range_per_band = {'sub band1': [4, 8],
+                               'sub band2': [8, 12],
+                               'sub band3': [12, 16],
+                               'sub band4': [16, 20],
+                               'sub band5': [20, 24],
+                               'sub band6': [24, 28],
+                               'sub band7': [28, 32],
+                               'sub band8': [32, 36],
+                               'sub band9': [36, 40]}
         dataset =BCICIV2aDataset(io_path=f'./tmp_out/bciciv2a/band_9_filters',
                                 root_path='./BCICIV_2a_mat',
                                 chunk_size=512,
-                                offline_transform=transforms.BandSignal(band_dict=band_dict,
+                                offline_transform=transforms.BandSignal(band_dict=Freq_range_per_band,
                                                                         sampling_rate=250),
                                 online_transform=transforms.ToTensor(),
                                 label_transform=transforms.Compose([
@@ -207,14 +222,26 @@ class FBMSNet(nn.Module):
                                 transforms.Lambda(lambda x:x-1),
                     ]))
         data = Dataloader(dataset)
-                    
+
         model = FBMSNet( num_classes=4,
                          num_electrodes=22,
                          chunk_size=512,
                          in_channels=9 )
+    
+    There are two ways to use the model. The first one, the effective way to get the prediction result but it don't output the decoded feature. 
+    
+    .. code-block:: python
 
         x,y = next(iter(data))
-        pred,deap_feature = model(x)
+        pred = model(x)
+    
+    To obtain the decoded feature, use :obj:`decoder` method. If we want to obtain prediction results based on the encoded features, use :obj:`predict_by_feature` method.
+    
+    .. code-block:: python
+
+        x,y = next(iter(data))
+        feature = model.decoder(x)
+        pred = model.predict_by_feature(feature)
 
     Args:
         num_electrodes (int): The number of electrodes. 
@@ -225,34 +252,40 @@ class FBMSNet(nn.Module):
         temporal (str): The temporal layer used, with options including VarLayer, StdLayer, LogVarLayer, MeanLayer, and MaxLayer, used to compute statistics using different techniques in the temporal dimension. (default: :obj:`LogVarLayer`)
         num_feature (int): The number of Mixed Conv output channels which can stand for various kinds of feature. (default: :obj:`36`)
         dilatability (int): The expansion multiple of the channels after the input bands pass through spatial convolutional blocks. (default: :obj:`8`
-    
+
     '''
 
-    def __init__(self, 
-                 in_channels:int ,
-                 num_electrodes: int, 
-                 chunk_size: int, 
+    def __init__(self,
+                 in_channels: int,
+                 num_electrodes: int,
+                 chunk_size: int,
                  num_classes: int = 4,
-                 stride_factor: int = 4, 
-                 temporal: str ='LogVarLayer',
-                 num_feature: int = 36, 
-                 dilatability: int = 8 ):
+                 stride_factor: int = 4,
+                 temporal: str = 'LogVarLayer',
+                 num_feature: int = 36,
+                 dilatability: int = 8):
 
         super(FBMSNet, self).__init__()
-        
+
         self.in_channels = in_channels
         self.num_electrodes = num_electrodes
         self.chunk_size = chunk_size
         self.stride_factor = stride_factor
 
-
         try:
             self.mixConv2d = nn.Sequential(
-                MixedConv2d(in_channels=in_channels, out_channels=num_feature, kernel_size=[(1,15),(1,31),(1,63),(1,125)],
-                            stride=1, padding='', dilation=1, depthwise=False),
+                MixedConv2d(in_channels=in_channels,
+                            out_channels=num_feature,
+                            kernel_size=[(1, 15), (1, 31), (1, 63), (1, 125)],
+                            stride=1,
+                            padding='',
+                            dilation=1,
+                            depthwise=False),
                 nn.BatchNorm2d(num_feature),
             )
-            self.scb = self.SCB(in_chan=num_feature, out_chan=num_feature*dilatability, num_electrodes=int(num_electrodes))
+            self.scb = self.SCB(in_chan=num_feature,
+                                out_chan=num_feature * dilatability,
+                                num_electrodes=int(num_electrodes))
 
             # Formulate the temporal agreegator
             if temporal == 'VarLayer':
@@ -267,48 +300,78 @@ class FBMSNet(nn.Module):
                 self.temporal_layer = MaxLayer(dim=3)
             else:
                 raise NotImplementedError
-            size = self.feature_dim(in_channels,num_electrodes, chunk_size)
+            size = self.feature_dim(in_channels, num_electrodes, chunk_size)
 
-            self.fc = self.LastBlock(size[1],num_classes)
+            self.fc = self.LastBlock(size[1], num_classes)
         except:
-            raise Exception("Model init failed: The Chunksize must be a  multiple of stride_factor.Please modify values of stride_factor or chunk_size.")
+            raise Exception(
+                "Model init failed: The Chunksize must be a  multiple of stride_factor.Please modify values of stride_factor or chunk_size."
+            )
 
-
-    def SCB(self, in_chan, out_chan, num_electrodes, weight_norm=True, *args, **kwargs):
+    def SCB(self,
+            in_chan,
+            out_chan,
+            num_electrodes,
+            weight_norm=True,
+            *args,
+            **kwargs):
         return nn.Sequential(
-            Conv2dWithConstraint(in_chan, out_chan, (num_electrodes, 1), groups=in_chan,
-                                 max_norm=2, weight_norm=weight_norm, padding=0),
-            nn.BatchNorm2d(out_chan),
-            swish()
-        )
-    
+            Conv2dWithConstraint(in_chan,
+                                 out_chan, (num_electrodes, 1),
+                                 groups=in_chan,
+                                 max_norm=2,
+                                 weight_norm=weight_norm,
+                                 padding=0), nn.BatchNorm2d(out_chan), swish())
+
     def LastBlock(self, inF, outF, weight_norm=True, *args, **kwargs):
         return nn.Sequential(
-            LinearWithConstraint(inF, outF, max_norm=0.5, weight_norm=weight_norm, *args, **kwargs),
-            nn.LogSoftmax(dim=1))
+            LinearWithConstraint(inF,
+                                 outF,
+                                 max_norm=0.5,
+                                 weight_norm=weight_norm,
+                                 *args,
+                                 **kwargs), nn.LogSoftmax(dim=1))
 
-    
+    def decoder(self, x):
+        r'''
+        Args:
+            x (torch.Tensor): EEG signal representation, the ideal input shape is :obj:`[n, in_channel, num_electrodes, chunk_size ]`. Here, :obj:`n` corresponds to the batch size,:obj:`in_channels` corresponds to the number of sub bands.
+
+        Returns:
+           torch.Tensor[size of batch, length of deep feature code]: The extracted deep features.
+        '''
+        x = self.mixConv2d(x)
+        x = self.scb(x)
+        x = x.reshape([
+            *x.shape[0:2], self.stride_factor,
+            int(x.shape[3] / self.stride_factor)
+        ])
+        x = self.temporal_layer(x)
+        return torch.flatten(x, start_dim=1)
+
+    def predict_by_feature(self, feature):
+        r'''
+        With feature which is ouput by decoder inputed,the predict_by_feature ouput the predicted probability that the samples belong to the classes. 
+        
+        Args:
+            feature (torch.Tensor): The extracted deep features. The ideal input shape is :obj:`[batch size,112]`where feature dim is fixed as :obj:`1152`.
+        Returns:
+           torch.Tensor[size of batch, num_classes]: The predicted probability that the samples belong to the classes.
+        '''
+        return self.fc(feature)
+
     def forward(self, x):
         r'''
         Args:
             x (torch.Tensor): EEG signal representation, the ideal input shape is :obj:`[n, in_channel, num_electrodes, chunk_size ]`. Here, :obj:`n` corresponds to the batch size
 
         Returns:
-            torch.Tensor[size of batch,number of classes],torch.Tensor[size of batch, length of deep feature code]: The first value is the predicted probability that the samples belong to the classes. The second value is the extracted deep features in the network.
+            torch.Tensor[size of batch,number of classes]: The predicted probability that the samples belong to the classes.
         '''
-        if len(x.shape) == 5:
-            x = torch.squeeze(x.permute((0, 4, 2, 3, 1)), dim=4)
-        y = self.mixConv2d(x)
-        x = self.scb(y)
-        x = x.reshape([*x.shape[0:2], self.stride_factor, int(x.shape[3] / self.stride_factor)])
-        x = self.temporal_layer(x)
-        f = torch.flatten(x, start_dim=1)
-        c = self.fc(f)
-        return c, f
+        f = self.decoder(x)
+        return self.predict_by_feature(f)
 
-
-
-    def feature_dim(self, in_channels,num_electrodes, chunk_size):
+    def feature_dim(self, in_channels, num_electrodes, chunk_size):
         data = torch.ones((1, in_channels, num_electrodes, chunk_size))
         x = self.mixConv2d(data)
         x = self.scb(x)
@@ -316,6 +379,3 @@ class FBMSNet(nn.Module):
         x = self.temporal_layer(x)
         x = torch.flatten(x, start_dim=1)
         return x.size()
-    
-    
-
