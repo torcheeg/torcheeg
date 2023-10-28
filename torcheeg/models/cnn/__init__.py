@@ -6,4 +6,3 @@ from .mtcnn import MTCNN
 from .stnet import STNet
 from .tsception import TSCeption
 from .sst_emotion_net import SSTEmotionNet
-from .custom_layer import SamePadConv2d,MixedConv2d,Conv2dWithConstraint,LinearWithConstraint

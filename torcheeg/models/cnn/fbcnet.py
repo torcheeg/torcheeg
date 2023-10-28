@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from .custom_layer import MixedConv2d, Conv2dWithConstraint, LinearWithConstraint
+from ..any.custom_layer import MixedConv2d, Conv2dWithConstraint, LinearWithConstraint
 
 
 class VarLayer(nn.Module):
@@ -191,68 +191,70 @@ class FBCNet(nn.Module):
 
 class FBMSNet(nn.Module):
     r'''
-    FBMSNet, a novel multiscale temporal convolutional neural network for MI decoding tasks, employs Mixed Conv to extract multiscale temporal features which  enhance the intra-class compactness and improve the inter-class separability with the joint supervision of the center loss andcenter loss.
+        FBMSNet, a novel multiscale temporal convolutional neural network for MI decoding tasks, employs Mixed Conv to extract multiscale temporal features which  enhance the intra-class compactness and improve the inter-class separability with the joint supervision of the center loss andcenter loss.
 
-    - Paper: FBMSNet: A Filter-Bank Multi-Scale Convolutional Neural Network for EEG-Based Motor Imagery Decoding
-    - URL: https://ieeexplore.ieee.org/document/9837422
-    - Related Project: https://github.com/Want2Vanish/FBMSNet
+        - Paper: FBMSNet: A Filter-Bank Multi-Scale Convolutional Neural Network for EEG-Based Motor Imagery Decoding
+        - URL: https://ieeexplore.ieee.org/document/9837422
+        - Related Project: https://github.com/Want2Vanish/FBMSNet
 
-    Below is a example to explain how to use this model. Firstly we should transform eeg signal to several nonoverlapping frequency bands by :obj:`torcheeg.transforms.BandSignal` 
+        Below is a example to explain how to use this model. Firstly we should transform eeg signal to several nonoverlapping frequency bands by :obj:`torcheeg.transforms.BandSignal` 
 
-    .. code-block:: python
+        .. code-block:: python
 
-        # Define 9 nonoverlapping frequency bands, each with a 4 Hz bandwidth and spanning from 4 to 40 Hz.
-        Freq_range_per_band = {'sub band1': [4, 8],
-                               'sub band2': [8, 12],
-                               'sub band3': [12, 16],
-                               'sub band4': [16, 20],
-                               'sub band5': [20, 24],
-                               'sub band6': [24, 28],
-                               'sub band7': [28, 32],
-                               'sub band8': [32, 36],
-                               'sub band9': [36, 40]}
-        dataset =BCICIV2aDataset(io_path=f'./tmp_out/bciciv2a/band_9_filters',
-                                root_path='./BCICIV_2a_mat',
-                                chunk_size=512,
-                                offline_transform=transforms.BandSignal(band_dict=Freq_range_per_band,
-                                                                        sampling_rate=250),
-                                online_transform=transforms.ToTensor(),
-                                label_transform=transforms.Compose([
-                                transforms.Select('label'),
-                                transforms.Lambda(lambda x:x-1),
-                    ]))
-        data = Dataloader(dataset)
+            # Define 9 nonoverlapping frequency bands, each with a 4 Hz bandwidth and spanning from 4 to 40 Hz.
+            Freq_range_per_band = {'sub band1': [4, 8],
+                                'sub band2': [8, 12],
+                                'sub band3': [12, 16],
+                                'sub band4': [16, 20],
+                                'sub band5': [20, 24],
+                                'sub band6': [24, 28],
+                                'sub band7': [28, 32],
+                                'sub band8': [32, 36],
+                                'sub band9': [36, 40]}
+            dataset =BCICIV2aDataset(io_path=f'./tmp_out/bciciv2a/band_9_filters',
+                                    root_path='./BCICIV_2a_mat',
+                                    chunk_size=512,
+                                    offline_transform=transforms.BandSignal(band_dict=Freq_range_per_band,
+                                                                            sampling_rate=250),
+                                    online_transform=transforms.ToTensor(),
+                                    label_transform=transforms.Compose([
+                                    transforms.Select('label'),
+                                    transforms.Lambda(lambda x:x-1),
+                        ]))
+            data = Dataloader(dataset)
 
-        model = FBMSNet( num_classes=4,
-                         num_electrodes=22,
-                         chunk_size=512,
-                         in_channels=9 )
-    
-    There are two ways to use the model. The first one, the effective way to get the prediction result but it don't output the decoded feature. 
-    
-    .. code-block:: python
+            model = FBMSNet( num_classes=4,
+                            num_electrodes=22,
+                            chunk_size=512,
+                            in_channels=9 )
 
-        x,y = next(iter(data))
-        pred = model(x)
-    
-    To obtain the decoded feature, use :obj:`decoder` method. If we want to obtain prediction results based on the encoded features, use :obj:`predict_by_feature` method.
-    
-    .. code-block:: python
+        There are two ways to use the model. The first one, the effective way to get the prediction result but it don't output the decoded feature. 
 
-        x,y = next(iter(data))
-        feature = model.decoder(x)
-        pred = model.predict_by_feature(feature)
+        .. code-block:: python
 
-    Args:
-        num_electrodes (int): The number of electrodes. 
-        chunk_size (int): Number of data points included in each EEG chunk. 
-        in_channels (int): The number of channels of the signal corresponding to each electrode. If the original signal is used as input, in_channels is set to 1; if the original signal is split into multiple sub-bands, in_channels is set to the number of bands. (default: :obj:`9`)
-        num_classes (int): The number of classes to predict. (default: :obj:`4`)
-        stride_factor (int): The stride factor. Please make sure the chunk_size parameter is a  multiple of stride_factor parameter in order to init model successfully. (default: :obj:`4`)
-        temporal (str): The temporal layer used, with options including VarLayer, StdLayer, LogVarLayer, MeanLayer, and MaxLayer, used to compute statistics using different techniques in the temporal dimension. (default: :obj:`LogVarLayer`)
-        num_feature (int): The number of Mixed Conv output channels which can stand for various kinds of feature. (default: :obj:`36`)
-        dilatability (int): The expansion multiple of the channels after the input bands pass through spatial convolutional blocks. (default: :obj:`8`
+            x,y = next(iter(data))
+            pred = model(x)
 
+        To obtain the decoded feature, use :obj:`decoder` method. If we want to obtain prediction results based on the encoded features, use :obj:`predict_by_feature` method.
+
+        .. code-block:: python
+
+            x,y = next(iter(data))
+            feature = model.decoder(x)
+            pred = model.predict_by_feature(feature)
+
+        Args:
+            num_electrodes (int): The number of electrodes. 
+            chunk_size (int): Number of data points included in each EEG chunk. 
+            in_channels (int): The number of channels of the signal corresponding to each electrode. If the original signal is used as input, in_channels is set to 1; if the original signal is split into multiple sub-bands, in_channels is set to the number of bands. (default: :obj:`9`)
+            num_classes (int): The number of classes to predict. (default: :obj:`4`)
+            stride_factor (int): The stride factor. Please make sure the chunk_size parameter is a  multiple of stride_factor parameter in order to init model successfully. (default: :obj:`4`)
+            temporal (str): The temporal layer used, with options including VarLayer, StdLayer, LogVarLayer, MeanLayer, and MaxLayer, used to compute statistics using different techniques in the temporal dimension. (default: :obj:`LogVarLayer`)
+            num_feature (int): The number of Mixed Conv output channels which can stand for various kinds of feature. (default: :obj:`36`)
+            dilatability (int): The expansion multiple of the channels after the input bands pass through spatial convolutional blocks. (default: :obj:`8`
+
+        .. automethod:: decoder
+        .. automethod:: predict_by_feature
     '''
 
     def __init__(self,
@@ -267,10 +269,12 @@ class FBMSNet(nn.Module):
 
         super(FBMSNet, self).__init__()
 
+        self.num_classes = num_classes
         self.in_channels = in_channels
         self.num_electrodes = num_electrodes
         self.chunk_size = chunk_size
         self.stride_factor = stride_factor
+        
 
         try:
             self.mixConv2d = nn.Sequential(
@@ -300,9 +304,11 @@ class FBMSNet(nn.Module):
                 self.temporal_layer = MaxLayer(dim=3)
             else:
                 raise NotImplementedError
-            size = self.feature_dim(in_channels, num_electrodes, chunk_size)
+            
+            self.center_dim = self.feature_dim(
+                in_channels, num_electrodes, chunk_size)[-1]
 
-            self.fc = self.LastBlock(size[1], num_classes)
+            self.fc = self.LastBlock(self.center_dim, num_classes)
         except:
             raise Exception(
                 "Model init failed: The Chunksize must be a  multiple of stride_factor.Please modify values of stride_factor or chunk_size."
@@ -335,7 +341,7 @@ class FBMSNet(nn.Module):
     def decoder(self, x):
         r'''
         Args:
-            x (torch.Tensor): EEG signal representation, the ideal input shape is :obj:`[n, in_channel, num_electrodes, chunk_size ]`. Here, :obj:`n` corresponds to the batch size,:obj:`in_channels` corresponds to the number of sub bands.
+            x (torch.Tensor): EEG signal representation, the ideal input shape is :obj:`[n, in_channel, num_electrodes, chunk_size ]`. Here, :obj:`n` corresponds to the batch size, :obj:`in_channels` corresponds to the number of sub bands.
 
         Returns:
            torch.Tensor[size of batch, length of deep feature code]: The extracted deep features.
@@ -352,9 +358,9 @@ class FBMSNet(nn.Module):
     def predict_by_feature(self, feature):
         r'''
         With feature which is ouput by decoder inputed,the predict_by_feature ouput the predicted probability that the samples belong to the classes. 
-        
+
         Args:
-            feature (torch.Tensor): The extracted deep features. The ideal input shape is :obj:`[batch size,112]`where feature dim is fixed as :obj:`1152`.
+            feature (torch.Tensor): The extracted deep features. The ideal input shape is :obj:`[batch size,1152]`where feature dim is fixed as :obj:`1152`.
         Returns:
            torch.Tensor[size of batch, num_classes]: The predicted probability that the samples belong to the classes.
         '''
