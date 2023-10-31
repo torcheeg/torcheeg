@@ -7,10 +7,30 @@ import torchmetrics
 from torch.utils.data import DataLoader
 from torchmetrics import MetricCollection
 from ..models import CentersLoss
+import os
+import time
 
 _EVALUATE_OUTPUT = List[Dict[str, float]]  # 1 dict per DataLoader
 
-log = logging.getLogger(__name__)
+
+def get_logger( path:str= None, name:str = None ):
+    logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(message)s')
+    logger = logging.getLogger(name) if name else logging.getLogger(__name__)
+    if path:
+        os.makedirs( path , exist_ok=True)  
+    else: 
+        path = "./log"
+        os.makedirs( path, exist_ok=True) 
+    logger.setLevel(level=logging.DEBUG)
+
+    timeticks = time.strftime(
+        "%Y-%m-%d-%H-%M-%S", time.localtime())
+    file_handler = logging.FileHandler(
+        os.path.join( path , f'{timeticks}.log'))
+    file_handler.setFormatter(logging.Formatter('%(asctime)s - %(message)s'))
+    file_handler.setLevel(level=logging.DEBUG)
+    logger.addHandler(file_handler)
+    return logger 
 
 
 def classification_metrics(metric_list: List[str], num_classes: int):
@@ -76,6 +96,8 @@ class ClassifierTrainer(pl.LightningModule):
                  devices: int = 1,
                  accelerator: str = "cpu",
                  metrics: List[str] = ["accuracy"],
+                 log_path:str = None,
+                 log_name:str = None
                  ):
 
         super().__init__()
@@ -89,6 +111,7 @@ class ClassifierTrainer(pl.LightningModule):
         self.ce_fn = nn.CrossEntropyLoss()
         self.num_classes = num_classes
         self.__try_init_num_classes()
+        self.logger_ = get_logger(log_path,log_name)
     
     def __try_init_num_classes(self):
         if not self.num_classes:
@@ -206,6 +229,7 @@ class ClassifierTrainer(pl.LightningModule):
             if key.startswith("train_"):
                 str += f"{key}: {value:.3f} "
         print(str + '\n')
+        self.logger_.info(str)
 
         # reset the metrics
         self.train_loss.reset()
@@ -242,6 +266,7 @@ class ClassifierTrainer(pl.LightningModule):
             if key.startswith("val_"):
                 str += f"{key}: {value:.3f} "
         print(str + '\n')
+        self.logger_.info(str)
 
         self.val_loss.reset()
         self.val_metrics.reset()
@@ -277,6 +302,7 @@ class ClassifierTrainer(pl.LightningModule):
             if key.startswith("test_"):
                 str += f"{key}: {value:.3f} "
         print(str + '\n')
+        self.logger_.info(str)
 
         self.test_loss.reset()
         self.test_metrics.reset()
@@ -383,11 +409,13 @@ class CLossClassifierTrainer(ClassifierTrainer):
                  devices: int = 1,
                  accelerator: str = "cpu",
                  metrics: List[str] = [
-                     'accuracy', 'precision', 'recall', 'f1score'
-                 ]):
+                     'accuracy', 'precision', 'recall', 'f1score'],
+                 log_path: str = None,
+                 log_name: str = None
+                 ):
         
         super(CLossClassifierTrainer,self).__init__(model, num_classes, lr, weight_decay, devices,
-                             accelerator, metrics,center_dim = center_dim) 
+                             accelerator, metrics,log_path,log_name) 
         self.lammda = lammda
         self.automatic_optimization = False
         self.decoder,self.Fpredictor= (model.decoder, 
@@ -525,6 +553,7 @@ class CLossClassifierTrainer(ClassifierTrainer):
             if key.startswith("Train "):
                 str += f"{key}: {value:.3f} "
         print(str + '\n')
+        self.logger_.info(str)
         
         # reset the metrics
         self.reset_metric()
@@ -585,6 +614,7 @@ class CLossClassifierTrainer(ClassifierTrainer):
             if key.startswith("Val"):
                 str += f"{key}: {value:.3f} "
         print(str + '\n')
+        self.logger_.info(str)
     
 
 
@@ -627,6 +657,7 @@ class CLossClassifierTrainer(ClassifierTrainer):
             if key.startswith("Test"):
                 str += f"{key}: {value:.3f} "
         print(str + '\n')
+        self.logger_.info(str)
         
 
         self.test_loss.reset()
