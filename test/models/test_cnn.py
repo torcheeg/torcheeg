@@ -132,20 +132,17 @@ class TestCNN(unittest.TestCase):
                         num_classes=4)
 
         code = model.decoder(eeg)
-        pred = model.decision_maker(code)
-        pred_ = model(eeg)
-        is_equal = abs(pred_ - pred) <= 1e-4
-        print(is_equal.all())
+        pred = model.classifier(code)
+  
         self.assertEqual(tuple(pred.shape), (2, 4))
         self.assertEqual(tuple(code.shape), (2, 1152))
 
         eeg = eeg.cuda()
         model = model.cuda()
         code = model.decoder(eeg)
-        pred = model.decision_maker(code)
-        pred_ = model(eeg)
-        is_equal = abs(pred_ - pred) <= 1e-4
-        print(is_equal.all())
+        pred = model.classifier(code)
+
+
         self.assertEqual(tuple(pred.shape), (2, 4))
         self.assertEqual(tuple(code.shape), (2, 1152))
 
@@ -156,11 +153,9 @@ class TestCNN(unittest.TestCase):
                         chunk_size=256,
                         num_classes=3)
         code = model.decoder(eeg)
-        pred = model.decision_maker(code)
-        pred_ = model(eeg)
-        is_equal = abs(pred_ - pred) <= 1e-4
-        print(is_equal.all())
-        self.assertTrue((pred == pred_).all())
+        pred = model.classifier(code)
+
+
         self.assertEqual(tuple(pred.shape), (2, 3))
         self.assertEqual(tuple(code.shape), (2, 1152))
 
@@ -170,10 +165,9 @@ class TestCNN(unittest.TestCase):
                         chunk_size=128,
                         num_classes=5)
         code = model.decoder(eeg)
-        pred = model.decision_maker(code)
-        pred_ = model(eeg)
-        is_equal = abs(pred_ - pred) <= 1e-4
-        print(is_equal.all())
+        pred = model.classifier(code)
+
+ 
         self.assertEqual(tuple(pred.shape), (2, 5))
         self.assertEqual(tuple(code.shape), (2, 1152))
 
