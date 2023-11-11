@@ -17,6 +17,7 @@ Basic Classification
     :template: trainertemplate.rst
 
     ClassifierTrainer
+    CLossClassifierTrainer
 
 Cross-domain Classification
 ----------------------------------
