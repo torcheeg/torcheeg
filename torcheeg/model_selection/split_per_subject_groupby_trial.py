@@ -80,7 +80,7 @@ def train_test_split_per_subject_groupby_trial(
                 train_info = cur_info.iloc[train_index]
                 test_info = cur_info.iloc[test_index]
             else:
-                train_info = train_info.append(cur_info.iloc[train_index])
+                train_info = train_info.c(cur_info.iloc[train_index])
                 test_info = test_info.append(cur_info.iloc[test_index])
 
         train_info.to_csv(os.path.join(split_path, 'train.csv'), index=False)
