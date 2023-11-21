@@ -83,8 +83,8 @@ class KFoldGroupbyTrial:
                     if not i in test_infos:
                         test_infos[i] = []
 
-                    train_infos[i].append(train_info)
-                    test_infos[i].append(test_info)
+                    train_infos[i] = pd.concat([train_infos[i],train_info])
+                    test_infos[i] = pd.concat([test_infos[i],test_info])
 
         for i in train_infos.keys():
             train_info = pd.concat(train_infos[i], ignore_index=True)
