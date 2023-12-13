@@ -14,12 +14,15 @@ log = logging.getLogger(__name__)
 
 
 def classification_metrics(metric_list: List[str], num_classes: int):
-    allowed_metrics = ['precision', 'recall', 'f1score', 'accuracy']
+    allowed_metrics = [
+        'precision', 'recall', 'f1score', 'accuracy', 'matthews', 'auroc',
+        'kappa'
+    ]
 
     for metric in metric_list:
         if metric not in allowed_metrics:
             raise ValueError(
-                f"{metric} is not allowed. Please choose 'precision', 'recall', 'f1_score', 'accuracy'"
+                f"{metric} is not allowed. Please choose 'precision', 'recall', 'f1_score', 'accuracy', 'matthews', 'auroc', 'kappa'."
             )
     metric_dict = {
         'accuracy':
@@ -37,7 +40,14 @@ def classification_metrics(metric_list: List[str], num_classes: int):
         'f1score':
         torchmetrics.F1Score(task='multiclass',
                              average='macro',
-                             num_classes=num_classes)
+                             num_classes=num_classes),
+        'matthews':
+        torchmetrics.MatthewsCorrCoef(task='multiclass',
+                                      num_classes=num_classes),
+        'auroc':
+        torchmetrics.AUROC(task='multiclass', num_classes=num_classes),
+        'kappa':
+        torchmetrics.CohenKappa(task='multiclass', num_classes=num_classes)
     }
     metrics = [metric_dict[name] for name in metric_list]
     return MetricCollection(metrics)
@@ -60,11 +70,12 @@ class ClassifierTrainer(pl.LightningModule):
             weight_decay (float): The weight decay. (default: :obj:`0.0`)
             devices (int): The number of devices to use. (default: :obj:`1`)
             accelerator (str): The accelerator to use. Available options are: 'cpu', 'gpu'. (default: :obj:`"cpu"`)
-            metrics (list of str): The metrics to use. Available options are: 'precision', 'recall', 'f1score', 'accuracy'. (default: :obj:`["accuracy"]`)
+            metrics (list of str): The metrics to use. Available options are: 'precision', 'recall', 'f1_score', 'accuracy', 'matthews', 'auroc', and 'kappa'. (default: :obj:`["accuracy"]`)
         
         .. automethod:: fit
         .. automethod:: test
     '''
+
     def __init__(self,
                  model: nn.Module,
                  num_classes: int,
@@ -254,7 +265,8 @@ class ClassifierTrainer(pl.LightningModule):
 
     def configure_optimizers(self):
         parameters = list(self.model.parameters())
-        trainable_parameters = list(filter(lambda p: p.requires_grad, parameters))
+        trainable_parameters = list(
+            filter(lambda p: p.requires_grad, parameters))
         optimizer = torch.optim.Adam(trainable_parameters,
                                      lr=self.lr,
                                      weight_decay=self.weight_decay)
