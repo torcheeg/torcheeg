@@ -18,8 +18,7 @@ class BCICIV2aDataset(BaseDataset):
     - Download URL: http://bnci-horizon-2020.eu/database/data-sets
     - Reference: Tangermann M, Müller K R, Aertsen A, et al. Review of the BCI competition IV[J]. Frontiers in neuroscience, 2012: 55.
     - Signals: Electroencephalogram (22 channels at 250Hz) and electrocardiogram (3 channels at 250Hz) of 9 subjects. Two sessions on different days were recorded for each subject. Each session is comprised of 6 runs separated by short breaks. One run consists of 48 trials (12 for each of the four possible classes), yielding a total of 288 trials per session. For more detail, please refer to https://www.bbci.de/competition/iv/desc_2a.pdf
-    - Category: The imagination of movement of the left hand (class 1), right hand (class 2), both
-    feet (class 3), and tongue (class 4).
+    - Category: The imagination of movement of the left hand (class 1), right hand (class 2), both feet (class 3), and tongue (class 4).
 
     In order to use this dataset, the download folder :obj:`BCICIV_2a_mat` is required, containing the following files:
 

@@ -147,7 +147,7 @@ class CenterLossTrainer(ClassifierTrainer):
             weight_decay (float): The weight decay. (default: :obj:`0.0`)
             devices (int): The number of devices to use. (default: :obj:`1`)
             accelerator (str): The accelerator to use. Available options are: 'cpu', 'gpu'. (default: :obj:`"cpu"`)
-            metrics (list of str): The metrics to use. Available options are: 'precision', 'recall', 'f1score', 'accuracy'. (default: :obj:`['accuracy', 'precision', 'recall', 'f1score']`)
+            metrics (list of str): The metrics to use. Available options are: 'precision', 'recall', 'f1_score', 'accuracy', 'matthews', 'auroc', and 'kappa'. (default: :obj:`['accuracy', 'precision', 'recall', 'f1score']`)
 
         .. automethod:: fit
         .. automethod:: test

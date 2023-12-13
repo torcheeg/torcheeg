@@ -10,6 +10,7 @@ class EEGfuseNet(nn.Module):
     - URL: https://github.com/KAZABANA/EEGfusenet
 
     .. code-block:: python
+
         g_model=EEGfuseNet(num_electrodes=20,hid_channels_gru=16,num_layers_gru=1,hid_channels_cnn=1,chunk_size=128)
         X = torch.rand(2,1,20,128)
         fake_X,deep_feature=g_model(X)
@@ -163,6 +164,7 @@ class EFDiscriminator(nn.Module):
     - URL: https://github.com/KAZABANA/EEGfusenet
 
     .. code-block:: python
+    
         g_model=EEGfuseNet(num_electrodes=20,hid_channels_gru=16,num_layers_gru=1,hid_channels_cnn=1,chunk_size=128)
         d_model = EFDiscriminator(num_electrodes=20,hid_channels_cnn=1,chunk_size=128)
         X = torch.rand(128,1,20,128)

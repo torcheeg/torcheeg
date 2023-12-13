@@ -12,11 +12,11 @@ Basic Classification
 ----------------------------------
 
 .. autosummary::
-    :toctree: generated
-    :nosignatures:
-    :template: trainertemplate.rst
+   :toctree: generated
+   :nosignatures:
+   :template: trainertemplate.rst
 
-    ClassifierTrainer
+   ClassifierTrainer
 
 Cross-domain Classification
 ----------------------------------
@@ -42,7 +42,7 @@ Imbalance Learning for Classification
 EEG emotion datasets have the problem of sample class imbalance, and imbalance learning can be used to solve the class imbalance problem in emotion recognition tasks.
 
 .. autosummary::
-   :toctree: imbalance
+   :toctree: generated
    :nosignatures:
    :template: trainertemplate.rst
 

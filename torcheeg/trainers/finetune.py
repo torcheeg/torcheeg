@@ -152,7 +152,7 @@ class FinetuneTrainer(pl.LightningModule):
             warmup_lr (float): The learning rate to warmup to. (default: :obj:`1e-5`)
             devices (int): The number of devices to use. (default: :obj:`1`)
             accelerator (str): The accelerator to use. Available options are: 'cpu', 'gpu'. (default: :obj:`"cpu"`)
-            metrics (list of str): The metrics to use. Available options are: 'precision', 'recall', 'f1score', 'accuracy'. (default: :obj:`["accuracy"]`)
+            metrics (list of str): The metrics to use. Available options are: 'precision', 'recall', 'f1_score', 'accuracy', 'matthews', 'auroc', and 'kappa'. (default: :obj:`["accuracy"]`)
         
         .. automethod:: fit
         .. automethod:: test
