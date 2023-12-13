@@ -1,4 +1,4 @@
-from .classifier import ClassifierTrainer,classification_metrics
+from ..classifier import ClassifierTrainer, classification_metrics
 import torch
 import torch.nn as nn
 from torch.autograd.function import Function
@@ -61,9 +61,9 @@ class ClassCentersFunc(Function):
 
 
 
-class CLossClassifierTrainer(ClassifierTrainer):
+class CenterLossTrainer(ClassifierTrainer):
     r'''
-        A trainer trains classification model contains a decoder and a classifier. As for C   enter loss, it can make the output of the decoder close to the mean of decoded features within the same class.PLease refer to the following infomation to comprehend how the center loss works.
+        A trainer trains classification model contains a decoder and a classifier. As for Center loss, it can make the output of the decoder close to the mean of decoded features within the same class. PLease refer to the following infomation to comprehend how the center loss works.
 
         - Paper: FBMSNet: A Filter-Bank Multi-Scale Convolutional Neural Network for EEG-Based Motor Imagery Decoding
         - URL: https://ieeexplore.ieee.org/document/9837422
@@ -71,7 +71,7 @@ class CLossClassifierTrainer(ClassifierTrainer):
 
         .. code-block:: python
 
-            trainer = ClossClassifierTrainer(decoder = decoder, 
+            trainer = CenterLossTrainer(decoder = decoder, 
                                              classifier = classifier,
                                              num_classes = your_classes,
                                              feature_dim = your_decoded_dim)
@@ -105,7 +105,7 @@ class CLossClassifierTrainer(ClassifierTrainer):
                                 chunk_size=512,
                                 in_channels=9)
             
-            trainer = ClossClassifierTrainer(decoder = decoder, 
+            trainer = CenterLossTrainer(decoder = decoder, 
                                              classifier = classifier,
                                              num_classes = 4,
                                              feature_dim = 1152)
@@ -132,15 +132,11 @@ class CLossClassifierTrainer(ClassifierTrainer):
             decoder  = MyDecoder()
             classifier = MyClassifier()
 
-            trainer = ClossClassifierTrainer(decoder = decoder, 
+            trainer = CenterLossTrainer(decoder = decoder, 
                                              classifier = classifier,
                                              num_classes = 2,
                                              feature_dim = 64)
         
-
-        
-        
-
         Args:
             decoder (nn.Module): The decoder which transforms eegsignal into 1D feature code.
             classifier (nn.Module): The classifier that predict from the decoder output which class the siginals belong to.
@@ -170,7 +166,7 @@ class CLossClassifierTrainer(ClassifierTrainer):
                      'accuracy', 'precision', 'recall', 'f1score']
                  ):
         
-        super(CLossClassifierTrainer,self).__init__(decoder, num_classes, lr, weight_decay, devices,
+        super(CenterLossTrainer,self).__init__(decoder, num_classes, lr, weight_decay, devices,
                              accelerator, metrics)
         
         self.decoder = decoder

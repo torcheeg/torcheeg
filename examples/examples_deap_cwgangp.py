@@ -57,7 +57,7 @@ dataset = DEAPDataset(
 # testing.
 # 
 
-from torcheeg.datasets import KFoldGroupbyTrial
+from torcheeg.model_selection import KFoldGroupbyTrial
 
 k_fold = KFoldGroupbyTrial(n_splits=5,
                            split_path='./examples_deap_cwgangp/split',
