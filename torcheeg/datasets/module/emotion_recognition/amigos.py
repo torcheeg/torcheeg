@@ -1,15 +1,9 @@
 import os
-import logging
 import re
 from typing import Any, Callable, Dict, List, Tuple, Union
 
 import scipy.io as scio
-
-from ...constants.emotion_recognition.amigos import (
-    AMIGOS_ADJACENCY_MATRIX, AMIGOS_CHANNEL_LOCATION_DICT)
 from ..base_dataset import BaseDataset
-
-log = logging.getLogger(__name__)
 
 class AMIGOSDataset(BaseDataset):
     r'''
@@ -129,8 +123,6 @@ class AMIGOSDataset(BaseDataset):
         verbose (bool): Whether to display logs during processing, such as progress bars, etc. (default: :obj:`True`)
         in_memory (bool): Whether to load the entire dataset into memory. If :obj:`in_memory` is set to True, then the first time an EEG sample is read, the entire dataset is loaded into memory for subsequent retrieval. Otherwise, the dataset is stored on disk to avoid the out-of-memory problem. (default: :obj:`False`)
     '''
-    channel_location_dict = AMIGOS_CHANNEL_LOCATION_DICT
-    adjacency_matrix = AMIGOS_ADJACENCY_MATRIX
 
     def __init__(self,
                  root_path: str = './data_preprocessed',
@@ -194,7 +186,6 @@ class AMIGOSDataset(BaseDataset):
                    baseline_chunk_size: int = 128,
                    before_trial: Union[None, Callable] = None,
                    offline_transform: Union[None, Callable] = None,
-                   after_trial: Union[None, Callable] = None,
                    **kwargs):
         file_name = file  # an element from file name list
 

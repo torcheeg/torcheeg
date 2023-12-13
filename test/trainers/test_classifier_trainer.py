@@ -17,7 +17,7 @@ class DummyDataset(Dataset):
         return self.length
 
     def __getitem__(self, i) -> int:
-        return torch.randn(120), random.randint(0, 1)
+        return torch.randn(120), random.choice([0, 1])
 
 
 class DummyModel(nn.Module):
@@ -32,9 +32,9 @@ class DummyModel(nn.Module):
         return self.fc(x)
 
 
-class TestClassificationTrainer(unittest.TestCase):
+class TestClassifierTrainer(unittest.TestCase):
 
-    def test_classification_trainer(self):
+    def test_classifier_trainer(self):
         train_dataset = DummyDataset()
         val_dataset = DummyDataset()
         test_dataset = DummyDataset()

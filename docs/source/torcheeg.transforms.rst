@@ -30,6 +30,7 @@ Numpy-based Transforms
     :template: transformtemplate.rst
 
     CWTSpectrum
+    BandSignal
     BandDifferentialEntropy
     BandPowerSpectralDensity
     BandMeanAbsoluteDeviation

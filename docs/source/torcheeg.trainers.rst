@@ -34,6 +34,23 @@ The individual differences and nonstationary of EEG signals make it difficult fo
    JANTrainer
    ADATrainer
    DANNTrainer
+   CenterLossTrainer
+
+Imbalance Learning for Classification
+----------------------------------
+
+EEG emotion datasets have the problem of sample class imbalance, and imbalance learning can be used to solve the class imbalance problem in emotion recognition tasks.
+
+.. autosummary::
+   :toctree: imbalance
+   :nosignatures:
+   :template: trainertemplate.rst
+
+   LALossTrainer
+   LDAMLossTrainer
+   EQLossTrainer
+   FocalLossTrainer
+   WCELossTrainer
 
 EEG Generation
 ----------------------------------------

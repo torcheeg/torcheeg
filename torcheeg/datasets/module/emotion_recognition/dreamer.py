@@ -1,10 +1,8 @@
 import os
 from typing import Callable, Dict, Tuple, Union, Any
+
 import scipy.io as scio
-from ...constants.emotion_recognition.dreamer import (
-    DREAMER_ADJACENCY_MATRIX, DREAMER_CHANNEL_LOCATION_DICT)
 from ..base_dataset import BaseDataset
-from torcheeg.io import EEGSignalIO, MetaInfoIO
 
 
 class DREAMERDataset(BaseDataset):
@@ -118,8 +116,6 @@ class DREAMERDataset(BaseDataset):
         verbose (bool): Whether to display logs during processing, such as progress bars, etc. (default: :obj:`True`)
         in_memory (bool): Whether to load the entire dataset into memory. If :obj:`in_memory` is set to True, then the first time an EEG sample is read, the entire dataset is loaded into memory for subsequent retrieval. Otherwise, the dataset is stored on disk to avoid the out-of-memory problem. (default: :obj:`False`)       
     '''
-    channel_location_dict = DREAMER_CHANNEL_LOCATION_DICT
-    adjacency_matrix = DREAMER_ADJACENCY_MATRIX
 
     def __init__(self,
                  mat_path: str = './DREAMER.mat',
@@ -177,7 +173,6 @@ class DREAMERDataset(BaseDataset):
                    baseline_chunk_size: int = 128,
                    before_trial: Union[None, Callable] = None,
                    offline_transform: Union[None, Callable] = None,
-                   after_trial: Union[None, Callable] = None,
                    **kwargs):
         subject = file
         mat_data = scio.loadmat(mat_path,
