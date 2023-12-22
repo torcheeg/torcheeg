@@ -78,12 +78,12 @@ class KFoldCrossTrial:
 
             train_info = []
             for train_trial_id in train_trial_ids:
-                train_info= pd.concat([train_info,info[info['trial_id'] == train_trial_id]])
+                train_info.append(info[info['trial_id'] == train_trial_id])
             train_info = pd.concat(train_info, ignore_index=True)
 
             test_info = []
             for test_trial_id in test_trial_ids:
-                test_info= pd.concat([test_info,info[info['trial_id'] == test_trial_id]])
+                test_info.append(info[info['trial_id'] == test_trial_id])
             test_info = pd.concat(test_info, ignore_index=True)
 
             train_info.to_csv(os.path.join(self.split_path,
