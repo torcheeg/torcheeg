@@ -46,7 +46,7 @@ class TestClassifierTrainer(unittest.TestCase):
         model = DummyModel()
 
         trainer = ClassifierTrainer(model, num_classes=2)
-        trainer.fit(train_loader, val_loader)
+        trainer.fit(train_loader, val_loader, max_epochs=1)
         trainer.test(test_loader)
 
         trainer = ClassifierTrainer(
@@ -54,8 +54,8 @@ class TestClassifierTrainer(unittest.TestCase):
             devices=1,
             accelerator='cpu',
             num_classes=2,
-            metrics=['accuracy', 'recall', 'precision', 'f1score'])
-        trainer.fit(train_loader, val_loader)
+            metrics=['accuracy', 'recall', 'precision', 'f1score', 'matthews', 'auroc', 'kappa'])
+        trainer.fit(train_loader, val_loader, max_epochs=1)
         trainer.test(test_loader)
 
         # should catch value error for metrics 'unexpected'
@@ -64,7 +64,7 @@ class TestClassifierTrainer(unittest.TestCase):
                                         accelerator='cpu',
                                         num_classes=2,
                                         metrics=['unexpected'])
-            trainer.fit(train_loader, val_loader)
+            trainer.fit(train_loader, val_loader, max_epochs=1)
             trainer.test(test_loader)
 
         trainer = ClassifierTrainer(
@@ -73,7 +73,7 @@ class TestClassifierTrainer(unittest.TestCase):
             accelerator='gpu',
             num_classes=2,
             metrics=['accuracy', 'recall', 'precision', 'f1score'])
-        trainer.fit(train_loader, val_loader)
+        trainer.fit(train_loader, val_loader, max_epochs=1)
         trainer.test(test_loader)
 
 

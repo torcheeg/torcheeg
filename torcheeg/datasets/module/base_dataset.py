@@ -150,6 +150,11 @@ class BaseDataset(Dataset):
         eeg_io_router = {}
         info_merged = None
 
+        assert len(
+            records
+        ) > 0, "The io_path, {}, is corrupted. Please delete this folder and try again.".format(
+            io_path)
+
         for record in records:
             meta_info_io_path = os.path.join(io_path, record, 'info.csv')
             eeg_signal_io_path = os.path.join(io_path, record, 'eeg')
