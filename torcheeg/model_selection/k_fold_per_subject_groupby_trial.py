@@ -105,8 +105,8 @@ class KFoldPerSubjectGroupbyTrial:
                     if not i in subject_test_infos:
                         subject_test_infos[i] = []
 
-                    subject_train_infos[i] = pd.concat([subject_train_infos[i],train_info])
-                    subject_test_infos[i] = pd.concat([subject_test_infos[i],test_info])
+                    subject_train_infos[i].append(train_info)
+                    subject_test_infos[i].append(test_info)
 
             for i in subject_train_infos.keys():
                 subject_train_info = pd.concat(subject_train_infos[i],

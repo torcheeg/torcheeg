@@ -52,7 +52,7 @@ class LeaveOneSubjectOut:
 
             train_info = []
             for train_subject in train_subjects:
-                train_info = pd.concat([train_info,info[info['subject_id'] == train_subject]])
+                train_info.append(info[info['subject_id'] == train_subject])
 
             train_info = pd.concat(train_info)
             test_info = info[info['subject_id'] == test_subject]

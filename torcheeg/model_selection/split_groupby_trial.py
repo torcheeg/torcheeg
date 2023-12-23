@@ -78,8 +78,8 @@ def train_test_split_groupby_trial(
                     train_info = cur_info.iloc[train_index]
                     test_info = cur_info.iloc[test_index]
                 else:
-                    train_info = train_info = pd.concat([train_info,cur_info.iloc[train_index]])
-                    test_info = test_info = pd.concat([test_info,cur_info.iloc[test_index]])
+                    train_info = train_info.append(cur_info.iloc[train_index])
+                    test_info = test_info.append(cur_info.iloc[test_index])
 
         train_info.to_csv(os.path.join(split_path, 'train.csv'), index=False)
         test_info.to_csv(os.path.join(split_path, 'test.csv'), index=False)

@@ -105,14 +105,14 @@ class KFoldPerSubjectCrossTrial:
 
                 train_info = []
                 for train_trial_id in train_trial_ids:
-                    train_info = pd.concat([train_info,subject_info[subject_info['trial_id'] ==
-                                                   train_trial_id]])
+                    train_info.append(subject_info[subject_info['trial_id'] ==
+                                                   train_trial_id])
                 train_info = pd.concat(train_info, ignore_index=True)
 
                 test_info = []
                 for test_trial_id in test_trial_ids:
-                    test_info =pd.concat(
-                        [test_info,subject_info[subject_info['trial_id'] == test_trial_id]])
+                    test_info.append(
+                        subject_info[subject_info['trial_id'] == test_trial_id])
                 test_info = pd.concat(test_info, ignore_index=True)
 
                 train_info.to_csv(os.path.join(
