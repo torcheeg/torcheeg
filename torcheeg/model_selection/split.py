@@ -12,7 +12,7 @@ def train_test_split(dataset: BaseDataset,
                      test_size: float = 0.2,
                      shuffle: bool = False,
                      random_state: Union[float, None] = None,
-                     split_path: str = './split/train_test_split'):
+                     split_path: str = '.torcheeg/split/train_test_split'):
     r'''
     A tool function for cross-validations, to divide the training set and the test set. It is suitable for experiments with large dataset volume and no need to use k-fold cross-validations. The test samples are sampled according to a certain proportion, and other samples are used as training samples. In most literatures, 20% of the data are sampled for testing.
 

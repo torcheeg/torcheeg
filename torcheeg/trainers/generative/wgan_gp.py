@@ -14,7 +14,7 @@ from .utils import FrechetInceptionDistance
 
 _EVALUATE_OUTPUT = List[Dict[str, float]]  # 1 dict per DataLoader
 
-log = logging.getLogger(__name__)
+log = logging.getLogger('torcheeg')
 
 
 def gradient_penalty(model, real, fake, *args, **kwargs):
@@ -254,7 +254,7 @@ class WGANGPTrainer(pl.LightningModule):
         for key, value in self.trainer.logged_metrics.items():
             if key.startswith("train_"):
                 str += f"{key}: {value:.3f} "
-        print(str + '\n')
+        log.info(str + '\n')
 
         # reset the metrics
         self.train_g_loss.reset()
@@ -303,7 +303,7 @@ class WGANGPTrainer(pl.LightningModule):
         for key, value in self.trainer.logged_metrics.items():
             if key.startswith("val_"):
                 str += f"{key}: {value:.3f} "
-        print(str + '\n')
+        log.info(str + '\n')
 
         # reset the metrics
         self.val_g_loss.reset()
@@ -374,7 +374,7 @@ class WGANGPTrainer(pl.LightningModule):
         for key, value in self.trainer.logged_metrics.items():
             if key.startswith("test_"):
                 str += f"{key}: {value:.3f} "
-        print(str + '\n')
+        log.info(str + '\n')
 
         # reset the metrics
         self.test_g_loss.reset()

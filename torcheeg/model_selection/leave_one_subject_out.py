@@ -40,7 +40,7 @@ class LeaveOneSubjectOut:
     Args:
         split_path (str): The path to data partition information. If the path exists, read the existing partition from the path. If the path does not exist, the current division method will be saved for next use. (default: :obj:`./split/leave_one_subject_out`)
     '''
-    def __init__(self, split_path: str = './split/leave_one_subject_out'):
+    def __init__(self, split_path: str = '.torcheeg/split/leave_one_subject_out'):
         self.split_path = split_path
 
     def split_info_constructor(self, info: pd.DataFrame) -> None:

@@ -66,13 +66,13 @@ class KFoldPerSubject:
         n_splits (int): Number of folds. Must be at least 2. (default: :obj:`5`)
         shuffle (bool): Whether to shuffle the data before splitting into batches. Note that the samples within each split will not be shuffled. (default: :obj:`False`)
         random_state (int, optional): When shuffle is :obj:`True`, :obj:`random_state` affects the ordering of the indices, which controls the randomness of each fold. Otherwise, this parameter has no effect. (default: :obj:`None`)
-        split_path (str): The path to data partition information. If the path exists, read the existing partition from the path. If the path does not exist, the current division method will be saved for next use. (default: :obj:`./split/k_fold_dataset`)
+        split_path (str): The path to data partition information. If the path exists, read the existing partition from the path. If the path does not exist, the current division method will be saved for next use. (default: :obj:`./split/k_fold_per_subject`)
     '''
     def __init__(self,
                  n_splits: int = 5,
                  shuffle: bool = False,
                  random_state: Union[float, None] = None,
-                 split_path: str = './split/k_fold_trial_per_subject'):
+                 split_path: str = '.torcheeg/split/k_fold_per_subject'):
         self.n_splits = n_splits
         self.shuffle = shuffle
         self.random_state = random_state

@@ -119,12 +119,11 @@ class TSUBenckmarkDataset(BaseDataset):
                  label_transform: Union[None, Callable] = None,
                  before_trial: Union[None, Callable] = None,
                  after_trial: Union[None, Callable] = None,
-                 io_path: str = './io/tsu_benchmark',
-                 io_size: int = 10485760,
+                 io_path: str = '.torcheeg/io/tsu_benchmark',
+                 io_size: int = 1048576,
                  io_mode: str = 'lmdb',
                  num_worker: int = 0,
-                 verbose: bool = True,
-                 in_memory: bool = False):
+                 verbose: bool = True):
         # pass all arguments to super class
         params = {
             'root_path': root_path,
@@ -140,8 +139,7 @@ class TSUBenckmarkDataset(BaseDataset):
             'io_size': io_size,
             'io_mode': io_mode,
             'num_worker': num_worker,
-            'verbose': verbose,
-            'in_memory': in_memory
+            'verbose': verbose
         }
         super().__init__(**params)
         # save all arguments to __dict__

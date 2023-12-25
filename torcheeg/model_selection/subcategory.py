@@ -84,11 +84,11 @@ class Subcategory:
 
     Args:
         criteria (str): The classification criteria according to which we extract subsets of data for the including categories. (default: :obj:`'task'`)
-        split_path (str): The path to data partition information. If the path exists, read the existing partition from the path. If the path does not exist, the current division method will be saved for next use. (default: :obj:`'./split/k_fold_dataset'`)
+        split_path (str): The path to data partition information. If the path exists, read the existing partition from the path. If the path does not exist, the current division method will be saved for next use. (default: :obj:`'./split/subcategory'`)
     '''
     def __init__(self,
                  criteria: str = 'task',
-                 split_path: str = './split/subcategory'):
+                 split_path: str = '.torcheeg/split/subcategory'):
         self.criteria = criteria
         self.split_path = split_path
 

@@ -126,11 +126,10 @@ class MAHNOBDataset(BaseDataset):
         before_trial (Callable, optional): The hook performed on the trial to which the sample belongs. It is performed before the offline transformation and thus typically used to implement context-dependent sample transformations, such as moving averages, etc. The input of this hook function is a 2D EEG signal with shape (number of electrodes, number of data points), whose ideal output shape is also (number of electrodes, number of data points).
         after_trial (Callable, optional): The hook performed on the trial to which the sample belongs. It is performed after the offline transformation and thus typically used to implement context-dependent sample transformations, such as moving averages, etc. The input and output of this hook function should be a sequence of dictionaries representing a sequence of EEG samples. Each dictionary contains two key-value pairs, indexed by :obj:`eeg` (the EEG signal matrix) and :obj:`key` (the index in the database) respectively.
         io_path (str): The path to generated unified data IO, cached as an intermediate result. (default: :obj:`./io/mahnob`)
-        io_size (int): Maximum size database may grow to; used to size the memory mapping. If database grows larger than ``map_size``, an exception will be raised and the user must close and reopen. (default: :obj:`10485760`)
-        io_mode (str): Storage mode of EEG signal. When io_mode is set to :obj:`lmdb`, TorchEEG provides an efficient database (LMDB) for storing EEG signals. LMDB may not perform well on limited operating systems, where a file system based EEG signal storage is also provided. When io_mode is set to :obj:`pickle`, pickle-based persistence files are used. (default: :obj:`lmdb`)
+        io_size (int): Maximum size database may grow to; used to size the memory mapping. If database grows larger than ``map_size``, an exception will be raised and the user must close and reopen. (default: :obj:`1048576`)
+        io_mode (str): Storage mode of EEG signal. When io_mode is set to :obj:`lmdb`, TorchEEG provides an efficient database (LMDB) for storing EEG signals. LMDB may not perform well on limited operating systems, where a file system based EEG signal storage is also provided. When io_mode is set to :obj:`pickle`, pickle-based persistence files are used. When io_mode is set to :obj:`memory`, memory are used. (default: :obj:`lmdb`)
         num_worker (int): Number of subprocesses to use for data loading. 0 means that the data will be loaded in the main process. (default: :obj:`0`)
-        verbose (bool): Whether to display logs during processing, such as progress bars, etc. (default: :obj:`True`)
-        in_memory (bool): Whether to load the entire dataset into memory. If :obj:`in_memory` is set to True, then the first time an EEG sample is read, the entire dataset is loaded into memory for subsequent retrieval. Otherwise, the dataset is stored on disk to avoid the out-of-memory problem. (default: :obj:`False`)    
+        verbose (bool): Whether to display logs during processing, such as progress bars, etc. (default: :obj:`True`)    
     '''
 
     def __init__(self,
@@ -149,12 +148,11 @@ class MAHNOBDataset(BaseDataset):
                  after_trial: Union[Callable, None] = None,
                  after_session: Union[Callable, None] = None,
                  after_subject: Union[Callable, None] = None,
-                 io_path: str = './io/mahnob',
-                 io_size: int = 10485760,
+                 io_path: str = '.torcheeg/io/mahnob',
+                 io_size: int = 1048576,
                  io_mode: str = 'lmdb',
                  num_worker: int = 0,
-                 verbose: bool = True,
-                 in_memory: bool = False):
+                 verbose: bool = True):
         # pass all arguments to super class
         params = {
             'root_path': root_path,
@@ -176,8 +174,7 @@ class MAHNOBDataset(BaseDataset):
             'io_size': io_size,
             'io_mode': io_mode,
             'num_worker': num_worker,
-            'verbose': verbose,
-            'in_memory': in_memory
+            'verbose': verbose
         }
         super().__init__(**params)
         # save all arguments to __dict__
@@ -197,127 +194,129 @@ class MAHNOBDataset(BaseDataset):
                 offline_transform: Union[None, Callable] = None,
                 before_trial: Union[None, Callable] = None,
                **kwargs):
-        file_name = file
+        
+        for file_name in file:
 
-        trial_dir = os.path.join(root_path, file_name)
+            trial_dir = os.path.join(root_path, file_name)
 
-        mne.set_log_level('CRITICAL')
-        # record the common meta info for the trial
-        label_file = os.path.join(trial_dir, 'session.xml')
-        emodims = [
-            '@feltArsl', '@feltCtrl', '@feltEmo', '@feltPred', '@feltVlnc',
-            '@isStim'
-        ]
-        with open(label_file) as f:
-            label_info = xmltodict.parse('\n'.join(f.readlines()))
-        label_info = json.loads(json.dumps(label_info))['session']
+            # record the common meta info for the trial
+            label_file = os.path.join(trial_dir, 'session.xml')
+            emodims = [
+                '@feltArsl', '@feltCtrl', '@feltEmo', '@feltPred', '@feltVlnc',
+                '@isStim'
+            ]
+            with open(label_file) as f:
+                label_info = xmltodict.parse('\n'.join(f.readlines()))
+            label_info = json.loads(json.dumps(label_info))['session']
 
-        if not '@feltArsl' in label_info:
-            # skip label_info['@isStim'] == '0' and other exception
-            return
+            if not '@feltArsl' in label_info:
+                # skip label_info['@isStim'] == '0' and other exception
+                continue
 
-        trial_meta_info = {
-            'subject_id': label_info['subject']['@id'],
-            'trial_id': label_info['@mediaFile'],
-            'duration': float(label_info['@cutLenSec'])
-        }
-        # feltArsl, feltCtrl, feltEmo, feltPred, feltVlnc, isStim
-        trial_meta_info.update({k[1:]: int(label_info[k]) for k in emodims})
-
-        write_pointer = 0
-
-        # extract signals
-        sample_file = glob.glob(str(os.path.join(trial_dir, '*.bdf')))[0]
-
-        raw = mne.io.read_raw_bdf(sample_file,
-                                  preload=True,
-                                  stim_channel='Status')
-        events = mne.find_events(raw, stim_channel='Status')
-
-        montage = mne.channels.make_standard_montage(kind='biosemi32')
-        raw.set_montage(montage, on_missing='ignore')
-
-        # pick channels
-        raw.pick_channels(raw.ch_names[:num_channel])
-
-        start_samp, end_samp = events[0][0] + 1, events[1][0] - 1
-
-        # extract baseline signals
-        trial_baseline_raw = raw.copy().crop(raw.times[0], raw.times[end_samp])
-        trial_baseline_raw = trial_baseline_raw.resample(sampling_rate)
-
-        trial_baseline_sample = trial_baseline_raw.to_data_frame().to_numpy(
-        )[:, 1:].swapaxes(1, 0)  # channel(32), timestep(30 * 128)
-        trial_baseline_sample = trial_baseline_sample[:, :num_baseline *
-                                                      baseline_chunk_size]
-        trial_baseline_sample = trial_baseline_sample.reshape(
-            num_channel, num_baseline,
-            baseline_chunk_size).mean(axis=1)  # channel(32), timestep(128)
-
-        # extract experimental signals
-        trial_raw = raw.copy().crop(raw.times[start_samp], raw.times[end_samp])
-        trial_raw = trial_raw.resample(sampling_rate)
-        trial_samples = trial_raw.to_data_frame().to_numpy()[:,
-                                                             1:].swapaxes(1, 0)
-        if before_trial:
-            trial_samples = before_trial(trial_samples)
-
-        start_at = 0
-        if chunk_size <= 0:
-            dynamic_chunk_size = trial_samples.shape[1] - start_at
-        else:
-            dynamic_chunk_size = chunk_size
-
-        # chunk with chunk size
-        end_at = dynamic_chunk_size
-        # calculate moving step
-        step = dynamic_chunk_size - overlap
-
-        max_len = trial_samples.shape[1]
-        if not (num_trial_sample <= 0):
-            max_len = min(num_trial_sample * dynamic_chunk_size, trial_samples.shape[1])
-
-        while end_at <= max_len:
-            clip_sample = trial_samples[:, start_at:end_at]
-
-            t_eeg = clip_sample
-            t_baseline = trial_baseline_sample
-            if not offline_transform is None:
-                t = offline_transform(eeg=clip_sample, baseline=trial_baseline_sample)
-                t_eeg = t['eeg']
-                t_baseline = t['baseline']
-
-            # put baseline signal into IO
-            if not 'baseline_id' in trial_meta_info:
-                trial_base_id = f'{file_name}_{write_pointer}'
-                yield {
-                    'eeg': t_baseline,
-                    'key': trial_base_id
-                }
-                write_pointer += 1
-                trial_meta_info['baseline_id'] = trial_base_id
-
-            clip_id = f'{file_name}_{write_pointer}'
-            write_pointer += 1
-
-            # record meta info for each signal
-            record_info = {
-                'start_at': start_at,
-                'end_at': end_at,
-                'clip_id': clip_id
+            trial_meta_info = {
+                'subject_id': label_info['subject']['@id'],
+                'trial_id': label_info['@mediaFile'],
+                'duration': float(label_info['@cutLenSec'])
             }
-            record_info.update(trial_meta_info)
-            yield {
-                    'eeg': t_eeg,
-                    'key': clip_id,
-                    'info': record_info
-                }
+            # feltArsl, feltCtrl, feltEmo, feltPred, feltVlnc, isStim
+            trial_meta_info.update({k[1:]: int(label_info[k]) for k in emodims})
 
-            start_at = start_at + step
-            end_at = start_at + dynamic_chunk_size
+            write_pointer = 0
+
+            # extract signals
+            sample_file = glob.glob(str(os.path.join(trial_dir, '*.bdf')))[0]
+
+            raw = mne.io.read_raw_bdf(sample_file,
+                                    preload=True,
+                                    stim_channel='Status')
+            events = mne.find_events(raw, stim_channel='Status')
+
+            montage = mne.channels.make_standard_montage(kind='biosemi32')
+            raw.set_montage(montage, on_missing='ignore')
+
+            # pick channels
+            raw.pick_channels(raw.ch_names[:num_channel])
+
+            start_samp, end_samp = events[0][0] + 1, events[1][0] - 1
+
+            # extract baseline signals
+            trial_baseline_raw = raw.copy().crop(raw.times[0], raw.times[end_samp])
+            trial_baseline_raw = trial_baseline_raw.resample(sampling_rate)
+
+            trial_baseline_sample = trial_baseline_raw.to_data_frame().to_numpy(
+            )[:, 1:].swapaxes(1, 0)  # channel(32), timestep(30 * 128)
+            trial_baseline_sample = trial_baseline_sample[:, :num_baseline *
+                                                        baseline_chunk_size]
+            trial_baseline_sample = trial_baseline_sample.reshape(
+                num_channel, num_baseline,
+                baseline_chunk_size).mean(axis=1)  # channel(32), timestep(128)
+
+            # extract experimental signals
+            trial_raw = raw.copy().crop(raw.times[start_samp], raw.times[end_samp])
+            trial_raw = trial_raw.resample(sampling_rate)
+            trial_samples = trial_raw.to_data_frame().to_numpy()[:,
+                                                                1:].swapaxes(1, 0)
+            if before_trial:
+                trial_samples = before_trial(trial_samples)
+
+            start_at = 0
+            if chunk_size <= 0:
+                dynamic_chunk_size = trial_samples.shape[1] - start_at
+            else:
+                dynamic_chunk_size = chunk_size
+
+            # chunk with chunk size
+            end_at = dynamic_chunk_size
+            # calculate moving step
+            step = dynamic_chunk_size - overlap
+
+            max_len = trial_samples.shape[1]
+            if not (num_trial_sample <= 0):
+                max_len = min(num_trial_sample * dynamic_chunk_size, trial_samples.shape[1])
+
+            while end_at <= max_len:
+                clip_sample = trial_samples[:, start_at:end_at]
+
+                t_eeg = clip_sample
+                t_baseline = trial_baseline_sample
+                if not offline_transform is None:
+                    t = offline_transform(eeg=clip_sample, baseline=trial_baseline_sample)
+                    t_eeg = t['eeg']
+                    t_baseline = t['baseline']
+
+                # put baseline signal into IO
+                if not 'baseline_id' in trial_meta_info:
+                    trial_base_id = f'{file_name}_{write_pointer}'
+                    yield {
+                        'eeg': t_baseline,
+                        'key': trial_base_id
+                    }
+                    write_pointer += 1
+                    trial_meta_info['baseline_id'] = trial_base_id
+
+                clip_id = f'{file_name}_{write_pointer}'
+                write_pointer += 1
+
+                # record meta info for each signal
+                record_info = {
+                    'start_at': start_at,
+                    'end_at': end_at,
+                    'clip_id': clip_id
+                }
+                record_info.update(trial_meta_info)
+                yield {
+                        'eeg': t_eeg,
+                        'key': clip_id,
+                        'info': record_info
+                    }
+
+                start_at = start_at + step
+                end_at = start_at + dynamic_chunk_size
 
     def set_records(self, root_path: str = './Sessions', **kwargs):
-        return os.listdir(root_path)
+        files = os.listdir(root_path)
+        file_lists = [files[i:i + 32] for i in range(0, len(files), 32)]
+        return file_lists
 
     def __getitem__(self, index: int) -> Tuple:
         info = self.read_info(index)
