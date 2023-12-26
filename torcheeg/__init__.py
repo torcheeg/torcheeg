@@ -24,7 +24,13 @@ def set_log_level(level: str = "INFO", third_party: str = "CRITICAL"):
 
     log = logging.getLogger('torcheeg')
     log.setLevel(level)
-    log.addHandler(logging.StreamHandler())
+    
+    handler = logging.StreamHandler()
+
+    formatter = logging.Formatter('[%(asctime)s] %(levelname)s (%(name)s/%(threadName)s) %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
+    handler.setFormatter(formatter)
+
+    log.addHandler(handler)
 
 
 set_log_level()

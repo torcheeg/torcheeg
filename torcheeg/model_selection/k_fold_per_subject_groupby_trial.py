@@ -1,11 +1,17 @@
+import logging
 import os
 import re
 from copy import copy
-from typing import List, Tuple, Union, Dict
+from typing import Dict, List, Tuple, Union
 
 import pandas as pd
 from sklearn import model_selection
+
 from torcheeg.datasets.module.base_dataset import BaseDataset
+
+from ..utils import get_random_dir_path
+
+log = logging.getLogger('torcheeg')
 
 
 class KFoldPerSubjectGroupbyTrial:
@@ -20,9 +26,8 @@ class KFoldPerSubjectGroupbyTrial:
 
     .. code-block:: python
 
-        cv = KFoldPerSubjectGroupbyTrial(n_splits=5, shuffle=True, split_path='./split')
-        dataset = DEAPDataset(io_path=f'./deap',
-                              root_path='./data_preprocessed_python',
+        cv = KFoldPerSubjectGroupbyTrial(n_splits=5, shuffle=True)
+        dataset = DEAPDataset(root_path='./data_preprocessed_python',
                               online_transform=transforms.Compose([
                                   transforms.ToTensor(),
                                   transforms.To2d()
@@ -43,9 +48,8 @@ class KFoldPerSubjectGroupbyTrial:
 
     .. code-block:: python
 
-        cv = KFoldPerSubjectGroupbyTrial(n_splits=5, shuffle=True, split_path='./split')
-        dataset = DEAPDataset(io_path=f'./deap',
-                              root_path='./data_preprocessed_python',
+        cv = KFoldPerSubjectGroupbyTrial(n_splits=5, shuffle=True)
+        dataset = DEAPDataset(root_path='./data_preprocessed_python',
                               online_transform=transforms.Compose([
                                   transforms.To2d(),
                                   transforms.ToTensor()
@@ -66,13 +70,17 @@ class KFoldPerSubjectGroupbyTrial:
         n_splits (int): Number of folds. Must be at least 2. (default: :obj:`5`)
         shuffle (bool): Whether to shuffle the data before splitting into batches. Note that the samples within each split will not be shuffled. (default: :obj:`False`)
         random_state (int, optional): When shuffle is :obj:`True`, :obj:`random_state` affects the ordering of the indices, which controls the randomness of each fold. Otherwise, this parameter has no effect. (default: :obj:`None`)
-        split_path (str): The path to data partition information. If the path exists, read the existing partition from the path. If the path does not exist, the current division method will be saved for next use. (default: :obj:`./split/k_fold_per_subject_group_by_trial`)
+        split_path (str): The path to data partition information. If the path exists, read the existing partition from the path. If the path does not exist, the current division method will be saved for next use. If set to None, a random path will be generated. (default: :obj:`None`)
     '''
+
     def __init__(self,
                  n_splits: int = 5,
                  shuffle: bool = False,
                  random_state: Union[float, None] = None,
-                 split_path: str = '.torcheeg/split/k_fold_per_subject_group_by_trial'):
+                 split_path: Union[None, str] = None):
+        if split_path is None:
+            split_path = get_random_dir_path(dir_prefix='model_selection')
+
         self.n_splits = n_splits
         self.shuffle = shuffle
         self.random_state = random_state
@@ -125,8 +133,7 @@ class KFoldPerSubjectGroupbyTrial:
         indice_files = list(os.listdir(self.split_path))
 
         def indice_file_to_subject(indice_file):
-            return re.findall(r'subject_(.*)_fold_(\d*).csv',
-                              indice_file)[0][0]
+            return re.findall(r'subject_(.*)_fold_(\d*).csv', indice_file)[0][0]
 
         subjects = list(set(map(indice_file_to_subject, indice_files)))
         subjects.sort()
@@ -150,8 +157,21 @@ class KFoldPerSubjectGroupbyTrial:
             subject: Union[int,
                            None] = None) -> Tuple[BaseDataset, BaseDataset]:
         if not os.path.exists(self.split_path):
+            log.info(
+                f'📊 | Create the split of train and test set.'
+            )
+            log.info(
+                f'😊 | Please set \033[92msplit_path\033[0m to \033[92m{self.split_path}\033[0m for the next run, if you want to use the same setting for the experiment.'
+            )
             os.makedirs(self.split_path)
             self.split_info_constructor(dataset.info)
+        else:
+            log.info(
+                f'📊 | Detected existing split of train and test set, use existing split from {self.split_path}.'
+            )
+            log.info(
+                f'💡 | If the dataset is re-generated, you need to re-generate the split of the dataset instead of using the previous split.'
+            )
 
         subjects = self.subjects
         fold_ids = self.fold_ids

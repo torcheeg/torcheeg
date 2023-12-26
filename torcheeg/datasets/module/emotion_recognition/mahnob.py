@@ -6,6 +6,7 @@ from typing import Any, Callable, Dict, Tuple, Union
 import mne
 import xmltodict
 from ..base_dataset import BaseDataset
+from ....utils import get_random_dir_path
 
 
 class MAHNOBDataset(BaseDataset):
@@ -37,17 +38,16 @@ class MAHNOBDataset(BaseDataset):
 
     .. code-block:: python
     
-        dataset = MAHNOBDataset(io_path=f'./mahnob',
-                              root_path='./Sessions',
-                              offline_transform=transforms.Compose([
-                                  transforms.BandDifferentialEntropy(),
-                                  transforms.ToGrid(MAHNOB_CHANNEL_LOCATION_DICT)
-                              ]),
-                              online_transform=transforms.ToTensor(),
-                              label_transform=transforms.Compose([
-                                  transforms.Select('feltVlnc'),
-                                  transforms.Binary(5.0),
-                              ]))
+        dataset = MAHNOBDataset(root_path='./Sessions',
+                                offline_transform=transforms.Compose([
+                                    transforms.BandDifferentialEntropy(),
+                                    transforms.ToGrid(MAHNOB_CHANNEL_LOCATION_DICT)
+                                ]),
+                                online_transform=transforms.ToTensor(),
+                                label_transform=transforms.Compose([
+                                    transforms.Select('feltVlnc'),
+                                    transforms.Binary(5.0),
+                                ]))
         print(dataset[0])
         # EEG signal (torch.Tensor[4, 9, 9]),
         # coresponding baseline signal (torch.Tensor[4, 9, 9]),
@@ -57,17 +57,16 @@ class MAHNOBDataset(BaseDataset):
 
     .. code-block:: python
 
-        dataset = MAHNOBDataset(io_path=f'./mahnob',
-                              root_path='./Sessions',
-                              online_transform=transforms.Compose([
-                                  transforms.To2d(),
-                                  transforms.ToTensor()
-                              ]),
-                              label_transform=transforms.Compose([
-                                  transforms.Select(['feltVlnc', 'feltArsl']),
-                                  transforms.Binary(5.0),
-                                  transforms.BinariesToCategory()
-                              ]))
+        dataset = MAHNOBDataset(root_path='./Sessions',
+                                online_transform=transforms.Compose([
+                                    transforms.To2d(),
+                                    transforms.ToTensor()
+                                ]),
+                                label_transform=transforms.Compose([
+                                    transforms.Select(['feltVlnc', 'feltArsl']),
+                                    transforms.Binary(5.0),
+                                    transforms.BinariesToCategory()
+                                ]))
         print(dataset[0])
         # EEG signal (torch.Tensor[1, 32, 128]),
         # coresponding baseline signal (torch.Tensor[1, 32, 128]),
@@ -77,39 +76,18 @@ class MAHNOBDataset(BaseDataset):
 
     .. code-block:: python
     
-        dataset = MAHNOBDataset(io_path=f'./mahnob',
-                              root_path='./Sessions',
-                              online_transform=transforms.Compose([
-                                  ToG(MAHNOB_ADJACENCY_MATRIX)
-                              ]),
-                              label_transform=transforms.Compose([
-                                  transforms.Select('feltArsl'),
-                                  transforms.Binary(5.0)
-                              ]))
+        dataset = MAHNOBDataset(root_path='./Sessions',
+                                online_transform=transforms.Compose([
+                                    ToG(MAHNOB_ADJACENCY_MATRIX)
+                                ]),
+                                label_transform=transforms.Compose([
+                                    transforms.Select('feltArsl'),
+                                    transforms.Binary(5.0)
+                                ]))
         print(dataset[0])
         # EEG signal (torch_geometric.data.Data),
         # coresponding baseline signal (torch_geometric.data.Data),
         # label (int)
-
-    In particular, TorchEEG utilizes the producer-consumer model to allow multi-process data preprocessing. If your data preprocessing is time consuming, consider increasing :obj:`num_worker` for higher speedup. If running under Windows, please use the proper idiom in the main module:
-
-    .. code-block:: python
-    
-        if __name__ == '__main__':
-            dataset = MAHNOBDataset(io_path=f'./mahnob',
-                              root_path='./Sessions',
-                              online_transform=transforms.Compose([
-                                  ToG(MAHNOB_ADJACENCY_MATRIX)
-                              ]),
-                              label_transform=transforms.Compose([
-                                  transforms.Select('feltArsl'),
-                                  transforms.Binary(5.0)
-                              ]),
-                              num_worker=4)
-            print(dataset[0])
-            # EEG signal (torch_geometric.data.Data),
-            # coresponding baseline signal (torch_geometric.data.Data),
-            # label (int)
 
     Args:
         root_path (str): Downloaded data files in bdf and xml (unzipped Sessions.zip) formats (default: :obj:`'./Sessions'`)
@@ -125,7 +103,7 @@ class MAHNOBDataset(BaseDataset):
         label_transform (Callable, optional): The transformation of the label. The input is an information dictionary, and the ouput is used as the third value of each element in the dataset. (default: :obj:`None`)
         before_trial (Callable, optional): The hook performed on the trial to which the sample belongs. It is performed before the offline transformation and thus typically used to implement context-dependent sample transformations, such as moving averages, etc. The input of this hook function is a 2D EEG signal with shape (number of electrodes, number of data points), whose ideal output shape is also (number of electrodes, number of data points).
         after_trial (Callable, optional): The hook performed on the trial to which the sample belongs. It is performed after the offline transformation and thus typically used to implement context-dependent sample transformations, such as moving averages, etc. The input and output of this hook function should be a sequence of dictionaries representing a sequence of EEG samples. Each dictionary contains two key-value pairs, indexed by :obj:`eeg` (the EEG signal matrix) and :obj:`key` (the index in the database) respectively.
-        io_path (str): The path to generated unified data IO, cached as an intermediate result. (default: :obj:`./io/mahnob`)
+        io_path (str): The path to generated unified data IO, cached as an intermediate result. If set to None, a random path will be generated. (default: :obj:`None`)
         io_size (int): Maximum size database may grow to; used to size the memory mapping. If database grows larger than ``map_size``, an exception will be raised and the user must close and reopen. (default: :obj:`1048576`)
         io_mode (str): Storage mode of EEG signal. When io_mode is set to :obj:`lmdb`, TorchEEG provides an efficient database (LMDB) for storing EEG signals. LMDB may not perform well on limited operating systems, where a file system based EEG signal storage is also provided. When io_mode is set to :obj:`pickle`, pickle-based persistence files are used. When io_mode is set to :obj:`memory`, memory are used. (default: :obj:`lmdb`)
         num_worker (int): Number of subprocesses to use for data loading. 0 means that the data will be loaded in the main process. (default: :obj:`0`)
@@ -148,11 +126,14 @@ class MAHNOBDataset(BaseDataset):
                  after_trial: Union[Callable, None] = None,
                  after_session: Union[Callable, None] = None,
                  after_subject: Union[Callable, None] = None,
-                 io_path: str = '.torcheeg/io/mahnob',
+                 io_path: Union[None, str] = None,
                  io_size: int = 1048576,
                  io_mode: str = 'lmdb',
                  num_worker: int = 0,
                  verbose: bool = True):
+        if io_path is None:
+            io_path = get_random_dir_path(dir_prefix='datasets')
+
         # pass all arguments to super class
         params = {
             'root_path': root_path,
@@ -181,20 +162,19 @@ class MAHNOBDataset(BaseDataset):
         self.__dict__.update(params)
 
     @staticmethod
-    def process_record(
-               file: Any = None,
-                root_path: str = './Sessions',
-                chunk_size: int = 128,
-                sampling_rate: int = 128,
-                overlap: int = 0,
-                num_channel: int = 32,
-                num_baseline: int = 30,
-                baseline_chunk_size: int = 128,
-                num_trial_sample: int = 30,
-                offline_transform: Union[None, Callable] = None,
-                before_trial: Union[None, Callable] = None,
-               **kwargs):
-        
+    def process_record(file: Any = None,
+                       root_path: str = './Sessions',
+                       chunk_size: int = 128,
+                       sampling_rate: int = 128,
+                       overlap: int = 0,
+                       num_channel: int = 32,
+                       num_baseline: int = 30,
+                       baseline_chunk_size: int = 128,
+                       num_trial_sample: int = 30,
+                       offline_transform: Union[None, Callable] = None,
+                       before_trial: Union[None, Callable] = None,
+                       **kwargs):
+
         for file_name in file:
 
             trial_dir = os.path.join(root_path, file_name)
@@ -227,8 +207,8 @@ class MAHNOBDataset(BaseDataset):
             sample_file = glob.glob(str(os.path.join(trial_dir, '*.bdf')))[0]
 
             raw = mne.io.read_raw_bdf(sample_file,
-                                    preload=True,
-                                    stim_channel='Status')
+                                      preload=True,
+                                      stim_channel='Status')
             events = mne.find_events(raw, stim_channel='Status')
 
             montage = mne.channels.make_standard_montage(kind='biosemi32')
@@ -240,22 +220,25 @@ class MAHNOBDataset(BaseDataset):
             start_samp, end_samp = events[0][0] + 1, events[1][0] - 1
 
             # extract baseline signals
-            trial_baseline_raw = raw.copy().crop(raw.times[0], raw.times[end_samp])
+            trial_baseline_raw = raw.copy().crop(raw.times[0],
+                                                 raw.times[end_samp])
             trial_baseline_raw = trial_baseline_raw.resample(sampling_rate)
 
             trial_baseline_sample = trial_baseline_raw.to_data_frame().to_numpy(
             )[:, 1:].swapaxes(1, 0)  # channel(32), timestep(30 * 128)
             trial_baseline_sample = trial_baseline_sample[:, :num_baseline *
-                                                        baseline_chunk_size]
+                                                          baseline_chunk_size]
             trial_baseline_sample = trial_baseline_sample.reshape(
                 num_channel, num_baseline,
                 baseline_chunk_size).mean(axis=1)  # channel(32), timestep(128)
 
             # extract experimental signals
-            trial_raw = raw.copy().crop(raw.times[start_samp], raw.times[end_samp])
+            trial_raw = raw.copy().crop(raw.times[start_samp],
+                                        raw.times[end_samp])
             trial_raw = trial_raw.resample(sampling_rate)
             trial_samples = trial_raw.to_data_frame().to_numpy()[:,
-                                                                1:].swapaxes(1, 0)
+                                                                 1:].swapaxes(
+                                                                     1, 0)
             if before_trial:
                 trial_samples = before_trial(trial_samples)
 
@@ -272,7 +255,8 @@ class MAHNOBDataset(BaseDataset):
 
             max_len = trial_samples.shape[1]
             if not (num_trial_sample <= 0):
-                max_len = min(num_trial_sample * dynamic_chunk_size, trial_samples.shape[1])
+                max_len = min(num_trial_sample * dynamic_chunk_size,
+                              trial_samples.shape[1])
 
             while end_at <= max_len:
                 clip_sample = trial_samples[:, start_at:end_at]
@@ -280,17 +264,15 @@ class MAHNOBDataset(BaseDataset):
                 t_eeg = clip_sample
                 t_baseline = trial_baseline_sample
                 if not offline_transform is None:
-                    t = offline_transform(eeg=clip_sample, baseline=trial_baseline_sample)
+                    t = offline_transform(eeg=clip_sample,
+                                          baseline=trial_baseline_sample)
                     t_eeg = t['eeg']
                     t_baseline = t['baseline']
 
                 # put baseline signal into IO
                 if not 'baseline_id' in trial_meta_info:
                     trial_base_id = f'{file_name}_{write_pointer}'
-                    yield {
-                        'eeg': t_baseline,
-                        'key': trial_base_id
-                    }
+                    yield {'eeg': t_baseline, 'key': trial_base_id}
                     write_pointer += 1
                     trial_meta_info['baseline_id'] = trial_base_id
 
@@ -304,16 +286,15 @@ class MAHNOBDataset(BaseDataset):
                     'clip_id': clip_id
                 }
                 record_info.update(trial_meta_info)
-                yield {
-                        'eeg': t_eeg,
-                        'key': clip_id,
-                        'info': record_info
-                    }
+                yield {'eeg': t_eeg, 'key': clip_id, 'info': record_info}
 
                 start_at = start_at + step
                 end_at = start_at + dynamic_chunk_size
 
     def set_records(self, root_path: str = './Sessions', **kwargs):
+        assert os.path.exists(
+            root_path
+        ), f'root_path ({root_path}) does not exist. Please download the dataset and set the root_path to the downloaded path.'
         files = os.listdir(root_path)
         file_lists = [files[i:i + 32] for i in range(0, len(files), 32)]
         return file_lists

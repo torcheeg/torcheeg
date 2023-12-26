@@ -1,7 +1,7 @@
 import logging
 import os
 import shutil
-from typing import Any, Callable, Dict
+from typing import Any, Callable, Dict, Union
 import torch
 import numpy as np
 import pandas as pd
@@ -17,7 +17,7 @@ log = logging.getLogger('torcheeg')
 class BaseDataset(Dataset):
 
     def __init__(self,
-                 io_path: str = None,
+                 io_path: Union[None, str] = None,
                  io_size: int = 1048576,
                  io_mode: str = 'lmdb',
                  num_worker: int = 0,
@@ -37,7 +37,12 @@ class BaseDataset(Dataset):
 
         # new IO
         if not self.exist(self.io_path) or self.io_mode == 'memory':
-            log.info('Processing EEG data.')
+            log.info(
+                f'🔍 | Processing EEG data. Processed EEG data has been cached to \033[92m{io_path}\033[0m.'
+            )
+            log.info(
+                f'⏳ | Monitoring the detailed processing of a record for debugging. The processing of other records will only be reported in percentage to keep it clean.'
+            )
             # make the root dictionary
             os.makedirs(self.io_path, exist_ok=True)
 
@@ -48,7 +53,9 @@ class BaseDataset(Dataset):
                     for file_id, file in tqdm(enumerate(records),
                                               disable=not self.verbose,
                                               desc="[PROCESS]",
-                                              total=len(records)):
+                                              total=len(records),
+                                              position=0,
+                                              leave=None):
                         worker_results.append(
                             self.save_record(io_path=self.io_path,
                                              io_size=self.io_size,
@@ -56,6 +63,7 @@ class BaseDataset(Dataset):
                                              file=file,
                                              file_id=file_id,
                                              process_record=self.process_record,
+                                             verbose=self.verbose,
                                              **kwargs))
                 except Exception as e:
                     # shutil to delete the database
@@ -72,11 +80,14 @@ class BaseDataset(Dataset):
                             file_id=file_id,
                             file=file,
                             process_record=self.process_record,
+                            verbose=self.verbose,
                             **kwargs)
                         for file_id, file in tqdm(enumerate(records),
                                                   disable=not self.verbose,
                                                   desc="[PROCESS]",
-                                                  total=len(records)))
+                                                  total=len(records),
+                                                  position=0,
+                                                  leave=None))
                 except Exception as e:
                     # shutil to delete the database
                     shutil.rmtree(self.io_path)
@@ -84,7 +95,10 @@ class BaseDataset(Dataset):
 
             if not self.io_mode == 'memory':
                 log.info(
-                    f'Processed EEG data has been cached to {io_path}. Please set io_path to {io_path} for the next run, to directly read from the cache if you wish to skip the data processing step.'
+                    f'✅ | All processed EEG data has been cached to {io_path}.'
+                )
+                log.info(
+                    f'😊 | Please set \033[92mio_path\033[0m to \033[92m{io_path}\033[0m for the next run, to directly read from the cache if you wish to skip the data processing step.'
                 )
 
             eeg_io_router = {}
@@ -119,7 +133,7 @@ class BaseDataset(Dataset):
                     raise e
         else:
             log.info(
-                f'Detected cached processing results, reading cache from {self.io_path}.'
+                f'🔍 | Detected cached processing results, reading cache from {self.io_path}.'
             )
             # get all records
             records = os.listdir(io_path)
@@ -173,12 +187,13 @@ class BaseDataset(Dataset):
             "Method set_records is not implemented in class BaseDataset")
 
     @staticmethod
-    def save_record(io_path: str = None,
+    def save_record(io_path: Union[None, str] = None,
                     io_size: int = 1048576,
                     io_mode: str = 'lmdb',
                     file: Any = None,
                     file_id: int = None,
-                    process_record=None,
+                    process_record: Callable = None,
+                    verbose: bool = True,
                     **kwargs):
         _record_id = str(file_id)
         meta_info_io_path = os.path.join(io_path, f'_record_{_record_id}',
@@ -193,12 +208,25 @@ class BaseDataset(Dataset):
 
         gen = process_record(file=file, **kwargs)
 
+        if file_id == 0:
+            pbar = tqdm(disable=not verbose,
+                        desc=f"[RECORD {file}]",
+                        position=1,
+                        leave=None)
+
+            # pbar.write(
+            #     "Monitoring the detailed processing of a record. The detailed processing of other records will not be reported to keep it clean."
+            # )
+
         # loop for data yield by process_record, until to the end of the data
         while True:
             try:
                 # call process_record of the class
                 # get the current class name
                 obj = next(gen)
+
+                if file_id == 0:
+                    pbar.update(1)
 
             except StopIteration:
                 break
@@ -207,6 +235,9 @@ class BaseDataset(Dataset):
                 eeg_io.write_eeg(obj['eeg'], obj['key'])
             if 'info' in obj:
                 info_io.write_info(obj['info'])
+
+        if file_id == 0:
+            pbar.close()
 
         return {
             'eeg_io': eeg_io,

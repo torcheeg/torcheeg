@@ -5,6 +5,7 @@ import pandas as pd
 import scipy.io as scio
 
 from ..base_dataset import BaseDataset
+from ....utils import get_random_dir_path
 
 
 class M3CVDataset(BaseDataset):
@@ -29,8 +30,7 @@ class M3CVDataset(BaseDataset):
 
     .. code-block:: python
     
-        dataset = M3CVDataset(io_path=f'./m3cv',
-                              root_path='./aistudio',
+        dataset = M3CVDataset(root_path='./aistudio',
                               offline_transform=transforms.Compose([
                                   transforms.BandDifferentialEntropy(),
                                   transforms.ToGrid(M3CV_CHANNEL_LOCATION_DICT)
@@ -82,26 +82,6 @@ class M3CVDataset(BaseDataset):
         # coresponding baseline signal (torch_geometric.data.Data),
         # label (int)
 
-    In particular, TorchEEG utilizes the producer-consumer model to allow multi-process data preprocessing. If your data preprocessing is time consuming, consider increasing :obj:`num_worker` for higher speedup. If running under Windows, please use the proper idiom in the main module:
-
-    .. code-block:: python
-    
-        if __name__ == '__main__':
-            dataset = M3CVDataset(io_path=f'./m3cv',
-                              root_path='./aistudio',
-                              online_transform=transforms.Compose([
-                                  ToG(M3CV_ADJACENCY_MATRIX)
-                              ]),
-                              label_transform=transforms.Compose([
-                                  transforms.Select('SubjectID'),
-                                  transforms.StringToNumber()
-                              ]),
-                              num_worker=4)
-            print(dataset[0])
-            # EEG signal (torch_geometric.data.Data),
-            # coresponding baseline signal (torch_geometric.data.Data),
-            # label (int)
-
     Args:
         root_path (str): Downloaded data files in pickled python/numpy (unzipped aistudio.zip) formats (default: :obj:`'./aistudio'`)
         subset (str): In the competition, the M3CV dataset is splited into the Enrollment set, Calibration set, and Testing set. Please specify the subset to use, options include Enrollment, Calibration and Testing. (default: :obj:`'Enrollment'`)
@@ -113,12 +93,13 @@ class M3CVDataset(BaseDataset):
         label_transform (Callable, optional): The transformation of the label. The input is an information dictionary, and the ouput is used as the third value of each element in the dataset. (default: :obj:`None`)
         before_trial (Callable, optional): The hook performed on the trial to which the sample belongs. It is performed before the offline transformation and thus typically used to implement context-dependent sample transformations, such as moving averages, etc. The input of this hook function is a 2D EEG signal with shape (number of electrodes, number of data points), whose ideal output shape is also (number of electrodes, number of data points).
         after_trial (Callable, optional): The hook performed on the trial to which the sample belongs. It is performed after the offline transformation and thus typically used to implement context-dependent sample transformations, such as moving averages, etc. The input and output of this hook function should be a sequence of dictionaries representing a sequence of EEG samples. Each dictionary contains two key-value pairs, indexed by :obj:`eeg` (the EEG signal matrix) and :obj:`key` (the index in the database) respectively.
-        io_path (str): The path to generated unified data IO, cached as an intermediate result. (default: :obj:`./io/m3cv`)
+        io_path (str): The path to generated unified data IO, cached as an intermediate result. If set to None, a random path will be generated. (default: :obj:`None`)
         io_size (int): Maximum size database may grow to; used to size the memory mapping. If database grows larger than ``map_size``, an exception will be raised and the user must close and reopen. (default: :obj:`1048576`)
         io_mode (str): Storage mode of EEG signal. When io_mode is set to :obj:`lmdb`, TorchEEG provides an efficient database (LMDB) for storing EEG signals. LMDB may not perform well on limited operating systems, where a file system based EEG signal storage is also provided. When io_mode is set to :obj:`pickle`, pickle-based persistence files are used. When io_mode is set to :obj:`memory`, memory are used. (default: :obj:`lmdb`)
         num_worker (int): Number of subprocesses to use for data loading. 0 means that the data will be loaded in the main process. (default: :obj:`0`)
         verbose (bool): Whether to display logs during processing, such as progress bars, etc. (default: :obj:`True`)    
     '''
+
     def __init__(self,
                  root_path: str = './aistudio',
                  subset: str = 'Enrollment',
@@ -130,11 +111,14 @@ class M3CVDataset(BaseDataset):
                  label_transform: Union[None, Callable] = None,
                  before_trial: Union[None, Callable] = None,
                  after_trial: Union[Callable, None] = None,
-                 io_path: str = '.torcheeg/io/m3cv',
+                 io_path: Union[None, str] = None,
                  io_size: int = 1048576,
                  io_mode: str = 'lmdb',
                  num_worker: int = 0,
                  verbose: bool = True):
+        if io_path is None:
+            io_path = get_random_dir_path(dir_prefix='datasets')
+
         # pass all arguments to super class
         params = {
             'root_path': root_path,
@@ -159,14 +143,14 @@ class M3CVDataset(BaseDataset):
 
     @staticmethod
     def process_record(file: Any = None,
-                   root_path: str = './aistudio',
-                   subset: str = 'Enrollment',
-                   chunk_size: int = 1000,
-                   overlap: int = 0,
-                   num_channel: int = 64,
-                   offline_transform: Union[None, Callable] = None,
-                   before_trial: Union[None, Callable] = None,
-                   **kwargs):
+                       root_path: str = './aistudio',
+                       subset: str = 'Enrollment',
+                       chunk_size: int = 1000,
+                       overlap: int = 0,
+                       num_channel: int = 64,
+                       offline_transform: Union[None, Callable] = None,
+                       before_trial: Union[None, Callable] = None,
+                       **kwargs):
         start_idx, end_idx = file
 
         df = pd.read_csv(os.path.join(root_path, f'{subset}_Info.csv'))
@@ -230,9 +214,14 @@ class M3CVDataset(BaseDataset):
                 start_at = start_at + step
                 end_at = start_at + dynamic_chunk_size
 
-    def set_records(self, root_path: str = './aistudio',
-                   subset: str = 'Enrollment',
-                   **kwargs):
+    def set_records(self,
+                    root_path: str = './aistudio',
+                    subset: str = 'Enrollment',
+                    **kwargs):
+        assert os.path.exists(
+            root_path
+        ), f'root_path ({root_path}) does not exist. Please download the dataset and set the root_path to the downloaded path.'
+
         assert subset in [
             'Enrollment', 'Calibration', 'Testing'
         ], f"Unavailable subset name {subset}, and available options include 'Enrollment', 'Calibration', and 'Testing'."

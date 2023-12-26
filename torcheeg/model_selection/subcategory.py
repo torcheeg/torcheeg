@@ -1,10 +1,16 @@
+import logging
 import os
 import re
 from copy import copy
-from typing import Tuple, Dict
+from typing import Dict, Tuple, Union
 
 import pandas as pd
+
 from torcheeg.datasets.module.base_dataset import BaseDataset
+
+from ..utils import get_random_dir_path
+
+log = logging.getLogger('torcheeg')
 
 
 class Subcategory:
@@ -15,9 +21,8 @@ class Subcategory:
 
     .. code-block:: python
 
-        cv = Subcategory(split_path='./split')
-        dataset = M3CVDataset(io_path=f'./m3cv',
-                              root_path='./aistudio',
+        cv = Subcategory()
+        dataset = M3CVDataset(root_path='./aistudio',
                               online_transform=transforms.Compose(
                                   [transforms.To2d(),
                                    transforms.ToTensor()]),
@@ -33,9 +38,8 @@ class Subcategory:
 
     .. code-block:: python
 
-        cv = Subcategory(split_path='./split')
-        dataset = M3CVDataset(io_path=f'./m3cv',
-                              root_path='./aistudio',
+        cv = Subcategory()
+        dataset = M3CVDataset(root_path='./aistudio',
                               online_transform=transforms.Compose(
                                   [transforms.To2d(),
                                    transforms.ToTensor()]),
@@ -54,28 +58,27 @@ class Subcategory:
 
     .. code-block:: python
 
-        train_cv = Subcategory(split_path='./split_train')
-        train_dataset = M3CVDataset(io_path=f'./m3cv',
-                              root_path='./aistudio',
-                              online_transform=transforms.Compose(
-                                  [transforms.To2d(),
-                                   transforms.ToTensor()]),
-                              label_transform=transforms.Compose([
-                                  transforms.Select('subject_id'),
-                                  transforms.StringToInt()
-                              ]))
+        train_cv = Subcategory()
+        train_dataset = M3CVDataset(root_path='./aistudio',
+                                    online_transform=transforms.Compose(
+                                        [transforms.To2d(),
+                                         transforms.ToTensor()]),
+                                    label_transform=transforms.Compose([
+                                        transforms.Select('subject_id'),
+                                        transforms.StringToInt()
+                                    ]))
 
-        val_cv = Subcategory(split_path='./split_val')
-        val_dataset = M3CVDataset(io_path=f'./m3cv',
-                              root_path='./aistudio',
-                              subset='Calibration', num_channel=65,
-                              online_transform=transforms.Compose(
-                                  [transforms.To2d(),
-                                   transforms.ToTensor()]),
-                              label_transform=transforms.Compose([
-                                  transforms.Select('subject_id'),
-                                  transforms.StringToInt()
-                              ]))
+        val_cv = Subcategory()
+        val_dataset = M3CVDataset(root_path='./aistudio',
+                                  subset='Calibration',
+                                  num_channel=65,
+                                  online_transform=transforms.Compose(
+                                      [transforms.To2d(),
+                                       transforms.ToTensor()]),
+                                  label_transform=transforms.Compose([
+                                      transforms.Select('subject_id'),
+                                      transforms.StringToInt()
+                                  ]))
 
         for train_dataset, val_dataset in zip(train_cv.split(train_dataset), val_cv.split(val_dataset)):
             train_loader = DataLoader(train_dataset)
@@ -84,11 +87,13 @@ class Subcategory:
 
     Args:
         criteria (str): The classification criteria according to which we extract subsets of data for the including categories. (default: :obj:`'task'`)
-        split_path (str): The path to data partition information. If the path exists, read the existing partition from the path. If the path does not exist, the current division method will be saved for next use. (default: :obj:`'./split/subcategory'`)
+        split_path (str): The path to data partition information. If the path exists, read the existing partition from the path. If the path does not exist, the current division method will be saved for next use. If set to None, a random path will be generated. (default: :obj:`None`)
     '''
-    def __init__(self,
-                 criteria: str = 'task',
-                 split_path: str = '.torcheeg/split/subcategory'):
+
+    def __init__(self, criteria: str = 'task', split_path: Union[None, str] = None):
+        if split_path is None:
+            split_path = get_random_dir_path(dir_prefix='model_selection')
+
         self.criteria = criteria
         self.split_path = split_path
 
@@ -118,8 +123,21 @@ class Subcategory:
 
     def split(self, dataset: BaseDataset) -> Tuple[BaseDataset, BaseDataset]:
         if not os.path.exists(self.split_path):
+            log.info(
+                f'📊 | Create the split of train and test set.'
+            )
+            log.info(
+                f'😊 | Please set \033[92msplit_path\033[0m to \033[92m{self.split_path}\033[0m for the next run, if you want to use the same setting for the experiment.'
+            )
             os.makedirs(self.split_path)
             self.split_info_constructor(dataset.info)
+        else:
+            log.info(
+                f'📊 | Detected existing split of train and test set, use existing split from {self.split_path}.'
+            )
+            log.info(
+                f'💡 | If the dataset is re-generated, you need to re-generate the split of the dataset instead of using the previous split.'
+            )
 
         category_list = self.category_list
 
@@ -134,10 +152,7 @@ class Subcategory:
 
     @property
     def repr_body(self) -> Dict:
-        return {
-            'criteria': self.criteria,
-            'split_path': self.split_path
-        }
+        return {'criteria': self.criteria, 'split_path': self.split_path}
 
     def __repr__(self) -> str:
         # init info

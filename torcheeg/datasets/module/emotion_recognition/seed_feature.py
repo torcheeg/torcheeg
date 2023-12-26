@@ -5,6 +5,7 @@ from typing import Any, Callable, Dict, Tuple, Union
 import numpy as np
 import scipy.io as scio
 from ..base_dataset import BaseDataset
+from ....utils import get_random_dir_path
 
 
 class SEEDFeatureDataset(BaseDataset):
@@ -32,15 +33,14 @@ class SEEDFeatureDataset(BaseDataset):
 
     .. code-block:: python
 
-        dataset = SEEDFeatureDataset(io_path=f'./seed',
-                              root_path='./ExtractedFeatures',
-                              feature=['de_movingAve'],
-                              offline_transform=transforms.ToGrid(SEED_CHANNEL_LOCATION_DICT),
-                              online_transform=transforms.ToTensor(),
-                              label_transform=transforms.Compose([
-                                  transforms.Select('emotion'),
-                                  transforms.Lambda(lambda x: x + 1)
-                              ]))
+        dataset = SEEDFeatureDataset(root_path='./ExtractedFeatures',
+                                     feature=['de_movingAve'],
+                                     offline_transform=transforms.ToGrid       (SEED_CHANNEL_LOCATION_DICT),
+                                     online_transform=transforms.ToTensor(),
+                                     label_transform=transforms.Compose([
+                                         transforms.Select('emotion'),
+                                         transforms.Lambda(lambda x: x + 1)
+                                     ]))
         print(dataset[0])
         # EEG signal (torch.Tensor[5, 9, 9]),
         # coresponding baseline signal (torch.Tensor[5, 9, 9]),
@@ -50,38 +50,17 @@ class SEEDFeatureDataset(BaseDataset):
 
     .. code-block:: python
     
-        dataset = SEEDFeatureDataset(io_path=f'./seed',
-                              root_path='./Preprocessed_EEG',
-                              features=['de_movingAve'],
-                              online_transform=ToG(SEED_ADJACENCY_MATRIX),
-                              label_transform=transforms.Compose([
-                                  transforms.Select('emotion'),
-                                  transforms.Lambda(x: x + 1)
-                              ]))
+        dataset = SEEDFeatureDataset(root_path='./Preprocessed_EEG',
+                                     features=['de_movingAve'],
+                                     online_transform=ToG(SEED_ADJACENCY_MATRIX),
+                                     label_transform=transforms.Compose([
+                                         transforms.Select('emotion'),
+                                         transforms.Lambda(x: x + 1)
+                                     ]))
         print(dataset[0])
         # EEG signal (torch_geometric.data.Data),
         # coresponding baseline signal (torch_geometric.data.Data),
         # label (int)
-        
-    In particular, TorchEEG utilizes the producer-consumer model to allow multi-process data preprocessing. If your data preprocessing is time consuming, consider increasing :obj:`num_worker` for higher speedup. If running under Windows, please use the proper idiom in the main module:
-
-    .. code-block:: python
-    
-        if __name__ == '__main__':
-            dataset = SEEDFeatureDataset(io_path=f'./seed_feature',
-                              root_path='./ExtractedFeatures',
-                              feature=['de_movingAve'],
-                              offline_transform=transforms.ToGrid(SEED_CHANNEL_LOCATION_DICT),
-                              online_transform=transforms.ToTensor(),
-                              label_transform=transforms.Compose([
-                                  transforms.Select('emotion'),
-                                  transforms.Lambda(lambda x: x + 1)
-                              ]),
-                              num_worker=4)
-            print(dataset[0])
-            # EEG signal (torch_geometric.data.Data),
-            # coresponding baseline signal (torch_geometric.data.Data),
-            # label (int)
 
     Args:  
         root_path (str): Downloaded data files in matlab (unzipped ExtractedFeatures.zip) formats (default: :obj:`'./ExtractedFeatures'`)
@@ -92,7 +71,7 @@ class SEEDFeatureDataset(BaseDataset):
         label_transform (Callable, optional): The transformation of the label. The input is an information dictionary, and the ouput is used as the third value of each element in the dataset. (default: :obj:`None`)
         before_trial (Callable, optional): The hook performed on the trial to which the sample belongs. It is performed before the offline transformation and thus typically used to implement context-dependent sample transformations, such as moving averages, etc. The input of this hook function is a 3D EEG signal with shape (number of windows, number of electrodes, number of features), whose ideal output shape is also (number of windows, number of electrodes, number of features).
         after_trial (Callable, optional): The hook performed on the trial to which the sample belongs. It is performed after the offline transformation and thus typically used to implement context-dependent sample transformations, such as moving averages, etc. The input and output of this hook function should be a sequence of dictionaries representing a sequence of EEG samples. Each dictionary contains two key-value pairs, indexed by :obj:`eeg` (the EEG signal matrix) and :obj:`key` (the index in the database) respectively.
-        io_path (str): The path to generated unified data IO, cached as an intermediate result. (default: :obj:`./io/seed_feature`)
+        io_path (str): The path to generated unified data IO, cached as an intermediate result. If set to None, a random path will be generated. (default: :obj:`None`)
         io_size (int): Maximum size database may grow to; used to size the memory mapping. If database grows larger than ``map_size``, an exception will be raised and the user must close and reopen. (default: :obj:`1048576`)
         io_mode (str): Storage mode of EEG signal. When io_mode is set to :obj:`lmdb`, TorchEEG provides an efficient database (LMDB) for storing EEG signals. LMDB may not perform well on limited operating systems, where a file system based EEG signal storage is also provided. When io_mode is set to :obj:`pickle`, pickle-based persistence files are used. When io_mode is set to :obj:`memory`, memory are used. (default: :obj:`lmdb`)
         num_worker (int): Number of subprocesses to use for data loading. 0 means that the data will be loaded in the main process. (default: :obj:`0`)
@@ -110,11 +89,14 @@ class SEEDFeatureDataset(BaseDataset):
                  after_trial: Union[Callable, None] = None,
                  after_session: Union[Callable, None] = None,
                  after_subject: Union[Callable, None] = None,
-                 io_path: str = '.torcheeg/io/seed_feature',
+                 io_path: Union[None, str] = None,
                  io_size: int = 1048576,
                  io_mode: str = 'lmdb',
                  num_worker: int = 0,
                  verbose: bool = True):
+        if io_path is None:
+            io_path = get_random_dir_path(dir_prefix='datasets')
+
         # pass all arguments to super class
         params = {
             'root_path': root_path,
@@ -208,6 +190,9 @@ class SEEDFeatureDataset(BaseDataset):
                 yield {'eeg': t_eeg, 'key': clip_id, 'info': record_info}
 
     def set_records(self, root_path: str = './ExtractedFeatures', **kwargs):
+        assert os.path.exists(
+            root_path
+        ), f'root_path ({root_path}) does not exist. Please download the dataset and set the root_path to the downloaded path.'
         file_list = os.listdir(root_path)
         skip_set = ['label.mat', 'readme.txt']
         file_list = [f for f in file_list if f not in skip_set]

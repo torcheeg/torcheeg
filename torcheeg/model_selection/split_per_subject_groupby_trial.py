@@ -1,3 +1,4 @@
+import logging
 import os
 from copy import copy
 from typing import Union
@@ -5,16 +6,21 @@ from typing import Union
 import numpy as np
 import pandas as pd
 from sklearn import model_selection
+
 from torcheeg.datasets.module.base_dataset import BaseDataset
 
+from ..utils import get_random_dir_path
 
-def train_test_split_per_subject_groupby_trial(
-        dataset: BaseDataset,
-        test_size: float = 0.2,
-        subject: str = 's01.dat',
-        shuffle: bool = False,
-        random_state: Union[float, None] = None,
-        split_path='./dataset/train_test_split_per_subject_groupby_trial'):
+log = logging.getLogger('torcheeg')
+
+
+def train_test_split_per_subject_groupby_trial(dataset: BaseDataset,
+                                               test_size: float = 0.2,
+                                               subject: str = 's01.dat',
+                                               shuffle: bool = False,
+                                               random_state: Union[float,
+                                                                   None] = None,
+                                               split_path: Union[None, str] = None):
     r'''
     A tool function for cross-validations, to divide the training set and the test set. It is suitable for subject dependent experiments with large dataset volume and no need to use k-fold cross-validations. For the first step, the EEG signal samples of the specified user are selected. Then, the test samples are sampled according to a certain proportion for each trial for this subject, and other samples are used as training samples. In most literatures, 20% of the data are sampled for testing.
 
@@ -26,8 +32,7 @@ def train_test_split_per_subject_groupby_trial(
 
     .. code-block:: python
 
-        dataset = DEAPDataset(io_path=f'./deap',
-                              root_path='./data_preprocessed_python',
+        dataset = DEAPDataset(root_path='./data_preprocessed_python',
                               online_transform=transforms.Compose([
                                   transforms.ToTensor(),
                                   transforms.To2d()
@@ -38,7 +43,7 @@ def train_test_split_per_subject_groupby_trial(
                                   transforms.BinariesToCategory()
                               ]))
 
-        train_dataset, test_dataset = train_test_split_per_subject_groupby_trial(dataset=dataset, split_path='./split')
+        train_dataset, test_dataset = train_test_split_per_subject_groupby_trial(dataset=dataset)
 
         train_loader = DataLoader(train_dataset)
         test_loader = DataLoader(test_dataset)
@@ -50,9 +55,15 @@ def train_test_split_per_subject_groupby_trial(
         subject (str): The subject whose EEG samples will be used for training and test. (default: :obj:`s01.dat`)
         shuffle (bool): Whether to shuffle the data before splitting into batches. Note that the samples within each split will not be shuffled. (default: :obj:`False`)
         random_state (int, optional): When shuffle is :obj:`True`, :obj:`random_state` affects the ordering of the indices, which controls the randomness of each fold. Otherwise, this parameter has no effect. (default: :obj:`None`)
-        split_path (str): The path to data partition information. If the path exists, read the existing partition from the path. If the path does not exist, the current division method will be saved for next use. (default: :obj:`./split/k_fold_dataset`)
+        split_path (str): The path to data partition information. If the path exists, read the existing partition from the path. If the path does not exist, the current division method will be saved for next use. If set to None, a random path will be generated. (default: :obj:`None`)
     '''
+    if split_path is None:
+        split_path = get_random_dir_path(dir_prefix='model_selection')
+
     if not os.path.exists(split_path):
+        log.info(
+            f'📊 | Create the split of train and test set. Please set split_path to {split_path} for the next run, if you want to use the same setting for the experiment.'
+        )
         os.makedirs(split_path)
         info = dataset.info
         subjects = list(set(info['subject_id']))
@@ -85,6 +96,11 @@ def train_test_split_per_subject_groupby_trial(
 
         train_info.to_csv(os.path.join(split_path, 'train.csv'), index=False)
         test_info.to_csv(os.path.join(split_path, 'test.csv'), index=False)
+
+    else:
+        log.info(
+            f'Read the split of train and test set from {split_path}. If you want to use the same setting for the experiment, please set split_path to {split_path} for the next run.'
+        )
 
     train_info = pd.read_csv(os.path.join(split_path, 'train.csv'))
     test_info = pd.read_csv(os.path.join(split_path, 'test.csv'))

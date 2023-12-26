@@ -4,6 +4,7 @@ import mne
 import numpy as np
 
 from .base_dataset import BaseDataset
+from ...utils import get_random_dir_path
 
 
 def default_read_fn(file_path, **kwargs):
@@ -55,24 +56,28 @@ class CSVFolderDataset(BaseDataset):
         online_transform (Callable, optional): The transformation of the EEG signals and baseline EEG signals. The input is a :obj:`np.ndarray`, and the ouput is used as the first and second value of each element in the dataset. (default: :obj:`None`)
         offline_transform (Callable, optional): The usage is the same as :obj:`online_transform`, but executed before generating IO intermediate results. (default: :obj:`None`)
         label_transform (Callable, optional): The transformation of the label. The input is an information dictionary, and the ouput is used as the third value of each element in the dataset. (default: :obj:`None`)
-        io_path (str): The path to generated unified data IO, cached as an intermediate result. (default: :obj:`./io/deap`)
+        io_path (str): The path to generated unified data IO, cached as an intermediate result. If set to None, a random path will be generated. (default: :obj:`None`)
         io_size (int): Maximum size database may grow to; used to size the memory mapping. If database grows larger than ``map_size``, an exception will be raised and the user must close and reopen. (default: :obj:`1048576`)
         io_mode (str): Storage mode of EEG signal. When io_mode is set to :obj:`lmdb`, TorchEEG provides an efficient database (LMDB) for storing EEG signals. LMDB may not perform well on limited operating systems, where a file system based EEG signal storage is also provided. When io_mode is set to :obj:`pickle`, pickle-based persistence files are used. When io_mode is set to :obj:`memory`, memory are used. (default: :obj:`lmdb`)
         num_worker (int): Number of subprocesses to use for data loading. 0 means that the data will be loaded in the main process. (default: :obj:`0`)
         verbose (bool): Whether to display logs during processing, such as progress bars, etc. (default: :obj:`True`)
     '''
+
     def __init__(self,
                  csv_path: str = './data.csv',
                  read_fn: Union[None, Callable] = default_read_fn,
                  online_transform: Union[None, Callable] = None,
                  offline_transform: Union[None, Callable] = None,
                  label_transform: Union[None, Callable] = None,
-                 io_path: str = '.torcheeg/io/folder',
+                 io_path: Union[None, str] = None,
                  io_size: int = 1048576,
                  io_mode: str = 'lmdb',
                  num_worker: int = 0,
                  verbose: bool = True,
-                                  **kwargs):
+                 **kwargs):
+        if io_path is None:
+            io_path = get_random_dir_path(dir_prefix='datasets')
+
         # pass all arguments to super class
         params = {
             'csv_path': csv_path,
@@ -117,8 +122,7 @@ class CSVFolderDataset(BaseDataset):
             write_pointer += 1
 
             record_info = {
-                **trial_info,
-                'start_at': events[i],
+                **trial_info, 'start_at': events[i],
                 'end_at': events[i + 1],
                 'clip_id': clip_id
             }

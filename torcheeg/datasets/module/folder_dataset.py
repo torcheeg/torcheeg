@@ -5,6 +5,7 @@ import mne
 import numpy as np
 
 from .base_dataset import BaseDataset
+from ...utils import get_random_dir_path
 
 
 def default_read_fn(file_path, **kwargs):
@@ -65,8 +66,7 @@ class FolderDataset(BaseDataset):
             raw.save(file_path)
 
         label_map = {'folder1': 0, 'folder2': 1}
-        dataset = FolderDataset(io_path='./folder',
-                                root_path='./root_folder',
+        dataset = FolderDataset(root_path='./root_folder',
                                 structure='subject_in_label',
                                 num_channel=14,
                                 online_transform=transforms.ToTensor(),
@@ -83,12 +83,13 @@ class FolderDataset(BaseDataset):
         online_transform (Callable, optional): The transformation of the EEG signals and baseline EEG signals. The input is a :obj:`np.ndarray`, and the ouput is used as the first and second value of each element in the dataset. (default: :obj:`None`)
         offline_transform (Callable, optional): The usage is the same as :obj:`online_transform`, but executed before generating IO intermediate results. (default: :obj:`None`)
         label_transform (Callable, optional): The transformation of the label. The input is an information dictionary, and the ouput is used as the third value of each element in the dataset. (default: :obj:`None`)
-        io_path (str): The path to generated unified data IO, cached as an intermediate result. (default: :obj:`./io/deap`)
+        io_path (str): The path to generated unified data IO, cached as an intermediate result. If set to None, a random path will be generated. (default: :obj:`None`)
         io_size (int): Maximum size database may grow to; used to size the memory mapping. If database grows larger than ``map_size``, an exception will be raised and the user must close and reopen. (default: :obj:`1048576`)
         io_mode (str): Storage mode of EEG signal. When io_mode is set to :obj:`lmdb`, TorchEEG provides an efficient database (LMDB) for storing EEG signals. LMDB may not perform well on limited operating systems, where a file system based EEG signal storage is also provided. When io_mode is set to :obj:`pickle`, pickle-based persistence files are used. When io_mode is set to :obj:`memory`, memory are used. (default: :obj:`lmdb`)
         num_worker (int): Number of subprocesses to use for data loading. 0 means that the data will be loaded in the main process. (default: :obj:`0`)
         verbose (bool): Whether to display logs during processing, such as progress bars, etc. (default: :obj:`True`)
     '''
+
     def __init__(self,
                  root_path: str = './folder',
                  structure: str = 'subject_in_label',
@@ -96,12 +97,15 @@ class FolderDataset(BaseDataset):
                  online_transform: Union[None, Callable] = None,
                  offline_transform: Union[None, Callable] = None,
                  label_transform: Union[None, Callable] = None,
-                 io_path: str = '.torcheeg/io/folder',
+                 io_path: Union[None, str] = None,
                  io_size: int = 1048576,
                  io_mode: str = 'lmdb',
                  num_worker: int = 0,
                  verbose: bool = True,
-                                  **kwargs):
+                 **kwargs):
+        if io_path is None:
+            io_path = get_random_dir_path(dir_prefix='datasets')
+
         # pass all arguments to super class
         params = {
             'root_path': root_path,
@@ -123,9 +127,9 @@ class FolderDataset(BaseDataset):
 
     @staticmethod
     def process_record(file: Any = None,
-                   offline_transform: Union[None, Callable] = None,
-                   read_fn: Union[None, Callable] = None,
-                   **kwargs):
+                       offline_transform: Union[None, Callable] = None,
+                       read_fn: Union[None, Callable] = None,
+                       **kwargs):
 
         file_path, subject_id, label = file
 
@@ -155,9 +159,10 @@ class FolderDataset(BaseDataset):
 
             yield {'eeg': t_eeg, 'key': clip_id, 'info': record_info}
 
-    def set_records(self, root_path: str = './folder',
-                   structure: str = 'subject_in_label',
-                   **kwargs):
+    def set_records(self,
+                    root_path: str = './folder',
+                    structure: str = 'subject_in_label',
+                    **kwargs):
         # get all the subfolders
         subfolders = [str(i) for i in Path(root_path).iterdir() if i.is_dir()]
         # get all the files in the subfolders

@@ -2,6 +2,8 @@ import os
 from typing import Any, Callable, Dict, Tuple, Union
 
 import joblib
+
+from ....utils import get_random_dir_path
 from ..base_dataset import BaseDataset
 
 FIRST_BATCH_CHANNEL = [
@@ -115,14 +117,13 @@ class BCI2022Dataset(BaseDataset):
 
     .. code-block:: python
 
-        dataset = BCI2022Dataset(io_path=f'./bci2022',
-                              root_path='./TrainSet',
-                              offline_transform=transforms.Compose([
-                                  transforms.BandDifferentialEntropy(),
-                                  transforms.ToGrid(BCI2022_CHANNEL_LOCATION_DICT)
-                              ]),
-                              online_transform=transforms.ToTensor(),
-                              label_transform=transforms.Select('emotion'))
+        dataset = BCI2022Dataset(root_path='./TrainSet',
+                                 offline_transform=transforms.Compose([
+                                     transforms.BandDifferentialEntropy(),
+                                     transforms.ToGrid(BCI2022_CHANNEL_LOCATION_DICT)
+                                 ]),
+                                 online_transform=transforms.ToTensor(),
+                                 label_transform=transforms.Select('emotion'))
         print(dataset[0])
         # EEG signal (torch.Tensor[4, 8, 9]),
         # coresponding baseline signal (torch.Tensor[4, 8, 9]),
@@ -132,13 +133,11 @@ class BCI2022Dataset(BaseDataset):
 
     .. code-block:: python
 
-        dataset = BCI2022Dataset(io_path=f'./bci2022',
-                              root_path='./TrainSet',
-                              online_transform=transforms.Compose([
-                                  transforms.ToTensor(),
-                                  transforms.To2d()
-                              ]),
-                              label_transform=transforms.Select('emotion'))
+        dataset = BCI2022Dataset(root_path='./TrainSet',
+                                 online_transform=transforms.Compose(
+                                     [transforms.ToTensor(),
+                                     transforms.To2d()]),
+                                 label_transform=transforms.Select('emotion'))
         print(dataset[0])
         # EEG signal (torch.Tensor[30, 250]),
         # coresponding baseline signal (torch.Tensor[30, 250]),
@@ -148,33 +147,14 @@ class BCI2022Dataset(BaseDataset):
 
     .. code-block:: python
     
-        dataset = BCI2022Dataset(io_path=f'./bci2022',
-                              root_path='./TrainSet',
-                              online_transform=transforms.Compose([
-                                  transforms.ToG(BCI2022_ADJACENCY_MATRIX)
-                              ]),
-                              label_transform=transforms.Select('emotion'))
+        dataset = BCI2022Dataset(root_path='./TrainSet',
+                                 online_transform=transforms.Compose(
+                                     [transforms.ToG(BCI2022_ADJACENCY_MATRIX)]),
+                                 label_transform=transforms.Select('emotion'))
         print(dataset[0])
         # EEG signal (torch_geometric.data.Data),
         # coresponding baseline signal (torch_geometric.data.Data),
         # label (int)
-        
-    In particular, TorchEEG utilizes the producer-consumer model to allow multi-process data preprocessing. If your data preprocessing is time consuming, consider increasing :obj:`num_worker` for higher speedup. If running under Windows, please use the proper idiom in the main module:
-
-    .. code-block:: python
-    
-        if __name__ == '__main__':
-            dataset = BCI2022Dataset(io_path=f'./bci2022',
-                              root_path='./TrainSet',
-                              online_transform=transforms.Compose([
-                                  transforms.ToG(BCI2022_ADJACENCY_MATRIX)
-                              ]),
-                              label_transform=transforms.Select('emotion'),
-                              num_worker=4)
-            print(dataset[0])
-            # EEG signal (torch_geometric.data.Data),
-            # coresponding baseline signal (torch_geometric.data.Data),
-            # label (int)
 
     Args:
         root_path (str): Downloaded data files in pickle (the TrainSet folder in unzipped 2022EmotionPublic.zip) formats (default: :obj:`'./TrainSet'`)
@@ -186,7 +166,7 @@ class BCI2022Dataset(BaseDataset):
         label_transform (Callable, optional): The transformation of the label. The input is an information dictionary, and the ouput is used as the third value of each element in the dataset. (default: :obj:`None`)
         before_trial (Callable, optional): The hook performed on the trial to which the sample belongs. It is performed before the offline transformation and thus typically used to implement context-dependent sample transformations, such as moving averages, etc. The input of this hook function is a 2D EEG signal with shape (number of electrodes, number of data points), whose ideal output shape is also (number of electrodes, number of data points).
         after_trial (Callable, optional): The hook performed on the trial to which the sample belongs. It is performed after the offline transformation and thus typically used to implement context-dependent sample transformations, such as moving averages, etc. The input and output of this hook function should be a sequence of dictionaries representing a sequence of EEG samples. Each dictionary contains two key-value pairs, indexed by :obj:`eeg` (the EEG signal matrix) and :obj:`key` (the index in the database) respectively.
-        io_path (str): The path to generated unified data IO, cached as an intermediate result. (default: :obj:`./io/bci2022`)
+        io_path (str): The path to generated unified data IO, cached as an intermediate result. If set to None, a random path will be generated. (default: :obj:`None`)
         io_size (int): Maximum size database may grow to; used to size the memory mapping. If database grows larger than ``map_size``, an exception will be raised and the user must close and reopen. (default: :obj:`1048576`)
         io_mode (str): Storage mode of EEG signal. When io_mode is set to :obj:`lmdb`, TorchEEG provides an efficient database (LMDB) for storing EEG signals. LMDB may not perform well on limited operating systems, where a file system based EEG signal storage is also provided. When io_mode is set to :obj:`pickle`, pickle-based persistence files are used. When io_mode is set to :obj:`memory`, memory are used. (default: :obj:`lmdb`)
         num_worker (int): Number of subprocesses to use for data loading. 0 means that the data will be loaded in the main process. (default: :obj:`0`)
@@ -203,11 +183,13 @@ class BCI2022Dataset(BaseDataset):
                  label_transform: Union[None, Callable] = None,
                  before_trial: Union[None, Callable] = None,
                  after_trial: Union[Callable, None] = None,
-                 io_path: str = '.torcheeg/io/bci2022',
+                 io_path: Union[None, str] = None,
                  io_size: int = 1048576,
                  io_mode: str = 'lmdb',
                  num_worker: int = 0,
                  verbose: bool = True):
+        if io_path is None:
+            io_path = get_random_dir_path(dir_prefix='datasets')
         # pass all arguments to super class
         params = {
             'root_path': root_path,
@@ -231,12 +213,12 @@ class BCI2022Dataset(BaseDataset):
 
     @staticmethod
     def process_record(file: Any = None,
-                   chunk_size: int = 250,
-                   overlap: int = 0,
-                   channel_num: int = 30,
-                   before_trial: Union[None, Callable] = None,
-                   offline_transform: Union[None, Callable] = None,
-                   **kwargs):
+                       chunk_size: int = 250,
+                       overlap: int = 0,
+                       channel_num: int = 30,
+                       before_trial: Union[None, Callable] = None,
+                       offline_transform: Union[None, Callable] = None,
+                       **kwargs):
 
         file_name = os.path.basename(file)  # an element from file name list
         reorder = 'TrainSet_first_batch' in file_name  # bool, the first batch needs to be reordered
@@ -256,10 +238,10 @@ class BCI2022Dataset(BaseDataset):
         video_id = None
         start_at = None
         end_at = None
-        
+
         # loop for each trial
         for i, event in enumerate(events):
-            
+
             if event in list(range(1, 29)):
                 # Video events 1-28: Different events correspond to different experimental video materials
                 video_id = event
@@ -308,11 +290,7 @@ class BCI2022Dataset(BaseDataset):
                         'clip_id': clip_id
                     }
                     record_info.update(trial_meta_info)
-                    yield {
-                            'eeg': t_eeg,
-                            'key': clip_id,
-                            'info': record_info
-                        }
+                    yield {'eeg': t_eeg, 'key': clip_id, 'info': record_info}
 
                     cur_start_at = cur_start_at + step
                     cur_end_at = cur_start_at + dynamic_chunk_size
@@ -323,7 +301,12 @@ class BCI2022Dataset(BaseDataset):
                 start_at = None
                 end_at = None
 
-    def set_records(self, root_path: str = './data_preprocessed_python', **kwargs):
+    def set_records(self,
+                    root_path: str = './data_preprocessed_python',
+                    **kwargs):
+        assert os.path.exists(
+            root_path
+        ), f'root_path ({root_path}) does not exist. Please download the dataset and set the root_path to the downloaded path.'
         outputs = []
         for train_set_batch in [
                 'TrainSet_first_batch', 'TrainSet_second_batch'
