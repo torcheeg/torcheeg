@@ -17,8 +17,15 @@ class ToTensor(EEGTransform):
         transform(eeg=np.random.randn(32, 128))['eeg'].shape
         >>> (32, 128)
 
+    Args:
+        apply_to_baseline (bool): Whether to apply the transform to the baseline signal. (default: :obj:`False`)
+
     .. automethod:: __call__
     '''
+
+    def __init__(self, apply_to_baseline: bool = False):
+        super(ToTensor, self).__init__(apply_to_baseline=apply_to_baseline)
+
     def __call__(self,
                  *args,
                  eeg: np.ndarray,

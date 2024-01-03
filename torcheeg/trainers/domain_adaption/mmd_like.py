@@ -1,6 +1,7 @@
+import logging
 from itertools import chain
 from typing import List, Tuple
-import logging
+
 import numpy as np
 import pytorch_lightning as pl
 import torch
@@ -10,8 +11,11 @@ from torch.utils.data import DataLoader
 
 from ..classifier import ClassifierTrainer, classification_metrics
 
+log = logging.getLogger('torcheeg')
+
 
 class DualDataLoader:
+
     def __init__(self, ref_dataloader: DataLoader,
                  other_dataloader: DataLoader):
         self.ref_dataloader = ref_dataloader
@@ -35,6 +39,7 @@ class DualDataLoader:
 
 
 class _MMDLikeTrainer(ClassifierTrainer):
+
     def __init__(self,
                  extractor: nn.Module,
                  classifier: nn.Module,
@@ -201,7 +206,7 @@ class _MMDLikeTrainer(ClassifierTrainer):
         for key, value in self.trainer.logged_metrics.items():
             if key.startswith("train_"):
                 str += f"{key}: {value:.3f} "
-        print(str + '\n')
+        log.info(str + '\n')
 
         # reset the metrics
         self.train_domain_loss.reset()

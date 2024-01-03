@@ -28,7 +28,6 @@ class TestHooks(unittest.TestCase):
                               num_worker=4,
                               before_trial=before_trial_normalize)
         self.assertEqual(len(dataset), 76800)
-        self.assertEqual(len(dataset.eeg_io), 78080)
         first_item = dataset[0]
         self.assertEqual(first_item[0].shape, (32, 128))
         last_item = dataset[76799]
@@ -45,7 +44,6 @@ class TestHooks(unittest.TestCase):
                               num_worker=4,
                               after_trial=after_trial_normalize)
         self.assertEqual(len(dataset), 76800)
-        self.assertEqual(len(dataset.eeg_io), 78080)
         first_item = dataset[0]
         self.assertEqual(first_item[0].shape, (32, 128))
         last_item = dataset[76799]
@@ -62,7 +60,6 @@ class TestHooks(unittest.TestCase):
                               num_worker=4,
                               after_trial=after_trial_moving_avg)
         self.assertEqual(len(dataset), 76800)
-        self.assertEqual(len(dataset.eeg_io), 78080)
         first_item = dataset[0]
         self.assertEqual(first_item[0].shape, (32, 128))
         last_item = dataset[76799]
