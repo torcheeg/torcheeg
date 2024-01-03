@@ -104,11 +104,14 @@ def train_test_split_cross_trial(dataset: BaseDataset,
             subject_test_info = pd.concat(subject_test_info, ignore_index=True)
 
             if train_info is None and test_info is None:
-                train_info = subject_train_info
-                test_info = subject_test_info
+                train_info = [subject_train_info]
+                test_info = [subject_test_info]
             else:
-                train_info = train_info.append(subject_train_info)
-                test_info = test_info.append(subject_test_info)
+                train_info.append(subject_train_info)
+                test_info.append(subject_test_info)
+
+        train_info = pd.concat(train_info, ignore_index=True)
+        test_info = pd.concat(test_info, ignore_index=True)
 
         train_info.to_csv(os.path.join(split_path, 'train.csv'), index=False)
         test_info.to_csv(os.path.join(split_path, 'test.csv'), index=False)

@@ -88,11 +88,14 @@ def train_test_split_per_subject_groupby_trial(dataset: BaseDataset,
                 shuffle=shuffle)
 
             if train_info is None and test_info is None:
-                train_info = cur_info.iloc[train_index]
-                test_info = cur_info.iloc[test_index]
+                train_info = [cur_info.iloc[train_index]]
+                test_info = [cur_info.iloc[test_index]]
             else:
-                train_info = train_info.append(cur_info.iloc[train_index])
-                test_info = test_info.append(cur_info.iloc[test_index])
+                train_info.append(cur_info.iloc[train_index])
+                test_info.append(cur_info.iloc[test_index])
+
+        train_info = pd.concat(train_info, ignore_index=True)
+        test_info = pd.concat(test_info, ignore_index=True)
 
         train_info.to_csv(os.path.join(split_path, 'train.csv'), index=False)
         test_info.to_csv(os.path.join(split_path, 'test.csv'), index=False)

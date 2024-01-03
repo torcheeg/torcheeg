@@ -101,19 +101,19 @@ class CenterLossTrainer(ClassifierTrainer):
                     return 
                 
             decoder  = FBMSDecoder(num_classes=4,
-                          num_electrodes=22,
-                          chunk_size=512,
-                         in_channels=9)
+                                   num_electrodes=22,
+                                   chunk_size=512,
+                                   in_channels=9)
 
             classifier = FBMSClassifier(num_classes=4,
-                                num_electrodes=22,
-                                chunk_size=512,
-                                in_channels=9)
+                                        num_electrodes=22,
+                                        chunk_size=512,
+                                        in_channels=9)
             
-            trainer = CenterLossTrainer(decoder = decoder, 
-                                             classifier = classifier,
-                                             num_classes = 4,
-                                             feature_dim = 1152)
+            trainer = CenterLossTrainer(decoder=decoder, 
+                                        classifier=classifier,
+                                        num_classes=4,
+                                        feature_dim=1152)
         
         Custom model is OK. Feel free to refer to  this example:
     

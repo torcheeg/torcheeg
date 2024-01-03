@@ -11,9 +11,13 @@ class ATCNet(nn.Module):
 
     .. code-block:: python
     
-        model = ATCNet(in_channels=1,num_classes=4,num_windows=3,num_electrodes=22,chunk_size=128)
-        X = torch.rand(2,1,22,128) # (batch_size, in_channels, num_electrodes,chunk_size) 
-        p = model(X)
+        model = ATCNet(in_channels=1,
+                       num_classes=4,
+                       num_windows=3,
+                       num_electrodes=22,
+                       chunk_size=128)
+        input = torch.rand(2, 1, 22, 128) # (batch_size, in_channels, num_electrodes,chunk_size) 
+        output = model(input)
 
     Args:
         in_channels (int): The number of channels of the signal corresponding to each electrode. If the original signal is used as input, in_channels is set to 1; if the original signal is split into multiple sub-bands, in_channels is set to the number of bands. (default: :obj:`1`)
