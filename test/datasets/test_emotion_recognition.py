@@ -4,13 +4,17 @@ import shutil
 import unittest
 
 from torcheeg import transforms
-from torcheeg.datasets import (AMIGOSDataset, DEAPDataset, DREAMERDataset,
-                               MAHNOBDataset, SEEDDataset, SEEDFeatureDataset,
-                               SEEDIVDataset, SEEDIVFeatureDataset,
-                               MPEDFeatureDataset, BCI2022Dataset)
+from torcheeg.datasets import (AMIGOSDataset, BCI2022Dataset, DEAPDataset,
+                               DREAMERDataset, MAHNOBDataset,
+                               MPEDFeatureDataset, SEEDDataset,
+                               SEEDFeatureDataset, SEEDIVDataset,
+                               SEEDIVFeatureDataset)
+
+from test.datasets.mock import mock_deap_dataset
 
 
 class TestEmotionRecognitionDataset(unittest.TestCase):
+
     def setUp(self):
         if os.path.exists('./tmp_out/'):
             shutil.rmtree('./tmp_out/')
@@ -76,8 +80,9 @@ class TestEmotionRecognitionDataset(unittest.TestCase):
         self.assertEqual(last_item[0].shape, (14, 128))
 
     def test_deap_dataset(self):
+        mock_deap_dataset('./tmp_out/data_preprocessed_python')
         io_path = f'./tmp_out/deap_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
-        root_path = './tmp_in/data_preprocessed_python'
+        root_path = './tmp_out/data_preprocessed_python'
 
         dataset = DEAPDataset(io_path=io_path,
                               root_path=root_path,

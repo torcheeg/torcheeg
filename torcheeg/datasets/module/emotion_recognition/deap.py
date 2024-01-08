@@ -246,7 +246,8 @@ class DEAPDataset(BaseDataset):
         assert os.path.exists(
             root_path
         ), f'root_path ({root_path}) does not exist. Please download the dataset and set the root_path to the downloaded path.'
-        return os.listdir(root_path)
+
+        return [f for f in os.listdir(root_path) if f.endswith('.dat')]
 
     def __getitem__(self, index: int) -> Tuple:
         info = self.read_info(index)
