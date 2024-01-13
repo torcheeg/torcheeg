@@ -45,7 +45,7 @@ class PearsonCorrelation(CorrelationTransform):
 
     .. code-block:: python
 
-        transform = BandSignal()
+        transform = PearsonCorrelation()
         transform(eeg=np.random.randn(32, 128))['eeg'].shape
         >>> (1, 32, 32)
 
@@ -91,7 +91,7 @@ class PhaseLockingCorrelation(CorrelationTransform):
 
     .. code-block:: python
 
-        transform = BandSignal()
+        transform = PhaseLockingCorrelation()
         transform(eeg=np.random.randn(32, 128))['eeg'].shape
         >>> (1, 32, 32)
 

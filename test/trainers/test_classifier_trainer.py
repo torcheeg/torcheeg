@@ -17,7 +17,7 @@ class DummyDataset(Dataset):
         return self.length
 
     def __getitem__(self, i) -> int:
-        return torch.randn(120), random.randint(0, 1)
+        return torch.randn(120), random.choice([0, 1])
 
 
 class DummyModel(nn.Module):
@@ -32,9 +32,9 @@ class DummyModel(nn.Module):
         return self.fc(x)
 
 
-class TestClassificationTrainer(unittest.TestCase):
+class TestClassifierTrainer(unittest.TestCase):
 
-    def test_classification_trainer(self):
+    def test_classifier_trainer(self):
         train_dataset = DummyDataset()
         val_dataset = DummyDataset()
         test_dataset = DummyDataset()
@@ -46,7 +46,7 @@ class TestClassificationTrainer(unittest.TestCase):
         model = DummyModel()
 
         trainer = ClassifierTrainer(model, num_classes=2)
-        trainer.fit(train_loader, val_loader)
+        trainer.fit(train_loader, val_loader, max_epochs=1)
         trainer.test(test_loader)
 
         trainer = ClassifierTrainer(
@@ -54,8 +54,8 @@ class TestClassificationTrainer(unittest.TestCase):
             devices=1,
             accelerator='cpu',
             num_classes=2,
-            metrics=['accuracy', 'recall', 'precision', 'f1score'])
-        trainer.fit(train_loader, val_loader)
+            metrics=['accuracy', 'recall', 'precision', 'f1score', 'matthews', 'auroc', 'kappa'])
+        trainer.fit(train_loader, val_loader, max_epochs=1)
         trainer.test(test_loader)
 
         # should catch value error for metrics 'unexpected'
@@ -64,7 +64,7 @@ class TestClassificationTrainer(unittest.TestCase):
                                         accelerator='cpu',
                                         num_classes=2,
                                         metrics=['unexpected'])
-            trainer.fit(train_loader, val_loader)
+            trainer.fit(train_loader, val_loader, max_epochs=1)
             trainer.test(test_loader)
 
         trainer = ClassifierTrainer(
@@ -73,7 +73,7 @@ class TestClassificationTrainer(unittest.TestCase):
             accelerator='gpu',
             num_classes=2,
             metrics=['accuracy', 'recall', 'precision', 'f1score'])
-        trainer.fit(train_loader, val_loader)
+        trainer.fit(train_loader, val_loader, max_epochs=1)
         trainer.test(test_loader)
 
 

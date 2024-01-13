@@ -12,7 +12,7 @@ from torch.utils.data import DataLoader
 
 from ..classifier import ClassifierTrainer, classification_metrics
 
-log = logging.getLogger(__name__)
+log = logging.getLogger('torcheeg')
 
 
 class DualDataLoader:
@@ -231,7 +231,7 @@ class _DANNLikeTrainer(ClassifierTrainer):
         for key, value in self.trainer.logged_metrics.items():
             if key.startswith("train_"):
                 str += f"{key}: {value:.3f} "
-        print(str + '\n')
+        log.info(str + '\n')
 
         # reset the metrics
         self.train_domain_loss.reset()

@@ -37,6 +37,16 @@ Personal Identification Datasets
 
     M3CVDataset
 
+Motor Imagery Datasets
+----------------------------------
+
+.. autosummary::
+    :toctree: generated
+    :nosignatures:
+    :template: datasettemplate.rst
+
+    BCICIV2aDataset
+
 Mother of all BCI Benchmarks
 ---------------------------------------------------------
 

@@ -4,3 +4,4 @@ from .dann import DANNTrainer
 from .dan import DANTrainer
 from .ada import ADATrainer
 from .jan import JANTrainer
+from .center import CenterLossTrainer

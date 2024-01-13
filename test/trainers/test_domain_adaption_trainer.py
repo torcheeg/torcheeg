@@ -5,10 +5,11 @@ import torch
 import torch.nn as nn
 from torch.utils.data import Dataset
 from torch.utils.data.dataloader import DataLoader
-from torcheeg.trainers import ADATrainer, CORALTrainer, DANTrainer, DANNTrainer, DDCTrainer, JANTrainer
+from torcheeg.trainers import ADATrainer, CORALTrainer, DANTrainer, DANNTrainer, DDCTrainer, JANTrainer, CenterLossTrainer
 
 
 class DummyDataset(Dataset):
+
     def __init__(self, length: int = 101):
         self.length = length
 
@@ -20,6 +21,7 @@ class DummyDataset(Dataset):
 
 
 class DummyModel(nn.Module):
+
     def __init__(self, in_channels=120, out_channels=2):
         super().__init__()
         self.in_channels = in_channels
@@ -31,6 +33,7 @@ class DummyModel(nn.Module):
 
 
 class TestDomainAdaptionTrainer(unittest.TestCase):
+
     def test_ada_trainer(self):
         source_dataset = DummyDataset()
         target_dataset = DummyDataset()
@@ -141,6 +144,48 @@ class TestDomainAdaptionTrainer(unittest.TestCase):
 
         trainer = JANTrainer(extractor, classifier, num_classes=2)
         trainer.fit(source_loader, target_loader, val_loader, max_epochs=1)
+        trainer.test(test_loader)
+
+    def test_center_loss_trainer(self):
+
+        train_dataset = DummyDataset(length=10)
+        val_dataset = DummyDataset(length=10)
+        test_dataset = DummyDataset(length=10)
+
+        train_loader = DataLoader(train_dataset, batch_size=5)
+        val_loader = DataLoader(val_dataset, batch_size=5)
+        test_loader = DataLoader(test_dataset, batch_size=5)
+
+        decoder = DummyModel(120, 64)
+        classifier = DummyModel(64, 2)
+
+        trainer = CenterLossTrainer(decoder=decoder,
+                                    classifier=classifier,
+                                    feature_dim=64,
+                                    num_classes=2)
+        trainer.fit(train_loader, val_loader, max_epochs=2)
+        trainer.test(test_loader)
+
+        # should catch value error for metrics 'unexpected'
+        with self.assertRaises(ValueError):
+            trainer = CenterLossTrainer(decoder=decoder,
+                                        classifier=classifier,
+                                        feature_dim=64,
+                                        accelerator='cpu',
+                                        num_classes=2,
+                                        metrics=['unexpected'])
+            trainer.fit(train_loader, val_loader)
+            trainer.test(test_loader)
+
+        trainer = CenterLossTrainer(
+            decoder=decoder,
+            classifier=classifier,
+            feature_dim=64,
+            devices=1,
+            accelerator='gpu',
+            num_classes=2,
+            metrics=['accuracy', 'recall', 'precision', 'f1score'])
+        trainer.fit(train_loader, val_loader, max_epochs=2)
         trainer.test(test_loader)
 
 

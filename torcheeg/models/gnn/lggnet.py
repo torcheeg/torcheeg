@@ -276,7 +276,7 @@ class LGGNet(nn.Module):
         x = self.aggregate.forward(x)
         adj = self.get_adj(x)
         x = self.bn_g1(x)
-
+        
         x = self.gcn(x, adj)
         x = self.bn_g2(x)
         x = x.view(x.shape[0], -1)

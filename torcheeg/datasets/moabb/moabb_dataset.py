@@ -46,12 +46,11 @@ class MOABBDataset(BaseDataset):
         label_transform (Callable, optional): The transformation of the label. The input is an information dictionary, and the ouput is used as the third value of each element in the dataset. (default: :obj:`None`)
         before_trial (Callable, optional): The hook performed on the trial to which the sample belongs. It is performed before the offline transformation and thus typically used to implement context-dependent sample transformations, such as filter, reference, moving average and etc. Its input is a :obj:`mne.io.Raw` object, and its output should also be a :obj:`mne.io.Raw` object. (default: :obj:`None`)
         after_trial (Callable, optional): The hook performed on the trial to which the sample belongs. It is performed after the offline transformation and thus typically used to implement context-dependent sample transformations, such as moving averages, etc. The input and output of this hook function should be a sequence of dictionaries representing a sequence of EEG samples. Each dictionary contains two key-value pairs, indexed by :obj:`eeg` (the EEG signal matrix) and :obj:`key` (the index in the database) respectively.
-        io_path (str): The path to generated unified data IO, cached as an intermediate result. (default: :obj:`./io/moabb`)
-        io_size (int): Maximum size database may grow to; used to size the memory mapping. If database grows larger than ``map_size``, an exception will be raised and the user must close and reopen. (default: :obj:`10485760`)
-        io_mode (str): Storage mode of EEG signal. When io_mode is set to :obj:`lmdb`, TorchEEG provides an efficient database (LMDB) for storing EEG signals. LMDB may not perform well on limited operating systems, where a file system based EEG signal storage is also provided. When io_mode is set to :obj:`pickle`, pickle-based persistence files are used. (default: :obj:`lmdb`)
+        io_path (str): The path to generated unified data IO, cached as an intermediate result. If set to None, a random path will be generated. (default: :obj:`./io/moabb`)
+        io_size (int): Maximum size database may grow to; used to size the memory mapping. If database grows larger than ``map_size``, an exception will be raised and the user must close and reopen. (default: :obj:`1048576`)
+        io_mode (str): Storage mode of EEG signal. When io_mode is set to :obj:`lmdb`, TorchEEG provides an efficient database (LMDB) for storing EEG signals. LMDB may not perform well on limited operating systems, where a file system based EEG signal storage is also provided. When io_mode is set to :obj:`pickle`, pickle-based persistence files are used. When io_mode is set to :obj:`memory`, memory are used. (default: :obj:`lmdb`)
         download_path (str): The path to download raw data. If set to :obj:`None`, the raw data will be downloaded to :obj:`f'{self.io_path}/raw'`. If the path already exists, the download will be skipped. (default: :obj:`None`)
         num_worker (int): Number of subprocesses to use for data loading. 0 means that the data will be loaded in the main process. (default: :obj:`0`)
-        in_memory (bool): Whether to load the entire dataset into memory. If :obj:`in_memory` is set to True, then the first time an EEG sample is read, the entire dataset is loaded into memory for subsequent retrieval. Otherwise, the dataset is stored on disk to avoid the out-of-memory problem. (default: :obj:`False`)
     '''
     def __init__(self,
                  dataset: _MOABBDataset,
@@ -65,14 +64,13 @@ class MOABBDataset(BaseDataset):
                  after_trial: Union[Callable, None] = None,
                  after_session: Union[Callable, None] = None,
                  after_subject: Union[Callable, None] = None,
-                 io_path: str = './io/moabb',
-                 io_size: int = 10485760,
+                 io_path: str = '.torcheeg/io/moabb',
+                 io_size: int = 1048576,
                  io_mode: str = 'lmdb',
                  download_path: str = None,
                  num_worker: int = 0,
                  verbose: bool = True,
-                 in_memory: bool = False,
-                 **kwargs):
+                                  **kwargs):
         # pass all arguments to super class
         params = {
             'dataset': dataset,
@@ -91,8 +89,7 @@ class MOABBDataset(BaseDataset):
             'io_mode': io_mode,
             'download_path': download_path,
             'num_worker': num_worker,
-            'verbose': verbose,
-            'in_memory': in_memory
+            'verbose': verbose
         }
         params.update(kwargs)
 
@@ -171,28 +168,15 @@ class MOABBDataset(BaseDataset):
                     start_at = start_at + step
                     end_at = start_at + chunk_size
 
-                    if after_trial is not None:
-                        trial_queue.append({
-                            'eeg': t_eeg,
-                            'key': clip_id,
-                            'info': record_info
-                        })
-                    else:
-                        yield {
+                    yield {
                             'eeg': t_eeg,
                             'key': clip_id,
                             'info': record_info
                         }
 
-            if len(trial_queue) and after_trial is not None:
-                trial_queue = after_trial(trial_queue)
-                for obj in trial_queue:
-                    assert 'eeg' in obj and 'key' in obj and 'info' in obj, 'after_trial must return a list of dictionaries, where each dictionary corresponds to an EEG sample, containing `eeg`, `key` and `info` as keys.'
-                    yield obj
-
     def set_records(self,
                     dataset: _MOABBDataset,
-                    io_path: str = './io/moabb',
+                    io_path: str = '.torcheeg/io/moabb',
                     download_path: str = None,
                     **kwargs):
         subject_id_list = dataset.subject_list
