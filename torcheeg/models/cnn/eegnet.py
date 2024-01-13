@@ -27,7 +27,7 @@ class EEGNet(nn.Module):
         dataset = DEAPDataset(io_path=f'./deap',
                     root_path='./data_preprocessed_python',
                     online_transform=transforms.Compose([
-                        transforms.To2d()
+                        transforms.To2d(),
                         transforms.ToTensor(),
                     ]),
                     label_transform=transforms.Compose([
