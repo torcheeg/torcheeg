@@ -14,7 +14,7 @@ from torch.optim import Optimizer
 
 _EVALUATE_OUTPUT = List[Dict[str, float]]  # 1 dict per DataLoader
 
-log = logging.getLogger(__name__)
+log = logging.getLogger('torcheeg')
 
 
 class FinetuningCallback(BaseFinetuning):
@@ -152,7 +152,7 @@ class FinetuneTrainer(pl.LightningModule):
             warmup_lr (float): The learning rate to warmup to. (default: :obj:`1e-5`)
             devices (int): The number of devices to use. (default: :obj:`1`)
             accelerator (str): The accelerator to use. Available options are: 'cpu', 'gpu'. (default: :obj:`"cpu"`)
-            metrics (list of str): The metrics to use. Available options are: 'precision', 'recall', 'f1score', 'accuracy'. (default: :obj:`["accuracy"]`)
+            metrics (list of str): The metrics to use. Available options are: 'precision', 'recall', 'f1_score', 'accuracy', 'matthews', 'auroc', and 'kappa'. (default: :obj:`["accuracy"]`)
         
         .. automethod:: fit
         .. automethod:: test
@@ -295,7 +295,7 @@ class FinetuneTrainer(pl.LightningModule):
         for key, value in self.trainer.logged_metrics.items():
             if key.startswith("train_"):
                 str += f"{key}: {value:.3f} "
-        print(str + '\n')
+        log.info(str + '\n')
 
         # reset the metrics
         self.train_loss.reset()
@@ -331,7 +331,7 @@ class FinetuneTrainer(pl.LightningModule):
         for key, value in self.trainer.logged_metrics.items():
             if key.startswith("val_"):
                 str += f"{key}: {value:.3f} "
-        print(str + '\n')
+        log.info(str + '\n')
 
         self.val_loss.reset()
         self.val_metrics.reset()
@@ -366,7 +366,7 @@ class FinetuneTrainer(pl.LightningModule):
         for key, value in self.trainer.logged_metrics.items():
             if key.startswith("test_"):
                 str += f"{key}: {value:.3f} "
-        print(str + '\n')
+        log.info(str + '\n')
 
         self.test_loss.reset()
         self.test_metrics.reset()

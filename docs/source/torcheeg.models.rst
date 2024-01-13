@@ -19,6 +19,7 @@ Convolutional Neural Networks
    EEGNet
    FBCCNN
    FBCNet
+   FBMSNet
    MTCNN
    STNet
    TSCeption
@@ -61,6 +62,7 @@ Transformer
    ArjunViT
    VanillaTransformer
    ViT
+   ATCNet
 
 Generative Adversarial Network
 ----------------------------------

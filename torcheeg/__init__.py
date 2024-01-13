@@ -1,20 +1,10 @@
-__version__ = '1.1.0'
-
+import mne
 import logging
 
-from mne import set_log_level as _set_mne_log_level
+__version__ = '1.1.1'
 
 
-def _set_lightning_log_level(level: str = "INFO"):
-
-    # name to level
-    level = getattr(logging, level)
-
-    # configure logging at the root level of Lightning
-    logging.getLogger("lightning.pytorch").setLevel(level)
-
-
-def set_log_level(level: str = "DEBUG", third_party: str = "ERROR"):
+def set_log_level(level: str = "INFO", third_party: str = "CRITICAL"):
     """
     Set log level for torcheeg.
 
@@ -28,13 +18,19 @@ def set_log_level(level: str = "DEBUG", third_party: str = "ERROR"):
         raise ValueError(
             f"Invalid level {level}. Choose one of {VALID_LEVELS}.")
 
-    _set_mne_log_level(third_party)
-    _set_lightning_log_level(third_party)
+    mne.set_log_level(third_party)
+    logging.getLogger("lightning.pytorch").setLevel(third_party)
+    logging.getLogger("matplotlib").setLevel(third_party)
 
-    logging.basicConfig(
-        level=level,
-        format="%(asctime)s %(levelname)s %(threadName)s %(name)s %(message)s",
-    )
+    log = logging.getLogger('torcheeg')
+    log.setLevel(level)
+    
+    handler = logging.StreamHandler()
+
+    formatter = logging.Formatter('[%(asctime)s] %(levelname)s (%(name)s/%(threadName)s) %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
+    handler.setFormatter(formatter)
+
+    log.addHandler(handler)
 
 
 set_log_level()

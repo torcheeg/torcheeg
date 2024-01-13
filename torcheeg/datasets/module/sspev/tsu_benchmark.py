@@ -4,6 +4,7 @@ from typing import Any, Callable, Dict, Tuple, Union
 
 import scipy.io as scio
 from ..base_dataset import BaseDataset
+from ....utils import get_random_dir_path
 
 
 class TSUBenckmarkDataset(BaseDataset):
@@ -32,14 +33,13 @@ class TSUBenckmarkDataset(BaseDataset):
 
     .. code-block:: python
 
-        dataset = TSUBenckmarkDataset(io_path=f'./tsu_benchmark',
-                              root_path='./TSUBenchmark',
-                              offline_transform=transforms.Compose([
-                                  transforms.BandDifferentialEntropy(),
-                                  transforms.ToGrid(TSUBenckmark_CHANNEL_LOCATION_DICT)
-                              ]),
-                              online_transform=transforms.ToTensor(),
-                              label_transform=transforms.Select(['trial_id']))
+        dataset = TSUBenckmarkDataset(root_path='./TSUBenchmark',
+                                      offline_transform=transforms.Compose([
+                                          transforms.BandDifferentialEntropy(),
+                                          transforms.ToGrid(TSUBenckmark_CHANNEL_LOCATION_DICT)
+                                      ]),
+                                      online_transform=transforms.ToTensor(),
+                                      label_transform=transforms.Select(['trial_id']))
         print(dataset[0])
         # EEG signal (torch.Tensor[250, 10, 11]),
         # coresponding baseline signal (torch.Tensor[250, 10, 11]),
@@ -49,13 +49,12 @@ class TSUBenckmarkDataset(BaseDataset):
 
     .. code-block:: python
 
-        dataset = TSUBenckmarkDataset(io_path=f'./tsu_benchmark',
-                              root_path='./TSUBenchmark',
-                              online_transform=transforms.Compose([
-                                  transforms.ToTensor(),
-                                  transforms.To2d()
-                              ]),
-                              label_transform=transforms.Select(['trial_id']))
+        dataset = TSUBenckmarkDataset(root_path='./TSUBenchmark',
+                                      online_transform=transforms.Compose([
+                                          transforms.ToTensor(),
+                                          transforms.To2d()
+                                      ]),
+                                      label_transform=transforms.Select(['trial_id']))
         print(dataset[0])
         # EEG signal (torch.Tensor[64, 250]),
         # coresponding baseline signal (torch.Tensor[64, 250]),
@@ -65,12 +64,11 @@ class TSUBenckmarkDataset(BaseDataset):
 
     .. code-block:: python
     
-        dataset = TSUBenckmarkDataset(io_path=f'./tsu_benchmark',
-                              root_path='./TSUBenchmark',
-                              online_transform=transforms.Compose([
-                                  ToG(TSUBenckmark_ADJACENCY_MATRIX)
-                              ]),
-                              label_transform=transforms.Select(['trial_id']))
+        dataset = TSUBenckmarkDataset(root_path='./TSUBenchmark',
+                                      online_transform=transforms.Compose([
+                                          ToG(TSUBenckmark_ADJACENCY_MATRIX)
+                                      ]),
+                                      label_transform=transforms.Select(['trial_id']))
         print(dataset[0])
         # EEG signal (torch_geometric.data.Data),
         # coresponding baseline signal (torch_geometric.data.Data),
@@ -81,13 +79,12 @@ class TSUBenckmarkDataset(BaseDataset):
     .. code-block:: python
     
         if __name__ == '__main__':
-            dataset = TSUBenckmarkDataset(io_path=f'./tsu_benchmark',
-                              root_path='./TSUBenchmark',
-                              online_transform=transforms.Compose([
-                                  ToG(TSUBenckmark_ADJACENCY_MATRIX)
-                              ]),
-                              label_transform=transforms.Select(['freq']),
-                              num_worker=4)
+            dataset = TSUBenckmarkDataset(root_path='./TSUBenchmark',
+                                          online_transform=transforms.Compose([
+                                              ToG(TSUBenckmark_ADJACENCY_MATRIX)
+                                          ]),
+                                          label_transform=transforms.Select(['freq']),
+                                          num_worker=4)
             print(dataset[0])
             # EEG signal (torch_geometric.data.Data),
             # coresponding baseline signal (torch_geometric.data.Data),
@@ -103,7 +100,7 @@ class TSUBenckmarkDataset(BaseDataset):
         label_transform (Callable, optional): The transformation of the label. The input is an information dictionary, and the ouput is used as the third value of each element in the dataset. (default: :obj:`None`)
         before_trial (Callable, optional): The hook performed on the trial to which the sample belongs. It is performed before the offline transformation and thus typically used to implement context-dependent sample transformations, such as moving averages, etc. The input of this hook function is a 2D EEG signal with shape (number of electrodes, number of data points), whose ideal output shape is also (number of electrodes, number of data points).
         after_trial (Callable, optional): The hook performed on the trial to which the sample belongs. It is performed after the offline transformation and thus typically used to implement context-dependent sample transformations, such as moving averages, etc. The input and output of this hook function should be a sequence of dictionaries representing a sequence of EEG samples. Each dictionary contains two key-value pairs, indexed by :obj:`eeg` (the EEG signal matrix) and :obj:`key` (the index in the database) respectively.
-        io_path (str): The path to generated unified data IO, cached as an intermediate result. (default: :obj:`./io/tsu_benchmark`)
+        io_path (str): The path to generated unified data IO, cached as an intermediate result. If set to None, a random path will be generated. (default: :obj:`None`)
         num_worker (int): Number of subprocesses to use for data loading. 0 means that the data will be loaded in the main process. (default: :obj:`0`)
         verbose (bool): Whether to display logs during processing, such as progress bars, etc. (default: :obj:`True`)
     
@@ -119,12 +116,14 @@ class TSUBenckmarkDataset(BaseDataset):
                  label_transform: Union[None, Callable] = None,
                  before_trial: Union[None, Callable] = None,
                  after_trial: Union[None, Callable] = None,
-                 io_path: str = './io/tsu_benchmark',
-                 io_size: int = 10485760,
+                 io_path: Union[None, str] = None,
+                 io_size: int = 1048576,
                  io_mode: str = 'lmdb',
                  num_worker: int = 0,
-                 verbose: bool = True,
-                 in_memory: bool = False):
+                 verbose: bool = True):
+        if io_path is None:
+            io_path = get_random_dir_path(dir_prefix='datasets')
+
         # pass all arguments to super class
         params = {
             'root_path': root_path,
@@ -140,8 +139,7 @@ class TSUBenckmarkDataset(BaseDataset):
             'io_size': io_size,
             'io_mode': io_mode,
             'num_worker': num_worker,
-            'verbose': verbose,
-            'in_memory': in_memory
+            'verbose': verbose
         }
         super().__init__(**params)
         # save all arguments to __dict__
@@ -149,13 +147,13 @@ class TSUBenckmarkDataset(BaseDataset):
 
     @staticmethod
     def process_record(file: Any = None,
-                   root_path: str = './TSUBenchmark',
-                   chunk_size: int = 250,
-                   overlap: int = 0,
-                   num_channel: int = 64,
-                   offline_transform: Union[None, Callable] = None,
-                   before_trial: Union[None, Callable] = None,
-                   **kwargs):
+                       root_path: str = './TSUBenchmark',
+                       chunk_size: int = 250,
+                       overlap: int = 0,
+                       num_channel: int = 64,
+                       offline_transform: Union[None, Callable] = None,
+                       before_trial: Union[None, Callable] = None,
+                       **kwargs):
         file_name = file
 
         subject = int(re.findall(r'S(\d*).mat', file_name)[0])  # subject (35)
@@ -219,17 +217,17 @@ class TSUBenckmarkDataset(BaseDataset):
                         'clip_id': clip_id
                     }
                     record_info.update(block_meta_info)
-                    yield {
-                            'eeg': t_eeg,
-                            'key': clip_id,
-                            'info': record_info
-                        }
+                    yield {'eeg': t_eeg, 'key': clip_id, 'info': record_info}
 
                     start_at = start_at + step
                     end_at = start_at + dynamic_chunk_size
 
     def set_records(self, **kwargs):
         root_path = kwargs.pop('root_path', './TSUBenchmark')  # str
+
+        assert os.path.exists(
+            root_path
+        ), f'root_path ({root_path}) does not exist. Please download the dataset and set the root_path to the downloaded path.'
 
         file_list = os.listdir(root_path)
         skip_set = [

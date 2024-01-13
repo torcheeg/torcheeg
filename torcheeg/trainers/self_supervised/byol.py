@@ -10,7 +10,7 @@ import torch.nn.functional as F
 import torchmetrics
 from torch.utils.data import DataLoader
 
-log = logging.getLogger(__name__)
+log = logging.getLogger('torcheeg')
 
 
 class BYOLTrainer(pl.LightningModule):
@@ -18,7 +18,7 @@ class BYOLTrainer(pl.LightningModule):
     This class supports the implementation of Bootstrap Your Own Latent (BYOL) for self-supervised pre-training.
 
     - Paper: Grill J B, Strub F, Altché F, et al. Bootstrap your own latent-a new approach to self-supervised learning[J]. Advances in neural information processing systems, 2020, 33: 21271-21284.
-    - URL: https://proceedings.neurips.cc/paper/2020/hash/f3ada80d5c4ee70142b17b8192b2958e-Abstract.html
+    - URL: https://proceedings.neurips.cc/paper/2020/hash/f3ada80d5c4ee70142b17b1048576b2958e-Abstract.html
     - Related Project: https://github.com/lucidrains/byol-pytorch
 
     .. code-block:: python
@@ -72,6 +72,7 @@ class BYOLTrainer(pl.LightningModule):
 
     .. automethod:: fit
     '''
+
     def __init__(self,
                  extractor: nn.Module,
                  extract_channels: int,
@@ -316,7 +317,7 @@ class BYOLTrainer(pl.LightningModule):
         for key, value in self.trainer.logged_metrics.items():
             if key.startswith("train_"):
                 str += f"{key}: {value:.3f} "
-        print(str + '\n')
+        log.info(str + '\n')
 
         # reset the metrics
         self.train_loss.reset()
@@ -454,7 +455,7 @@ class BYOLTrainer(pl.LightningModule):
         for key, value in self.trainer.logged_metrics.items():
             if key.startswith("val_"):
                 str += f"{key}: {value:.3f} "
-        print(str + '\n')
+        log.info(str + '\n')
 
         # reset the metrics
         self.val_loss.reset()

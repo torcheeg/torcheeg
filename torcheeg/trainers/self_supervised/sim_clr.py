@@ -9,7 +9,7 @@ import torch.nn.functional as F
 import torchmetrics
 from torch.utils.data import DataLoader
 
-log = logging.getLogger(__name__)
+log = logging.getLogger('torcheeg')
 
 
 class SimCLRTrainer(pl.LightningModule):
@@ -233,7 +233,7 @@ class SimCLRTrainer(pl.LightningModule):
         for key, value in self.trainer.logged_metrics.items():
             if key.startswith("train_"):
                 str += f"{key}: {value:.3f} "
-        print(str + '\n')
+        log.info(str + '\n')
 
         # reset the metrics
         self.train_loss.reset()
@@ -340,7 +340,7 @@ class SimCLRTrainer(pl.LightningModule):
         for key, value in self.trainer.logged_metrics.items():
             if key.startswith("val_"):
                 str += f"{key}: {value:.3f} "
-        print(str + '\n')
+        log.info(str + '\n')
 
         # reset the metrics
         self.val_loss.reset()

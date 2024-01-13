@@ -1,9 +1,15 @@
+import logging
 import os
 import re
 from typing import Any, Callable, Dict, List, Tuple, Union
 
 import scipy.io as scio
+
 from ..base_dataset import BaseDataset
+from ....utils import get_random_dir_path
+
+log = logging.getLogger('torcheeg')
+
 
 class AMIGOSDataset(BaseDataset):
     r'''
@@ -29,8 +35,7 @@ class AMIGOSDataset(BaseDataset):
 
     .. code-block:: python
 
-        dataset = AMIGOSDataset(io_path=f'./amigos',
-                                root_path='./data_preprocessed',
+        dataset = AMIGOSDataset(root_path='./data_preprocessed',
                                 offline_transform=transforms.Compose([
                                     transforms.BandDifferentialEntropy(),
                                     transforms.ToGrid(AMIGOS_CHANNEL_LOCATION_DICT)
@@ -49,16 +54,14 @@ class AMIGOSDataset(BaseDataset):
 
     .. code-block:: python
 
-        dataset = AMIGOSDataset(io_path=f'./amigos',
-                              root_path='./data_preprocessed',
-                              online_transform=transforms.Compose([
-                                  transforms.To2d(),
-                                  transforms.ToTensor()
-                              ]),
-                              label_transform=transforms.Compose([
-                                  transforms.Select('valence'),
-                                  transforms.Binary(5.0),
-                              ]))
+        dataset = AMIGOSDataset(root_path='./data_preprocessed',
+                                online_transform=transforms.Compose(
+                                    [transforms.To2d(),
+                                    transforms.ToTensor()]),
+                                label_transform=transforms.Compose([
+                                    transforms.Select('valence'),
+                                    transforms.Binary(5.0),
+                                ]))
         print(dataset[0])
         # EEG signal (torch.Tensor[14, 128]),
         # coresponding baseline signal (torch.Tensor[14, 128]),
@@ -68,39 +71,17 @@ class AMIGOSDataset(BaseDataset):
 
     .. code-block:: python
     
-        dataset = AMIGOSDataset(io_path=f'./amigos',
-                              root_path='./data_preprocessed',
-                              online_transform=transforms.Compose([
-                                  ToG(AMIGOS_ADJACENCY_MATRIX)
-                              ]),
-                              label_transform=transforms.Compose([
-                                  transforms.Select('valence'),
-                                  transforms.Binary(5.0),
-                              ]))
+        dataset = AMIGOSDataset(root_path='./data_preprocessed',
+                                online_transform=transforms.Compose(
+                                    [ToG(AMIGOS_ADJACENCY_MATRIX)]),
+                                label_transform=transforms.Compose([
+                                    transforms.Select('valence'),
+                                    transforms.Binary(5.0),
+                                ]))
         print(dataset[0])
         # EEG signal (torch_geometric.data.Data),
         # coresponding baseline signal (torch_geometric.data.Data),
         # label (int)
-    
-    In particular, TorchEEG utilizes the producer-consumer model to allow multi-process data preprocessing. If your data preprocessing is time consuming, consider increasing :obj:`num_worker` for higher speedup. If running under Windows, please use the proper idiom in the main module:
-
-    .. code-block:: python
-    
-        if __name__ == '__main__':
-            dataset = AMIGOSDataset(io_path=f'./amigos',
-                                    root_path='./data_preprocessed',
-                                    online_transform=transforms.Compose([
-                                        ToG(AMIGOS_ADJACENCY_MATRIX)
-                                    ]),
-                                    label_transform=transforms.Compose([
-                                        transforms.Select('valence'),
-                                        transforms.Binary(5.0),
-                                    ]),
-                                    num_worker=4)
-            print(dataset[0])
-            # EEG signal (torch_geometric.data.Data),
-            # coresponding baseline signal (torch_geometric.data.Data),
-            # label (int)
 
     Args:
         root_path (str): Downloaded data files in matlab (unzipped data_preprocessed.zip) formats (default: :obj:`'./data_preprocessed'`)
@@ -116,12 +97,11 @@ class AMIGOSDataset(BaseDataset):
         label_transform (Callable, optional): The transformation of the label. The input is an information dictionary, and the ouput is used as the third value of each element in the dataset. (default: :obj:`None`)
         before_trial (Callable, optional): The hook performed on the trial to which the sample belongs. It is performed before the offline transformation and thus typically used to implement context-dependent sample transformations, such as moving averages, etc. The input of this hook function is a 2D EEG signal with shape (number of electrodes, number of data points), whose ideal output shape is also (number of electrodes, number of data points).
         after_trial (Callable, optional): The hook performed on the trial to which the sample belongs. It is performed after the offline transformation and thus typically used to implement context-dependent sample transformations, such as moving averages, etc. The input and output of this hook function should be a sequence of dictionaries representing a sequence of EEG samples. Each dictionary contains two key-value pairs, indexed by :obj:`eeg` (the EEG signal matrix) and :obj:`key` (the index in the database) respectively.
-        io_path (str): The path to generated unified data IO, cached as an intermediate result. (default: :obj:`./io/amigos`)
-        io_size (int): Maximum size database may grow to; used to size the memory mapping. If database grows larger than ``map_size``, an exception will be raised and the user must close and reopen. (default: :obj:`10485760`)
-        io_mode (str): Storage mode of EEG signal. When io_mode is set to :obj:`lmdb`, TorchEEG provides an efficient database (LMDB) for storing EEG signals. LMDB may not perform well on limited operating systems, where a file system based EEG signal storage is also provided. When io_mode is set to :obj:`pickle`, pickle-based persistence files are used. (default: :obj:`lmdb`)
+        io_path (str): The path to generated unified data IO, cached as an intermediate result. If set to None, a random path will be generated. (default: :obj:`None`)
+        io_size (int): Maximum size database may grow to; used to size the memory mapping. If database grows larger than ``map_size``, an exception will be raised and the user must close and reopen. (default: :obj:`1048576`)
+        io_mode (str): Storage mode of EEG signal. When io_mode is set to :obj:`lmdb`, TorchEEG provides an efficient database (LMDB) for storing EEG signals. LMDB may not perform well on limited operating systems, where a file system based EEG signal storage is also provided. When io_mode is set to :obj:`pickle`, pickle-based persistence files are used. When io_mode is set to :obj:`memory`, memory are used. (default: :obj:`lmdb`)
         num_worker (int): Number of subprocesses to use for data loading. 0 means that the data will be loaded in the main process. (default: :obj:`0`)
         verbose (bool): Whether to display logs during processing, such as progress bars, etc. (default: :obj:`True`)
-        in_memory (bool): Whether to load the entire dataset into memory. If :obj:`in_memory` is set to True, then the first time an EEG sample is read, the entire dataset is loaded into memory for subsequent retrieval. Otherwise, the dataset is stored on disk to avoid the out-of-memory problem. (default: :obj:`False`)
     '''
 
     def __init__(self,
@@ -140,13 +120,15 @@ class AMIGOSDataset(BaseDataset):
                  after_trial: Union[Callable, None] = None,
                  after_session: Union[Callable, None] = None,
                  after_subject: Union[Callable, None] = None,
-                 io_path: str = './io/amigos',
-                 io_size: int = 10485760,
+                 io_path: Union[None, str] = None,
+                 io_size: int = 1048576,
                  io_mode: str = 'lmdb',
                  num_worker: int = 0,
-                 verbose: bool = True,
-                 in_memory: bool = False):
+                 verbose: bool = True):
         # pass all arguments to super class
+        if io_path is None:
+            io_path = get_random_dir_path(dir_prefix='datasets')
+
         params = {
             'root_path': root_path,
             'chunk_size': chunk_size,
@@ -167,26 +149,26 @@ class AMIGOSDataset(BaseDataset):
             'io_size': io_size,
             'io_mode': io_mode,
             'num_worker': num_worker,
-            'verbose': verbose,
-            'in_memory': in_memory
+            'verbose': verbose
         }
         super().__init__(**params)
         # save all arguments to __dict__
         self.__dict__.update(params)
 
     @staticmethod
-    def process_record(file: Any = None,
-                   root_path: str = './data_preprocessed',
-                   chunk_size: int = 128,
-                   overlap: int = 0,
-                   num_channel: int = 14,
-                   num_trial: int = 16,
-                   skipped_subjects: List[int] = [9, 12, 21, 22, 23, 24, 33],
-                   num_baseline: int = 5,
-                   baseline_chunk_size: int = 128,
-                   before_trial: Union[None, Callable] = None,
-                   offline_transform: Union[None, Callable] = None,
-                   **kwargs):
+    def process_record(
+            file: Any = None,
+            root_path: str = './data_preprocessed',
+            chunk_size: int = 128,
+            overlap: int = 0,
+            num_channel: int = 14,
+            num_trial: int = 16,
+            skipped_subjects: List[int] = [9, 12, 21, 22, 23, 24, 33],
+            num_baseline: int = 5,
+            baseline_chunk_size: int = 128,
+            before_trial: Union[None, Callable] = None,
+            offline_transform: Union[None, Callable] = None,
+            **kwargs):
         file_name = file  # an element from file name list
 
         subject = int(
@@ -209,10 +191,10 @@ class AMIGOSDataset(BaseDataset):
         max_len = len(samples)
         if not (num_trial <= 0):
             max_len = min(len(samples), num_trial)
-            
+
         # loop for each trial
         for trial_id in range(max_len):
-            
+
             # extract baseline signals
             trial_samples = samples[trial_id]
 
@@ -225,7 +207,7 @@ class AMIGOSDataset(BaseDataset):
             if (not sum(trial_samples.shape)) or (not sum(trial_rating.shape)):
                 # 3 of the participants (08,24,28<->32) of the previous experiment did not watch a set of 4 long affective
                 if sum(trial_samples.shape) != sum(trial_rating.shape):
-                    print(
+                    log.info(
                         f'Find EEG signals without labels, or labels without EEG signals. Please check the {trial_id + 1}-th experiment of the {subject}-th subject in the file {file_name}. TorchEEG currently skipped the mismatched data.'
                     )
                 continue
@@ -295,6 +277,9 @@ class AMIGOSDataset(BaseDataset):
                 end_at = start_at + dynamic_chunk_size
 
     def set_records(self, root_path: str = './data_preprocessed', **kwargs):
+        assert os.path.exists(
+            root_path
+        ), f'root_path ({root_path}) does not exist. Please download the dataset and set the root_path to the downloaded path.'
         return os.listdir(root_path)
 
     def __getitem__(self, index: int) -> Tuple[any, any, int, int, int]:

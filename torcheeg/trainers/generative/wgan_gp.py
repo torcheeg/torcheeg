@@ -14,7 +14,7 @@ from .utils import FrechetInceptionDistance
 
 _EVALUATE_OUTPUT = List[Dict[str, float]]  # 1 dict per DataLoader
 
-log = logging.getLogger(__name__)
+log = logging.getLogger('torcheeg')
 
 
 def gradient_penalty(model, real, fake, *args, **kwargs):
@@ -70,6 +70,7 @@ class WGANGPTrainer(pl.LightningModule):
     .. automethod:: fit
     .. automethod:: test
     '''
+
     def __init__(self,
                  generator: nn.Module,
                  discriminator: nn.Module,
@@ -198,7 +199,7 @@ class WGANGPTrainer(pl.LightningModule):
         latent = latent.type_as(x)
 
         # train generator
-        self.toggle_optimizer(generator_optimizer, optimizer_idx=0)
+        self.toggle_optimizer(generator_optimizer)
 
         gen_x = self.generator(latent)
         g_loss = -torch.mean(self.discriminator(gen_x))
@@ -206,10 +207,10 @@ class WGANGPTrainer(pl.LightningModule):
 
         generator_optimizer.step()
         generator_optimizer.zero_grad()
-        self.untoggle_optimizer(optimizer_idx=0)
+        self.untoggle_optimizer(generator_optimizer)
 
         # train discriminator
-        self.toggle_optimizer(discriminator_optimizer, optimizer_idx=1)
+        self.toggle_optimizer(discriminator_optimizer)
 
         real_loss = self.discriminator(x)
         fake_loss = self.discriminator(gen_x.detach())
@@ -220,7 +221,7 @@ class WGANGPTrainer(pl.LightningModule):
 
         discriminator_optimizer.step()
         discriminator_optimizer.zero_grad()
-        self.untoggle_optimizer(optimizer_idx=1)
+        self.untoggle_optimizer(discriminator_optimizer)
 
         self.log("train_g_loss",
                  self.train_g_loss(g_loss),
@@ -254,7 +255,7 @@ class WGANGPTrainer(pl.LightningModule):
         for key, value in self.trainer.logged_metrics.items():
             if key.startswith("train_"):
                 str += f"{key}: {value:.3f} "
-        print(str + '\n')
+        log.info(str + '\n')
 
         # reset the metrics
         self.train_g_loss.reset()
@@ -303,7 +304,7 @@ class WGANGPTrainer(pl.LightningModule):
         for key, value in self.trainer.logged_metrics.items():
             if key.startswith("val_"):
                 str += f"{key}: {value:.3f} "
-        print(str + '\n')
+        log.info(str + '\n')
 
         # reset the metrics
         self.val_g_loss.reset()
@@ -374,7 +375,7 @@ class WGANGPTrainer(pl.LightningModule):
         for key, value in self.trainer.logged_metrics.items():
             if key.startswith("test_"):
                 str += f"{key}: {value:.3f} "
-        print(str + '\n')
+        log.info(str + '\n')
 
         # reset the metrics
         self.test_g_loss.reset()
@@ -427,6 +428,7 @@ class CWGANGPTrainer(WGANGPTrainer):
     .. automethod:: fit
     .. automethod:: test
     '''
+
     def training_step(self, batch: Tuple[torch.Tensor],
                       batch_idx: int) -> torch.Tensor:
         x, y = batch
@@ -438,7 +440,7 @@ class CWGANGPTrainer(WGANGPTrainer):
         latent = latent.type_as(x)
 
         # train generator
-        self.toggle_optimizer(generator_optimizer, optimizer_idx=0)
+        self.toggle_optimizer(generator_optimizer)
 
         gen_x = self.generator(latent, y)
         g_loss = -torch.mean(self.discriminator(gen_x, y))
@@ -446,10 +448,10 @@ class CWGANGPTrainer(WGANGPTrainer):
 
         generator_optimizer.step()
         generator_optimizer.zero_grad()
-        self.untoggle_optimizer(optimizer_idx=0)
+        self.untoggle_optimizer(generator_optimizer)
 
         # train discriminator
-        self.toggle_optimizer(discriminator_optimizer, optimizer_idx=1)
+        self.toggle_optimizer(discriminator_optimizer)
 
         real_loss = self.discriminator(x, y)
         fake_loss = self.discriminator(gen_x.detach(), y)
@@ -460,7 +462,7 @@ class CWGANGPTrainer(WGANGPTrainer):
 
         discriminator_optimizer.step()
         discriminator_optimizer.zero_grad()
-        self.untoggle_optimizer(optimizer_idx=1)
+        self.untoggle_optimizer(discriminator_optimizer)
 
         self.log("train_g_loss",
                  self.train_g_loss(g_loss),

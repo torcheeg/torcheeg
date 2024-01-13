@@ -17,7 +17,7 @@ from .utils import FrechetInceptionDistance
 
 _EVALUATE_OUTPUT = List[Dict[str, float]]  # 1 dict per DataLoader
 
-log = logging.getLogger(__name__)
+log = logging.getLogger('torcheeg')
 
 
 def extract_into_tensor(a: torch.Tensor, t: int,
@@ -84,6 +84,7 @@ def make_beta_schedule(schedule: str,
 
 
 class LitEma(nn.Module):
+
     def __init__(self,
                  model: nn.Module,
                  decay: float = 0.9999,
@@ -223,6 +224,7 @@ class DDPMTrainer(pl.LightningModule):
     .. automethod:: fit
     .. automethod:: test
     '''
+
     def __init__(
             self,
             model: nn.Module,
@@ -399,14 +401,14 @@ class DDPMTrainer(pl.LightningModule):
             self.model_ema.store(self.model.parameters())
             self.model_ema.copy_to(self.model)
             if context is not None:
-                print(f"{context}: Switched to EMA weights")
+                log.info(f"{context}: Switched to EMA weights")
         try:
             yield None
         finally:
             if self.use_ema:
                 self.model_ema.restore(self.model.parameters())
                 if context is not None:
-                    print(f"{context}: Restored training weights")
+                    log.info(f"{context}: Restored training weights")
 
     def q_mean_variance(
             self, x_start: torch.Tensor,
@@ -618,7 +620,7 @@ class DDPMTrainer(pl.LightningModule):
         for key, value in self.trainer.logged_metrics.items():
             if key.startswith("train_"):
                 str += f"{key}: {value:.3f} "
-        print(str + '\n')
+        log.info(str + '\n')
 
         # reset the metrics
         self.train_simple_loss.reset()
@@ -656,7 +658,7 @@ class DDPMTrainer(pl.LightningModule):
         for key, value in self.trainer.logged_metrics.items():
             if key.startswith("val_"):
                 str += f"{key}: {value:.3f} "
-        print(str + '\n')
+        log.info(str + '\n')
 
         # reset the metrics
         self.val_simple_loss.reset()
@@ -718,7 +720,7 @@ class DDPMTrainer(pl.LightningModule):
         for key, value in self.trainer.logged_metrics.items():
             if key.startswith("test_"):
                 str += f"{key}: {value:.3f} "
-        print(str + '\n')
+        log.info(str + '\n')
 
         # reset the metrics
         self.test_simple_loss.reset()
@@ -824,6 +826,7 @@ class CDDPMTrainer(DDPMTrainer):
     .. automethod:: fit
     .. automethod:: test
     '''
+
     def p_losses(
         self,
         x_start: torch.Tensor,
