@@ -148,7 +148,7 @@ class BandDifferentialEntropy(BandTransform):
         return super().__call__(*args, eeg=eeg, baseline=baseline, **kwargs)
 
     def opt(self, eeg: np.ndarray, **kwargs) -> np.ndarray:
-        return 1 / 2 * np.log2(2 * np.pi * np.e * np.std(eeg))
+        return 1 / 2 * np.log2(2 * np.pi * np.e * np.var(eeg))
 
 
 class BandDifferentialEntropyV1(EEGTransform):

@@ -3,6 +3,7 @@ from typing import Callable, Dict, Tuple, Union, Any
 
 import scipy.io as scio
 from ..base_dataset import BaseDataset
+from ....utils import get_random_dir_path
 
 
 class DREAMERDataset(BaseDataset):
@@ -23,17 +24,16 @@ class DREAMERDataset(BaseDataset):
 
     .. code-block:: python
 
-        dataset = DREAMERDataset(io_path=f'./dreamer',
-                              mat_path='./DREAMER.mat',
-                              offline_transform=transforms.Compose([
-                                  transforms.BandDifferentialEntropy(),
-                                  transforms.ToGrid(DREAMER_CHANNEL_LOCATION_DICT)
-                              ]),
-                              online_transform=transforms.ToTensor(),
-                              label_transform=transforms.Compose([
-                                  transforms.Select('valence'),
-                                  transforms.Binary(3.0),
-                              ]))
+        dataset = DREAMERDataset(mat_path='./DREAMER.mat',
+                                 offline_transform=transforms.Compose([
+                                     transforms.BandDifferentialEntropy(),
+                                     transforms.ToGrid(DREAMER_CHANNEL_LOCATION_DICT)
+                                 ]),
+                                 online_transform=transforms.ToTensor(),
+                                 label_transform=transforms.Compose([
+                                     transforms.Select('valence'),
+                                     transforms.Binary(3.0),
+                                 ]))
         print(dataset[0])
         # EEG signal (torch.Tensor[4, 9, 9]),
         # coresponding baseline signal (torch.Tensor[4, 9, 9]),
@@ -43,17 +43,16 @@ class DREAMERDataset(BaseDataset):
 
     .. code-block:: python
 
-        dataset = DREAMERDataset(io_path=f'./dreamer',
-                              mat_path='./DREAMER.mat',
-                              online_transform=transforms.Compose([
-                                  transforms.To2d(),
-                                  transforms.ToTensor()
-                              ]),
-                              label_transform=transforms.Compose([
-                                  transforms.Select(['valence', 'arousal']),
-                                  transforms.Binary(3.0),
-                                  transforms.BinariesToCategory()
-                              ]))
+        dataset = DREAMERDataset(mat_path='./DREAMER.mat',
+                                 online_transform=transforms.Compose([
+                                     transforms.To2d(),
+                                     transforms.ToTensor()
+                                 ]),
+                                 label_transform=transforms.Compose([
+                                     transforms.Select(['valence', 'arousal']),
+                                     transforms.Binary(3.0),
+                                     transforms.BinariesToCategory()
+                                 ]))
         print(dataset[0])
         # EEG signal (torch.Tensor[1, 14, 128]),
         # coresponding baseline signal (torch.Tensor[1, 14, 128]),
@@ -63,39 +62,20 @@ class DREAMERDataset(BaseDataset):
 
     .. code-block:: python
     
-        dataset = DREAMERDataset(io_path=f'./dreamer',
-                              mat_path='./DREAMER.mat',
-                              online_transform=transforms.Compose([
-                                  ToG(DREAMER_ADJACENCY_MATRIX)
-                              ]),
-                              label_transform=transforms.Compose([
-                                  transforms.Select('arousal'),
-                                  transforms.Binary(3.0)
-                              ]))
+        dataset = DREAMERDataset(mat_path='./DREAMER.mat',
+                                 online_transform=transforms.Compose([
+                                     ToG(DREAMER_ADJACENCY_MATRIX)
+                                 ]),
+                                 label_transform=transforms.Compose([
+                                     transforms.Select('arousal'),
+                                     transforms.Binary(3.0)
+                                 ]))
         print(dataset[0])
         # EEG signal (torch_geometric.data.Data),
         # coresponding baseline signal (torch_geometric.data.Data),
         # label (int)
 
     In particular, TorchEEG utilizes the producer-consumer model to allow multi-process data preprocessing. If your data preprocessing is time consuming, consider increasing :obj:`num_worker` for higher speedup. If running under Windows, please use the proper idiom in the main module:
-
-    .. code-block:: python
-    
-        if __name__ == '__main__':
-            dataset = DREAMERDataset(io_path=f'./dreamer',
-                              mat_path='./DREAMER.mat',
-                              online_transform=transforms.Compose([
-                                  ToG(DREAMER_ADJACENCY_MATRIX)
-                              ]),
-                              label_transform=transforms.Compose([
-                                  transforms.Select('arousal'),
-                                  transforms.Binary(3.0)
-                              ]),
-                              num_worker=4)
-        print(dataset[0])
-        # EEG signal (torch_geometric.data.Data),
-        # coresponding baseline signal (torch_geometric.data.Data),
-        # label (int)
     
     Args:
         mat_path (str): Downloaded data files in pickled matlab formats (default: :obj:`'./DREAMER.mat'`)
@@ -109,12 +89,11 @@ class DREAMERDataset(BaseDataset):
         label_transform (Callable, optional): The transformation of the label. The input is an information dictionary, and the ouput is used as the third value of each element in the dataset. (default: :obj:`None`)
         before_trial (Callable, optional): The hook performed on the trial to which the sample belongs. It is performed before the offline transformation and thus typically used to implement context-dependent sample transformations, such as moving averages, etc. The input of this hook function is a 2D EEG signal with shape (number of electrodes, number of data points), whose ideal output shape is also (number of electrodes, number of data points).
         after_trial (Callable, optional): The hook performed on the trial to which the sample belongs. It is performed after the offline transformation and thus typically used to implement context-dependent sample transformations, such as moving averages, etc. The input and output of this hook function should be a sequence of dictionaries representing a sequence of EEG samples. Each dictionary contains two key-value pairs, indexed by :obj:`eeg` (the EEG signal matrix) and :obj:`key` (the index in the database) respectively.
-        io_path (str): The path to generated unified data IO, cached as an intermediate result. (default: :obj:`./io/dreamer`)
-        io_size (int): Maximum size database may grow to; used to size the memory mapping. If database grows larger than ``map_size``, an exception will be raised and the user must close and reopen. (default: :obj:`10485760`)
-        io_mode (str): Storage mode of EEG signal. When io_mode is set to :obj:`lmdb`, TorchEEG provides an efficient database (LMDB) for storing EEG signals. LMDB may not perform well on limited operating systems, where a file system based EEG signal storage is also provided. When io_mode is set to :obj:`pickle`, pickle-based persistence files are used. (default: :obj:`lmdb`)
+        io_path (str): The path to generated unified data IO, cached as an intermediate result. If set to None, a random path will be generated. (default: :obj:`None`)
+        io_size (int): Maximum size database may grow to; used to size the memory mapping. If database grows larger than ``map_size``, an exception will be raised and the user must close and reopen. (default: :obj:`1048576`)
+        io_mode (str): Storage mode of EEG signal. When io_mode is set to :obj:`lmdb`, TorchEEG provides an efficient database (LMDB) for storing EEG signals. LMDB may not perform well on limited operating systems, where a file system based EEG signal storage is also provided. When io_mode is set to :obj:`pickle`, pickle-based persistence files are used. When io_mode is set to :obj:`memory`, memory are used. (default: :obj:`lmdb`)
         num_worker (int): Number of subprocesses to use for data loading. 0 means that the data will be loaded in the main process. (default: :obj:`0`)
-        verbose (bool): Whether to display logs during processing, such as progress bars, etc. (default: :obj:`True`)
-        in_memory (bool): Whether to load the entire dataset into memory. If :obj:`in_memory` is set to True, then the first time an EEG sample is read, the entire dataset is loaded into memory for subsequent retrieval. Otherwise, the dataset is stored on disk to avoid the out-of-memory problem. (default: :obj:`False`)       
+        verbose (bool): Whether to display logs during processing, such as progress bars, etc. (default: :obj:`True`)       
     '''
 
     def __init__(self,
@@ -131,12 +110,14 @@ class DREAMERDataset(BaseDataset):
                  after_trial: Union[Callable, None] = None,
                  after_session: Union[Callable, None] = None,
                  after_subject: Union[Callable, None] = None,
-                 io_path: str = './io/dreamer',
-                 io_size: int = 10485760,
+                 io_path: Union[None, str] = None,
+                 io_size: int = 1048576,
                  io_mode: str = 'lmdb',
                  num_worker: int = 0,
-                 verbose: bool = True,
-                 in_memory: bool = False):
+                 verbose: bool = True):
+        if io_path is None:
+            io_path = get_random_dir_path(dir_prefix='datasets')
+
         # pass all arguments to super class
         params = {
             'mat_path': mat_path,
@@ -156,8 +137,7 @@ class DREAMERDataset(BaseDataset):
             'io_size': io_size,
             'io_mode': io_mode,
             'num_worker': num_worker,
-            'verbose': verbose,
-            'in_memory': in_memory
+            'verbose': verbose
         }
         super().__init__(**params)
         # save all arguments to __dict__
@@ -165,15 +145,15 @@ class DREAMERDataset(BaseDataset):
 
     @staticmethod
     def process_record(file: Any = None,
-                   mat_path: str = './DREAMER.mat',
-                   chunk_size: int = 128,
-                   overlap: int = 0,
-                   num_channel: int = 14,
-                   num_baseline: int = 61,
-                   baseline_chunk_size: int = 128,
-                   before_trial: Union[None, Callable] = None,
-                   offline_transform: Union[None, Callable] = None,
-                   **kwargs):
+                       mat_path: str = './DREAMER.mat',
+                       chunk_size: int = 128,
+                       overlap: int = 0,
+                       num_channel: int = 14,
+                       num_baseline: int = 61,
+                       baseline_chunk_size: int = 128,
+                       before_trial: Union[None, Callable] = None,
+                       offline_transform: Union[None, Callable] = None,
+                       **kwargs):
         subject = file
         mat_data = scio.loadmat(mat_path,
                                 verify_compressed_data_integrity=False)
@@ -185,7 +165,7 @@ class DREAMERDataset(BaseDataset):
                                                                       0])  # 18
 
         write_pointer = 0
-        
+
         # loop for each trial
         for trial_id in range(trial_len):
             # extract baseline signals
@@ -266,6 +246,9 @@ class DREAMERDataset(BaseDataset):
                 end_at = start_at + dynamic_chunk_size
 
     def set_records(self, mat_path: str = './DREAMER.mat', **kwargs):
+        assert os.path.exists(
+            mat_path
+        ), f'mat_path ({mat_path}) does not exist. Please download the dataset and set the mat_path to the downloaded path.'
 
         mat_data = scio.loadmat(mat_path,
                                 verify_compressed_data_integrity=False)

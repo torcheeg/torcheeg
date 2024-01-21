@@ -88,7 +88,6 @@ class TestEmotionRecognitionDataset(unittest.TestCase):
                               ]),
                               num_worker=4)
         self.assertEqual(len(dataset), 76800)
-        self.assertEqual(len(dataset.eeg_io), 78080)
         first_item = dataset[0]
         self.assertEqual(first_item[0].shape, (32, 128))
         last_item = dataset[76799]

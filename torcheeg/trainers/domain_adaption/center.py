@@ -1,16 +1,22 @@
-from .classifier import ClassifierTrainer,classification_metrics
+import logging
+from typing import List, Tuple
+
 import torch
 import torch.nn as nn
-from torch.autograd.function import Function
-from numpy import random
-from typing import List, Tuple
 import torchmetrics
+from numpy import random
+from torch.autograd.function import Function
+
+from ..classifier import ClassifierTrainer, classification_metrics
+
+log = logging.getLogger('torcheeg')
 
 
 class CentersLoss(nn.Module):
     '''
     ClassCentersLoss
     '''
+
     def __init__(self, num_centers, center_dim, size_average=True):
         super(CentersLoss, self).__init__()
         centers = random.randn(num_centers, center_dim)
@@ -60,10 +66,9 @@ class ClassCentersFunc(Function):
         return -grad_output * diff / batch_size, None, grad_centers / batch_size, None
 
 
-
-class CLossClassifierTrainer(ClassifierTrainer):
+class CenterLossTrainer(ClassifierTrainer):
     r'''
-        A trainer trains classification model contains a decoder and a classifier. As for C   enter loss, it can make the output of the decoder close to the mean of decoded features within the same class.PLease refer to the following infomation to comprehend how the center loss works.
+        A trainer trains classification model contains a decoder and a classifier. As for Center loss, it can make the output of the decoder close to the mean of decoded features within the same class. PLease refer to the following infomation to comprehend how the center loss works.
 
         - Paper: FBMSNet: A Filter-Bank Multi-Scale Convolutional Neural Network for EEG-Based Motor Imagery Decoding
         - URL: https://ieeexplore.ieee.org/document/9837422
@@ -71,7 +76,7 @@ class CLossClassifierTrainer(ClassifierTrainer):
 
         .. code-block:: python
 
-            trainer = ClossClassifierTrainer(decoder = decoder, 
+            trainer = CenterLossTrainer(decoder = decoder, 
                                              classifier = classifier,
                                              num_classes = your_classes,
                                              feature_dim = your_decoded_dim)
@@ -96,19 +101,19 @@ class CLossClassifierTrainer(ClassifierTrainer):
                     return 
                 
             decoder  = FBMSDecoder(num_classes=4,
-                          num_electrodes=22,
-                          chunk_size=512,
-                         in_channels=9)
+                                   num_electrodes=22,
+                                   chunk_size=512,
+                                   in_channels=9)
 
             classifier = FBMSClassifier(num_classes=4,
-                                num_electrodes=22,
-                                chunk_size=512,
-                                in_channels=9)
+                                        num_electrodes=22,
+                                        chunk_size=512,
+                                        in_channels=9)
             
-            trainer = ClossClassifierTrainer(decoder = decoder, 
-                                             classifier = classifier,
-                                             num_classes = 4,
-                                             feature_dim = 1152)
+            trainer = CenterLossTrainer(decoder=decoder, 
+                                        classifier=classifier,
+                                        num_classes=4,
+                                        feature_dim=1152)
         
         Custom model is OK. Feel free to refer to  this example:
     
@@ -132,15 +137,11 @@ class CLossClassifierTrainer(ClassifierTrainer):
             decoder  = MyDecoder()
             classifier = MyClassifier()
 
-            trainer = ClossClassifierTrainer(decoder = decoder, 
+            trainer = CenterLossTrainer(decoder = decoder, 
                                              classifier = classifier,
                                              num_classes = 2,
                                              feature_dim = 64)
         
-
-        
-        
-
         Args:
             decoder (nn.Module): The decoder which transforms eegsignal into 1D feature code.
             classifier (nn.Module): The classifier that predict from the decoder output which class the siginals belong to.
@@ -151,43 +152,43 @@ class CLossClassifierTrainer(ClassifierTrainer):
             weight_decay (float): The weight decay. (default: :obj:`0.0`)
             devices (int): The number of devices to use. (default: :obj:`1`)
             accelerator (str): The accelerator to use. Available options are: 'cpu', 'gpu'. (default: :obj:`"cpu"`)
-            metrics (list of str): The metrics to use. Available options are: 'precision', 'recall', 'f1score', 'accuracy'. (default: :obj:`['accuracy', 'precision', 'recall', 'f1score']`)
+            metrics (list of str): The metrics to use. Available options are: 'precision', 'recall', 'f1_score', 'accuracy', 'matthews', 'auroc', and 'kappa'. (default: :obj:`['accuracy', 'precision', 'recall', 'f1score']`)
 
         .. automethod:: fit
         .. automethod:: test
     '''
-    def __init__(self,
-                 decoder,
-                 classifier,
-                 feature_dim: int,
-                 num_classes: int,
-                 lammda: float = 0.0005,
-                 lr: float = 1e-3,
-                 weight_decay: float = 0.0,
-                 devices: int = 1,
-                 accelerator: str = "cpu",
-                 metrics: List[str] = [
-                     'accuracy', 'precision', 'recall', 'f1score']
-                 ):
-        
-        super(CLossClassifierTrainer,self).__init__(decoder, num_classes, lr, weight_decay, devices,
+
+    def __init__(
+            self,
+            decoder,
+            classifier,
+            feature_dim: int,
+            num_classes: int,
+            lammda: float = 0.0005,
+            lr: float = 1e-3,
+            weight_decay: float = 0.0,
+            devices: int = 1,
+            accelerator: str = "cpu",
+            metrics: List[str] = ['accuracy', 'precision', 'recall',
+                                  'f1score']):
+
+        super(CenterLossTrainer,
+              self).__init__(decoder, num_classes, lr, weight_decay, devices,
                              accelerator, metrics)
-        
+
         self.decoder = decoder
         self.classifier = classifier
-        self.center_loss = CentersLoss(num_classes,feature_dim)
+        self.center_loss = CentersLoss(num_classes, feature_dim)
         self.lammda = lammda
         self.automatic_optimization = False
         self.feature_dim = feature_dim
-    
-        
-    
+
     def init_metrics(self, metrics: List[str], num_classes: int) -> None:
         # for train
         self.train_loss = torchmetrics.MeanMetric()
         self.center_loss_train = torchmetrics.MeanMetric()
         self.predict_loss_train = torchmetrics.MeanMetric()
-        
+
         # val
         self.val_loss = torchmetrics.MeanMetric()
         self.center_loss_val = torchmetrics.MeanMetric()
@@ -196,13 +197,13 @@ class CLossClassifierTrainer(ClassifierTrainer):
         #test
         self.test_loss = torchmetrics.MeanMetric()
         self.center_loss_test = torchmetrics.MeanMetric()
-        self.predict_loss_test= torchmetrics.MeanMetric()
+        self.predict_loss_test = torchmetrics.MeanMetric()
 
         # classification metrics for train val test
         self.train_metrics = classification_metrics(metrics, num_classes)
         self.val_metrics = classification_metrics(metrics, num_classes)
         self.test_metrics = classification_metrics(metrics, num_classes)
-    
+
     def __reset_metric(self, state: str = "train"):
         if state == "train":
             self.train_loss.reset()
@@ -219,7 +220,6 @@ class CLossClassifierTrainer(ClassifierTrainer):
             self.center_loss_test.reset()
             self.predict_loss_test.reset()
             self.test_metrics.reset()
-
 
     def training_step(self, batch, batch_idx) -> None:
         x, y = batch
@@ -242,44 +242,43 @@ class CLossClassifierTrainer(ClassifierTrainer):
 
         # backward
         self.manual_backward(loss)
-  
+
         # step
         center_optimizer.step()
         model_optimizer.step()
-  
+
         # log
-        log_dict = {"train_loss" : self.train_loss(loss)}
+        log_dict = {"train_loss": self.train_loss(loss)}
 
         for i, metric_value in enumerate(self.train_metrics.values()):
             log_dict[f"train_{self.metrics[i]}"] = metric_value(y_hat, y)
         self.log_dict(log_dict,
-                     prog_bar=True,
-                     on_epoch=False,
-                     logger=False,
-                     on_step=True)
-        
-
+                      prog_bar=True,
+                      on_epoch=False,
+                      logger=False,
+                      on_step=True)
 
     def on_train_epoch_end(self) -> None:
 
         # log loss
-        log_dict = {"train_loss" : self.train_loss.compute(), }
+        log_dict = {
+            "train_loss": self.train_loss.compute(),
+        }
         # log classfication metrics
         for i, metric_value in enumerate(self.train_metrics.values()):
             log_dict[f"train_{self.metrics[i]}"] = metric_value.compute()
-        self.log_dict(log_dict,
-                    prog_bar=True)
-        
+        self.log_dict(log_dict, prog_bar=True)
+
         # print the metrics
         str = "\n[Train] "
         for key, value in self.trainer.logged_metrics.items():
             if key.startswith("train"):
                 str += f"{key}: {value:.3f} "
-        print(str + '\n')
+        log.info(str + '\n')
 
         # reset the metrics
         self.__reset_metric()
-        
+
     def validation_step(self, batch: Tuple[torch.Tensor],
                         batch_idx: int) -> torch.Tensor:
         x, y = batch
@@ -299,80 +298,74 @@ class CLossClassifierTrainer(ClassifierTrainer):
         self.val_metrics.update(y_hat, y)
 
         # log loss
-        log_dict = {"val_loss" : self.val_loss.compute()}
+        log_dict = {"val_loss": self.val_loss.compute()}
         # log metrics
         for i, metric_value in enumerate(self.val_metrics.values()):
-            log_dict[f"val_{self.metrics[i]}"] =  metric_value.compute()
+            log_dict[f"val_{self.metrics[i]}"] = metric_value.compute()
             self.log_dict(log_dict,
                           prog_bar=True,
                           on_epoch=True,
                           on_step=False,
                           logger=True)
-        
-    
-        
+
         return loss
-        
 
     def on_validation_epoch_end(self) -> None:
         # log loss
-        log_dict = {"val_loss" : self.val_loss.compute() }
+        log_dict = {"val_loss": self.val_loss.compute()}
         # log classfication metrics
         for i, metric_value in enumerate(self.val_metrics.values()):
             log_dict[f"val_{self.metrics[i]}"] = metric_value.compute()
         self.log_dict(log_dict,
-                    prog_bar=True,
-                    on_epoch=True,
-                     on_step=False,
-                     logger=True)
+                      prog_bar=True,
+                      on_epoch=True,
+                      on_step=False,
+                      logger=True)
         # reset the metrics
         self.__reset_metric("val")
         str = "\n[Val] "
         for key, value in self.trainer.logged_metrics.items():
             if key.startswith("val"):
                 str += f"{key}: {value:.3f} "
-        print(str + '\n')
-    
-
+        log.info(str + '\n')
 
     def test_step(self, batch: Tuple[torch.Tensor],
                   batch_idx: int) -> torch.Tensor:
         x, y = batch
         # centerloss
-        feat = self.decoder(x) 
-        centerloss = self.center_loss(y,feat)
+        feat = self.decoder(x)
+        centerloss = self.center_loss(y, feat)
 
         # predict loss
         y_hat = self.classifier(feat)
         pre_loss = self.ce_fn(y_hat, y)
-    
-        #Total loss 
-        loss = pre_loss +self.lammda *centerloss
+
+        #Total loss
+        loss = pre_loss + self.lammda * centerloss
 
         self.test_loss.update(loss)
         self.center_loss_test.update(centerloss)
         self.predict_loss_test(pre_loss)
         self.test_metrics.update(y_hat, y)
         return loss
-    
+
     def on_test_epoch_end(self) -> None:
-        log_dict = {"test_loss" : self.test_loss.compute()}
+        log_dict = {"test_loss": self.test_loss.compute()}
         # log classfication metrics
         for i, metric_value in enumerate(self.test_metrics.values()):
             log_dict[f"test_{self.metrics[i]}"] = metric_value.compute()
         self.log_dict(log_dict,
-                    prog_bar=True,
-                    on_epoch=True,
-                     on_step=False,
-                     logger=True)
+                      prog_bar=True,
+                      on_epoch=True,
+                      on_step=False,
+                      logger=True)
         # reset the metrics
         self.__reset_metric("test")
         str = "\n[Test] "
         for key, value in self.trainer.logged_metrics.items():
             if key.startswith("test"):
                 str += f"{key}: {value:.3f} "
-        print(str + '\n')
-        
+        log.info(str + '\n')
 
         self.test_loss.reset()
         self.test_metrics.reset()
@@ -383,8 +376,9 @@ class CLossClassifierTrainer(ClassifierTrainer):
         trainable_parameters = list(
             filter(lambda p: p.requires_grad, parameters))
         model_optimizer = torch.optim.Adam(trainable_parameters,
-                                          lr=self.lr,
-                                          weight_decay=self.weight_decay)
+                                           lr=self.lr,
+                                           weight_decay=self.weight_decay)
 
-        center_optimizer = torch.optim.SGD(self.center_loss.parameters(), lr=0.01)
+        center_optimizer = torch.optim.SGD(self.center_loss.parameters(),
+                                           lr=0.01)
         return center_optimizer, model_optimizer

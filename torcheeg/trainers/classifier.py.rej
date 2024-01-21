@@ -1,6 +1,0 @@
-diff a/torcheeg/trainers/classifier.py b/torcheeg/trainers/classifier.py	(rejected hunks)
-@@ -267,2 +267,3 @@
-         x, y = batch
-         y_hat = self(x)
-\ No newline at end of file
-+        return y_hat        return y_hat
