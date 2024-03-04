@@ -67,6 +67,16 @@ Steady-state Visual Evoked Potential Datasets
 
     TSUBenckmarkDataset
 
+HealthCare Datasets 
+---------------------------------------------------------
+
+.. autosummary::
+    :toctree: generated
+    :nosignatures:
+    :template: datasettemplate.rst
+
+    SleepEDFDataset
+
 Customized Datasets
 ---------------------------------------------------------
 
