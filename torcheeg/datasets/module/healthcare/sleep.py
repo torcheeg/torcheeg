@@ -117,7 +117,7 @@ class SleepEDFDataset(BaseDataset):
     @staticmethod
     def process_record(file: Any = None,
                        root_path: str = './sleep-edf-database-expanded-1.0.0',
-                       eeg_dir:str = "sleep-cassette",
+                       version:str = "cassette",
                        chunk_size: int = 3000,
                        overlap: int = 0,
                        num_channel: int =4,
@@ -127,7 +127,10 @@ class SleepEDFDataset(BaseDataset):
                        **kwargs):
         file_name = file  # an element from file name list
         # derive the given arguments (kwargs)
-        eeg = mne.io.read_raw_edf(os.path.join(root_path,eeg_dir, file_name)).get_data()
+        eeg_dir = "sleep-"+version
+        file_path = os.path.join(root_path,eeg_dir, file_name)
+        
+        eeg = mne.io.read_raw_edf(file_path).get_data()
         eeg = eeg[:num_channel]
 
         ann_file_name = list(filter(lambda x:x[-13:]=="Hypnogram.edf" and x[:7] == file_name[:7] ,os.listdir(os.path.join(root_path,eeg_dir))))[0]
