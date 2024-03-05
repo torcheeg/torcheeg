@@ -67,7 +67,7 @@ Steady-state Visual Evoked Potential Datasets
 
     TSUBenckmarkDataset
 
-HealthCare Datasets 
+Sleep Stage Detection Datasets 
 ---------------------------------------------------------
 
 .. autosummary::
@@ -75,7 +75,7 @@ HealthCare Datasets
     :nosignatures:
     :template: datasettemplate.rst
 
-    SleepEDFDataset
+    SleepEDFxDataset
 
 Customized Datasets
 ---------------------------------------------------------
