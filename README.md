@@ -292,7 +292,7 @@ TorchEEG has a MIT license, as found in the [LICENSE](https://github.com/torchee
 
 ## Citation
 
-If you find this code useful for your research, please cite:
+If you find this project useful for your research, please cite:
 
 ```latex
 @article{zhang2024torcheeg,

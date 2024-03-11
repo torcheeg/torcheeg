@@ -370,7 +370,7 @@ file.
 Citation
 --------
 
-If you find this code useful for your research, please cite:
+If you find this project useful for your research, please cite:
 
 .. code:: latex
 
