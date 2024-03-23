@@ -56,7 +56,7 @@ class SEEDDataset(BaseDataset):
                               ]),
                               label_transform=transforms.Compose([
                                   transforms.Select('emotion'),
-                                  transforms.Lambda(x: x + 1)
+                                  transforms.Lambda(lambda x: x + 1)
                               ]))
         print(dataset[0])
         # EEG signal (torch.Tensor[62, 200]),
@@ -73,7 +73,7 @@ class SEEDDataset(BaseDataset):
                               ]),
                               label_transform=transforms.Compose([
                                   transforms.Select('emotion'),
-                                  transforms.Lambda(x: x + 1)
+                                  transforms.Lambda(lambda x: x + 1)
                               ]))
         print(dataset[0])
         # EEG signal (torch_geometric.data.Data),
@@ -170,7 +170,6 @@ class SEEDDataset(BaseDataset):
         # loop for each trial
         for trial_id in trial_ids:
 
-            # extract baseline signals
             trial_samples = samples[trial_id]  # channel(62), timestep(n*200)
             if before_trial:
                 trial_samples = before_trial(trial_samples)
