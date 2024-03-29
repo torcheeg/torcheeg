@@ -1,4 +1,4 @@
-torcheeg.models
+Models
 =======================
 
 .. contents:: Extensive baseline method reproduction.

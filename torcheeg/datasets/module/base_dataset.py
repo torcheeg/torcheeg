@@ -296,10 +296,10 @@ class BaseDataset(Dataset):
             subject_df = self.info.groupby('subject_id')
         else:
             subject_df = [(None, self.info)]
-            if not after_subject is None:
-                log.info(
-                    "No subject_id column found in info, after_subject hook is ignored."
-                )
+            # if not after_subject is None:
+            #     log.info(
+            #         "No subject_id column found in info, after_subject hook is ignored."
+            #     )
         if after_subject is None:
             after_subject = lambda x: x
 
@@ -314,10 +314,10 @@ class BaseDataset(Dataset):
                 session_df = subject_info.groupby('session_id')
             else:
                 session_df = [(None, subject_info)]
-                if not after_session is None:
-                    log.info(
-                        "No session_id column found in info, after_session hook is ignored."
-                    )
+                # if not after_session is None:
+                #     log.info(
+                #         "No session_id column found in info, after_session hook is ignored."
+                #     )
             if after_session is None:
                 after_session = lambda x: x
 

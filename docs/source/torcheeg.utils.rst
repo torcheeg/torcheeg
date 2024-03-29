@@ -1,4 +1,4 @@
-torcheeg.utils
+Visualization Utility
 ===================
 
 .. contents:: Extensive utility functions for visualizing data of different structures for debugging and display.

@@ -1,4 +1,4 @@
-torcheeg.datasets
+Datasets
 =========================
 
 .. contents:: The packaged benchmark dataset implementation provides a multi-process preprocessing interface.
@@ -87,10 +87,3 @@ Customized Datasets
 
     FolderDataset
     CSVFolderDataset
-
-Hooks
----------------------------------------------------------
-
-.. autofunction:: before_trial_normalize
-.. autofunction:: after_trial_normalize
-.. autofunction:: after_trial_moving_avg

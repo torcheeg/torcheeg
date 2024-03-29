@@ -1,4 +1,4 @@
-torcheeg.transforms
+Data Transformations
 ===========================
 
 .. contents:: Extensive EEG preprocessing methods help users extract features, construct EEG signal representations, and connect to commonly used deep learning libraries.

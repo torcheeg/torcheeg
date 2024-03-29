@@ -1,4 +1,4 @@
-torcheeg.trainers
+Trainers
 ===============================
 
 .. contents:: Extensive trainers used to implement different training strategies, such as vanilla classification, domain adaption, etc.

@@ -1,9 +1,14 @@
 import numpy as np
+import torch
+
+from typing import List, Union
 
 
-def before_trial_normalize(data: np.ndarray, eps: float = 1e-6, axis=0):
+def before_hook_normalize(data: np.ndarray,
+                           eps: float = 1e-6,
+                           axis=0) -> np.ndarray:
     r'''
-    A common hook function used to normalize the signal of the whole trial before dividing it into chunks.
+    A common hook function used to normalize the signal of the whole trial/session/subject before dividing it into chunks.
 
     It is used as follows:
 
@@ -12,7 +17,7 @@ def before_trial_normalize(data: np.ndarray, eps: float = 1e-6, axis=0):
         from functools import partial
         dataset = DEAPDataset(
                 ...
-                before_trial=before_trial_normalize,
+                before_trial=before_hook_normalize,
                 num_worker=4)
 
     If you want to pass in parameters, use partial to generate a new function:
@@ -22,7 +27,7 @@ def before_trial_normalize(data: np.ndarray, eps: float = 1e-6, axis=0):
         from functools import partial
         dataset = DEAPDataset(
                 ...
-                before_trial=partial(before_trial_normalize, eps=1e-5),
+                before_trial=partial(before_hook_normalize, eps=1e-5),
                 num_worker=4)
 
     Args:
@@ -37,9 +42,11 @@ def before_trial_normalize(data: np.ndarray, eps: float = 1e-6, axis=0):
     return (data - min_v) / (max_v - min_v + eps)
 
 
-def after_trial_normalize(data: np.ndarray, eps: float = 1e-6):
+def after_hook_normalize(
+        data: List[Union[np.ndarray, torch.Tensor]],
+        eps: float = 1e-6) -> List[Union[np.ndarray, torch.Tensor]]:
     r'''
-    A common hook function used to normalize the signal of the whole trial after dividing it into chunks and transforming the divided chunks.
+    A common hook function used to normalize the signal of the whole trial/session/subject after dividing it into chunks and transforming the divided chunks.
 
     It is used as follows:
 
@@ -48,7 +55,7 @@ def after_trial_normalize(data: np.ndarray, eps: float = 1e-6):
         from functools import partial
         dataset = DEAPDataset(
                 ...
-                after_trial=after_trial_normalize,
+                after_trial=after_hook_normalize,
                 num_worker=4)
 
     If you want to pass in parameters, use partial to generate a new function:
@@ -58,45 +65,43 @@ def after_trial_normalize(data: np.ndarray, eps: float = 1e-6):
         from functools import partial
         dataset = DEAPDataset(
                 ...
-                after_trial=partial(after_trial_normalize, eps=1e-5),
+                after_trial=partial(after_hook_normalize, eps=1e-5),
                 num_worker=4)
     
     Args:
-        data (np.ndarray): The input EEG signals or features of a trial.
+        data (list): A list of :obj:`np.ndarray` or :obj:`torch.Tensor`, one of which corresponds to an EEG signal in trial.
         eps (float): The term added to the denominator to improve numerical stability (default: :obj:`1e-6`)
         
     Returns:
-        np.ndarray: The normalized results of a trial.
+        list: The normalized results of a trial. It is a list of :obj:`np.ndarray` or :obj:`torch.Tensor`, one of which corresponds to an EEG signal in trial.
     '''
-    trial_samples = []
-    trial_keys = []
-    trial_infos = []
-    for sample in data:
-        # electrodes, bands
-        trial_samples.append(sample['eeg'])
-        trial_keys.append(sample['key'])
-        trial_infos.append(sample['info'])
+    if isinstance(data[0], np.ndarray):
+        data = np.stack(data, axis=0)
 
-    # windows, electrodes, bands
-    trial_samples = np.stack(trial_samples, axis=0)
+        min_v = data.min(axis=0, keepdims=True)
+        max_v = data.max(axis=0, keepdims=True)
+        data = (data - min_v) / (max_v - min_v + eps)
 
-    min_v = trial_samples.min(axis=0, keepdims=True)
-    max_v = trial_samples.max(axis=0, keepdims=True)
-    trial_samples = (trial_samples - min_v) / (max_v - min_v + eps)
+        return [sample for sample in data]
+    elif isinstance(data[0], torch.Tensor):
+        data = torch.stack(data, dim=0)
 
-    output_data = []
-    for i, sample in enumerate(trial_samples):
-        output_data.append({
-            'eeg': sample,
-            'key': trial_keys[i],
-            'info': trial_infos[i]
-        })
-    return output_data
+        min_v, _ = data.min(axis=0, keepdims=True)
+        max_v, _ = data.max(axis=0, keepdims=True)
+        data = (data - min_v) / (max_v - min_v + eps)
+
+        return [sample for sample in data]
+    else:
+        raise ValueError(
+            'The after_hook_normalize only supports np.ndarray and torch.Tensor. Please make sure the outputs of offline_transform ({}) are np.ndarray or torch.Tensor.'
+            .format(type(data[0])))
 
 
-def after_trial_moving_avg(data: list, window_size: int = 4):
-    '''
-    A common hook function for smoothing the signal of each chunk in a trial after pre-processing.
+def after_hook_running_norm(
+        data: List[Union[np.ndarray, torch.Tensor]],
+        decay_rate: float = 0.9) -> List[Union[np.ndarray, torch.Tensor]]:
+    r'''
+    A common hook function used to normalize the signal of the whole trial/session/subject after dividing it into chunks and transforming the divided chunks.
 
     It is used as follows:
 
@@ -105,9 +110,9 @@ def after_trial_moving_avg(data: list, window_size: int = 4):
         from functools import partial
         dataset = DEAPDataset(
                 ...
-                after_trial=after_trial_moving_avg,
+                after_trial=after_hook_running_norm,
                 num_worker=4)
-    
+
     If you want to pass in parameters, use partial to generate a new function:
 
     .. code-block:: python
@@ -115,49 +120,151 @@ def after_trial_moving_avg(data: list, window_size: int = 4):
         from functools import partial
         dataset = DEAPDataset(
                 ...
-                after_trial=partial(after_trial_moving_avg, eps=1e-5),
+                after_trial=partial(after_hook_running_norm, decay_rate=0.9),
                 num_worker=4)
-
+    
     Args:
-        data (np.ndarray): A list of dictionaries, one of which corresponds to an EEG signal in trial. Each dictionary consists of two key-value paris, eeg and key. The value of eeg is the representation of the EEG signal and the value of key is its ID in the IO.
-        window_size (int): The window size of moving average. (default: :obj:`4`)
+        data (list): A list of :obj:`np.ndarray` or :obj:`torch.Tensor`, one of which corresponds to an EEG signal in trial.
+        decay_rate (float): The decay rate used in the running normalization (default: :obj:`0.9`)
         
     Returns:
-        list: The smoothing results of a trial. It is a list of dictionaries, one of which corresponds to an EEG signal in trial. Each dictionary consists of two key-value paris, eeg and key. The value of eeg is the representation of the EEG signal and the value of key is its ID in the IO.
+        list: The normalized results of a trial. It is a list of :obj:`np.ndarray` or :obj:`torch.Tensor`, one of which corresponds to an EEG signal in trial.
     '''
-    trial_samples = []
-    trial_keys = []
-    trial_infos = []
-    for sample in data:
-        # electrodes, bands
-        trial_samples.append(sample['eeg'])
-        trial_keys.append(sample['key'])
-        trial_infos.append(sample['info'])
+    if isinstance(data[0], np.ndarray):
+        data = np.stack(data, axis=0)
 
-    trial_samples = np.stack(trial_samples, axis=0)
-    trial_samples_shape = trial_samples.shape
-    trial_samples = trial_samples.reshape(trial_samples.shape[0], -1)
-    # windows, electrodes * bands
-    trial_samples_T = trial_samples.T
+        running_mean = np.zeros_like(data[0])
+        running_var = np.zeros_like(data[0])
 
-    # electrodes * bands, n
-    channel_list = []
-    for channel in trial_samples_T:
-        moving_avg_channel = np.convolve(channel, np.ones(window_size),
-                                         'same') / window_size
-        channel_list.append(moving_avg_channel)
-    trial_samples_T = np.array(channel_list)
+        for i, current_sample in enumerate(data):
+            running_mean = decay_rate * running_mean + (
+                1 - decay_rate) * current_sample
+            running_var = decay_rate * running_var + (
+                1 - decay_rate) * np.square(current_sample - running_mean)
+            data[i] = (data[i] - running_mean) / np.sqrt(running_var + 1e-6)
 
-    # windows, electrodes * bands
-    trial_samples = trial_samples_T.T
-    # windows, electrodes, bands
-    trial_samples = trial_samples.reshape(*trial_samples_shape)
+        return [sample for sample in data]
+    elif isinstance(data[0], torch.Tensor):
+        data = torch.stack(data, dim=0)
 
-    output_data = []
-    for i, sample in enumerate(trial_samples):
-        output_data.append({
-            'eeg': sample,
-            'key': trial_keys[i],
-            'info': trial_infos[i]
-        })
-    return output_data
+        running_mean = torch.zeros_like(data[0])
+        running_var = torch.zeros_like(data[0])
+
+        for i, current_sample in enumerate(data):
+            running_mean = decay_rate * running_mean + (
+                1 - decay_rate) * current_sample
+            running_var = decay_rate * running_var + (
+                1 - decay_rate) * torch.square(current_sample - running_mean)
+            data[i] = (data[i] - running_mean) / torch.sqrt(running_var + 1e-6)
+
+        return [sample for sample in data]
+    else:
+        raise ValueError(
+            'The after_hook_running_norm only supports np.ndarray and torch.Tensor. Please make sure the outputs of offline_transform ({}) are np.ndarray or torch.Tensor.'
+            .format(type(data[0])))
+
+
+def after_hook_linear_dynamical_system(
+        data: List[Union[np.ndarray, torch.Tensor]],
+        V0: float = 0.01,
+        A: float = 1,
+        T: float = 0.0001,
+        C: float = 1,
+        sigma: float = 1) -> List[Union[np.ndarray, torch.Tensor]]:
+    r'''
+    A common hook function used to normalize the signal of the whole trial/session/subject after dividing it into chunks and transforming the divided chunks.
+
+    It is used as follows:
+
+    .. code-block:: python
+
+        from functools import partial
+        dataset = DEAPDataset(
+                ...
+                after_trial=after_hook_linear_dynamical_system,
+                num_worker=4)
+
+    If you want to pass in parameters, use partial to generate a new function:
+
+    .. code-block:: python
+
+        from functools import partial
+        dataset = DEAPDataset(
+                ...
+                after_trial=partial(after_hook_linear_dynamical_system, V0=0.01, A=1, T=0.0001, C=1, sigma=1),
+                num_worker=4)
+    
+    Args:
+        data (list): A list of :obj:`np.ndarray` or :obj:`torch.Tensor`, one of which corresponds to an EEG signal in trial.
+        V0 (float): The initial variance of the linear dynamical system (default: :obj:`0.01`)
+        A (float): The coefficient of the linear dynamical system (default: :obj:`1`)
+        T (float): The term added to the diagonal of the covariance matrix (default: :obj:`0.0001`)
+        C (float): The coefficient of the linear dynamical system (default: :obj:`1`)
+        sigma (float): The variance of the linear dynamical system (default: :obj:`1`)
+        
+    Returns:
+        list: The normalized results of a trial. It is a list of :obj:`np.ndarray` or :obj:`torch.Tensor`, one of which corresponds to an EEG signal in trial.
+    '''
+    if isinstance(data[0], np.ndarray):
+        # save the data[0].shape and flatten them
+        shape = data[0].shape
+        data = np.stack([sample.flatten() for sample in data], axis=0)
+
+        ave = np.mean(data, axis=0)
+        u0 = ave
+        X = data.transpose((1, 0))
+
+        [m, n] = X.shape
+        P = np.zeros((m, n))
+        u = np.zeros((m, n))
+        V = np.zeros((m, n))
+        K = np.zeros((m, n))
+
+        K[:, 0] = (V0 * C / (C * V0 * C + sigma)) * np.ones((m, ))
+        u[:, 0] = u0 + K[:, 0] * (X[:, 0] - C * u0)
+        V[:, 0] = (np.ones((m, )) - K[:, 0] * C) * V0
+
+        for i in range(1, n):
+            P[:, i - 1] = A * V[:, i - 1] * A + T
+            K[:, i] = P[:, i - 1] * C / (C * P[:, i - 1] * C + sigma)
+            u[:,
+              i] = A * u[:, i - 1] + K[:, i] * (X[:, i] - C * A * u[:, i - 1])
+            V[:, i] = (np.ones((m, )) - K[:, i] * C) * P[:, i - 1]
+
+        X = u
+
+        return [sample.reshape(shape) for sample in X.transpose((1, 0))]
+
+    elif isinstance(data[0], torch.Tensor):
+        shape = data[0].shape
+        data = torch.stack([sample.flatten() for sample in data], dim=0)
+
+        ave = torch.mean(data, dim=0)
+        u0 = ave
+        X = data.transpose(1, 0)
+
+        [m, n] = X.shape
+        P = torch.zeros((m, n))
+        u = torch.zeros((m, n))
+        V = torch.zeros((m, n))
+        K = torch.zeros((m, n))
+
+        K[:, 0] = (V0 * C / (C * V0 * C + sigma)) * torch.ones((m, ))
+        u[:, 0] = u0 + K[:, 0] * (X[:, 0] - C * u0)
+        V[:, 0] = (torch.ones((m, )) - K[:, 0] * C) * V0
+
+        for i in range(1, n):
+            P[:, i - 1] = A * V[:, i - 1] * A + T
+            K[:, i] = P[:, i - 1] * C / (C * P[:, i - 1] * C + sigma)
+            u[:,
+              i] = A * u[:, i - 1] + K[:, i] * (X[:, i] - C * A * u[:, i - 1])
+            V[:, i] = (torch.ones((m, )) - K[:, i] * C) * P[:, i - 1]
+
+        X = u
+
+        return [sample.reshape(shape) for sample in X.transpose(1, 0)]
+
+    else:
+        raise ValueError(
+            'The after_hook_linear_dynamical_system only supports np.ndarray and torch.Tensor. Please make sure the outputs of offline_transform ({}) are np.ndarray or torch.Tensor.'
+            .format(type(data[0])))
