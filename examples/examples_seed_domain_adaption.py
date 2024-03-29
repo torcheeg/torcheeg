@@ -20,7 +20,7 @@ In this tutorial, you'll learn how to utilize TorchEEG's Associative Domain Adap
 from torcheeg.datasets import SEEDFeatureDataset
 from torcheeg import transforms
 from torcheeg.datasets.constants.emotion_recognition.seed import SEED_CHANNEL_LOCATION_DICT
-from torcheeg.datasets import after_hook_normalize
+from torcheeg.transforms import after_hook_normalize
 from pytorch_lightning.callbacks import ModelCheckpoint
 import numpy as np
 

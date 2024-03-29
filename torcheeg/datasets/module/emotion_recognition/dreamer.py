@@ -24,6 +24,10 @@ class DREAMERDataset(BaseDataset):
 
     .. code-block:: python
 
+        from torcheeg.datasets import DREAMERDataset
+        from torcheeg import transforms
+        from torcheeg.datasets.constants.emotion_recognition.dreamer import DREAMER_CHANNEL_LOCATION_DICT
+
         dataset = DREAMERDataset(mat_path='./DREAMER.mat',
                                  offline_transform=transforms.Compose([
                                      transforms.BandDifferentialEntropy(),
@@ -43,6 +47,9 @@ class DREAMERDataset(BaseDataset):
 
     .. code-block:: python
 
+        from torcheeg.datasets import DREAMERDataset
+        from torcheeg import transforms
+
         dataset = DREAMERDataset(mat_path='./DREAMER.mat',
                                  online_transform=transforms.Compose([
                                      transforms.To2d(),
@@ -61,7 +68,12 @@ class DREAMERDataset(BaseDataset):
     An example dataset for GNN-based methods:
 
     .. code-block:: python
-    
+        
+        from torcheeg.datasets import DREAMERDataset
+        from torcheeg import transforms
+        from torcheeg.datasets.constants.emotion_recognition.dreamer import DREAMER_ADJACENCY_MATRIX
+        from torcheeg.transforms.pyg import ToG
+        
         dataset = DREAMERDataset(mat_path='./DREAMER.mat',
                                  online_transform=transforms.Compose([
                                      ToG(DREAMER_ADJACENCY_MATRIX)

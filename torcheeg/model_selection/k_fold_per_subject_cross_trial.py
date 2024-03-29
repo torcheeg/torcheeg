@@ -26,6 +26,11 @@ class KFoldPerSubjectCrossTrial:
 
     .. code-block:: python
 
+        from torcheeg.model_selection import KFoldPerSubjectCrossTrial
+        from torcheeg.datasets import DEAPDataset
+        from torcheeg import transforms
+        from torcheeg.utils import DataLoader
+
         cv = KFoldPerSubjectCrossTrial(n_splits=5, shuffle=True)
         dataset = DEAPDataset(root_path='./data_preprocessed_python',
                               online_transform=transforms.Compose([
@@ -47,6 +52,11 @@ class KFoldPerSubjectCrossTrial:
     :obj:`KFoldPerSubjectCrossTrial` allows the user to specify the index of the subject of interest, when the user need to report the performance on each subject.
 
     .. code-block:: python
+
+        from torcheeg.model_selection import KFoldPerSubjectCrossTrial
+        from torcheeg.datasets import DEAPDataset
+        from torcheeg import transforms
+        from torcheeg.utils import DataLoader
 
         cv = KFoldPerSubjectCrossTrial(n_splits=5, shuffle=True)
         dataset = DEAPDataset(root_path='./data_preprocessed_python',

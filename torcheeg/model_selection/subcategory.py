@@ -21,6 +21,11 @@ class Subcategory:
 
     .. code-block:: python
 
+        from torcheeg.datasets import M3CVDataset
+        from torcheeg.model_selection import Subcategory
+        from torcheeg import transforms
+        from torcheeg.utils import DataLoader
+        
         cv = Subcategory()
         dataset = M3CVDataset(root_path='./aistudio',
                               online_transform=transforms.Compose(

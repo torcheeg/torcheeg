@@ -31,6 +31,10 @@ class SEEDIVDataset(BaseDataset):
 
     .. code-block:: python
 
+        from torcheeg.datasets import SEEDIVDataset
+        from torcheeg import transforms
+        from torcheeg.datasets.constants.emotion_recognition.seed import SEEDIV_CHANNEL_LOCATION_DICT
+        
         dataset = SEEDIVDataset(root_path='./eeg_raw_data',
                                 offline_transform=transforms.Compose([
                                     transforms.BandDifferentialEntropy(),
@@ -50,6 +54,9 @@ class SEEDIVDataset(BaseDataset):
 
     .. code-block:: python
 
+        from torcheeg.datasets import SEEDIVDataset
+        from torcheeg import transforms
+
         dataset = SEEDIVDataset(root_path='./eeg_raw_data',
                                 online_transform=transforms.Compose([
                                     transforms.ToTensor(),
@@ -64,7 +71,12 @@ class SEEDIVDataset(BaseDataset):
     An example dataset for GNN-based methods:
 
     .. code-block:: python
-    
+
+        from torcheeg.datasets import SEEDIVDataset
+        from torcheeg import transforms
+        from torcheeg.datasets.constants.emotion_recognition.seed import SEEDIV_ADJACENCY_MATRIX
+        from torcheeg.transforms.pyg import ToG
+        
         dataset = SEEDIVDataset(root_path='./eeg_raw_data',
                                 online_transform=transforms.Compose([
                                     ToG(SEED_IV_ADJACENCY_MATRIX)

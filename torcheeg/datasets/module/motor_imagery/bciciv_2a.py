@@ -32,6 +32,9 @@ class BCICIV2aDataset(BaseDataset):
 
     .. code-block:: python
 
+        from torcheeg.datasets import BCICIV2aDataset
+        from torcheeg import transforms
+
         dataset = BCICIV2aDataset(root_path='./BCICIV_2a_mat',
                                   online_transform=transforms.Compose([
                                       transforms.To2d(),

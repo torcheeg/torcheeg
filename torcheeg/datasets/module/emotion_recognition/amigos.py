@@ -35,6 +35,11 @@ class AMIGOSDataset(BaseDataset):
 
     .. code-block:: python
 
+        from torcheeg.datasets import AMIGOSDataset
+        from torcheeg import transforms
+
+        from torcheeg.datasets.constants.emotion_recognition.amigos import AMIGOS_CHANNEL_LOCATION_DICT
+
         dataset = AMIGOSDataset(root_path='./data_preprocessed',
                                 offline_transform=transforms.Compose([
                                     transforms.BandDifferentialEntropy(),
@@ -54,6 +59,9 @@ class AMIGOSDataset(BaseDataset):
 
     .. code-block:: python
 
+        from torcheeg.datasets import AMIGOSDataset
+        from torcheeg import transforms
+
         dataset = AMIGOSDataset(root_path='./data_preprocessed',
                                 online_transform=transforms.Compose(
                                     [transforms.To2d(),
@@ -71,6 +79,12 @@ class AMIGOSDataset(BaseDataset):
 
     .. code-block:: python
     
+        from torcheeg.datasets import AMIGOSDataset
+        from torcheeg import transforms
+        from torcheeg.transforms.pyg import ToG
+
+        from torcheeg.datasets.constants.emotion_recognition.amigos import AMIGOS_ADJACENCY_MATRIX
+
         dataset = AMIGOSDataset(root_path='./data_preprocessed',
                                 online_transform=transforms.Compose(
                                     [ToG(AMIGOS_ADJACENCY_MATRIX)]),

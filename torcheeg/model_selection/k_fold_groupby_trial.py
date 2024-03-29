@@ -28,6 +28,11 @@ class KFoldGroupbyTrial:
 
     .. code-block:: python
 
+        from torcheeg.model_selection import KFoldGroupbyTrial
+        from torcheeg.datasets import DEAPDataset
+        from torcheeg import transforms
+        from torcheeg.utils import DataLoader
+
         cv = KFoldGroupbyTrial(n_splits=5, shuffle=False)
         dataset = DEAPDataset(root_path='./data_preprocessed_python',
                               online_transform=transforms.Compose([

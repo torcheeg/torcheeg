@@ -14,27 +14,32 @@ class TSCeption(nn.Module):
 
     .. code-block:: python
 
-        dataset = DEAPDataset(io_path=f'./deap',
-                    root_path='./data_preprocessed_python',
-                    chunk_size=512,
-                    num_baseline=1,
-                    baseline_chunk_size=512,
-                    offline_transform=transforms.Compose([
-                        PickElectrode(PickElectrode.to_index_list(
-                        ['FP1', 'AF3', 'F3', 'F7',
-                        'FC5', 'FC1', 'C3', 'T7',
-                        'CP5', 'CP1', 'P3', 'P7',
-                        'PO3','O1', 'FP2', 'AF4',
-                        'F4', 'F8', 'FC6', 'FC2',
-                        'C4', 'T8', 'CP6', 'CP2',
-                        'P4', 'P8', 'PO4', 'O2'], DEAP_CHANNEL_LIST)),
-                        transforms.To2d()
-                    ]),
-                    online_transform=transforms.ToTensor(),
-                    label_transform=transforms.Compose([
-                        transforms.Select('valence'),
-                        transforms.Binary(5.0),
-                    ]))
+        from torcheeg.datasets import DEAPDataset
+        from torcheeg import transforms
+        from torcheeg.datasets.constants.emotion_recognition.deap import DEAP_CHANNEL_LIST
+        from torcheeg.models import TSCeption
+
+        dataset = DEAPDataset(root_path='./data_preprocessed_python',
+                              chunk_size=512,
+                              num_baseline=1,
+                              baseline_chunk_size=512,
+                              offline_transform=transforms.Compose([
+                                  PickElectrode(PickElectrode.to_index_list(
+                                  ['FP1', 'AF3', 'F3', 'F7',
+                                  'FC5', 'FC1', 'C3', 'T7',
+                                  'CP5', 'CP1', 'P3', 'P7',
+                                  'PO3','O1', 'FP2', 'AF4',
+                                  'F4', 'F8', 'FC6', 'FC2',
+                                  'C4', 'T8', 'CP6', 'CP2',
+                                  'P4', 'P8', 'PO4', 'O2'], DEAP_CHANNEL_LIST)),
+                                  transforms.To2d()
+                              ]),
+                              online_transform=transforms.ToTensor(),
+                              label_transform=transforms.Compose([
+                                  transforms.Select('valence'),
+                                  transforms.Binary(5.0),
+                              ]))
+                              
         model = TSCeption(num_classes=2,
                           num_electrodes=28,
                           sampling_rate=128,

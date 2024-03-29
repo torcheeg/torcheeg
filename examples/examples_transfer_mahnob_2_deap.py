@@ -29,7 +29,7 @@ from torcheeg.datasets import MAHNOBDataset
 from torcheeg import transforms
 from torcheeg.datasets.constants.emotion_recognition.mahnob import MAHNOB_CHANNEL_LOCATION_DICT
 
-from torcheeg.datasets.functional import after_hook_normalize
+from torcheeg.transforms import after_hook_normalize
 
 dataset = MAHNOBDataset(
     io_path='./examples_transfer_mahnob_2_deap/mahnob',

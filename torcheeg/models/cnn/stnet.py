@@ -51,16 +51,21 @@ class STNet(nn.Module):
 
     .. code-block:: python
 
-        dataset = DEAPDataset(io_path=f'./deap',
-                    root_path='./data_preprocessed_python',
-                    offline_transform=transforms.Compose([
-                        transforms.ToGrid(DEAP_CHANNEL_LOCATION_DICT)
-                    ]),
-                    online_transform=transforms.ToTensor(),
-                    label_transform=transforms.Compose([
-                        transforms.Select('valence'),
-                        transforms.Binary(5.0),
-                    ]))
+        from torcheeg.datasets import DEAPDataset
+        from torcheeg import transforms
+        from torcheeg.datasets.constants.emotion_recognition.deap import DEAP_CHANNEL_LOCATION_DICT
+        from torcheeg.models import STNet
+
+        dataset = DEAPDataset(root_path='./data_preprocessed_python',
+                              offline_transform=transforms.Compose([
+                                  transforms.ToGrid(DEAP_CHANNEL_LOCATION_DICT)
+                              ]),
+                              online_transform=transforms.ToTensor(),
+                              label_transform=transforms.Compose([
+                                  transforms.Select('valence'),
+                                  transforms.Binary(5.0),
+                              ]))
+                              
         model = STNet(num_classes=2, chunk_size=128, grid_size=(9, 9), dropout=0.2)
 
     Args:

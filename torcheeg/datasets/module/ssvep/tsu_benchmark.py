@@ -33,6 +33,10 @@ class TSUBenckmarkDataset(BaseDataset):
 
     .. code-block:: python
 
+        from torcheeg.datasets import TSUBenckmarkDataset
+        from torcheeg import transforms
+        from torcheeg.datasets.constants.ssvep.tsubenchmark import TSUBenckmark_CHANNEL_LOCATION_DICT
+
         dataset = TSUBenckmarkDataset(root_path='./TSUBenchmark',
                                       offline_transform=transforms.Compose([
                                           transforms.BandDifferentialEntropy(),

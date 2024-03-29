@@ -1,4 +1,4 @@
-Datasets
+torcheeg.datasets
 =========================
 
 .. contents:: The packaged benchmark dataset implementation provides a multi-process preprocessing interface.

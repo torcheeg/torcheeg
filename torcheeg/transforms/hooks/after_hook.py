@@ -4,44 +4,6 @@ import torch
 from typing import List, Union
 
 
-def before_hook_normalize(data: np.ndarray,
-                           eps: float = 1e-6,
-                           axis=0) -> np.ndarray:
-    r'''
-    A common hook function used to normalize the signal of the whole trial/session/subject before dividing it into chunks.
-
-    It is used as follows:
-
-    .. code-block:: python
-
-        from functools import partial
-        dataset = DEAPDataset(
-                ...
-                before_trial=before_hook_normalize,
-                num_worker=4)
-
-    If you want to pass in parameters, use partial to generate a new function:
-
-    .. code-block:: python
-
-        from functools import partial
-        dataset = DEAPDataset(
-                ...
-                before_trial=partial(before_hook_normalize, eps=1e-5),
-                num_worker=4)
-
-    Args:
-        data (np.ndarray): The input EEG signals or features of a trial.
-        eps (float): The term added to the denominator to improve numerical stability (default: :obj:`1e-6`)
-        
-    Returns:
-        np.ndarray: The normalized results of a trial.
-    '''
-    min_v = data.min(axis=axis, keepdims=True)
-    max_v = data.max(axis=axis, keepdims=True)
-    return (data - min_v) / (max_v - min_v + eps)
-
-
 def after_hook_normalize(
         data: List[Union[np.ndarray, torch.Tensor]],
         eps: float = 1e-6) -> List[Union[np.ndarray, torch.Tensor]]:
@@ -99,7 +61,8 @@ def after_hook_normalize(
 
 def after_hook_running_norm(
         data: List[Union[np.ndarray, torch.Tensor]],
-        decay_rate: float = 0.9) -> List[Union[np.ndarray, torch.Tensor]]:
+        decay_rate: float = 0.9,
+        eps: float = 1e-6) -> List[Union[np.ndarray, torch.Tensor]]:
     r'''
     A common hook function used to normalize the signal of the whole trial/session/subject after dividing it into chunks and transforming the divided chunks.
 
@@ -107,26 +70,46 @@ def after_hook_running_norm(
 
     .. code-block:: python
 
-        from functools import partial
-        dataset = DEAPDataset(
-                ...
-                after_trial=after_hook_running_norm,
-                num_worker=4)
+        from torcheeg.datasets import DEAPDataset
+        from torcheeg.transforms import after_hook_running_norm
+
+        dataset = DEAPDataset(root_path='./data_preprocessed_python',
+                              offline_transform=transforms.Compose([
+                                  transforms.BandDifferentialEntropy(),
+                                  transforms.ToGrid(DEAP_CHANNEL_LOCATION_DICT)
+                              ]),
+                              online_transform=transforms.ToTensor(),
+                              after_trial=after_hook_running_norm,
+                              label_transform=transforms.Compose([
+                                  transforms.Select('valence'),
+                                  transforms.Binary(5.0),
+                              ]))
 
     If you want to pass in parameters, use partial to generate a new function:
 
     .. code-block:: python
 
         from functools import partial
-        dataset = DEAPDataset(
-                ...
-                after_trial=partial(after_hook_running_norm, decay_rate=0.9),
-                num_worker=4)
+        from torcheeg.datasets import DEAPDataset
+        from torcheeg.transforms import after_hook_running_norm
+        
+        dataset = DEAPDataset(root_path='./data_preprocessed_python',
+                              offline_transform=transforms.Compose([
+                                  transforms.BandDifferentialEntropy(),
+                                  transforms.ToGrid(DEAP_CHANNEL_LOCATION_DICT)
+                              ]),
+                              online_transform=transforms.ToTensor(),
+                              after_trial=partial(after_hook_running_norm, decay_rate=0.9, eps=1e-6),
+                              label_transform=transforms.Compose([
+                                  transforms.Select('valence'),
+                                  transforms.Binary(5.0),
+                              ]))
     
     Args:
         data (list): A list of :obj:`np.ndarray` or :obj:`torch.Tensor`, one of which corresponds to an EEG signal in trial.
         decay_rate (float): The decay rate used in the running normalization (default: :obj:`0.9`)
-        
+        eps (float): The term added to the denominator to improve numerical stability (default: :obj:`1e-6`)
+
     Returns:
         list: The normalized results of a trial. It is a list of :obj:`np.ndarray` or :obj:`torch.Tensor`, one of which corresponds to an EEG signal in trial.
     '''
@@ -141,7 +124,7 @@ def after_hook_running_norm(
                 1 - decay_rate) * current_sample
             running_var = decay_rate * running_var + (
                 1 - decay_rate) * np.square(current_sample - running_mean)
-            data[i] = (data[i] - running_mean) / np.sqrt(running_var + 1e-6)
+            data[i] = (data[i] - running_mean) / np.sqrt(running_var + eps)
 
         return [sample for sample in data]
     elif isinstance(data[0], torch.Tensor):
@@ -155,7 +138,7 @@ def after_hook_running_norm(
                 1 - decay_rate) * current_sample
             running_var = decay_rate * running_var + (
                 1 - decay_rate) * torch.square(current_sample - running_mean)
-            data[i] = (data[i] - running_mean) / torch.sqrt(running_var + 1e-6)
+            data[i] = (data[i] - running_mean) / torch.sqrt(running_var + eps)
 
         return [sample for sample in data]
     else:
@@ -178,21 +161,40 @@ def after_hook_linear_dynamical_system(
 
     .. code-block:: python
 
-        from functools import partial
-        dataset = DEAPDataset(
-                ...
-                after_trial=after_hook_linear_dynamical_system,
-                num_worker=4)
+        from torcheeg.datasets import DEAPDataset
+        from torcheeg.transforms import after_hook_linear_dynamical_system
+
+        dataset = DEAPDataset(root_path='./data_preprocessed_python',
+                              offline_transform=transforms.Compose([
+                                  transforms.BandDifferentialEntropy(),
+                                  transforms.ToGrid(DEAP_CHANNEL_LOCATION_DICT)
+                              ]),
+                              online_transform=transforms.ToTensor(),
+                              after_trial=after_hook_linear_dynamical_system,
+                              label_transform=transforms.Compose([
+                                  transforms.Select('valence'),
+                                  transforms.Binary(5.0),
+                              ]))
 
     If you want to pass in parameters, use partial to generate a new function:
 
     .. code-block:: python
 
         from functools import partial
-        dataset = DEAPDataset(
-                ...
-                after_trial=partial(after_hook_linear_dynamical_system, V0=0.01, A=1, T=0.0001, C=1, sigma=1),
-                num_worker=4)
+        from torcheeg.datasets import DEAPDataset
+        from torcheeg.transforms import after_hook_linear_dynamical_system
+
+        dataset = DEAPDataset(root_path='./data_preprocessed_python',
+                              offline_transform=transforms.Compose([
+                                  transforms.BandDifferentialEntropy(),
+                                  transforms.ToGrid(DEAP_CHANNEL_LOCATION_DICT)
+                              ]),
+                              online_transform=transforms.ToTensor(),
+                              after_trial=partial(after_hook_linear_dynamical_system, V0=0.01, A=1, T=0.0001, C=1, sigma=1),
+                              label_transform=transforms.Compose([
+                                  transforms.Select('valence'),
+                                  transforms.Binary(5.0),
+                              ]))
     
     Args:
         data (list): A list of :obj:`np.ndarray` or :obj:`torch.Tensor`, one of which corresponds to an EEG signal in trial.

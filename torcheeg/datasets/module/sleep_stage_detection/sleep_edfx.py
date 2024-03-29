@@ -31,7 +31,10 @@ class SleepEDFxDataset(BaseDataset):
     An example dataset for CNN-based methods:
 
     .. code-block:: python
-    
+
+        from torcheeg.datasets import SleepEDFxDataset
+        from torcheeg import transforms
+        
         dataset = SleepEDFxDataset(root_path="./sleep-edf-database-expanded-1.0.0",
                            num_channels=4,
                            chunk_size=3000,

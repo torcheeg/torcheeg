@@ -48,7 +48,10 @@ class FolderDataset(BaseDataset):
     An example dataset for GNN-based methods:
 
     .. code-block:: python
-    
+
+        from torcheeg.datasets import FolderDataset
+        from torcheeg import transforms
+
         sfreq = 128  # Sampling rate
         n_channels = 14  # Number of channels
         duration = 5  # Data collected for 5 seconds

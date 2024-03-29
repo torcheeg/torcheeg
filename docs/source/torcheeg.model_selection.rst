@@ -1,4 +1,4 @@
-Dataset Splitting
+torcheeg.model\_selection
 =================================
 
 .. contents:: Extensive dataset partitioning methods for users to experiment with different settings.

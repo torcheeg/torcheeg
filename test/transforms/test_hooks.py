@@ -8,10 +8,9 @@ import torch
 
 from torcheeg import transforms
 from torcheeg.datasets import DEAPDataset
-from torcheeg.datasets.functional.hooks import (after_hook_normalize,
-                                                after_hook_running_norm,
-                                                after_hook_linear_dynamical_system,
-                                                before_hook_normalize)
+from torcheeg.transforms import (after_hook_normalize, after_hook_running_norm,
+                                 after_hook_linear_dynamical_system,
+                                 before_hook_normalize)
 
 
 class TestHooks(unittest.TestCase):
@@ -59,12 +58,8 @@ class TestHooks(unittest.TestCase):
         last_item = dataset[76799]
         self.assertEqual(last_item[0].shape, (32, 128))
 
-        fake_data_np = [
-            np.random.rand(32, 128) for _ in range(32)
-        ]
-        fake_data_torch = [
-            torch.rand(32, 128) for _ in range(32)
-        ]
+        fake_data_np = [np.random.rand(32, 128) for _ in range(32)]
+        fake_data_torch = [torch.rand(32, 128) for _ in range(32)]
 
         # Test after_hook_normalize
         normalized_data = after_hook_normalize(fake_data_np)
@@ -92,6 +87,7 @@ class TestHooks(unittest.TestCase):
         normalized_data = after_hook_linear_dynamical_system(fake_data_torch)
         self.assertEqual(len(normalized_data), 32)
         self.assertEqual(normalized_data[0].shape, (32, 128))
+
 
 if __name__ == '__main__':
     unittest.main()

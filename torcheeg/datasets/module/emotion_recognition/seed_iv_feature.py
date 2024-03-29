@@ -31,6 +31,10 @@ class SEEDIVFeatureDataset(BaseDataset):
 
     .. code-block:: python
 
+        from torcheeg.datasets import SEEDIVFeatureDataset
+        from torcheeg import transforms
+        from torcheeg.datasets.constants.emotion_recognition.seed import SEED_CHANNEL_LOCATION_DICT
+        
         dataset = SEEDIVFeatureDataset(root_path='./eeg_feature_smooth',
                                        features=['de_movingAve'],
                                        offline_transform=transforms.ToGrid         (SEED_CHANNEL_LOCATION_DICT),
@@ -44,7 +48,12 @@ class SEEDIVFeatureDataset(BaseDataset):
     An example dataset for GNN-based methods:
 
     .. code-block:: python
-    
+
+        from torcheeg.datasets import SEEDIVFeatureDataset
+        from torcheeg import transforms
+        from torcheeg.datasets.constants.emotion_recognition.seed import SEED_ADJACENCY_MATRIX
+        from torcheeg.transforms.pyg import ToG
+        
         dataset = SEEDIVFeatureDataset(root_path='./eeg_feature_smooth',
                                        features=['de_movingAve'],
                                        online_transform=ToG(SEED_ADJACENCY_MATRIX),

@@ -24,16 +24,20 @@ class EEGNet(nn.Module):
 
     .. code-block:: python
 
-        dataset = DEAPDataset(io_path=f'./deap',
-                    root_path='./data_preprocessed_python',
-                    online_transform=transforms.Compose([
-                        transforms.To2d(),
-                        transforms.ToTensor(),
-                    ]),
-                    label_transform=transforms.Compose([
-                        transforms.Select('valence'),
-                        transforms.Binary(5.0),
-                    ]))
+        from torcheeg.datasets import DEAPDataset
+        from torcheeg import transforms
+        from torcheeg.models import EEGNet
+
+        dataset = DEAPDataset(root_path='./data_preprocessed_python',
+                              online_transform=transforms.Compose([
+                                  transforms.To2d(),
+                                  transforms.ToTensor(),
+                              ]),
+                              label_transform=transforms.Compose([
+                                  transforms.Select('valence'),
+                                  transforms.Binary(5.0),
+                              ]))
+                              
         model = EEGNet(chunk_size=128,
                        num_electrodes=32,
                        dropout=0.5,

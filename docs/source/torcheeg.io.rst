@@ -1,4 +1,4 @@
-IO
+torcheeg.io
 ===================
 
 .. contents:: A set of unified input and output API is used to store the processing results of various EEG databases for more efficient and convenient use.

@@ -117,6 +117,10 @@ class BCI2022Dataset(BaseDataset):
 
     .. code-block:: python
 
+        from torcheeg.datasets import BCI2022Dataset
+        from torcheeg import transforms
+        from torcheeg.datasets.constants.emotion_recognition.bci2022 import BCI2022_CHANNEL_LOCATION_DICT
+
         dataset = BCI2022Dataset(root_path='./TrainSet',
                                  offline_transform=transforms.Compose([
                                      transforms.BandDifferentialEntropy(),
@@ -133,6 +137,9 @@ class BCI2022Dataset(BaseDataset):
 
     .. code-block:: python
 
+        from torcheeg.datasets import BCI2022Dataset
+        from torcheeg import transforms
+
         dataset = BCI2022Dataset(root_path='./TrainSet',
                                  online_transform=transforms.Compose(
                                      [transforms.ToTensor(),
@@ -146,7 +153,11 @@ class BCI2022Dataset(BaseDataset):
     An example dataset for GNN-based methods:
 
     .. code-block:: python
-    
+
+        from torcheeg.datasets import BCI2022Dataset
+        from torcheeg import transforms
+        from torcheeg.datasets.constants.emotion_recognition.bci2022 import BCI2022_ADJACENCY_MATRIX
+        
         dataset = BCI2022Dataset(root_path='./TrainSet',
                                  online_transform=transforms.Compose(
                                      [transforms.ToG(BCI2022_ADJACENCY_MATRIX)]),
