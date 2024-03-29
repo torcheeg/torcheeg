@@ -626,6 +626,10 @@ class BCGlow(nn.Module):
 
     .. code-block:: python
 
+        import torch
+
+        from torcheeg.models.flow import BGlow
+        
         eeg = torch.randn(1, 4, 32, 32)
         y = torch.randint(0, 2, (2, ))
         model = BGlow(num_classes=2)

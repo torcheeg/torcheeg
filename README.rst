@@ -256,7 +256,7 @@ e.g. ``./tmp_in/data_preprocessed_python``.
    from torcheeg.datasets import DEAPDataset
    from torcheeg import transforms
 
-   from torcheeg.datasets.constants.emotion_recognition.deap import \
+   from torcheeg.datasets.constants import \
        DEAP_CHANNEL_LOCATION_DICT
 
    dataset = DEAPDataset(

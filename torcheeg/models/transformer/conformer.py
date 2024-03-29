@@ -170,8 +170,12 @@ class Conformer(nn.Module):
 
     .. code-block:: python
 
-        dataset = SEEDDataset(io_path=f'./seed',
-                              root_path='./Preprocessed_EEG',
+        from torcheeg.models import Conformer
+        from torcheeg.datasets import SEEDDataset
+        from torcheeg import transforms
+        from torch.utils.data import DataLoader
+
+        dataset = SEEDDataset(root_path='./Preprocessed_EEG',
                               offline_transform=transforms.Compose([
                                   transforms.MinMaxNormalize(axis=-1),
                                   transforms.To2d()
@@ -181,6 +185,7 @@ class Conformer(nn.Module):
                                   transforms.Select('emotion'),
                                   transforms.Lambda(lambda x: x + 1)
                               ]))
+
         model = Conformer(num_electrodes=62,
                           sampling_rate=200,
                           hid_channels=40,
@@ -190,6 +195,9 @@ class Conformer(nn.Module):
                           forward_expansion=4,
                           forward_dropout=0.5,
                           num_classes=2)
+
+        x, y = next(iter(DataLoader(dataset, batch_size=64)))
+        model(x)
 
     Args:
         num_electrodes (int): The number of electrodes. (default: :obj:`62`)

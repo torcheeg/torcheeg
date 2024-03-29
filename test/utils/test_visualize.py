@@ -2,7 +2,7 @@ import unittest
 
 import numpy as np
 import torch
-from torcheeg.datasets.constants.emotion_recognition.deap import (DEAP_ADJACENCY_MATRIX, DEAP_CHANNEL_LIST,
+from torcheeg.datasets.constants import (DEAP_ADJACENCY_MATRIX, DEAP_CHANNEL_LIST,
                                                                   DEAP_CHANNEL_LOCATION_DICT, DEAP_LOCATION_LIST)
 from torcheeg.datasets.constants.emotion_recognition.seed import \
     SEED_CHANNEL_LIST, SEED_GENERAL_REGION_LIST

@@ -18,7 +18,7 @@ This guide will help you understand how to easily load and manipulate these data
 from torcheeg.datasets import DEAPDataset
 from torcheeg import transforms
 
-from torcheeg.datasets.constants.emotion_recognition.deap import \
+from torcheeg.datasets.constants import \
     DEAP_CHANNEL_LOCATION_DICT
 
 dataset = DEAPDataset(

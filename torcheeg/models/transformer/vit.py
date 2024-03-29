@@ -116,23 +116,32 @@ class ViT(nn.Module):
 
     .. code-block:: python
 
-        dataset = DEAPDataset(io_path=f'./deap',
-                    root_path='./data_preprocessed_python',
-                    offline_transform=transforms.Compose([
-                        transforms.MinMaxNormalize(axis=-1),
-                        transforms.ToGrid(DEAP_CHANNEL_LOCATION_DICT)
-                    ]),
-                    online_transform=transforms.Compose([
-                        transforms.ToTensor(),
-                    ]),
-                    label_transform=transforms.Compose([
-                        transforms.Select('valence'),
-                        transforms.Binary(5.0),
-                    ]))
+        from torcheeg.datasets import DEAPDataset
+        from torcheeg import transforms
+        from torcheeg.models import ViT
+        from torch.utils.data import DataLoader
+        from torcheeg.datasets.constants import DEAP_CHANNEL_LOCATION_DICT
+
+        dataset = DEAPDataset(root_path='./data_preprocessed_python',
+                              offline_transform=transforms.Compose([
+                                  transforms.MinMaxNormalize(axis=-1),
+                                  transforms.ToGrid(DEAP_CHANNEL_LOCATION_DICT)
+                              ]),
+                              online_transform=transforms.Compose([
+                                  transforms.ToTensor(),
+                              ]),
+                              label_transform=transforms.Compose([
+                                  transforms.Select('valence'),
+                                  transforms.Binary(5.0),
+                              ]))
+
         model = ViT(chunk_size=128,
                     grid_size=(9, 9),
                     t_patch_size=32,
                     num_classes=2)
+
+        x, y = next(iter(DataLoader(dataset, batch_size=64)))
+        model(x)
 
     It can also be used for the analysis of features such as DE, PSD, etc:
 

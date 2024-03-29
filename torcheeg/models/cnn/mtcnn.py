@@ -18,9 +18,10 @@ class MTCNN(nn.Module):
 
         from torcheeg.datasets import DEAPDataset
         from torcheeg import transforms
-        from torcheeg.datasets.constants.emotion_recognition.deap import DEAP_CHANNEL_LOCATION_DICT, DEAP_CHANNEL_LIST
+        from torcheeg.datasets.constants import DEAP_CHANNEL_LOCATION_DICT, DEAP_CHANNEL_LIST
         from torcheeg.models import MTCNN
         from torcheeg.datasets.constants.emotion_recognition.utils import format_channel_location_dict
+        from torch.utils.data import DataLoader
 
         DEAP_LOCATION_LIST = [['-', '-', 'AF3', 'FP1', '-', 'FP2', 'AF4', '-', '-'],
                               ['F7', '-', 'F3', '-', 'FZ', '-', 'F4', '-', 'F8'],
@@ -44,8 +45,11 @@ class MTCNN(nn.Module):
                                   transforms.Select('valence'),
                                   transforms.Binary(5.0),
                               ]))
-                              
+
         model = MTCNN(num_classes=2, in_channels=8, grid_size=(8, 9), dropout=0.2)
+
+        x, y = next(iter(DataLoader(dataset, batch_size=64)))
+        model(x)
 
     Args:
         in_channels (int): The feature dimension of each electrode, i.e., :math:`N` in the paper. (default: :obj:`4`)

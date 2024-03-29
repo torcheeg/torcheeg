@@ -12,6 +12,10 @@ class BCEncoder(nn.Module):
 
     .. code-block:: python
 
+        import torch
+
+        from torcheeg.models import BCEncoder
+        
         encoder = BCEncoder(in_channels=4, num_classes=3)
         y = torch.randint(low=0, high=3, size=(1,))
         mock_eeg = torch.randn(1, 4, 9, 9)

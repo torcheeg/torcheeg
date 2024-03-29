@@ -133,7 +133,7 @@ state_dict = model.state_dict()
 
 from torcheeg.datasets import DEAPDataset
 
-from torcheeg.datasets.constants.emotion_recognition.deap import \
+from torcheeg.datasets.constants import \
     DEAP_CHANNEL_LOCATION_DICT
 
 dataset = DEAPDataset(

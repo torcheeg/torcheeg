@@ -18,8 +18,9 @@ class CCNN(nn.Module):
 
         from torcheeg.datasets import DEAPDataset
         from torcheeg import transforms
-        from torcheeg.datasets.constants.emotion_recognition.deap import DEAP_CHANNEL_LOCATION_DICT
+        from torcheeg.datasets.constants import DEAP_CHANNEL_LOCATION_DICT
         from torcheeg.models import CCNN
+        from torch.utils.data import DataLoader
 
         dataset = DEAPDataset(root_path='./data_preprocessed_python',
                               offline_transform=transforms.Compose([
@@ -31,8 +32,11 @@ class CCNN(nn.Module):
                                   transforms.Select('valence'),
                                   transforms.Binary(5.0),
                               ]))
-                              
+
         model = CCNN(num_classes=2, in_channels=4, grid_size=(9, 9))
+
+        x, y = next(iter(DataLoader(dataset, batch_size=64)))
+        model(x)
 
     Args:
         in_channels (int): The feature dimension of each electrode. (default: :obj:`4`)

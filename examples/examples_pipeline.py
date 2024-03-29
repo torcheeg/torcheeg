@@ -31,7 +31,7 @@ In this tutorial, we demonstrate a complete deep learning workflow using TorchEE
 from torcheeg.datasets import DEAPDataset
 from torcheeg import transforms
 
-from torcheeg.datasets.constants.emotion_recognition.deap import \
+from torcheeg.datasets.constants import \
     DEAP_CHANNEL_LOCATION_DICT
 
 dataset = DEAPDataset(

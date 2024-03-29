@@ -173,6 +173,7 @@ class FBMSNet(nn.Module):
             from torcheeg.datasets import BCICIV2aDataset
             from torcheeg import transforms
             from torcheeg.models import FBMSNet
+            from torch.utils.data import DataLoader
 
             freq_range_per_band = {
                 'sub band1': [4, 8],
@@ -196,6 +197,9 @@ class FBMSNet(nn.Module):
 
             model = FBMSNet(num_classes=4, num_electrodes=22, chunk_size=512, in_channels=9)
 
+            x, y = next(iter(DataLoader(dataset, batch_size=64)))
+            model(x)
+            
         Args:
             num_electrodes (int): The number of electrodes. 
             chunk_size (int): Number of data points included in each EEG chunk. 

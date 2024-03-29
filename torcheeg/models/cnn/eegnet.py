@@ -27,6 +27,7 @@ class EEGNet(nn.Module):
         from torcheeg.datasets import DEAPDataset
         from torcheeg import transforms
         from torcheeg.models import EEGNet
+        from torch.utils.data import DataLoader
 
         dataset = DEAPDataset(root_path='./data_preprocessed_python',
                               online_transform=transforms.Compose([
@@ -37,7 +38,7 @@ class EEGNet(nn.Module):
                                   transforms.Select('valence'),
                                   transforms.Binary(5.0),
                               ]))
-                              
+
         model = EEGNet(chunk_size=128,
                        num_electrodes=32,
                        dropout=0.5,
@@ -47,6 +48,9 @@ class EEGNet(nn.Module):
                        F2=16,
                        D=2,
                        num_classes=2)
+
+        x, y = next(iter(DataLoader(dataset, batch_size=64)))
+        model(x)
 
     Args:
         chunk_size (int): Number of data points included in each EEG chunk, i.e., :math:`T` in the paper. (default: :obj:`151`)

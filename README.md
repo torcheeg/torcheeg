@@ -146,7 +146,7 @@ The `torcheeg.datasets` module contains dataset classes for many real-world EEG 
 from torcheeg.datasets import DEAPDataset
 from torcheeg import transforms
 
-from torcheeg.datasets.constants.emotion_recognition.deap import \
+from torcheeg.datasets.constants import \
     DEAP_CHANNEL_LOCATION_DICT
 
 dataset = DEAPDataset(

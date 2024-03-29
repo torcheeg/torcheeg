@@ -21,8 +21,9 @@ class SSTEmotionNet(nn.Module):
 
         from torcheeg.datasets import DEAPDataset
         from torcheeg import transforms
-        from torcheeg.datasets.constants.emotion_recognition.deap import DEAP_CHANNEL_LOCATION_DICT
+        from torcheeg.datasets.constants import DEAP_CHANNEL_LOCATION_DICT
         from torcheeg.models import SSTEmotionNet
+        from torch.utils.data import DataLoader
 
         dataset = DEAPDataset(root_path='./data_preprocessed_python',
                               offline_transform=transforms.Compose([
@@ -47,8 +48,11 @@ class SSTEmotionNet(nn.Module):
                                   transforms.Select('valence'),
                                   transforms.Binary(5.0),
                               ]))
-                              
+
         model = SSTEmotionNet(temporal_in_channels=32, spectral_in_channels=4, grid_size=(16, 16), num_classes=2)
+
+        x, y = next(iter(DataLoader(dataset, batch_size=64)))
+        model(x)
 
     Args:
         grid_size (tuple): Spatial dimensions of grid-like EEG representation. (default: :obj:`(16, 16)`)

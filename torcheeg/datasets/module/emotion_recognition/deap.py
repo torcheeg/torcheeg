@@ -33,7 +33,7 @@ class DEAPDataset(BaseDataset):
 
         from torcheeg.datasets import DEAPDataset
         from torcheeg import transforms
-        from torcheeg.datasets.constants.emotion_recognition.deap import DEAP_CHANNEL_LOCATION_DICT
+        from torcheeg.datasets.constants import DEAP_CHANNEL_LOCATION_DICT
 
         dataset = DEAPDataset(root_path='./data_preprocessed_python',
                               offline_transform=transforms.Compose([
@@ -78,7 +78,7 @@ class DEAPDataset(BaseDataset):
 
         from torcheeg.datasets import DEAPDataset
         from torcheeg import transforms
-        from torcheeg.datasets.constants.emotion_recognition.deap import DEAP_ADJACENCY_MATRIX
+        from torcheeg.datasets.constants import DEAP_ADJACENCY_MATRIX
         from torcheeg.transforms.pyg import ToG
 
         dataset = DEAPDataset(root_path='./data_preprocessed_python',
