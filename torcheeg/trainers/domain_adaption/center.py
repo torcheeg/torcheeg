@@ -74,16 +74,6 @@ class CenterLossTrainer(ClassifierTrainer):
         - URL: https://ieeexplore.ieee.org/document/9837422
         - Related Project: https://github.com/Want2Vanish/FBMSNet
 
-        .. code-block:: python
-
-            trainer = CenterLossTrainer(extractor = extractor, 
-                                             classifier = classifier,
-                                             num_classes = your_classes,
-                                             feature_dim = your_decoded_dim)
-                                             
-            trainer.fit(train_loader, val_loader)
-            trainer.test(test_loader)
-
         The model structure is required to contains a extractor block which generates the deep feature code and a classifier connected to the extractor to judge which class the feature code belong to.
         Firstly, we should prepare a :obj:`extractor` model and a :obj:`classifier` model for  decoding and classifying from decoding ouput respectly. 
         Here we take FBMSNet as example. :obj:`torcheeg.models.FBMSNet` contains extractor and classifer method already and what We need to do is just to inherit the model to define a extractor and a classifier,and then override the :obj:`forward` method . 

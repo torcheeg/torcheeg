@@ -59,7 +59,7 @@ class CORALTrainer(_MMDLikeTrainer):
 
         trainer = CORALTrainer(extractor,
                                classifier,
-                               num_classes=10,
+                               num_classes=3,
                                devices=1,
                                weight_domain=1.0,
                                accelerator='gpu')

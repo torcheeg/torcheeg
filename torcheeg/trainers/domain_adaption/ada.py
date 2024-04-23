@@ -106,7 +106,7 @@ class ADATrainer(_MMDLikeTrainer):
 
         trainer = ADATrainer(extractor,
                             classifier,
-                            num_classes=10,
+                            num_classes=3,
                             devices=1,
                             weight_visit=0.6,
                             accelerator='gpu')

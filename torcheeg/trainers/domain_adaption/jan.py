@@ -58,14 +58,33 @@ class JANTrainer(_MMDLikeTrainer):
 
     .. code-block:: python
 
+        from torcheeg.models import CCNN
+        from torcheeg.trainers import JANTrainer
+
+        class Extractor(CCNN):
+            def forward(self, x):
+                x = self.conv1(x)
+                x = self.conv2(x)
+                x = self.conv3(x)
+                x = self.conv4(x)
+                x = x.flatten(start_dim=1)
+                return x
+
+        class Classifier(CCNN):
+            def forward(self, x):
+                x = self.lin1(x)
+                x = self.lin2(x)
+                return x
+
+        extractor = Extractor(in_channels=5, num_classes=3)
+        classifier = Classifier(in_channels=5, num_classes=3)
+
         trainer = JANTrainer(extractor,
-                            classifier,
-                            num_classes=10,
-                            devices=1,
-                            weight_visit=0.6,
-                            accelerator='gpu')
-        trainer.fit(source_loader, target_loader, val_loader)
-        trainer.test(test_loader)
+                             classifier,
+                             num_classes=3,
+                             devices=1,
+                             weight_visit=0.6,
+                             accelerator='gpu')
 
     Args:
         extractor (nn.Module): The feature extraction model learns the feature representation of the EEG signal by forcing the correlation matrixes of source and target data to be close.
