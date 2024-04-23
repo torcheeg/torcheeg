@@ -76,7 +76,7 @@ class SEEDVDataset(BaseDataset):
 
         from torcheeg.datasets import SEEDVDataset
         from torcheeg import transforms
-        from torcheeg.datasets.constants.emotion_recognition.seed import SEEDV_ADJACENCY_MATRIX
+        from torcheeg.datasets.constants.emotion_recognition.seed import SEED_V_ADJACENCY_MATRIX
         from torcheeg.transforms.pyg import ToG
         
         dataset = SEEDVDataset(root_path='./EEG_raw',
