@@ -64,8 +64,10 @@ class BandSignal(BandTransform):
 
     .. code-block:: python
 
-        transform = BandSignal()
-        transform(eeg=np.random.randn(32, 128))['eeg'].shape
+        from torcheeg import transforms
+
+        t = transforms.BandSignal()
+        t(eeg=np.random.randn(32, 128))['eeg'].shape
         >>> (4, 32, 128)
 
     Args:
@@ -121,8 +123,10 @@ class BandDifferentialEntropy(BandTransform):
     
     .. code-block:: python
 
-        transform = BandDifferentialEntropy()
-        transform(eeg=np.random.randn(32, 128))['eeg'].shape
+        from torcheeg import transforms
+
+        t = transforms.BandDifferentialEntropy()
+        t(eeg=np.random.randn(32, 128))['eeg'].shape
         >>> (32, 4)
 
     Args:
@@ -160,8 +164,10 @@ class BandDifferentialEntropyV1(EEGTransform):
 
     .. code-block:: python
 
-        transform = BandDifferentialEntropyV1()
-        transform(eeg=np.random.randn(32, 128))['eeg'].shape
+        from torcheeg import transforms
+
+        t = transforms.BandDifferentialEntropyV1()
+        t(eeg=np.random.randn(32, 128))['eeg'].shape
         >>> (32, 4)
 
     Args:
@@ -253,8 +259,10 @@ class BandPowerSpectralDensity(EEGTransform):
 
     .. code-block:: python
 
-        transform = BandPowerSpectralDensity()
-        transform(eeg=np.random.randn(32, 128))['eeg'].shape
+        from torcheeg import transforms
+
+        t = transforms.BandPowerSpectralDensity()
+        t(eeg=np.random.randn(32, 128))['eeg'].shape
         >>> (32, 4)
 
     Args:
@@ -347,8 +355,10 @@ class BandMeanAbsoluteDeviation(BandTransform):
 
     .. code-block:: python
 
-        transform = BandMeanAbsoluteDeviation()
-        transform(eeg=np.random.randn(32, 128))['eeg'].shape
+        from torcheeg import transforms
+
+        t = transforms.BandMeanAbsoluteDeviation()
+        t(eeg=np.random.randn(32, 128))['eeg'].shape
         >>> (32, 4)
 
     Args:
@@ -382,8 +392,10 @@ class BandKurtosis(BandTransform):
 
     .. code-block:: python
 
-        transform = BandKurtosis()
-        transform(eeg=np.random.randn(32, 128))['eeg'].shape
+        from torcheeg import transforms
+
+        t = transforms.BandKurtosis()
+        t(eeg=np.random.randn(32, 128))['eeg'].shape
         >>> (32, 4)
 
     Args:
@@ -429,8 +441,10 @@ class BandSkewness(BandTransform):
 
     .. code-block:: python
 
-        transform = BandSkewness()
-        transform(eeg=np.random.randn(32, 128))['eeg'].shape
+        from torcheeg import transforms
+
+        t = transforms.BandSkewness()
+        t(eeg=np.random.randn(32, 128))['eeg'].shape
         >>> (32, 4)
 
     Args:

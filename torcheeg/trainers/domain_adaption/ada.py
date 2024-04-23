@@ -105,11 +105,11 @@ class ADATrainer(_MMDLikeTrainer):
         classifier = Classifier(in_channels=5, num_classes=3)
 
         trainer = ADATrainer(extractor,
-                            classifier,
-                            num_classes=3,
-                            devices=1,
-                            weight_visit=0.6,
-                            accelerator='gpu')
+                             classifier,
+                             num_classes=3,
+                             devices=1,
+                             weight_visit=0.6,
+                             accelerator='gpu')
 
     Args:
         extractor (nn.Module): The feature extraction model learns the feature representation of the EEG signal by forcing the correlation matrixes of source and target data to be close.

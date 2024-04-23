@@ -28,8 +28,6 @@ class GlowTrainer(pl.LightningModule):
         
         model = BGlow(in_channels=4)
         trainer = GlowTrainer(model)
-        trainer.fit(train_loader, val_loader)
-        trainer.test(test_loader)
 
     Args:
         model (nn.Module): Normalized flow model, it needs to implement two interfaces, log_probs and sample. Among them, log_probs takes the original sample as input to calculate the log probs to the target distribution, and sample takes num and temperature as input to calculate the generated sample.

@@ -12,8 +12,10 @@ class Resize(EEGTransform):
 
     .. code-block:: python
 
-        transform = ToTensor(size=(64, 64))
-        transform(eeg=torch.randn(128, 9, 9))['eeg'].shape
+        from torcheeg import transforms
+
+        t = transforms.ToTensor(size=(64, 64))
+        t(eeg=torch.randn(128, 9, 9))['eeg'].shape
         >>> (128, 64, 64)
 
     Args:

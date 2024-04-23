@@ -9,25 +9,29 @@ class Compose(BaseTransform):
 
     .. code-block:: python
 
-        transform = Compose([
-            ToTensor(),
-            Resize(size=(64, 64)),
-            RandomNoise(p=0.1),
-            RandomMask(p=0.1)
+        from torcheeg import transforms
+
+        t = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Resize(size=(64, 64)),
+            transforms.RandomNoise(p=0.1),
+            transforms.RandomMask(p=0.1)
         ])
-        transform(eeg=torch.randn(128, 9, 9))['eeg'].shape
+        t(eeg=torch.randn(128, 9, 9))['eeg'].shape
         >>> (128, 64, 64)
 
     :obj:`Compose` supports transformers with different data dependencies. The above example combines multiple torch-based transformers, the following example shows a sequence of numpy-based transformer.
 
     .. code-block:: python
 
-        transform = Compose([
-            BandDifferentialEntropy(),
-            MeanStdNormalize(),
-            ToGrid(DEAP_CHANNEL_LOCATION_DICT)
+        from torcheeg import transforms
+
+        t = transforms.Compose([
+            transforms.BandDifferentialEntropy(),
+            transforms.MeanStdNormalize(),
+            transforms.ToGrid(DEAP_CHANNEL_LOCATION_DICT)
         ])
-        transform(eeg=np.random.randn(32, 128))['eeg'].shape
+        t(eeg=np.random.randn(32, 128))['eeg'].shape
         >>> (128, 9, 9)
 
     Args:

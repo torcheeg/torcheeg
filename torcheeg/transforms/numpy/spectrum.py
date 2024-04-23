@@ -14,28 +14,34 @@ class CWTSpectrum(EEGTransform):
 
         .. code-block:: python
 
-            transform = CWTSpectrum()
-            transform(eeg=np.random.randn(32, 1000))['eeg'].shape
+            from torcheeg import transforms
+
+            t = transforms.CWTSpectrum()
+            t(eeg=np.random.randn(32, 1000))['eeg'].shape
             >>> (32, 128, 1000)
 
         Part of the existing work uses :obj:`Resize` to warp the output spectrum to a specified size suitable for CNN processing.
 
         .. code-block:: python
 
-            transform = Compose([
+            from torcheeg import transforms
+        
+            t = Compose([
                 CWTSpectrum(),
                 ToTensor(),
                 Resize([260, 260])
             ])
-            transform(eeg=np.random.randn(32, 1000))['eeg'].shape
+            t(eeg=np.random.randn(32, 1000))['eeg'].shape
             >>> (32, 128, 1000)
 
         When contourf is set to True, a spectrogram of filled contours will be generated for each channel and converted to np.ndarray and returned. This option is usually used for single-channel analysis or visualization of a single channel.
 
         .. code-block:: python
 
-            transform = CWTSpectrum(contourf=True)
-            transform(eeg=np.random.randn(32, 1000))['eeg'].shape
+            from torcheeg import transforms
+
+            t = CWTSpectrum(contourf=True)
+            t(eeg=np.random.randn(32, 1000))['eeg'].shape
             >>> (32, 480, 640, 4)
 
         Args:
@@ -137,8 +143,10 @@ class DWTDecomposition(EEGTransform):
 
         .. code-block:: python
 
-            transform = DWTDecomposition()
-            transform(eeg=np.random.randn(32, 1000))['eeg'].shape
+            from torcheeg import transforms
+
+            t = transforms.DWTDecomposition()
+            t(eeg=np.random.randn(32, 1000))['eeg'].shape
             >>> (32, 500)
 
         Args:

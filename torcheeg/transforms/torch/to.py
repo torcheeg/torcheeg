@@ -13,8 +13,10 @@ class ToTensor(EEGTransform):
 
     .. code-block:: python
 
-        transform = ToTensor()
-        transform(eeg=np.random.randn(32, 128))['eeg'].shape
+        from torcheeg import transforms
+
+        t = transforms.ToTensor()
+        t(eeg=np.random.randn(32, 128))['eeg'].shape
         >>> (32, 128)
 
     Args:

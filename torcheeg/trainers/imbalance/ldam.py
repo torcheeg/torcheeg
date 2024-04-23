@@ -69,13 +69,11 @@ class LDAMLossTrainer(ClassifierTrainer):
 
         .. code-block:: python
 
-            trainer = LDAMLossTrainer(model, num_classes=2, class_frequency=train_loader)
-            trainer.fit(train_loader, val_loader)
-            trainer.test(test_loader)
+            from torcheeg.models import CCNN
+            from torcheeg.trainers import LDAMLossTrainer
 
+            model = CCNN(in_channels=5, num_classes=2)
             trainer = LDAMLossTrainer(model, num_classes=2, class_frequency=[10, 20], max_margin=0.5, scaling=30)
-            trainer.fit(train_loader, val_loader)
-            trainer.test(test_loader)
 
         Args:
             model (nn.Module): The classification model, and the dimension of its output should be equal to the number of categories in the dataset. The output layer does not need to have a softmax activation function.

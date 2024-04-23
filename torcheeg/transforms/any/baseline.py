@@ -11,14 +11,16 @@ class BaselineRemoval(EEGTransform):
 
     .. code-block:: python
 
-        transform = Compose([
-            BandDifferentialEntropy(apply_to_baseline=True),
-            ToTensor(apply_to_baseline=True),
-            BaselineRemoval(),
-            ToGrid(DEAP_CHANNEL_LOCATION_DICT)
+        from torcheeg import transforms
+
+        t = transforms.Compose([
+            transforms.BandDifferentialEntropy(apply_to_baseline=True),
+            transforms.ToTensor(apply_to_baseline=True),
+            transforms.BaselineRemoval(),
+            transforms.ToGrid(DEAP_CHANNEL_LOCATION_DICT)
         ])
 
-        transform(eeg=np.random.randn(32, 128), baseline=np.random.randn(32, 128))['eeg'].shape
+        t(eeg=np.random.randn(32, 128), baseline=np.random.randn(32, 128))['eeg'].shape
         >>> (4, 9, 9)
     
     .. automethod:: __call__

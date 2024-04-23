@@ -14,22 +14,43 @@ def after_hook_normalize(
 
     .. code-block:: python
 
-        from functools import partial
-        dataset = DEAPDataset(
-                ...
-                after_trial=after_hook_normalize,
-                num_worker=4)
+        from torcheeg.datasets import DEAPDataset
+        from torcheeg.transforms import after_hook_normalize
+        
+        dataset = DEAPDataset(root_path='./data_preprocessed_python',
+                              offline_transform=transforms.Compose([
+                                  transforms.BandDifferentialEntropy(),
+                                  transforms.ToGrid(DEAP_CHANNEL_LOCATION_DICT)
+                              ]),
+                              online_transform=transforms.ToTensor(),
+                              after_trial=after_hook_normalize,
+                              num_worker=4,
+                              label_transform=transforms.Compose([
+                                  transforms.Select('valence'),
+                                  transforms.Binary(5.0),
+                              ]))
 
     If you want to pass in parameters, use partial to generate a new function:
 
     .. code-block:: python
 
         from functools import partial
-        dataset = DEAPDataset(
-                ...
-                after_trial=partial(after_hook_normalize, eps=1e-5),
-                num_worker=4)
-    
+        from torcheeg.datasets import DEAPDataset
+        from torcheeg.transforms import after_hook_normalize
+
+        DEAPDataset(root_path='./data_preprocessed_python',
+                              offline_transform=transforms.Compose([
+                                  transforms.BandDifferentialEntropy(),
+                                  transforms.ToGrid(DEAP_CHANNEL_LOCATION_DICT)
+                              ]),
+                              online_transform=transforms.ToTensor(),
+                              after_trial=partial(after_hook_normalize, eps=1e-5),
+                              num_worker=4,
+                              label_transform=transforms.Compose([
+                                  transforms.Select('valence'),
+                                  transforms.Binary(5.0),
+                              ]))
+
     Args:
         data (list): A list of :obj:`np.ndarray` or :obj:`torch.Tensor`, one of which corresponds to an EEG signal in trial.
         eps (float): The term added to the denominator to improve numerical stability (default: :obj:`1e-6`)
@@ -72,6 +93,7 @@ def after_hook_running_norm(
 
         from torcheeg.datasets import DEAPDataset
         from torcheeg.transforms import after_hook_running_norm
+        from torcheeg.datasets.constants import DEAP_CHANNEL_LOCATION_DICT
 
         dataset = DEAPDataset(root_path='./data_preprocessed_python',
                               offline_transform=transforms.Compose([

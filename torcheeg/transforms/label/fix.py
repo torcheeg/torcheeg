@@ -9,16 +9,20 @@ class FixCategory(LabelTransform):
 
     .. code-block:: python
 
-        transform = FixCategory(value=0)
-        transform(y=3)['y']
+        from torcheeg import transforms
+
+        t = transforms.FixCategory(value=0)
+        t(y=3)['y']
         >>> 0
 
     :obj:`FixCategory` allows multiple values to be selected and returned as a list. Suitable for multi-classification tasks or multi-task learning.
 
     .. code-block:: python
 
-        transform = FixCategory(value=[0, 1])
-        transform(y=[1, 2])['y']
+        from torcheeg import transforms
+
+        t = transforms.FixCategory(value=[0, 1])
+        t(y=[1, 2])['y']
         >>> [0, 1]
 
     Args:
