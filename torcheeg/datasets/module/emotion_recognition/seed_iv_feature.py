@@ -33,11 +33,11 @@ class SEEDIVFeatureDataset(BaseDataset):
 
         from torcheeg.datasets import SEEDIVFeatureDataset
         from torcheeg import transforms
-        from torcheeg.datasets.constants.emotion_recognition.seed import SEED_CHANNEL_LOCATION_DICT
+        from torcheeg.datasets.constants.emotion_recognition.seed import SEED_IV_CHANNEL_LOCATION_DICT
         
         dataset = SEEDIVFeatureDataset(root_path='./eeg_feature_smooth',
                                        features=['de_movingAve'],
-                                       offline_transform=transforms.ToGrid         (SEED_CHANNEL_LOCATION_DICT),
+                                       offline_transform=transforms.ToGrid         (SEED_IV_CHANNEL_LOCATION_DICT),
                                        online_transform=transforms.ToTensor(),
                                        label_transform=transforms.Select('emotion'))
         print(dataset[0])
@@ -210,9 +210,9 @@ class SEEDIVFeatureDataset(BaseDataset):
 
                 # record meta info for each signal
                 record_info = {
-                    'start_at': i * 400,
+                    'start_at': i * 800,
                     'end_at': (i + 1) *
-                    400,  # The size of the sliding time windows for feature extraction is 4 seconds.
+                    800,  # The size of the sliding time windows for feature extraction is 4 seconds.
                     'clip_id': clip_id
                 }
                 record_info.update(trial_meta_info)

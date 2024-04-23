@@ -19,7 +19,6 @@ class SEEDVFeatureDataset(BaseDataset):
     - Stimulus: 15 pieces of stimulating material.
     - Signals: Electroencephalogram (62 channels at 200Hz) and eye movement data of 20 subjects (20 females). Each subject conducts the experiments in three sessions, and each session contains 15 trials (3 per emotional category) totally 20 people x 3 sessions x 15 trials.
     - Rating: disgust (0), fear (1), sad (2), neutral (3), happy (4).
-    - Features: de_movingAve, de_LDS, psd_movingAve, psd_LDS, dasm_movingAve, dasm_LDS, rasm_movingAve, rasm_LDS, asm_movingAve, asm_LDS, dcau_movingAve, dcau_LDS of 4-second long windows
 
     In order to use this dataset, the download folder :obj:`EEG_DE_features` is required, containing the following folder:
     
@@ -33,10 +32,10 @@ class SEEDVFeatureDataset(BaseDataset):
 
         from torcheeg.datasets import SEEDVFeatureDataset
         from torcheeg import transforms
-        from torcheeg.datasets.constants.emotion_recognition.seed import SEED_CHANNEL_LOCATION_DICT
+        from torcheeg.datasets.constants.emotion_recognition.seed_v import SEED_V_CHANNEL_LOCATION_DICT
         
         dataset = SEEDVFeatureDataset(root_path='./EEG_DE_features',
-                                       offline_transform=transforms.ToGrid         (SEED_CHANNEL_LOCATION_DICT),
+                                       offline_transform=transforms.ToGrid         (SEED_V_CHANNEL_LOCATION_DICT),
                                        online_transform=transforms.ToTensor(),
                                        label_transform=transforms.Select('emotion'))
         print(dataset[0])
@@ -161,9 +160,9 @@ class SEEDVFeatureDataset(BaseDataset):
                 write_pointer += 1
 
                 record_info = {
-                    'start_at': i * 400,
+                    'start_at': i * 800,
                     'end_at': (i + 1) *
-                    400,  # The size of the sliding time windows for feature 
+                    800,  # The size of the sliding time windows for feature 
                     'clip_id': clip_id,
                     'emotion': int(clip_label)
                 }

@@ -1,44 +1,46 @@
 import os
-import re
 from typing import Any, Callable, Dict, Tuple, Union
 
-import scipy.io as scio
-from ..base_dataset import BaseDataset
+import mne
+
 from ....utils import get_random_dir_path
+from ..base_dataset import BaseDataset
+
+mne.set_log_level('CRITICAL')
 
 
-class SEEDIVDataset(BaseDataset):
+class SEEDVDataset(BaseDataset):
     r'''
-    The SEED-IV dataset provided by the BCMI laboratory, which is led by Prof. Bao-Liang Lu. This class generates training samples and test samples according to the given parameters, and caches the generated results in a unified input and output format (IO). The relevant information of the dataset is as follows:
+    The SEED-V dataset provided by the BCMI laboratory, which is led by Prof. Bao-Liang Lu. This class generates training samples and test samples according to the given parameters, and caches the generated results in a unified input and output format (IO). The relevant information of the dataset is as follows:
 
-    - Author: Zheng et al.
-    - Year: 2018
-    - Download URL: https://bcmi.sjtu.edu.cn/home/seed/seed-iv.html
-    - Reference: Zheng W L, Liu W, Lu Y, et al. Emotionmeter: A multimodal framework for recognizing human emotions[J]. IEEE transactions on cybernetics, 2018, 49(3): 1110-1122.
-    - Stimulus: 168 film clips.
-    - Signals: Electroencephalogram (62 channels at 200Hz) and eye movement data of 15 subjects (8 females). Each subject conducts the experiments in three sessions, and each session contains 24 trials (6 per emotional category) totally 15 people x 3 sessions x 24 trials.
-    - Rating: neutral (0), sad (1), fear (2), and happy (3).
+    - Author: Liu et al.
+    - Year: 2021
+    - Download URL: https://bcmi.sjtu.edu.cn/home/seed/seed-v.html
+    - Reference: Liu W, Qiu J L, Zheng W L, et al. Comparing recognition performance and robustness of multimodal deep learning models for multimodal emotion recognition[J]. IEEE Transactions on Cognitive and Developmental Systems, 2021, 14(2): 715-729.
+    - Stimulus: 15 pieces of stimulating material.
+    - Signals: Electroencephalogram (62 channels at 200Hz) and eye movement data of 20 subjects (20 females). Each subject conducts the experiments in three sessions, and each session contains 15 trials (3 per emotional category) totally 20 people x 3 sessions x 15 trials.
+    - Rating: disgust (0), fear (1), sad (2), neutral (3), happy (4).
 
-    In order to use this dataset, the download folder :obj:`eeg_raw_data` is required, containing the following files:
+    In order to use this dataset, the download folder :obj:`EEG_raw` is required, containing the following files:
     
-    - label.mat
-    - readme.txt
-    - 10_20131130.mat
+    - 10_1_20180507.cnt
+    - 10_2_20180524.cnt
+    - 10_3_20180626.cnt
     - ...
-    - 9_20140704.mat
+    - 9_3_20180728.cnt
 
     An example dataset for CNN-based methods:
 
     .. code-block:: python
 
-        from torcheeg.datasets import SEEDIVDataset
+        from torcheeg.datasets import SEEDVDataset
         from torcheeg import transforms
-        from torcheeg.datasets.constants.emotion_recognition.seed import SEED_IV_CHANNEL_LOCATION_DICT
+        from torcheeg.datasets.constants.emotion_recognition.seed import SEED_V_CHANNEL_LOCATION_DICT
         
-        dataset = SEEDIVDataset(root_path='./eeg_raw_data',
+        dataset = SEEDVDataset(root_path='./EEG_raw',
                                 offline_transform=transforms.Compose([
                                     transforms.BandDifferentialEntropy(),
-                                    transforms.ToGrid(SEED_IV_CHANNEL_LOCATION_DICT)
+                                    transforms.ToGrid(SEED_V_CHANNEL_LOCATION_DICT)
                                 ]),
                                 online_transform=transforms.ToTensor(),
                                 label_transform=transforms.Compose([
@@ -54,10 +56,10 @@ class SEEDIVDataset(BaseDataset):
 
     .. code-block:: python
 
-        from torcheeg.datasets import SEEDIVDataset
+        from torcheeg.datasets import SEEDVDataset
         from torcheeg import transforms
 
-        dataset = SEEDIVDataset(root_path='./eeg_raw_data',
+        dataset = SEEDVDataset(root_path='./EEG_raw',
                                 online_transform=transforms.Compose([
                                     transforms.ToTensor(),
                                     transforms.To2d()
@@ -72,14 +74,14 @@ class SEEDIVDataset(BaseDataset):
 
     .. code-block:: python
 
-        from torcheeg.datasets import SEEDIVDataset
+        from torcheeg.datasets import SEEDVDataset
         from torcheeg import transforms
-        from torcheeg.datasets.constants.emotion_recognition.seed import SEEDIV_ADJACENCY_MATRIX
+        from torcheeg.datasets.constants.emotion_recognition.seed import SEEDV_ADJACENCY_MATRIX
         from torcheeg.transforms.pyg import ToG
         
-        dataset = SEEDIVDataset(root_path='./eeg_raw_data',
+        dataset = SEEDVDataset(root_path='./EEG_raw',
                                 online_transform=transforms.Compose([
-                                    ToG(SEED_IV_ADJACENCY_MATRIX)
+                                    ToG(SEED_V_ADJACENCY_MATRIX)
                                 ]),
                                 label_transform=transforms.Select('emotion'))
         print(dataset[0])
@@ -88,7 +90,7 @@ class SEEDIVDataset(BaseDataset):
         # label (int)
         
     Args:
-        root_path (str): Downloaded data files in matlab (unzipped eeg_raw_data.zip) formats (default: :obj:`'./eeg_raw_data'`)
+        root_path (str): Downloaded data files in matlab (unzipped EEG_raw.zip) formats (default: :obj:`'./EEG_raw'`)
         chunk_size (int): Number of data points included in each EEG chunk as training or test samples. If set to -1, the EEG signal of a trial is used as a sample of a chunk. (default: :obj:`800`)
         overlap (int): The number of overlapping data points between different chunks when dividing EEG chunks. (default: :obj:`0`)
         num_channel (int): Number of channels used, of which the first 62 channels are EEG signals. (default: :obj:`62`)
@@ -105,7 +107,7 @@ class SEEDIVDataset(BaseDataset):
     '''
 
     def __init__(self,
-                 root_path: str = './eeg_raw_data',
+                 root_path: str = './EEG_raw',
                  chunk_size: int = 800,
                  overlap: int = 0,
                  num_channel: int = 62,
@@ -155,66 +157,86 @@ class SEEDIVDataset(BaseDataset):
                        before_trial: Union[None, Callable] = None,
                        offline_transform: Union[None, Callable] = None,
                        **kwargs):
-        file_path = file  # an element from file name list
+        file_name = os.path.basename(file)
+        # split with _, the first part is the subject_id, the second part is the session_id, the third part is the date
+        subject_id, session_id, date = file_name.split('_')[:3]
 
-        session_id = os.path.basename(os.path.dirname(file_path))
-        _, file_name = os.path.split(file_path)
+        labels = [[4, 1, 3, 2, 0, 4, 1, 3, 2, 0, 4, 1, 3, 2, 0],
+                  [2, 1, 3, 0, 4, 4, 0, 3, 2, 1, 3, 4, 1, 2, 0],
+                  [2, 1, 3, 0, 4, 4, 0, 3, 2, 1, 3, 4, 1, 2, 0]]
 
-        subject = int(os.path.basename(file_name).split('.')[0].split('_')
-                      [0])  # subject (15)
-        date = int(os.path.basename(file_name).split('.')[0].split('_')
-                   [1])  # period (3)
+        trial_labels = labels[int(session_id) - 1]
 
-        samples = scio.loadmat(file_path,
-                               verify_compressed_data_integrity=False
-                               )  # trial (15), channel(62), timestep(n*200)
-        # label file
-        labels = [
-            [
-                1, 2, 3, 0, 2, 0, 0, 1, 0, 1, 2, 1, 1, 1, 2, 3, 2, 2, 3, 3, 0,
-                3, 0, 3
-            ],
-            [
-                2, 1, 3, 0, 0, 2, 0, 2, 3, 3, 2, 3, 2, 0, 1, 1, 2, 1, 0, 3, 0,
-                1, 3, 1
-            ],
-            [
-                1, 2,
-                2, 1,
-                3, 3,
-                3, 1,
-                1, 2,
-                1, 0,
-                2, 3,
-                3, 0,
-                2, 3,
-                0, 0,
-                2, 0,
-                1, 0
-            ]
-        ]  # The labels with 0, 1, 2, and 3 denote the ground truth, neutral, sad, fear, and happy emotions, respectively.
-        session_labels = labels[int(session_id) - 1]
+        eeg_raw = mne.io.read_raw_cnt(file)
 
-        trial_name_ids = [(trial_name,
-                           int(re.findall(r".*_eeg(\d+)", trial_name)[0]))
-                          for trial_name in samples.keys()
-                          if 'eeg' in trial_name]
+        useless_ch = ['M1', 'M2', 'VEO', 'HEO']
+        eeg_raw.drop_channels(useless_ch)
+
+        data_matrix = eeg_raw.get_data()
+
+        start_end_list = [
+            {
+                'start_seconds': [
+                    30, 132, 287, 555, 773, 982, 1271, 1628, 1730, 2025, 2227,
+                    2435, 2667, 2932, 3204
+                ],
+                'end_seconds': [
+                    102, 228, 524, 742, 920, 1240, 1568, 1697, 1994, 2166, 2401,
+                    2607, 2901, 3172, 3359
+                ]
+            },
+            {
+                'start_seconds': [
+                    30, 299, 548, 646, 836, 1000, 1091, 1392, 1657, 1809, 1966,
+                    2186, 2333, 2490, 2741
+                ],
+                'end_seconds': [
+                    267, 488, 614, 773, 967, 1059, 1331, 1622, 1777, 1908, 2153,
+                    2302, 2428, 2709, 2817
+                ]
+            },
+            {
+                'start_seconds': [
+                    30, 353, 478, 674, 825, 908, 1200, 1346, 1451, 1711, 2055,
+                    2307, 2457, 2726, 2888
+                ],
+                'end_seconds': [
+                    321, 418, 643, 764, 877, 1147, 1284, 1418, 1679, 1996, 2275,
+                    2425, 2664, 2857, 3066
+                ]
+            },
+        ]
+        start_seconds = start_end_list[int(session_id) - 1]['start_seconds']
+        end_seconds = start_end_list[int(session_id) - 1]['end_seconds']
 
         write_pointer = 0
-        # loop for each trial
-        for trial_name, trial_id in trial_name_ids:
-            trial_samples = samples[trial_name]  # channel(62), timestep(n*200)
-            if before_trial:
-                trial_samples = before_trial(trial_samples)
 
-            # record the common meta info
+        for trial_id, (start_second,
+                       end_second) in enumerate(zip(start_seconds,
+                                                    end_seconds)):
+
             trial_meta_info = {
-                'subject_id': subject,
-                'trial_id': trial_id,
+                'subject_id': subject_id,
                 'session_id': session_id,
-                'emotion': int(session_labels[trial_id - 1]),
-                'date': date
+                'date': date,
+                'trial_id': trial_id,
+                'emotion': trial_labels[trial_id]
             }
+
+            trial_samples = data_matrix[:,
+                                        start_second * 1000:end_second * 1000]
+
+            # downsample to 200Hz
+            trial_samples = trial_samples[:, ::5]
+
+            #  EEG data are then processed with a bandpass filter between 1 Hz and 75 Hz.
+            trial_samples = mne.filter.filter_data(trial_samples,
+                                                   sfreq=200,
+                                                   l_freq=1,
+                                                   h_freq=75)
+
+            if not before_trial is None:
+                trial_samples = before_trial(trial_samples)
 
             # extract experimental signals
             start_at = 0
@@ -238,31 +260,29 @@ class SEEDIVDataset(BaseDataset):
                 clip_id = f'{file_name}_{write_pointer}'
                 write_pointer += 1
 
-                # record meta info for each signal
                 record_info = {
+                    'clip_id': clip_id,
                     'start_at': start_at,
-                    'end_at': end_at,
-                    'clip_id': clip_id
+                    'end_at': end_at
                 }
                 record_info.update(trial_meta_info)
+
                 yield {'eeg': t_eeg, 'key': clip_id, 'info': record_info}
 
                 start_at = start_at + step
                 end_at = start_at + dynamic_chunk_size
 
-    def set_records(self, root_path: str = './eeg_raw_data', **kwargs):
+    def set_records(self, root_path: str = './EEG_raw', **kwargs):
         assert os.path.exists(
             root_path
         ), f'root_path ({root_path}) does not exist. Please download the dataset and set the root_path to the downloaded path.'
 
-        session_list = ['1', '2', '3']
-        file_path_list = []
-        for session in session_list:
-            session_root_path = os.path.join(root_path, session)
-            for file_name in os.listdir(session_root_path):
-                file_path_list.append(os.path.join(session_root_path,
-                                                   file_name))
-        return file_path_list
+        file_list = os.listdir(root_path)
+        file_list = [
+            os.path.join(root_path, file) for file in file_list
+            if file.endswith('.cnt')
+        ]
+        return file_list
 
     def __getitem__(self, index: int) -> Tuple[any, any, int, int, int]:
         info = self.read_info(index)
