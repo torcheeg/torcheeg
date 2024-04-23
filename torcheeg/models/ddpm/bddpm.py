@@ -132,6 +132,10 @@ class BUNet(nn.Module):
 
     .. code-block:: python
 
+        import torch
+
+        from torcheeg.models import BUNet
+        
         noise = torch.randn(1, 4, 9, 9)
         t = torch.randint(low=1, high=1000, size=(1, ))
         unet = BUNet()

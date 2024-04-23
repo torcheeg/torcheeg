@@ -12,6 +12,10 @@ class EEGfuseNet(nn.Module):
 
     .. code-block:: python
 
+        import torch
+
+        from torcheeg.models.gan.eegfusenet import EEGfuseNet
+        
         model = EEGfuseNet(num_electrodes=20,
                            hid_channels_gru=16,
                            num_layers_gru=1,

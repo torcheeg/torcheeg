@@ -13,8 +13,10 @@ class To2d(EEGTransform):
 
     .. code-block:: python
 
-        transform = To2d()
-        transform(eeg=np.random.randn(32, 128))['eeg'].shape
+        from torcheeg import transforms
+
+        t = transforms.To2d()
+        t(eeg=np.random.randn(32, 128))['eeg'].shape
         >>> (1, 32, 128)
 
     .. automethod:: __call__
@@ -49,8 +51,11 @@ class ToGrid(EEGTransform):
 
     .. code-block:: python
 
-        transform = ToGrid(DEAP_CHANNEL_LOCATION_DICT)
-        transform(eeg=np.random.randn(32, 128))['eeg'].shape
+        from torcheeg import transforms
+        from torcheeg.datasets.constants import DEAP_CHANNEL_LOCATION_DICT
+
+        t = transforms.ToGrid(DEAP_CHANNEL_LOCATION_DICT)
+        t(eeg=np.random.randn(32, 128))['eeg'].shape
         >>> (128, 9, 9)
 
     Args:
@@ -144,8 +149,11 @@ class ToInterpolatedGrid(EEGTransform):
 
     .. code-block:: python
     
-        transform = ToInterpolatedGrid(DEAP_CHANNEL_LOCATION_DICT)
-        transform(eeg=np.random.randn(32, 128))['eeg'].shape
+        from torcheeg import transforms
+        from torcheeg.datasets.constants import DEAP_CHANNEL_LOCATION_DICT
+
+        t = ToInterpolatedGrid(DEAP_CHANNEL_LOCATION_DICT)
+        t(eeg=np.random.randn(32, 128))['eeg'].shape
         >>> (128, 9, 9)
 
     Especially, missing values on the grid are supplemented using cubic interpolation

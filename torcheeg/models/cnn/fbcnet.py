@@ -99,22 +99,30 @@ class FBCNet(nn.Module):
 
     .. code-block:: python
 
-        dataset = DEAPDataset(io_path=f'./deap',
-                    root_path='./data_preprocessed_python',
-                    chunk_size=512,
-                    num_baseline=1,
-                    baseline_chunk_size=512,
-                    offline_transform=transforms.BandSignal(),
-                    online_transform=transforms.ToTensor(),
-                    label_transform=transforms.Compose([
-                        transforms.Select('valence'),
-                        transforms.Binary(5.0),
-                    ]))
+        from torcheeg.datasets import DEAPDataset
+        from torcheeg import transforms
+        from torcheeg.models import FBCNet
+        from torch.utils.data import DataLoader
+
+        dataset = DEAPDataset(root_path='./data_preprocessed_python',
+                              chunk_size=512,
+                              num_baseline=1,
+                              baseline_chunk_size=512,
+                              offline_transform=transforms.BandSignal(),
+                              online_transform=transforms.ToTensor(),
+                              label_transform=transforms.Compose([
+                                  transforms.Select('valence'),
+                                  transforms.Binary(5.0),
+                              ]))
+
         model = FBCNet(num_classes=2,
                        num_electrodes=32,
                        chunk_size=512,
                        in_channels=4,
                        num_S=32)
+
+        x, y = next(iter(DataLoader(dataset, batch_size=64)))
+        model(x)
 
     Args:
         num_electrodes (int): The number of electrodes. (default: :obj:`28`)

@@ -10,6 +10,10 @@ class BEncoder(nn.Module):
 
     .. code-block:: python
 
+        import torch
+
+        from torcheeg.models import BEncoder
+        
         encoder = BEncoder(in_channels=4)
         mock_eeg = torch.randn(1, 4, 9, 9)
         mu, logvar = encoder(mock_eeg)

@@ -10,6 +10,10 @@ class BGenerator(nn.Module):
 
     .. code-block:: python
 
+        import torch
+
+        from torcheeg.models.gan.bgan import BGenerator
+        
         g_model = BGenerator(in_channels=128)
         z = torch.normal(mean=0, std=1, size=(1, 128))
         fake_X = g_model(z)

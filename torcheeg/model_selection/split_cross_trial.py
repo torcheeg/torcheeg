@@ -32,6 +32,11 @@ def train_test_split_cross_trial(dataset: BaseDataset,
 
     .. code-block:: python
 
+        from torcheeg.datasets import DEAPDataset
+        from torcheeg.model_selection import train_test_split_cross_trial
+        from torcheeg import transforms
+        from torcheeg.utils import DataLoader
+
         dataset = DEAPDataset(root_path='./data_preprocessed_python',
                               online_transform=transforms.Compose([
                                   transforms.To2d(),

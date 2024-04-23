@@ -1,48 +1,43 @@
 import os
+import pickle as pkl
 from typing import Any, Callable, Dict, Tuple, Union
 
 import numpy as np
-import scipy.io as scio
-from ..base_dataset import BaseDataset
+
 from ....utils import get_random_dir_path
+from ..base_dataset import BaseDataset
 
 
-class MPEDFeatureDataset(BaseDataset):
+class SEEDVFeatureDataset(BaseDataset):
     r'''
-    The Multi-Modal Physiological Emotion Database for Discrete Emotion (MPED), a multi-modal physiological emotion database, which collects four modal physiological signals, i.e., electroencephalogram (EEG), galvanic skin response, respiration, and electrocardiogram (ECG). Since the MPED dataset provides features based on matlab, this class implements the processing of these feature files to initialize the dataset. The relevant information of the dataset is as follows:
+    The SEED-V dataset provided by the BCMI laboratory, which is led by Prof. Bao-Liang Lu. Since the SEED dataset provides features based on matlab, this class implements the processing of these feature files to initialize the dataset. The relevant information of the dataset is as follows:
 
-    - Author: Song et al.
-    - Year: 2019
-    - Download URL: https://github.com/tengfei000/mped/
-    - Reference: Song T, Zheng W, Lu C, et al. MPED: A multi-modal physiological emotion database for discrete emotion recognition[J]. IEEE Access, 2019, 7: 12177-12191.
-    - Stimulus: 28 videos from an emotion elicitation material database.
-    - Signals: Electroencephalogram (62 channels at 1000Hz), respiration, galvanic skin reponse, and electrocardiogram of 23 subjects. Each subject conducts 30 experiments, totally 23 people x 30 experiments = 690
-    - Rating: resting status (0), neutral (1), joy (2), funny (3), angry (4), fear (5), disgust (6), sadness (7).
-    - Feature: HHS, Hjorth, PSD, STFT, and HOC
+    - Author: Liu et al.
+    - Year: 2021
+    - Download URL: https://bcmi.sjtu.edu.cn/home/seed/seed-v.html
+    - Reference: Liu W, Qiu J L, Zheng W L, et al. Comparing recognition performance and robustness of multimodal deep learning models for multimodal emotion recognition[J]. IEEE Transactions on Cognitive and Developmental Systems, 2021, 14(2): 715-729.
+    - Stimulus: 15 pieces of stimulating material.
+    - Signals: Electroencephalogram (62 channels at 200Hz) and eye movement data of 20 subjects (20 females). Each subject conducts the experiments in three sessions, and each session contains 15 trials (3 per emotional category) totally 20 people x 3 sessions x 15 trials.
+    - Rating: disgust (0), fear (1), sad (2), neutral (3), happy (4).
 
-    In order to use this dataset, the download folder :obj:`EEG_feature` is required, containing the following files:
+    In order to use this dataset, the download folder :obj:`EEG_DE_features` is required, containing the following folder:
     
-    - HHS
-    - Hjorth
-    - HOC
+    - 1_123.npz
+    - 2_123.npz
     - ...
-    - STFT
 
     An example dataset for CNN-based methods:
 
     .. code-block:: python
 
-        from torcheeg.datasets import MPEDFeatureDataset
+        from torcheeg.datasets import SEEDVFeatureDataset
         from torcheeg import transforms
-        from torcheeg.datasets.constants.emotion_recognition.mped import MPED_CHANNEL_LOCATION_DICT
-
-        dataset = MPEDFeatureDataset(root_path='./EEG_feature',
-                                     features=['PSD'],
-                                     offline_transform=transforms.ToGrid       (MPED_CHANNEL_LOCATION_DICT),
-                                     online_transform=transforms.ToTensor(),
-                                     label_transform=transforms.Compose([
-                                         transforms.Select('emotion')
-                                     ]))
+        from torcheeg.datasets.constants.emotion_recognition.seed_v import SEED_V_CHANNEL_LOCATION_DICT
+        
+        dataset = SEEDVFeatureDataset(root_path='./EEG_DE_features',
+                                       offline_transform=transforms.ToGrid         (SEED_V_CHANNEL_LOCATION_DICT),
+                                       online_transform=transforms.ToTensor(),
+                                       label_transform=transforms.Select('emotion'))
         print(dataset[0])
         # EEG signal (torch.Tensor[5, 9, 9]),
         # coresponding baseline signal (torch.Tensor[5, 9, 9]),
@@ -52,25 +47,21 @@ class MPEDFeatureDataset(BaseDataset):
 
     .. code-block:: python
 
-        from torcheeg.datasets import MPEDFeatureDataset
+        from torcheeg.datasets import SEEDVFeatureDataset
         from torcheeg import transforms
-        from torcheeg.datasets.constants.emotion_recognition.mped import MPED_ADJACENCY_MATRIX
+        from torcheeg.datasets.constants.emotion_recognition.seed import SEED_ADJACENCY_MATRIX
         from torcheeg.transforms.pyg import ToG
-
-        dataset = MPEDFeatureDataset(root_path='./Preprocessed_EEG',
-                                     features=['PSD'],
-                                     online_transform=ToG(MPED_ADJACENCY_MATRIX),
-                                     label_transform=transforms.Compose([
-                                         transforms.Select('emotion')
-                                     ]))
+        
+        dataset = SEEDVFeatureDataset(root_path='./EEG_DE_features',
+                                       online_transform=ToG(SEED_ADJACENCY_MATRIX),
+                                       label_transform=transforms.Select('emotion'))
         print(dataset[0])
         # EEG signal (torch_geometric.data.Data),
         # coresponding baseline signal (torch_geometric.data.Data),
         # label (int)
-
+        
     Args:
-        root_path (str): Downloaded data files in matlab (unzipped EEG_feature.zip) formats (default: :obj:`'./EEG_feature'`)
-        feature (list): A list of selected feature names. The selected features corresponding to each electrode will be concatenated together. Feature names supported by the MPED dataset include HHS, Hjorth, PSD, STFT, and HOC (default: :obj:`['PSD']`)
+        root_path (str): Downloaded data files in matlab (unzipped ExtractedFeatures.zip) formats (default: :obj:`'./ExtractedFeatures'`)
         num_channel (int): Number of channels used, of which the first 62 channels are EEG signals. (default: :obj:`62`)
         online_transform (Callable, optional): The transformation of the EEG signals and baseline EEG signals. The input is a :obj:`np.ndarray`, and the ouput is used as the first and second value of each element in the dataset. (default: :obj:`None`)
         offline_transform (Callable, optional): The usage is the same as :obj:`online_transform`, but executed before generating IO intermediate results. (default: :obj:`None`)
@@ -85,14 +76,15 @@ class MPEDFeatureDataset(BaseDataset):
     '''
 
     def __init__(self,
-                 root_path: str = './EEG_feature',
-                 feature: list = ['PSD'],
+                 root_path: str = './EEG_DE_features',
                  num_channel: int = 62,
                  online_transform: Union[None, Callable] = None,
                  offline_transform: Union[None, Callable] = None,
                  label_transform: Union[None, Callable] = None,
                  before_trial: Union[None, Callable] = None,
                  after_trial: Union[Callable, None] = None,
+                 after_session: Union[Callable, None] = None,
+                 after_subject: Union[Callable, None] = None,
                  io_path: Union[None, str] = None,
                  io_size: int = 1048576,
                  io_mode: str = 'lmdb',
@@ -104,13 +96,14 @@ class MPEDFeatureDataset(BaseDataset):
         # pass all arguments to super class
         params = {
             'root_path': root_path,
-            'feature': feature,
             'num_channel': num_channel,
             'online_transform': online_transform,
             'offline_transform': offline_transform,
             'label_transform': label_transform,
             'before_trial': before_trial,
             'after_trial': after_trial,
+            'after_session': after_session,
+            'after_subject': after_subject,
             'io_path': io_path,
             'io_size': io_size,
             'io_mode': io_mode,
@@ -122,95 +115,77 @@ class MPEDFeatureDataset(BaseDataset):
         self.__dict__.update(params)
 
     @staticmethod
-    def process_record(file: Any = None,
-                       root_path: str = './EEG_feature',
-                       feature: list = ['PSD'],
-                       num_channel: int = 62,
-                       before_trial: Union[None, Callable] = None,
+    def process_record(num_channel: int = 62,
                        offline_transform: Union[None, Callable] = None,
+                       before_trial: Union[None, Callable] = None,
+                       file: Any = None,
                        **kwargs):
-        file_name = file
+        # get file name from path
+        file_name = os.path.basename(file)
 
-        labels = [
-            0, 2, 1, 4, 3, 5, 6, 7, 1, 2, 3, 6, 7, 4, 5, 0, 1, 5, 6, 2, 2, 1, 7,
-            6, 4, 4, 3, 5, 3, 7
-        ]  # 0-resting status, 1-neutral, 2-joy, 3-funny, 4-angry, 5-fear, 6-disgust, 7-sadness
+        # split with '_', the fist part is subject id
+        subject_id = file_name.split('_')[0]
 
-        subject = os.path.basename(file_name).split('.')[0].split('_')[0]
+        # load the file
+        data_npz = np.load(file)
+        data = pkl.loads(data_npz['data'])
+        label = pkl.loads(data_npz['label'])
 
-        samples_dict = {}
-        for cur_feature in feature:
-            samples_dict[cur_feature] = scio.loadmat(
-                os.path.join(root_path, cur_feature, file_name),
-                verify_compressed_data_integrity=False)  # (1, 30)
         write_pointer = 0
 
-        for trial_id in range(30):
-            trial_samples = []
-            for cur_feature, samples in samples_dict.items():
-                for sub_band in samples.keys():
-                    # HHS: hhs_A, hhs_E
-                    # Hjorth/HOC: alpha, beta, delta, gamma, theta, whole
-                    # STFT: STFT
-                    # PSD: PSD
-                    if not str.startswith(sub_band, '__'):
-                        # not '__header__', '__version__', '__globals__'
-                        trial_samples += [
-                            samples[sub_band][0][trial_id][:num_channel],
-                        ]
-                        # PSD: (62, 120, 5)
-                        # Hjorth: (62, 120, 3)
-                        # HOC: (62, 120, 20)
-                        # HHS: (62, 120, 5)
-                        # STFT: (62, 120, 5)
-            trial_samples = np.concatenate(trial_samples,
-                                           axis=-1)  # (62, 120, num_features)
+        # loop all trials
+        for global_trial_id in range(len(data.keys())):
+            trial_samples = data[list(data.keys())[global_trial_id]]
+            trial_labels = label[global_trial_id]
+
+            # split trial to 3 sessions
+            session_id = global_trial_id // 15
+            trial_id = global_trial_id % 15
+
+            trial_meta_info = {
+                'subject_id': subject_id,
+                'session_id': session_id,
+                'trial_id': trial_id
+            }
+
             if before_trial:
                 trial_samples = before_trial(trial_samples)
 
-            # record the common meta info
-            trial_meta_info = {
-                'subject_id': subject,
-                'trial_id': trial_id,
-                'emotion': labels[trial_id]
-            }
-            num_clips = trial_samples.shape[1]
-
-            for clip_id in range(num_clips):
-                # PSD: (62, 5)
-                # Hjorth: (62, 3 * 6)
-                # HOC: (62, 20 * 6)
-                # STFT: (62, 5)
-                # HHS: (62, 5 * 2)
-                clip_sample = trial_samples[:, clip_id]
-
-                t_eeg = clip_sample
-                if not offline_transform is None:
-                    t_eeg = offline_transform(eeg=clip_sample)['eeg']
+            # loop all clips
+            for i in range(trial_samples.shape[0]):
+                clip_sample = trial_samples[i]
+                clip_label = trial_labels[i]
 
                 clip_id = f'{file_name}_{write_pointer}'
                 write_pointer += 1
 
-                # record meta info for each signal
-                record_info = {'clip_id': clip_id}
+                record_info = {
+                    'start_at': i * 800,
+                    'end_at': (i + 1) *
+                    800,  # The size of the sliding time windows for feature 
+                    'clip_id': clip_id,
+                    'emotion': int(clip_label)
+                }
                 record_info.update(trial_meta_info)
+
+                t_eeg = clip_sample.reshape(62, 5)[:num_channel]
+                if not offline_transform is None:
+                    t_eeg = offline_transform(eeg=t_eeg)['eeg']
+
                 yield {'eeg': t_eeg, 'key': clip_id, 'info': record_info}
 
-    def set_records(self,
-                    root_path: str = './EEG_feature',
-                    feature: list = ['PSD'],
-                    **kwargs):
+    def set_records(self, root_path: str = './EEG_DE_features', **kwargs):
         assert os.path.exists(
             root_path
         ), f'root_path ({root_path}) does not exist. Please download the dataset and set the root_path to the downloaded path.'
-        avaliable_features = os.listdir(root_path)
 
-        assert set(feature).issubset(
-            set(avaliable_features)
-        ), 'The features supported by the MPEDFeature dataset are HHS, Hjorth, PSD, STFT, HOC. The input features are not a subset of the list of supported features.'
+        file_path_list = os.listdir(root_path)
+        file_path_list = [
+            os.path.join(root_path, file_path) for file_path in file_path_list
+            if file_path.endswith('.npz')
+        ]
 
-        file_list = os.listdir(os.path.join(root_path, avaliable_features[0]))
-        return file_list
+        return file_path_list
 
     def __getitem__(self, index: int) -> Tuple[any, any, int, int, int]:
         info = self.read_info(index)
@@ -235,7 +210,6 @@ class MPEDFeatureDataset(BaseDataset):
         return dict(
             super().repr_body, **{
                 'root_path': self.root_path,
-                'feature': self.feature,
                 'num_channel': self.num_channel,
                 'online_transform': self.online_transform,
                 'offline_transform': self.offline_transform,

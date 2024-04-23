@@ -28,7 +28,7 @@ from torcheeg.datasets import DEAPDataset
 from torcheeg import transforms
 
 from torcheeg.model_selection import KFoldGroupbyTrial
-from torcheeg.datasets.constants.emotion_recognition.deap import \
+from torcheeg.datasets.constants import \
     DEAP_CHANNEL_LOCATION_DICT
 from torch.utils.data import DataLoader
 from torcheeg.models import CCNN
@@ -157,7 +157,7 @@ from torcheeg.datasets import DEAPDataset
 from torcheeg import transforms
 
 from torcheeg.model_selection import LeaveOneSubjectOut
-from torcheeg.datasets.constants.emotion_recognition.deap import \
+from torcheeg.datasets.constants import \
     DEAP_CHANNEL_LOCATION_DICT
 from torch.utils.data import DataLoader
 from torcheeg.models import CCNN

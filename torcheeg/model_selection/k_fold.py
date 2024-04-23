@@ -28,6 +28,11 @@ class KFold:
 
     .. code-block:: python
 
+        from torcheeg.model_selection import KFold
+        from torcheeg.datasets import DEAPDataset
+        from torcheeg import transforms
+        from torcheeg.utils import DataLoader
+
         cv = KFold(n_splits=5, shuffle=True)
         dataset = DEAPDataset(root_path='./data_preprocessed_python',
                               online_transform=transforms.Compose([

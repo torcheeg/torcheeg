@@ -11,16 +11,20 @@ class Binary(LabelTransform):
     
     .. code-block:: python
 
-        transform = Binary(threshold=5.0)
-        transform(y=4.5)['y']
+        from torcheeg import transforms
+
+        t = transforms.Binary(threshold=5.0)
+        t(y=4.5)['y']
         >>> 0
 
     :obj:`Binary` allows simultaneous binarization using the same threshold for multiple labels.
 
     .. code-block:: python
 
-        transform = Binary(threshold=5.0)
-        transform(y=[4.5, 5.5])['y']
+        from torcheeg import transforms
+
+        t = transforms.Binary(threshold=5.0)
+        t(y=[4.5, 5.5])['y']
         >>> [0, 1]
 
     Args:
@@ -59,16 +63,20 @@ class BinaryOneVSRest(LabelTransform):
     
     .. code-block:: python
 
-        transform = BinaryOneVSRest(positive=1)
-        transform(y=2)['y']
+        from torcheeg import transforms
+
+        t = BinaryOneVSRest(positive=1)
+        t(y=2)['y']
         >>> 0
 
     :obj:`Binary` allows simultaneous binarization using the same threshold for multiple labels.
 
     .. code-block:: python
 
-        transform = BinaryOneVSRest(positive=1)
-        transform(y=[1, 2])['y']
+        from torcheeg import transforms
+
+        t = transforms.BinaryOneVSRest(positive=1)
+        t(y=[1, 2])['y']
         >>> [1, 0]
 
     Args:
@@ -99,14 +107,16 @@ class BinariesToCategory(LabelTransform):
     
     .. code-block:: python
 
-        transform = BinariesToCategory()
-        transform(y=[0, 0])['y']
+        from torcheeg import transforms
+
+        t = transforms.BinariesToCategory()
+        t(y=[0, 0])['y']
         >>> 0
-        transform(y=[0, 1])['y']
+        t(y=[0, 1])['y']
         >>> 1
-        transform(y=[1, 0])['y']
+        t(y=[1, 0])['y']
         >>> 2
-        transform(y=[1, 1])['y']
+        t(y=[1, 1])['y']
         >>> 3
     
     .. automethod:: __call__

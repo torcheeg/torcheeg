@@ -10,14 +10,16 @@ class PDB(BaseTransform):
 
     .. code-block:: python
 
-        transform = Compose([
-            ToTensor(),
-            Resize(size=(64, 64)),
-            PDB(),
-            RandomNoise(p=0.1),
-            RandomMask(p=0.1)
+        from torcheeg import transforms
+
+        t = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Resize(size=(64, 64)),
+            transforms.PDB(),
+            transforms.RandomNoise(p=0.1),
+            transforms.RandomMask(p=0.1)
         ])
-        transform(eeg=torch.randn(128, 9, 9))['eeg'].shape
+        t(eeg=torch.randn(128, 9, 9))['eeg'].shape
         >>> (128, 64, 64)
     
     Args:

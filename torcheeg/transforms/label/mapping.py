@@ -9,24 +9,28 @@ class Mapping(LabelTransform):
     
     .. code-block:: python
 
-        transform = Mapping({
+        from torcheeg import transforms
+
+        t = Mapping({
             'left_hand': 0,
             'right_hand': 1,
         })
-        transform(y='left_hand')['y']
+        t(y='left_hand')['y']
         >>> 0
 
     :obj:`Mapping` allows simultaneous binarization using the same threshold for multiple labels.
 
     .. code-block:: python
 
-        transform = Mapping({
+        from torcheeg import transforms
+        
+        t = Mapping({
             'left_hand': 0,
             'right_hand': 1,
             'left_feet': 0,
             'right_feet': 1
         })
-        transform(y=['left_hand', 'left_feet'])['y']
+        t(y=['left_hand', 'left_feet'])['y']
         >>> [0, 0]
 
     Args:

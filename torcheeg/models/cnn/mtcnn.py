@@ -15,7 +15,14 @@ class MTCNN(nn.Module):
     Below is a recommended suite for use in emotion recognition tasks:
 
     .. code-block:: python
-    
+
+        from torcheeg.datasets import DEAPDataset
+        from torcheeg import transforms
+        from torcheeg.datasets.constants import DEAP_CHANNEL_LOCATION_DICT, DEAP_CHANNEL_LIST
+        from torcheeg.models import MTCNN
+        from torcheeg.datasets.constants.emotion_recognition.utils import format_channel_location_dict
+        from torch.utils.data import DataLoader
+
         DEAP_LOCATION_LIST = [['-', '-', 'AF3', 'FP1', '-', 'FP2', 'AF4', '-', '-'],
                               ['F7', '-', 'F3', '-', 'FZ', '-', 'F4', '-', 'F8'],
                               ['-', 'FC5', '-', 'FC1', '-', 'FC2', '-', 'FC6', '-'],
@@ -26,20 +33,23 @@ class MTCNN(nn.Module):
                               ['-', '-', '-', 'O1', 'OZ', 'O2', '-', '-', '-']]
         DEAP_CHANNEL_LOCATION_DICT = format_channel_location_dict(DEAP_CHANNEL_LIST, DEAP_LOCATION_LIST)
 
-        dataset = DEAPDataset(io_path=f'./deap',
-                    root_path='./data_preprocessed_python',
-                    online_transform=transforms.Compose([
-                        transforms.Concatenate([
-                            transforms.BandDifferentialEntropy(),
-                            transforms.BandPowerSpectralDensity()
-                        ]),
-                        transforms.ToGrid(DEAP_CHANNEL_LOCATION_DICT)
-                    ]),
-                    label_transform=transforms.Compose([
-                        transforms.Select('valence'),
-                        transforms.Binary(5.0),
-                    ]))
+        dataset = DEAPDataset(root_path='./data_preprocessed_python',
+                              online_transform=transforms.Compose([
+                                  transforms.Concatenate([
+                                      transforms.BandDifferentialEntropy(),
+                                      transforms.BandPowerSpectralDensity()
+                                  ]),
+                                  transforms.ToGrid(DEAP_CHANNEL_LOCATION_DICT)
+                              ]),
+                              label_transform=transforms.Compose([
+                                  transforms.Select('valence'),
+                                  transforms.Binary(5.0),
+                              ]))
+
         model = MTCNN(num_classes=2, in_channels=8, grid_size=(8, 9), dropout=0.2)
+
+        x, y = next(iter(DataLoader(dataset, batch_size=64)))
+        model(x)
 
     Args:
         in_channels (int): The feature dimension of each electrode, i.e., :math:`N` in the paper. (default: :obj:`4`)

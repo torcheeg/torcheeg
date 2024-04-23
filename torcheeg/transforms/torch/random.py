@@ -34,8 +34,10 @@ class RandomNoise(RandomEEGTransform):
     
     .. code-block:: python
 
-        transform = RandomNoise(p=0.5)
-        transform(eeg=torch.randn(32, 128))['eeg'].shape
+        from torcheeg import transforms
+
+        t = transforms.RandomNoise(p=0.5)
+        t(eeg=torch.randn(32, 128))['eeg'].shape
         >>> (32, 128)
 
     Args:

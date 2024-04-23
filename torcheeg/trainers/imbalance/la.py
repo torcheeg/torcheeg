@@ -48,13 +48,11 @@ class LALossTrainer(ClassifierTrainer):
 
         .. code-block:: python
 
-            trainer = LALossTrainer(model, num_classes=2, class_frequency=train_loader)
-            trainer.fit(train_loader, val_loader)
-            trainer.test(test_loader)
+            from torcheeg.models import CCNN
+            from torcheeg.trainers import LALossTrainer
 
+            model = CCNN(in_channels=5, num_classes=2)
             trainer = LALossTrainer(model, num_classes=2, class_frequency=[10, 20], tau=1.0)
-            trainer.fit(train_loader, val_loader)
-            trainer.test(test_loader)
 
         Args:
             model (nn.Module): The classification model, and the dimension of its output should be equal to the number of categories in the dataset. The output layer does not need to have a softmax activation function.
@@ -66,7 +64,7 @@ class LALossTrainer(ClassifierTrainer):
             weight_decay (float): The weight decay. (default: :obj:`0.0`)
             devices (int): The number of devices to use. (default: :obj:`1`)
             accelerator (str): The accelerator to use. Available options are: 'cpu', 'gpu'. (default: :obj:`"cpu"`)
-            metrics (list of str): The metrics to use. Available options are: 'precision', 'recall', 'f1_score', 'accuracy', 'matthews', 'auroc', and 'kappa'. (default: :obj:`["accuracy"]`)
+            metrics (list of str): The metrics to use. Available options are: 'precision', 'recall', 'f1score', 'accuracy', 'matthews', 'auroc', and 'kappa'. (default: :obj:`["accuracy"]`)
         
         .. automethod:: fit
         .. automethod:: test

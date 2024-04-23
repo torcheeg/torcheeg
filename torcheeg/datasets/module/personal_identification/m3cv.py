@@ -29,7 +29,10 @@ class M3CVDataset(BaseDataset):
     An example dataset for CNN-based methods:
 
     .. code-block:: python
-    
+
+        from torcheeg.datasets import M3CVDataset
+        from torcheeg import transforms
+
         dataset = M3CVDataset(root_path='./aistudio',
                               offline_transform=transforms.Compose([
                                   transforms.BandDifferentialEntropy(),
@@ -49,6 +52,9 @@ class M3CVDataset(BaseDataset):
 
     .. code-block:: python
 
+        from torcheeg.datasets import M3CVDataset
+        from torcheeg import transforms
+    
         dataset = M3CVDataset(io_path=f'./m3cv',
                               root_path='./aistudio',
                               online_transform=transforms.Compose([
@@ -67,7 +73,12 @@ class M3CVDataset(BaseDataset):
     An example dataset for GNN-based methods:
 
     .. code-block:: python
-    
+
+        from torcheeg.datasets import M3CVDataset
+        from torcheeg import transforms
+        from torcheeg.datasets.constants.personal_identification.m3cv import M3CV_ADJACENCY_MATRIX
+        from torcheeg.transforms.pyg import ToG
+        
         dataset = M3CVDataset(io_path=f'./m3cv',
                               root_path='./aistudio',
                               online_transform=transforms.Compose([

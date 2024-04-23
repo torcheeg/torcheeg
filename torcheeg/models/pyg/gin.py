@@ -18,15 +18,25 @@ class GIN(nn.Module):
 
     .. code-block:: python
 
-        dataset = DEAPDataset(io_path=f'./deap',
-                    root_path='./data_preprocessed_python',
-                    offline_transform=transforms.BandDifferentialEntropy(),
-                    online_transform=ToG(SEED_STANDARD_ADJACENCY_MATRIX),
-                    label_transform=transforms.Compose([
-                        transforms.Select('valence'),
-                        transforms.Binary(5.0),
-                    ]))
+        from torcheeg.datasets import DEAPDataset
+        from torcheeg import transforms
+        from torcheeg.transforms.pyg import ToG
+        from torcheeg.datasets.constants import SEED_STANDARD_ADJACENCY_MATRIX
+        from torcheeg.models import GIN
+        from torch_geometric.data import DataLoader
+
+        dataset = DEAPDataset(root_path='./data_preprocessed_python',
+                              offline_transform=transforms.BandDifferentialEntropy(),
+                              online_transform=ToG(SEED_STANDARD_ADJACENCY_MATRIX),
+                              label_transform=transforms.Compose([
+                                  transforms.Select('valence'),
+                                  transforms.Binary(5.0),
+                              ]))
+
         model = GIN(in_channels=4, hid_channels=64, num_classes=2)
+
+        x, y = next(iter(DataLoader(dataset, batch_size=64)))
+        model(x)
 
     Args:
         in_channels (int): The feature dimension of each electrode. (default: :obj:`4`)

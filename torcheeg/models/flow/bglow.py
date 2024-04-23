@@ -627,6 +627,10 @@ class BGlow(nn.Module):
     
     .. code-block:: python
 
+        import torch
+
+        from torcheeg.models.flow.bglow import BGlow
+        
         eeg = torch.randn(1, 4, 32, 32)
         model = BGlow()
         nll_loss = model(eeg)

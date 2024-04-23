@@ -22,6 +22,8 @@ Emotion Recognition Datasets
     SEEDFeatureDataset
     SEEDIVDataset
     SEEDIVFeatureDataset
+    SEEDVDataset
+    SEEDVFeatureDataset
     AMIGOSDataset
     MAHNOBDataset
     BCI2022Dataset
@@ -87,10 +89,3 @@ Customized Datasets
 
     FolderDataset
     CSVFolderDataset
-
-Hooks
----------------------------------------------------------
-
-.. autofunction:: before_trial_normalize
-.. autofunction:: after_trial_normalize
-.. autofunction:: after_trial_moving_avg

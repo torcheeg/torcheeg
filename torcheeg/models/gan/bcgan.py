@@ -12,6 +12,10 @@ class BCGenerator(nn.Module):
 
     .. code-block:: python
 
+        import torch
+
+        from torcheeg.models.gan.bcgan import BCGenerator
+
         g_model = BCGenerator(in_channels=128, num_classes=3)
         z = torch.normal(mean=0, std=1, size=(1, 128))
         y = torch.randint(low=0, high=3, size=(1,))

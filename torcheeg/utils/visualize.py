@@ -36,6 +36,9 @@ def plot_raw_topomap(tensor: torch.Tensor,
 
     .. code-block:: python
 
+        from torcheeg.utils import plot_raw_topomap
+        from torcheeg.constants import DEAP_CHANNEL_LIST
+
         eeg = torch.randn(32, 128)
         img = plot_raw_topomap(eeg,
                          channel_list=DEAP_CHANNEL_LIST,
@@ -92,6 +95,9 @@ def plot_feature_topomap(tensor: torch.Tensor,
     Plot a topographic map of the input EEG features as image.
 
     .. code-block:: python
+
+        from torcheeg.utils import plot_feature_topomap
+        from torcheeg.constants import DEAP_CHANNEL_LIST
 
         eeg = torch.randn(32, 4)
         img = plot_feature_topomap(eeg,
@@ -164,6 +170,11 @@ def plot_signal(tensor: torch.Tensor,
 
     .. code-block:: python
 
+        import torch
+
+        from torcheeg.utils import plot_signal
+        from torcheeg.constants import DEAP_CHANNEL_LIST
+
         eeg = torch.randn(32, 128)
         img = plot_signal(eeg,
                           channel_list=DEAP_CHANNEL_LIST,
@@ -204,6 +215,8 @@ def plot_3d_tensor(tensor: torch.Tensor,
     Visualize a 3-D matrices in 3-D space.
 
     .. code-block:: python
+
+        from torcheeg.utils import plot_3d_tensor
 
         eeg = torch.randn(128, 9, 9)
         img = plot_3d_tensor(eeg)
@@ -250,6 +263,10 @@ def plot_2d_tensor(tensor: torch.Tensor,
 
     .. code-block:: python
 
+        import torch
+
+        from torcheeg.utils import plot_2d_tensor
+
         eeg = torch.randn(9, 9)
         img = plot_2d_tensor(eeg)
         # If using jupyter, the output image will be drawn on notebooks.
@@ -291,6 +308,11 @@ def plot_adj_connectivity(adj: torch.Tensor,
 
     .. code-block:: python
 
+        import torch
+        
+        from torcheeg.utils import plot_adj_connectivity
+        from torcheeg.constants import SEED_CHANNEL_LIST
+        
         adj = torch.randn(62, 62) # relationship between 62 electrodes
         img = plot_adj_connectivity(adj, SEED_CHANNEL_LIST)
         # If using jupyter, the output image will be drawn on notebooks.
