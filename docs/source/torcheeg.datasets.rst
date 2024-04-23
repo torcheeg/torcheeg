@@ -22,6 +22,7 @@ Emotion Recognition Datasets
     SEEDFeatureDataset
     SEEDIVDataset
     SEEDIVFeatureDataset
+    SEEDVFeatureDataset
     AMIGOSDataset
     MAHNOBDataset
     BCI2022Dataset

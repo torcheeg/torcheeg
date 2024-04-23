@@ -13,7 +13,7 @@ class SEEDIVDataset(BaseDataset):
 
     - Author: Zheng et al.
     - Year: 2018
-    - Download URL: https://ieeexplore.ieee.org/abstract/document/8283814
+    - Download URL: https://bcmi.sjtu.edu.cn/home/seed/seed-iv.html
     - Reference: Zheng W L, Liu W, Lu Y, et al. Emotionmeter: A multimodal framework for recognizing human emotions[J]. IEEE transactions on cybernetics, 2018, 49(3): 1110-1122.
     - Stimulus: 168 film clips.
     - Signals: Electroencephalogram (62 channels at 200Hz) and eye movement data of 15 subjects (8 females). Each subject conducts the experiments in three sessions, and each session contains 24 trials (6 per emotional category) totally 15 people x 3 sessions x 24 trials.

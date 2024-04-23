@@ -1,42 +1,41 @@
 import os
-import re
+import pickle as pkl
 from typing import Any, Callable, Dict, Tuple, Union
 
 import numpy as np
-import scipy.io as scio
-from ..base_dataset import BaseDataset
+
 from ....utils import get_random_dir_path
+from ..base_dataset import BaseDataset
 
 
-class SEEDIVFeatureDataset(BaseDataset):
+class SEEDVFeatureDataset(BaseDataset):
     r'''
-    The SEED-IV dataset provided by the BCMI laboratory, which is led by Prof. Bao-Liang Lu. Since the SEED dataset provides features based on matlab, this class implements the processing of these feature files to initialize the dataset. The relevant information of the dataset is as follows:
+    The SEED-V dataset provided by the BCMI laboratory, which is led by Prof. Bao-Liang Lu. Since the SEED dataset provides features based on matlab, this class implements the processing of these feature files to initialize the dataset. The relevant information of the dataset is as follows:
 
-    - Author: Zheng et al.
-    - Year: 2018
-    - Download URL: https://bcmi.sjtu.edu.cn/home/seed/seed-iv.html
-    - Reference: Zheng W L, Liu W, Lu Y, et al. Emotionmeter: A multimodal framework for recognizing human emotions[J]. IEEE transactions on cybernetics, 2018, 49(3): 1110-1122.
-    - Stimulus: 168 film clips.
-    - Signals: Electroencephalogram (62 channels at 200Hz) and eye movement data of 15 subjects (8 females). Each subject conducts the experiments in three sessions, and each session contains 24 trials (6 per emotional category) totally 15 people x 3 sessions x 24 trials.
-    - Rating: neutral (0), sad (1), fear (2), and happy (3).
+    - Author: Liu et al.
+    - Year: 2021
+    - Download URL: https://bcmi.sjtu.edu.cn/home/seed/seed-v.html
+    - Reference: Liu W, Qiu J L, Zheng W L, et al. Comparing recognition performance and robustness of multimodal deep learning models for multimodal emotion recognition[J]. IEEE Transactions on Cognitive and Developmental Systems, 2021, 14(2): 715-729.
+    - Stimulus: 15 pieces of stimulating material.
+    - Signals: Electroencephalogram (62 channels at 200Hz) and eye movement data of 20 subjects (20 females). Each subject conducts the experiments in three sessions, and each session contains 15 trials (3 per emotional category) totally 20 people x 3 sessions x 15 trials.
+    - Rating: disgust (0), fear (1), sad (2), neutral (3), happy (4).
     - Features: de_movingAve, de_LDS, psd_movingAve, psd_LDS, dasm_movingAve, dasm_LDS, rasm_movingAve, rasm_LDS, asm_movingAve, asm_LDS, dcau_movingAve, dcau_LDS of 4-second long windows
 
-    In order to use this dataset, the download folder :obj:`eeg_feature_smooth` is required, containing the following folder:
+    In order to use this dataset, the download folder :obj:`EEG_DE_features` is required, containing the following folder:
     
-    - 1
-    - 2
-    - 3
+    - 1_123.npz
+    - 2_123.npz
+    - ...
 
     An example dataset for CNN-based methods:
 
     .. code-block:: python
 
-        from torcheeg.datasets import SEEDIVFeatureDataset
+        from torcheeg.datasets import SEEDVFeatureDataset
         from torcheeg import transforms
         from torcheeg.datasets.constants.emotion_recognition.seed import SEED_CHANNEL_LOCATION_DICT
         
-        dataset = SEEDIVFeatureDataset(root_path='./eeg_feature_smooth',
-                                       features=['de_movingAve'],
+        dataset = SEEDVFeatureDataset(root_path='./EEG_DE_features',
                                        offline_transform=transforms.ToGrid         (SEED_CHANNEL_LOCATION_DICT),
                                        online_transform=transforms.ToTensor(),
                                        label_transform=transforms.Select('emotion'))
@@ -49,13 +48,12 @@ class SEEDIVFeatureDataset(BaseDataset):
 
     .. code-block:: python
 
-        from torcheeg.datasets import SEEDIVFeatureDataset
+        from torcheeg.datasets import SEEDVFeatureDataset
         from torcheeg import transforms
         from torcheeg.datasets.constants.emotion_recognition.seed import SEED_ADJACENCY_MATRIX
         from torcheeg.transforms.pyg import ToG
         
-        dataset = SEEDIVFeatureDataset(root_path='./eeg_feature_smooth',
-                                       features=['de_movingAve'],
+        dataset = SEEDVFeatureDataset(root_path='./EEG_DE_features',
                                        online_transform=ToG(SEED_ADJACENCY_MATRIX),
                                        label_transform=transforms.Select('emotion'))
         print(dataset[0])
@@ -65,7 +63,6 @@ class SEEDIVFeatureDataset(BaseDataset):
         
     Args:
         root_path (str): Downloaded data files in matlab (unzipped ExtractedFeatures.zip) formats (default: :obj:`'./ExtractedFeatures'`)
-        feature (list): A list of selected feature names. The selected features corresponding to each electrode will be concatenated together. Feature names supported by the SEED dataset include de_movingAve, de_LDS, psd_movingAve, and etc. (default: :obj:`['de_movingAve']`)
         num_channel (int): Number of channels used, of which the first 62 channels are EEG signals. (default: :obj:`62`)
         online_transform (Callable, optional): The transformation of the EEG signals and baseline EEG signals. The input is a :obj:`np.ndarray`, and the ouput is used as the first and second value of each element in the dataset. (default: :obj:`None`)
         offline_transform (Callable, optional): The usage is the same as :obj:`online_transform`, but executed before generating IO intermediate results. (default: :obj:`None`)
@@ -80,8 +77,7 @@ class SEEDIVFeatureDataset(BaseDataset):
     '''
 
     def __init__(self,
-                 root_path: str = './eeg_feature_smooth',
-                 feature: list = ['de_movingAve'],
+                 root_path: str = './EEG_DE_features',
                  num_channel: int = 62,
                  online_transform: Union[None, Callable] = None,
                  offline_transform: Union[None, Callable] = None,
@@ -101,7 +97,6 @@ class SEEDIVFeatureDataset(BaseDataset):
         # pass all arguments to super class
         params = {
             'root_path': root_path,
-            'feature': feature,
             'num_channel': num_channel,
             'online_transform': online_transform,
             'offline_transform': offline_transform,
@@ -121,115 +116,75 @@ class SEEDIVFeatureDataset(BaseDataset):
         self.__dict__.update(params)
 
     @staticmethod
-    def process_record(feature: list = ['de_movingAve'],
-                       num_channel: int = 62,
+    def process_record(num_channel: int = 62,
                        offline_transform: Union[None, Callable] = None,
                        before_trial: Union[None, Callable] = None,
                        file: Any = None,
                        **kwargs):
-        file_path = file  # an element from file name list
+        # get file name from path
+        file_name = os.path.basename(file)
 
-        session_id = os.path.basename(os.path.dirname(file_path))
-        _, file_name = os.path.split(file_path)
+        # split with '_', the fist part is subject id
+        subject_id = file_name.split('_')[0]
 
-        subject = int(os.path.basename(file_name).split('.')[0].split('_')
-                      [0])  # subject (15)
-        date = int(os.path.basename(file_name).split('.')[0].split('_')
-                   [1])  # period (3)
-
-        samples = scio.loadmat(file_path,
-                               verify_compressed_data_integrity=False
-                               )  # trial (15), channel(62), timestep(n*200)
-        # label file
-        labels = [
-            [
-                1, 2, 3, 0, 2, 0, 0, 1, 0, 1, 2, 1, 1, 1, 2, 3, 2, 2, 3, 3, 0,
-                3, 0, 3
-            ],
-            [
-                2, 1, 3, 0, 0, 2, 0, 2, 3, 3, 2, 3, 2, 0, 1, 1, 2, 1, 0, 3, 0,
-                1, 3, 1
-            ],
-            [
-                1, 2,
-                2, 1,
-                3, 3,
-                3, 1,
-                1, 2,
-                1, 0,
-                2, 3,
-                3, 0,
-                2, 3,
-                0, 0,
-                2, 0,
-                1, 0
-            ]
-        ]  # The labels with 0, 1, 2, and 3 denote the ground truth, neutral, sad, fear, and happy emotions, respectively.
-        session_labels = labels[int(session_id) - 1]
-        trial_ids = [
-            int(re.findall(r"de_movingAve(\d+)", key)[0])
-            for key in samples.keys() if 'de_movingAve' in key
-        ]
+        # load the file
+        data_npz = np.load(file)
+        data = pkl.loads(data_npz['data'])
+        label = pkl.loads(data_npz['label'])
 
         write_pointer = 0
-        # loop for each trial
-        for trial_id in trial_ids:
-            # extract baseline signals
-            trial_samples = []
-            for cur_feature in feature:
-                trial_samples.append(samples[
-                    cur_feature +
-                    str(trial_id)])  # channel(61), timestep(n), bands(5)
-            trial_samples = np.concatenate(
-                trial_samples,
-                axis=-1)[:
-                         num_channel]  # channel(61), timestep(n), features(5*k)
-            trial_samples = trial_samples.transpose((1, 0, 2))
-            # timestep(n), channel(61), features(5*k)
+
+        # loop all trials
+        for global_trial_id in range(len(data.keys())):
+            trial_samples = data[list(data.keys())[global_trial_id]]
+            trial_labels = label[global_trial_id]
+
+            # split trial to 3 sessions
+            session_id = global_trial_id // 15
+            trial_id = global_trial_id % 15
+
+            trial_meta_info = {
+                'subject_id': subject_id,
+                'session_id': session_id,
+                'trial_id': trial_id
+            }
 
             if before_trial:
                 trial_samples = before_trial(trial_samples)
 
-            # record the common meta info
-            trial_meta_info = {
-                'subject_id': subject,
-                'trial_id': trial_id,
-                'session_id': session_id,
-                'emotion': int(session_labels[trial_id - 1]),
-                'date': date
-            }
-
-            trial_queue = []
-            for i, clip_sample in enumerate(trial_samples):
-                t_eeg = clip_sample
-                if not offline_transform is None:
-                    t_eeg = offline_transform(eeg=clip_sample)['eeg']
+            # loop all clips
+            for i in range(trial_samples.shape[0]):
+                clip_sample = trial_samples[i]
+                clip_label = trial_labels[i]
 
                 clip_id = f'{file_name}_{write_pointer}'
                 write_pointer += 1
 
-                # record meta info for each signal
                 record_info = {
                     'start_at': i * 400,
                     'end_at': (i + 1) *
-                    400,  # The size of the sliding time windows for feature extraction is 4 seconds.
-                    'clip_id': clip_id
+                    400,  # The size of the sliding time windows for feature 
+                    'clip_id': clip_id,
+                    'emotion': int(clip_label)
                 }
                 record_info.update(trial_meta_info)
+
+                t_eeg = clip_sample.reshape(62, 5)[:num_channel]
+                if not offline_transform is None:
+                    t_eeg = offline_transform(eeg=t_eeg)['eeg']
+
                 yield {'eeg': t_eeg, 'key': clip_id, 'info': record_info}
 
-    def set_records(self, root_path: str = './eeg_feature_smooth', **kwargs):
+    def set_records(self, root_path: str = './EEG_DE_features', **kwargs):
         assert os.path.exists(
             root_path
         ), f'root_path ({root_path}) does not exist. Please download the dataset and set the root_path to the downloaded path.'
 
-        session_list = ['1', '2', '3']
-        file_path_list = []
-        for session in session_list:
-            session_root_path = os.path.join(root_path, session)
-            for file_name in os.listdir(session_root_path):
-                file_path_list.append(os.path.join(session_root_path,
-                                                   file_name))
+        file_path_list = os.listdir(root_path)
+        file_path_list = [
+            os.path.join(root_path, file_path) for file_path in file_path_list
+            if file_path.endswith('.npz')
+        ]
 
         return file_path_list
 
@@ -256,7 +211,6 @@ class SEEDIVFeatureDataset(BaseDataset):
         return dict(
             super().repr_body, **{
                 'root_path': self.root_path,
-                'feature': self.feature,
                 'num_channel': self.num_channel,
                 'online_transform': self.online_transform,
                 'offline_transform': self.offline_transform,

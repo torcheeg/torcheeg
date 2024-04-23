@@ -6,5 +6,6 @@ from .mahnob import MAHNOBDataset
 from .seed import SEEDDataset
 from .seed_feature import SEEDFeatureDataset
 from .seed_iv import SEEDIVDataset
+from .seed_v_feature import SEEDVFeatureDataset
 from .seed_iv_feature import SEEDIVFeatureDataset
 from .mped_feature import MPEDFeatureDataset

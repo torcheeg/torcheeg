@@ -4,17 +4,36 @@ import shutil
 import unittest
 
 from torcheeg import transforms
-from torcheeg.datasets import (AMIGOSDataset, DEAPDataset, DREAMERDataset,
-                               MAHNOBDataset, SEEDDataset, SEEDFeatureDataset,
-                               SEEDIVDataset, SEEDIVFeatureDataset,
-                               MPEDFeatureDataset, BCI2022Dataset)
+from torcheeg.datasets import (AMIGOSDataset, BCI2022Dataset, DEAPDataset,
+                               DREAMERDataset, MAHNOBDataset,
+                               MPEDFeatureDataset, SEEDDataset,
+                               SEEDFeatureDataset, SEEDIVDataset,
+                               SEEDIVFeatureDataset, SEEDVFeatureDataset)
 
 
 class TestEmotionRecognitionDataset(unittest.TestCase):
+
     def setUp(self):
         if os.path.exists('./tmp_out/'):
             shutil.rmtree('./tmp_out/')
         os.mkdir('./tmp_out/')
+
+    def test_seed_v_feature_dataset(self):
+        io_path = f'./tmp_out/seed_v_feature_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
+        root_path = './tmp_in/EEG_DE_features'
+
+        dataset = SEEDVFeatureDataset(
+            io_path=io_path,
+            root_path=root_path,
+            online_transform=transforms.ToTensor(),
+            label_transform=transforms.Select('emotion'),
+            num_worker=4)
+
+        self.assertEqual(len(dataset), 29168)
+        first_item = dataset[0]
+        self.assertEqual(first_item[0].shape, (62, 5))
+        last_item = dataset[29167]
+        self.assertEqual(last_item[0].shape, (62, 5))
 
     def test_mped_feature_dataset(self):
         io_path = f'./tmp_out/mped_feature_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
