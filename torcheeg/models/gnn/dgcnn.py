@@ -81,7 +81,7 @@ class Chebynet(nn.Module):
             if i == 0:
                 result = self.gc1[i](x, adj[i])
             else:
-                result += self.gc1[i](x, adj[i])
+                result = result+  self.gc1[i](x, adj[i])
         result = F.relu(result)
         return result
 
