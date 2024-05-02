@@ -25,6 +25,10 @@ class TestVisualize(unittest.TestCase):
                                    channel_list=DEAP_CHANNEL_LIST,
                                    feature_list=["theta", "alpha", "beta", "gamma"])
         self.assertEqual(img.shape, (347, 1550, 4))
+        img = plot_feature_topomap(mock_eeg,
+                                   channel_list=DEAP_CHANNEL_LIST,
+                                   feature_list=["theta", "alpha", "beta", "gamma"],fig_shape=(2,2))
+        self.assertEqual(img.shape, (784, 774, 4))
 
     def test_plot_signal(self):
         mock_eeg = torch.randn(32, 128)
