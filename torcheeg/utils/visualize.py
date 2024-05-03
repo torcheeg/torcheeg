@@ -90,7 +90,8 @@ def plot_raw_topomap(tensor: torch.Tensor,
 def plot_feature_topomap(tensor: torch.Tensor,
                          channel_list: List[str],
                          feature_list: Union[List[str], None] = None,
-                         montage: mne.channels.DigMontage = default_montage):
+                         montage: mne.channels.DigMontage = default_montage,
+                         fig_shape: tuple[int, int] = None):
     r'''
     Plot a topographic map of the input EEG features as image.
 
@@ -116,6 +117,7 @@ def plot_feature_topomap(tensor: torch.Tensor,
         channel_list (list): The channel name lists corresponding to the input EEG signal. If the dataset in TorchEEG is used, please refer to the CHANNEL_LIST related constants in the :obj:`torcheeg.constants` module.
         feature_list (list): . The names of feature dimensions displayed on the output image, whose length should be consistent with the dimensions of features. If set to None, the dimension index of the feature is used instead. (default: :obj:`None`)
         montage (any): Channel positions and digitization points defined in obj:`mne`. (default: :obj:`mne.channels.make_standard_montage('standard_1020')`)
+        fig_shape (Tuple[int, int], optional): The shape of the sub graphs (width, height). If `None`, the layout is automatically set to (1, len(feature_list)). (default: :obj:`None`)
     
     Returns:
         np.ndarray: The output image in the form of :obj:`np.ndarray`.
@@ -132,16 +134,27 @@ def plot_feature_topomap(tensor: torch.Tensor,
         feature_list = list(range(tensor.shape[1]))
     num_subplots = len(feature_list)
 
-    fig, axes = plt.subplots(1, num_subplots, figsize=(num_subplots * 5, 5))
+    if fig_shape == None:
+        fig_shape = (1, num_subplots)
+    else:
+        if len(fig_shape) != 2:
+            raise ValueError("fig_shape only support 2d graph, so just contain width and height")
+        if not all(isinstance(n, int) and n > 0 for n in fig_shape):
+            raise ValueError("width and height in fig_shape must be positive integers")
+        if fig_shape[0]*fig_shape[1] != num_subplots:
+            raise ValueError(f"The product of width and height in fig_shape must equal feature_list length: {num_subplots}")
+
+    fig, axes = plt.subplots(fig_shape[0], fig_shape[1], figsize=(fig_shape[1] * 5, fig_shape[0] * 5), squeeze=False)
 
     if num_subplots > 1:
         for i, (label) in enumerate(feature_list):
+            row, col = i // fig_shape[1], i % fig_shape[1]
             mne.viz.plot_topomap(tensor[:, i],
-                                 info,
-                                 axes=axes[i],
-                                 show=False,
-                                 sphere=(0., 0., 0., 0.11))
-            axes[i].set_title(label, {
+                                info,
+                                axes=axes[row, col],
+                                show=False,
+                                sphere=(0., 0., 0., 0.11))
+            axes[row, col].set_title(label, {
                 'fontsize': 24,
                 'fontname': 'Liberation Serif'
             })
