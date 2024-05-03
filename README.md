@@ -262,32 +262,32 @@ If you would like to contribute new datasets, deep learning methods, and extensi
         </a>
     </td>
     <td align="center">
+        <a href="https://github.com/wufei-png">
+            <img src="https://avatars.githubusercontent.com/u/63766429?v=4" width="100;" alt="wufei-png"/>
+            <br />
+            <sub><b>Wu Fei</b></sub>
+        </a>
+    </td>
+    <td align="center">
         <a href="https://github.com/dawin2015">
             <img src="https://avatars.githubusercontent.com/u/12325204?v=4" width="100;" alt="dawin2015"/>
             <br />
             <sub><b>Liu-darong</b></sub>
         </a>
-    </td>
+    </td></tr>
+<tr>
     <td align="center">
         <a href="https://github.com/Nhix00">
             <img src="https://avatars.githubusercontent.com/u/75837033?v=4" width="100;" alt="Nhix00"/>
             <br />
             <sub><b>Nhix</b></sub>
         </a>
-    </td></tr>
-<tr>
+    </td>
     <td align="center">
         <a href="https://github.com/gitter-badger">
             <img src="https://avatars.githubusercontent.com/u/8518239?v=4" width="100;" alt="gitter-badger"/>
             <br />
             <sub><b>The Gitter Badger</b></sub>
-        </a>
-    </td>
-    <td align="center">
-        <a href="https://github.com/wufei-png">
-            <img src="https://avatars.githubusercontent.com/u/63766429?v=4" width="100;" alt="wufei-png"/>
-            <br />
-            <sub><b>Wu Fei</b></sub>
         </a>
     </td></tr>
 </table>
