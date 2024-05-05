@@ -151,6 +151,7 @@ class FACEDDataset(BaseDataset):
         chunk_size (int): Number of data points included in each EEG chunk as training or test samples. If set to -1, the EEG signal of a trial is used as a sample of a chunk. (default: :obj:`250`)
         overlap (int): The number of overlapping data points between different chunks when dividing EEG chunks. (default: :obj:`0`)
         num_channel (int): Number of channels used, of which the first 30 channels are EEG signals. (default: :obj:`30`)
+        num_baseline (int): Number of baseline signal chunks used. (default: :obj:`3`)
         online_transform (Callable, optional): The transformation of the EEG signals and baseline EEG signals. The input is a :obj:`np.ndarray`, and the ouput is used as the first and second value of each element in the dataset. (default: :obj:`None`)
         offline_transform (Callable, optional): The usage is the same as :obj:`online_transform`, but executed before generating IO intermediate results. (default: :obj:`None`)
         label_transform (Callable, optional): The transformation of the label. The input is an information dictionary, and the ouput is used as the third value of each element in the dataset. (default: :obj:`None`)
@@ -168,6 +169,7 @@ class FACEDDataset(BaseDataset):
                  chunk_size: int = 250,
                  overlap: int = 0,
                  num_channel: int = 30,
+                 num_baseline: int = 3,
                  online_transform: Union[None, Callable] = None,
                  offline_transform: Union[None, Callable] = None,
                  label_transform: Union[None, Callable] = None,
@@ -188,6 +190,7 @@ class FACEDDataset(BaseDataset):
             'chunk_size': chunk_size,
             'overlap': overlap,
             'num_channel': num_channel,
+            'num_baseline': num_baseline,
             'online_transform': online_transform,
             'offline_transform': offline_transform,
             'label_transform': label_transform,
