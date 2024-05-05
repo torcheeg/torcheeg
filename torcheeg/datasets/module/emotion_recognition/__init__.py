@@ -11,3 +11,4 @@ from .seed_iv_feature import SEEDIVFeatureDataset
 from .seed_v import SEEDVDataset
 from .seed_v_feature import SEEDVFeatureDataset
 from .faced import FACEDDataset
+from .faced_feature import FACEDFeatureDataset
