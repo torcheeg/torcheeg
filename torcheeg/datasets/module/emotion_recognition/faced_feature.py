@@ -184,6 +184,7 @@ class FACEDFeatureDataset(BaseDataset):
         ), f'root_path ({root_path}) does not exist. Please download the dataset and set the root_path to the downloaded path.'
 
         file_path_list = os.listdir(root_path)
+        file_path_list.sort()
         file_path_list = [
             os.path.join(root_path, file_path) for file_path in file_path_list
             if file_path.endswith('.pkl')

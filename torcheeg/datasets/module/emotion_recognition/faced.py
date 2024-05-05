@@ -300,7 +300,7 @@ class FACEDDataset(BaseDataset):
         assert os.path.exists(
             root_path
         ), f'root_path ({root_path}) does not exist. Please download the dataset and set the root_path to the downloaded path.'
-        return os.listdir(root_path)
+        return os.listdir(root_path).sort()
 
     def __getitem__(self, index: int) -> Tuple[any, any, int, int, int]:
         info = self.read_info(index)
