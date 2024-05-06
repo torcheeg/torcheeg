@@ -2,11 +2,10 @@ import os
 import pickle as pkl
 from typing import Any, Callable, Dict, Tuple, Union
 
-import numpy as np
-
 from ....utils import get_random_dir_path
 from ..base_dataset import BaseDataset
-from .faced import VALENCE_DICT,EMOTION_DICT
+from .faced import EMOTION_DICT, VALENCE_DICT
+
 
 class FACEDFeatureDataset(BaseDataset):
     r'''
@@ -80,7 +79,8 @@ class FACEDFeatureDataset(BaseDataset):
         num_worker (int): Number of subprocesses to use for data loading. 0 means that the data will be loaded in the main process. (default: :obj:`0`)
         verbose (bool): Whether to display logs during processing, such as progress bars, etc. (default: :obj:`True`)    
     '''
-    def rename_pkl_files(self,root_path):
+
+    def rename_pkl_files(self, root_path):
         for dirpath, dirnames, filenames in os.walk(root_path):
             for filename in filenames:
                 if filename.endswith('.pkl.pkl'):
@@ -137,29 +137,31 @@ class FACEDFeatureDataset(BaseDataset):
         # get file name from path ,such as 'sub087.pkl'
         file_name = os.path.basename(file)
 
-        subject_id = int(file_name.split('.')[0][3:]) # get int value from 'sub087.pkl', such as 87
+        subject_id = int(file_name.split('.')[0]
+                         [3:])  # get int value from 'sub087.pkl', such as 87
 
         # load the file
         with open(os.path.join(file), 'rb') as f:
-            data = pkl.load(f, encoding='iso-8859-1') # 28(trials), 32(channels), 30s(time points), 5(frequency bands)
+            data = pkl.load(
+                f, encoding='iso-8859-1'
+            )  # 28(trials), 32(channels), 30s(time points), 5(frequency bands)
 
         write_pointer = 0
 
         # loop all trials
         for trial_id in range(len(data)):
-            trial_samples = data[trial_id,:num_channel] # 30(channels), 30s(time points), 5(frequency bands)
+            trial_samples = data[
+                trial_id, :
+                num_channel]  # 30(channels), 30s(time points), 5(frequency bands)
 
-            trial_meta_info = {
-                'subject_id': subject_id,
-                'trial_id': trial_id
-            }
+            trial_meta_info = {'subject_id': subject_id, 'trial_id': trial_id}
 
             if before_trial:
                 trial_samples = before_trial(trial_samples)
 
             # loop all clips
             for i in range(trial_samples.shape[1]):
-                t_eeg = trial_samples[:,i]
+                t_eeg = trial_samples[:, i]
 
                 clip_id = f'{file_name}_{write_pointer}'
                 write_pointer += 1
@@ -169,8 +171,8 @@ class FACEDFeatureDataset(BaseDataset):
                     'end_at': (i + 1) *
                     250,  # The size of the sliding time windows for feature 
                     'clip_id': clip_id,
-                    'valence': VALENCE_DICT[trial_id+1],
-                    'emotion': EMOTION_DICT[trial_id+1],
+                    'valence': VALENCE_DICT[trial_id + 1],
+                    'emotion': EMOTION_DICT[trial_id + 1],
                 }
                 record_info.update(trial_meta_info)
 

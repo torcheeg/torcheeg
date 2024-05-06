@@ -1,7 +1,5 @@
 import io
-import itertools
-import random
-from typing import Dict, List, Union
+from typing import List, Tuple, Union
 
 import matplotlib
 import matplotlib.pyplot as plt
@@ -91,7 +89,7 @@ def plot_feature_topomap(tensor: torch.Tensor,
                          channel_list: List[str],
                          feature_list: Union[List[str], None] = None,
                          montage: mne.channels.DigMontage = default_montage,
-                         fig_shape: tuple[int, int] = None):
+                         fig_shape: Tuple[int, int] = None):
     r'''
     Plot a topographic map of the input EEG features as image.
 
@@ -138,22 +136,30 @@ def plot_feature_topomap(tensor: torch.Tensor,
         fig_shape = (1, num_subplots)
     else:
         if len(fig_shape) != 2:
-            raise ValueError("fig_shape only support 2d graph, so just contain width and height")
+            raise ValueError(
+                "fig_shape only support 2d graph, so just contain width and height"
+            )
         if not all(isinstance(n, int) and n > 0 for n in fig_shape):
-            raise ValueError("width and height in fig_shape must be positive integers")
-        if fig_shape[0]*fig_shape[1] != num_subplots:
-            raise ValueError(f"The product of width and height in fig_shape must equal feature_list length: {num_subplots}")
+            raise ValueError(
+                "width and height in fig_shape must be positive integers")
+        if fig_shape[0] * fig_shape[1] != num_subplots:
+            raise ValueError(
+                f"The product of width and height in fig_shape must equal feature_list length: {num_subplots}"
+            )
 
-    fig, axes = plt.subplots(fig_shape[0], fig_shape[1], figsize=(fig_shape[1] * 5, fig_shape[0] * 5), squeeze=False)
+    fig, axes = plt.subplots(fig_shape[0],
+                             fig_shape[1],
+                             figsize=(fig_shape[1] * 5, fig_shape[0] * 5),
+                             squeeze=False)
 
     if num_subplots > 1:
         for i, (label) in enumerate(feature_list):
             row, col = i // fig_shape[1], i % fig_shape[1]
             mne.viz.plot_topomap(tensor[:, i],
-                                info,
-                                axes=axes[row, col],
-                                show=False,
-                                sphere=(0., 0., 0., 0.11))
+                                 info,
+                                 axes=axes[row, col],
+                                 show=False,
+                                 sphere=(0., 0., 0., 0.11))
             axes[row, col].set_title(label, {
                 'fontsize': 24,
                 'fontname': 'Liberation Serif'
@@ -384,9 +390,7 @@ def plot_adj_connectivity(adj: torch.Tensor,
         channel_list = new_channel_list
         node_colors = electrode_colors
 
-    node_angles = circular_layout(channel_list,
-                                  channel_list,
-                                  start_pos=90)
+    node_angles = circular_layout(channel_list, channel_list, start_pos=90)
     # Plot the graph using node colors from the FreeSurfer parcellation. We only
     # show the 300 strongest connections.
     fig, ax = plt.subplots(figsize=(8, 8),

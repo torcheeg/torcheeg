@@ -1,7 +1,6 @@
 import os
-from typing import Any, Callable, Dict, Tuple, Union
-
 import pickle as pkl
+from typing import Any, Callable, Dict, Tuple, Union
 
 from ....utils import get_random_dir_path
 from ..base_dataset import BaseDataset
@@ -214,17 +213,22 @@ class FACEDDataset(BaseDataset):
                        before_trial: Union[None, Callable] = None,
                        offline_transform: Union[None, Callable] = None,
                        **kwargs):
-        file_name = os.path.basename(file)  # an element from file name list, such as 'sub087.pkl'
-        subject_id = int(file_name.split('.')[0][3:]) # get subject_id from 'sub087.pkl', such as 87
+        file_name = os.path.basename(
+            file)  # an element from file name list, such as 'sub087.pkl'
+        subject_id = int(file_name.split('.')[0]
+                         [3:])  # get subject_id from 'sub087.pkl', such as 87
         # derive the given arguments (kwargs)
         with open(os.path.join(root_path, file_name), 'rb') as f:
-            samples = pkl.load(f, encoding='iso-8859-1') # 28(trials), 32(channels), 30s*250hz(time points)
+            samples = pkl.load(
+                f, encoding='iso-8859-1'
+            )  # 28(trials), 32(channels), 30s*250hz(time points)
 
         write_pointer = 0
 
         for trial_id in range(len(samples)):
             trial_samples = samples[
-                trial_id, :num_channel]  # default 30(remove A1 and A2 from 32 channels), 30s*250hz(time points)
+                trial_id, :
+                num_channel]  # default 30(remove A1 and A2 from 32 channels), 30s*250hz(time points)
             if before_trial:
                 trial_samples = before_trial(trial_samples)
 
@@ -232,8 +236,8 @@ class FACEDDataset(BaseDataset):
             trial_meta_info = {
                 'subject_id': subject_id,
                 'trial_id': trial_id,
-                'valence': VALENCE_DICT[trial_id+1],
-                'emotion': EMOTION_DICT[trial_id+1],
+                'valence': VALENCE_DICT[trial_id + 1],
+                'emotion': EMOTION_DICT[trial_id + 1],
             }
             start_at = 0
             if chunk_size <= 0:
@@ -268,15 +272,16 @@ class FACEDDataset(BaseDataset):
                 start_at = start_at + step
                 end_at = start_at + dynamic_chunk_size
 
-    def set_records(self,
-                    root_path: str = './Processed_data',
-                    **kwargs):
+    def set_records(self, root_path: str = './Processed_data', **kwargs):
         assert os.path.exists(
             root_path
         ), f'root_path ({root_path}) does not exist. Please download the dataset and set the root_path to the downloaded path.'
-        paths = os.listdir(root_path)
-        paths.sort()
-        return paths
+        file_path_list = os.listdir(root_path)
+        file_path_list.sort()
+        file_path_list = [
+            file_path for file_path in file_path_list if file_path.endswith('.pkl')
+        ]
+        return file_path_list
 
     def __getitem__(self, index: int) -> Tuple[any, any, int, int, int]:
         info = self.read_info(index)
