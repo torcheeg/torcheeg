@@ -20,7 +20,7 @@ class TestEmotionRecognitionDataset(unittest.TestCase):
         os.mkdir('./tmp_out/')
 
     def test_faced_dataset(self):
-        io_path = f'./tmp_out/seed_v_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
+        io_path = f'./tmp_out/faced_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
         root_path = './tmp_in/Processed_data'
 
         dataset = FACEDDataset(io_path=io_path,
@@ -35,7 +35,7 @@ class TestEmotionRecognitionDataset(unittest.TestCase):
         self.assertEqual(last_item[0].shape, (30, 250))
 
     def test_faced_feature_dataset(self):
-        io_path = f'./tmp_out/seed_v_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
+        io_path = f'./tmp_out/faced_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
         root_path = './tmp_in/EEG_Features/DE'
 
         dataset = FACEDFeatureDataset(
