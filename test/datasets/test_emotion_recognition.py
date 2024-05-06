@@ -28,10 +28,10 @@ class TestEmotionRecognitionDataset(unittest.TestCase):
                               online_transform=transforms.ToTensor(),
                               label_transform=transforms.Select('emotion'),
                               num_worker=4)
-        self.assertEqual(len(dataset), 92988) # 123 subjects * 28 videos * (30-3)s ,3 is num_baseline
+        self.assertEqual(len(dataset), 103320) # 123 subjects * 28 videos * 30s
         first_item = dataset[0]
         self.assertEqual(first_item[0].shape, (30, 250))
-        last_item = dataset[92987]
+        last_item = dataset[103319]
         self.assertEqual(last_item[0].shape, (30, 250))
 
     def test_faced_feature_dataset(self):

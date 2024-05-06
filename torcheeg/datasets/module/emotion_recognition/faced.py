@@ -152,7 +152,6 @@ class FACEDDataset(BaseDataset):
         chunk_size (int): Number of data points included in each EEG chunk as training or test samples. If set to -1, the EEG signal of a trial is used as a sample of a chunk. (default: :obj:`250`)
         overlap (int): The number of overlapping data points between different chunks when dividing EEG chunks. (default: :obj:`0`)
         num_channel (int): Number of channels used, of which the first 30 channels are EEG signals. (default: :obj:`30`)
-        num_baseline (int): Number of baseline signal chunks used. (default: :obj:`3`)
         online_transform (Callable, optional): The transformation of the EEG signals and baseline EEG signals. The input is a :obj:`np.ndarray`, and the ouput is used as the first and second value of each element in the dataset. (default: :obj:`None`)
         offline_transform (Callable, optional): The usage is the same as :obj:`online_transform`, but executed before generating IO intermediate results. (default: :obj:`None`)
         label_transform (Callable, optional): The transformation of the label. The input is an information dictionary, and the ouput is used as the third value of each element in the dataset. (default: :obj:`None`)
@@ -170,7 +169,6 @@ class FACEDDataset(BaseDataset):
                  chunk_size: int = 250,
                  overlap: int = 0,
                  num_channel: int = 30,
-                 num_baseline: int = 3,
                  online_transform: Union[None, Callable] = None,
                  offline_transform: Union[None, Callable] = None,
                  label_transform: Union[None, Callable] = None,
@@ -191,7 +189,6 @@ class FACEDDataset(BaseDataset):
             'chunk_size': chunk_size,
             'overlap': overlap,
             'num_channel': num_channel,
-            'num_baseline': num_baseline,
             'online_transform': online_transform,
             'offline_transform': offline_transform,
             'label_transform': label_transform,
@@ -214,8 +211,6 @@ class FACEDDataset(BaseDataset):
                        chunk_size: int = 250,
                        overlap: int = 0,
                        num_channel: int = 30,
-                       num_baseline: int = 3,
-                       baseline_chunk_size: int = 250,
                        before_trial: Union[None, Callable] = None,
                        offline_transform: Union[None, Callable] = None,
                        **kwargs):
@@ -228,29 +223,19 @@ class FACEDDataset(BaseDataset):
         write_pointer = 0
 
         for trial_id in range(len(samples)):
-
-            # extract baseline signals
             trial_samples = samples[
-                trial_id, :num_channel]  # 30(remove A1 and A2 from 32 channels), 30s*250hz(time points)
+                trial_id, :num_channel]  # default 30(remove A1 and A2 from 32 channels), 30s*250hz(time points)
             if before_trial:
                 trial_samples = before_trial(trial_samples)
 
-            trial_baseline_sample = trial_samples[:, :baseline_chunk_size *
-                                                  num_baseline]  # 30(channels), 3s*250hz(time points)
-            trial_baseline_sample = trial_baseline_sample.reshape(
-                num_channel, num_baseline,
-                baseline_chunk_size).mean(axis=1)
-
             # record the common meta info
-
             trial_meta_info = {
                 'subject_id': subject_id,
                 'trial_id': trial_id,
                 'valence': VALENCE_DICT[trial_id+1],
                 'emotion': EMOTION_DICT[trial_id+1],
             }
-
-            start_at = baseline_chunk_size * num_baseline
+            start_at = 0
             if chunk_size <= 0:
                 dynamic_chunk_size = trial_samples.shape[1] - start_at
             else:
@@ -265,20 +250,8 @@ class FACEDDataset(BaseDataset):
                 clip_sample = trial_samples[:, start_at:end_at]
 
                 t_eeg = clip_sample
-                t_baseline = trial_baseline_sample
-
                 if not offline_transform is None:
-                    t = offline_transform(eeg=clip_sample,
-                                          baseline=trial_baseline_sample)
-                    t_eeg = t['eeg']
-                    t_baseline = t['baseline']
-
-                # put baseline signal into IO
-                if not 'baseline_id' in trial_meta_info:
-                    trial_base_id = f'{file_name}_{write_pointer}'
-                    yield {'eeg': t_baseline, 'key': trial_base_id}
-                    write_pointer += 1
-                    trial_meta_info['baseline_id'] = trial_base_id
+                    t_eeg = offline_transform(eeg=clip_sample)['eeg']
 
                 clip_id = f'{file_name}_{write_pointer}'
                 write_pointer += 1
