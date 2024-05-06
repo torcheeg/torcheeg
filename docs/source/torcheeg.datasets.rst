@@ -28,6 +28,8 @@ Emotion Recognition Datasets
     MAHNOBDataset
     BCI2022Dataset
     MPEDFeatureDataset
+    FACEDDataset
+    FACEDFeatureDataset
 
 Personal Identification Datasets
 ----------------------------------

@@ -139,6 +139,8 @@ class BaseDataset(Dataset):
             records = os.listdir(io_path)
             # filter the records with the prefix '_record_'
             records = list(filter(lambda x: '_record_' in x, records))
+            # sort the records
+            records = sorted(records, key=lambda x: int(x.split('_')[2]))
 
             # for every record, get the io_path, and init the info_io and eeg_io
             eeg_io_router = {}
