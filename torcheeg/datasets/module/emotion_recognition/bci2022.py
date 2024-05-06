@@ -119,7 +119,7 @@ class BCI2022Dataset(BaseDataset):
 
         from torcheeg.datasets import BCI2022Dataset
         from torcheeg import transforms
-        from torcheeg.datasets.constants.emotion_recognition.bci2022 import BCI2022_CHANNEL_LOCATION_DICT
+        from torcheeg.datasets.constants import BCI2022_CHANNEL_LOCATION_DICT
 
         dataset = BCI2022Dataset(root_path='./TrainSet',
                                  offline_transform=transforms.Compose([
@@ -143,8 +143,12 @@ class BCI2022Dataset(BaseDataset):
         dataset = BCI2022Dataset(root_path='./TrainSet',
                                  online_transform=transforms.Compose(
                                      [transforms.ToTensor(),
-                                     transforms.To2d()]),
-                                 label_transform=transforms.Select('emotion'))
+                                      transforms.To2d()]),
+                                 label_transform=transforms.Compose([
+                                     transforms.Select('emotion'),
+                                     transforms.Lambda(lambda x: x + 1)
+                                 ]))
+
         print(dataset[0])
         # EEG signal (torch.Tensor[30, 250]),
         # coresponding baseline signal (torch.Tensor[30, 250]),
@@ -156,12 +160,16 @@ class BCI2022Dataset(BaseDataset):
 
         from torcheeg.datasets import BCI2022Dataset
         from torcheeg import transforms
-        from torcheeg.datasets.constants.emotion_recognition.bci2022 import BCI2022_ADJACENCY_MATRIX
+        from torcheeg.datasets.constants import BCI2022_ADJACENCY_MATRIX
         
         dataset = BCI2022Dataset(root_path='./TrainSet',
                                  online_transform=transforms.Compose(
                                      [transforms.ToG(BCI2022_ADJACENCY_MATRIX)]),
-                                 label_transform=transforms.Select('emotion'))
+                                 label_transform=transforms.Compose([
+                                     transforms.Select('emotion'),
+                                     transforms.Lambda(lambda x: x + 1)
+                                 ]))
+
         print(dataset[0])
         # EEG signal (torch_geometric.data.Data),
         # coresponding baseline signal (torch_geometric.data.Data),

@@ -6,3 +6,4 @@ from .seed import *
 from .seed_iv import *
 from .mped import *
 from .seed_v import *
+from .faced import *

@@ -1,102 +1,163 @@
 import os
+import pickle as pkl
 from typing import Any, Callable, Dict, Tuple, Union
 
-import scipy.io as scio
-from ..base_dataset import BaseDataset
 from ....utils import get_random_dir_path
+from ..base_dataset import BaseDataset
+
+VALENCE_DICT = {
+    1: -1,  # negative
+    2: -1,
+    3: -1,
+    4: -1,
+    5: -1,
+    6: -1,
+    7: -1,
+    8: -1,
+    9: -1,
+    10: -1,
+    11: -1,
+    12: -1,
+    13: 0,  # neutral
+    14: 0,
+    15: 0,
+    16: 0,
+    17: 1,  # positive
+    18: 1,
+    19: 1,
+    20: 1,
+    21: 1,
+    22: 1,
+    23: 1,
+    24: 1,
+    25: 1,
+    26: 1,
+    27: 1,
+    28: 1
+}
+
+EMOTION_DICT = {
+    1: 0,  # anger	
+    2: 0,
+    3: 0,
+    4: 1,  # disgust
+    5: 1,
+    6: 1,
+    7: 2,  # fear
+    8: 2,
+    9: 2,
+    10: 3,  # sadness
+    11: 3,
+    12: 3,
+    13: 4,  # neutral
+    14: 4,
+    15: 4,
+    16: 4,
+    17: 5,  # amusement
+    18: 5,
+    19: 5,
+    20: 6,  # inspiration
+    21: 6,
+    22: 6,
+    23: 7,  # joy
+    24: 7,
+    25: 7,
+    26: 8,  # tenderness
+    27: 8,
+    28: 8
+}
 
 
-class SEEDDataset(BaseDataset):
+class FACEDDataset(BaseDataset):
     r'''
-    The SJTU Emotion EEG Dataset (SEED), is a collection of EEG datasets provided by the BCMI laboratory, which is led by Prof. Bao-Liang Lu. This class generates training samples and test samples according to the given parameters, and caches the generated results in a unified input and output format (IO). The relevant information of the dataset is as follows:
+    The FACED dataset was provided by the Tsinghua Laboratory of Brain and Intelligence. The Finer-grained Affective Computing EEG Dataset (FACED) recorded 32-channel EEG signals from 123 subjects. During the experiment, subjects watched 28 emotion-elicitation video clips covering nine emotion categories (amusement, inspiration, joy, tenderness; anger, fear, disgust, sadness, and neutral emotion), providing a fine-grained and balanced categorization on both the positive and negative sides of emotion.
+    This class generates training samples and test samples according to the given parameters, and caches the generated results in a unified input and output format (IO). The relevant information of the dataset is as follows:
 
-    - Author: Zheng et al.
-    - Year: 2015
-    - Download URL: https://bcmi.sjtu.edu.cn/home/seed/index.html
-    - Reference: Zheng W L, Lu B L. Investigating critical frequency bands and channels for EEG-based emotion recognition with deep neural networks[J]. IEEE Transactions on Autonomous Mental Development, 2015, 7(3): 162-175.
-    - Stimulus: 15 four-minute long film clips from six Chinese movies.
-    - Signals: Electroencephalogram (62 channels at 200Hz) of 15 subjects, and eye movement data of 12 subjects. Each subject conducts the experiment three times, with an interval of about one week, totally 15 people x 3 times = 45
-    - Rating: positive (1), negative (-1), and neutral (0).
+    - Author: Please refer to the downloaded URL.
+    - Year: 2023
+    - Download URL: https://www.synapse.org/#!Synapse:syn50614194/files/
+    - Reference: Please refer to the downloaded URL.
+    - Stimulus: video clips.
+    - Signals: Electroencephalogram (30 channels at 250Hz) and two channels of left/right mastoid signals from 123 subjects.
+    - Rating: 28 video clips are annotated in valence and discrete emotion dimensions. The valence is divided into positive (1), negative (-1), and neutral (0). Discrete emotions are divided into anger (0), disgust (1), fear (2), sadness (3), neutral (4), amusement (5), inspiration (6), joy (7), and tenderness (8).
 
-    In order to use this dataset, the download folder :obj:`Preprocessed_EEG` is required, containing the following files:
+    In order to use this dataset, the download folder :obj:`Processed_data` (download from this url: https://www.synapse.org/#!Synapse:syn50615881) is required, containing the following files:
     
-    - label.mat
-    - readme.txt
-    - 10_20131130.mat
+    - sub000.pkl
+    - sub001.pkl
+    - sub002.pkl
     - ...
-    - 9_20140704.mat
 
     An example dataset for CNN-based methods:
 
     .. code-block:: python
 
-        from torcheeg.datasets import SEEDDataset
+        from torcheeg.datasets import FACEDDataset
         from torcheeg import transforms
-        from torcheeg.datasets.constants import SEED_CHANNEL_LOCATION_DICT
+        from torcheeg.datasets.constants import FACED_CHANNEL_LOCATION_DICT
 
-        dataset = SEEDDataset(root_path='./Preprocessed_EEG',
-                              offline_transform=transforms.Compose([
-                                  transforms.BandDifferentialEntropy(),
-                                  transforms.ToGrid(SEED_CHANNEL_LOCATION_DICT)
-                              ]),
-                              online_transform=transforms.ToTensor(),
-                              label_transform=transforms.Compose([
-                                  transforms.Select('emotion'),
-                                  transforms.Lambda(lambda x: x + 1)
-                              ]))
+        dataset = FACEDDataset(root_path='./Processed_data',
+                               offline_transform=transforms.Compose([
+                                   transforms.BandDifferentialEntropy(),
+                                   transforms.ToGrid(FACED_CHANNEL_LOCATION_DICT)
+                               ]),
+                               online_transform=transforms.ToTensor(),
+                               label_transform=transforms.Compose([
+                                   transforms.Select('emotion'),
+                                   transforms.Lambda(lambda x: x + 1)
+                               ]))
+
         print(dataset[0])
-        # EEG signal (torch.Tensor[4, 9, 9]),
-        # coresponding baseline signal (torch.Tensor[4, 9, 9]),
+        # EEG signal (torch.Tensor[4, 8, 9]),
+        # coresponding baseline signal (torch.Tensor[4, 8, 9]),
         # label (int)
 
     Another example dataset for CNN-based methods:
 
     .. code-block:: python
 
-        from torcheeg.datasets import SEEDDataset
+        from torcheeg.datasets import FACEDDataset
         from torcheeg import transforms
 
-        dataset = SEEDDataset(root_path='./Preprocessed_EEG',
-                              online_transform=transforms.Compose([
-                                  transforms.ToTensor(),
-                                  transforms.To2d()
-                              ]),
-                              label_transform=transforms.Compose([
-                                  transforms.Select('emotion'),
-                                  transforms.Lambda(lambda x: x + 1)
-                              ]))
+        dataset = FACEDDataset(root_path='./Processed_data',
+                               online_transform=transforms.Compose(
+                                   [transforms.ToTensor(),
+                                    transforms.To2d()]),
+                               label_transform=transforms.Compose([
+                                   transforms.Select('emotion'),
+                                   transforms.Lambda(lambda x: x + 1)
+                               ]))
+
         print(dataset[0])
-        # EEG signal (torch.Tensor[62, 200]),
-        # coresponding baseline signal (torch.Tensor[62, 200]),
+        # EEG signal (torch.Tensor[1, 30, 250]),
+        # coresponding baseline signal (torch.Tensor[1, 30, 250]),
         # label (int)
 
     An example dataset for GNN-based methods:
 
     .. code-block:: python
 
-        from torcheeg.datasets import SEEDDataset
+        from torcheeg.datasets import FACEDDataset
         from torcheeg import transforms
-        from torcheeg.datasets.constants import SEED_ADJACENCY_MATRIX
+        from torcheeg.datasets.constants import FACED_ADJACENCY_MATRIX
         from torcheeg.transforms.pyg import ToG
-        
-        dataset = SEEDDataset(root_path='./Preprocessed_EEG',
-                              online_transform=transforms.Compose([
-                                  ToG(SEED_ADJACENCY_MATRIX)
-                              ]),
-                              label_transform=transforms.Compose([
-                                  transforms.Select('emotion'),
-                                  transforms.Lambda(lambda x: x + 1)
-                              ]))
+
+        dataset = FACEDDataset(root_path='./Processed_data',
+                               online_transform=transforms.Compose([ToG(FACED_ADJACENCY_MATRIX)]),
+                               label_transform=transforms.Compose(
+                                    [transforms.Select('emotion'),
+                                    transforms.Lambda(lambda x: x + 1)]))
+
         print(dataset[0])
         # EEG signal (torch_geometric.data.Data),
         # coresponding baseline signal (torch_geometric.data.Data),
         # label (int)
 
     Args:
-        root_path (str): Downloaded data files in matlab (unzipped Preprocessed_EEG.zip) formats (default: :obj:`'./Preprocessed_EEG'`)
-        chunk_size (int): Number of data points included in each EEG chunk as training or test samples. If set to -1, the EEG signal of a trial is used as a sample of a chunk. (default: :obj:`200`)
+        root_path (str): Downloaded data files in matlab (unzipped Processed_data.zip) formats (default: :obj:`'./Processed_data'`)
+        chunk_size (int): Number of data points included in each EEG chunk as training or test samples. If set to -1, the EEG signal of a trial is used as a sample of a chunk. (default: :obj:`250`)
         overlap (int): The number of overlapping data points between different chunks when dividing EEG chunks. (default: :obj:`0`)
-        num_channel (int): Number of channels used, of which the first 62 channels are EEG signals. (default: :obj:`62`)
+        num_channel (int): Number of channels used, of which the first 30 channels are EEG signals. (default: :obj:`30`)
         online_transform (Callable, optional): The transformation of the EEG signals and baseline EEG signals. The input is a :obj:`np.ndarray`, and the ouput is used as the first and second value of each element in the dataset. (default: :obj:`None`)
         offline_transform (Callable, optional): The usage is the same as :obj:`online_transform`, but executed before generating IO intermediate results. (default: :obj:`None`)
         label_transform (Callable, optional): The transformation of the label. The input is an information dictionary, and the ouput is used as the third value of each element in the dataset. (default: :obj:`None`)
@@ -106,20 +167,19 @@ class SEEDDataset(BaseDataset):
         io_size (int): Maximum size database may grow to; used to size the memory mapping. If database grows larger than ``map_size``, an exception will be raised and the user must close and reopen. (default: :obj:`1048576`)
         io_mode (str): Storage mode of EEG signal. When io_mode is set to :obj:`lmdb`, TorchEEG provides an efficient database (LMDB) for storing EEG signals. LMDB may not perform well on limited operating systems, where a file system based EEG signal storage is also provided. When io_mode is set to :obj:`pickle`, pickle-based persistence files are used. When io_mode is set to :obj:`memory`, memory are used. (default: :obj:`lmdb`)
         num_worker (int): Number of subprocesses to use for data loading. 0 means that the data will be loaded in the main process. (default: :obj:`0`)
-        verbose (bool): Whether to display logs during processing, such as progress bars, etc. (default: :obj:`True`)    
+        verbose (bool): Whether to display logs during processing, such as progress bars, etc. (default: :obj:`True`)  
     '''
 
     def __init__(self,
-                 root_path: str = './Preprocessed_EEG',
-                 chunk_size: int = 200,
+                 root_path: str = './Processed_data',
+                 chunk_size: int = 250,
                  overlap: int = 0,
-                 num_channel: int = 62,
+                 num_channel: int = 30,
                  online_transform: Union[None, Callable] = None,
                  offline_transform: Union[None, Callable] = None,
                  label_transform: Union[None, Callable] = None,
                  before_trial: Union[None, Callable] = None,
                  after_trial: Union[Callable, None] = None,
-                 after_session: Union[Callable, None] = None,
                  after_subject: Union[Callable, None] = None,
                  io_path: Union[None, str] = None,
                  io_size: int = 1048576,
@@ -140,7 +200,6 @@ class SEEDDataset(BaseDataset):
             'label_transform': label_transform,
             'before_trial': before_trial,
             'after_trial': after_trial,
-            'after_session': after_session,
             'after_subject': after_subject,
             'io_path': io_path,
             'io_size': io_size,
@@ -154,47 +213,39 @@ class SEEDDataset(BaseDataset):
 
     @staticmethod
     def process_record(file: Any = None,
-                       root_path: str = './Preprocessed_EEG',
-                       chunk_size: int = 200,
+                       root_path: str = './Processed_data',
+                       chunk_size: int = 250,
                        overlap: int = 0,
-                       num_channel: int = 62,
+                       num_channel: int = 30,
                        before_trial: Union[None, Callable] = None,
                        offline_transform: Union[None, Callable] = None,
                        **kwargs):
-        file_name = file
-
-        subject = int(os.path.basename(file_name).split('.')[0].split('_')
-                      [0])  # subject (15)
-        date = int(os.path.basename(file_name).split('.')[0].split('_')
-                   [1])  # period (3)
-
-        samples = scio.loadmat(os.path.join(root_path, file_name),
-                               verify_compressed_data_integrity=False
-                               )  # trial (15), channel(62), timestep(n*200)
-        # label file
-        labels = scio.loadmat(
-            os.path.join(root_path, 'label.mat'),
-            verify_compressed_data_integrity=False)['label'][0]
-
-        trial_ids = [key for key in samples.keys() if 'eeg' in key]
+        file_name = os.path.basename(
+            file)  # an element from file name list, such as 'sub087.pkl'
+        subject_id = int(file_name.split('.')[0]
+                         [3:])  # get subject_id from 'sub087.pkl', such as 87
+        # derive the given arguments (kwargs)
+        with open(os.path.join(root_path, file_name), 'rb') as f:
+            samples = pkl.load(
+                f, encoding='iso-8859-1'
+            )  # 28(trials), 32(channels), 30s*250hz(time points)
 
         write_pointer = 0
-        # loop for each trial
-        for trial_id in trial_ids:
 
-            trial_samples = samples[trial_id]  # channel(62), timestep(n*200)
+        for trial_id in range(len(samples)):
+            trial_samples = samples[
+                trial_id, :
+                num_channel]  # default 30(remove A1 and A2 from 32 channels), 30s*250hz(time points)
             if before_trial:
                 trial_samples = before_trial(trial_samples)
 
             # record the common meta info
             trial_meta_info = {
-                'subject_id': subject,
+                'subject_id': subject_id,
                 'trial_id': trial_id,
-                'emotion': int(labels[int(trial_id.split('_')[-1][3:]) - 1]),
-                'date': date
+                'valence': VALENCE_DICT[trial_id + 1],
+                'emotion': EMOTION_DICT[trial_id + 1],
             }
-
-            # extract experimental signals
             start_at = 0
             if chunk_size <= 0:
                 dynamic_chunk_size = trial_samples.shape[1] - start_at
@@ -202,12 +253,12 @@ class SEEDDataset(BaseDataset):
                 dynamic_chunk_size = chunk_size
 
             # chunk with chunk size
-            end_at = dynamic_chunk_size
+            end_at = start_at + dynamic_chunk_size
             # calculate moving step
             step = dynamic_chunk_size - overlap
 
             while end_at <= trial_samples.shape[1]:
-                clip_sample = trial_samples[:num_channel, start_at:end_at]
+                clip_sample = trial_samples[:, start_at:end_at]
 
                 t_eeg = clip_sample
                 if not offline_transform is None:
@@ -228,14 +279,16 @@ class SEEDDataset(BaseDataset):
                 start_at = start_at + step
                 end_at = start_at + dynamic_chunk_size
 
-    def set_records(self, root_path: str = './Preprocessed_EEG', **kwargs):
+    def set_records(self, root_path: str = './Processed_data', **kwargs):
         assert os.path.exists(
             root_path
         ), f'root_path ({root_path}) does not exist. Please download the dataset and set the root_path to the downloaded path.'
-        file_list = os.listdir(root_path)
-        skip_set = ['label.mat', 'readme.txt']
-        file_list = [f for f in file_list if f not in skip_set]
-        return file_list
+        file_path_list = os.listdir(root_path)
+        file_path_list.sort()
+        file_path_list = [
+            file_path for file_path in file_path_list if file_path.endswith('.pkl')
+        ]
+        return file_path_list
 
     def __getitem__(self, index: int) -> Tuple[any, any, int, int, int]:
         info = self.read_info(index)

@@ -4,12 +4,11 @@ import shutil
 import unittest
 
 from torcheeg import transforms
-from torcheeg.datasets import (AMIGOSDataset, BCI2022Dataset, DEAPDataset,
-                               DREAMERDataset, MAHNOBDataset,
-                               MPEDFeatureDataset, SEEDDataset,
-                               SEEDFeatureDataset, SEEDIVDataset,
-                               SEEDIVFeatureDataset, SEEDVDataset,
-                               SEEDVFeatureDataset)
+from torcheeg.datasets import (
+    AMIGOSDataset, BCI2022Dataset, DEAPDataset, DREAMERDataset, FACEDDataset,
+    FACEDFeatureDataset, MAHNOBDataset, MPEDFeatureDataset, SEEDDataset,
+    SEEDFeatureDataset, SEEDIVDataset, SEEDIVFeatureDataset, SEEDVDataset,
+    SEEDVFeatureDataset)
 
 
 class TestEmotionRecognitionDataset(unittest.TestCase):
@@ -19,15 +18,48 @@ class TestEmotionRecognitionDataset(unittest.TestCase):
             shutil.rmtree('./tmp_out/')
         os.mkdir('./tmp_out/')
 
+    def test_faced_dataset(self):
+        io_path = f'./tmp_out/faced_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
+        root_path = './tmp_in/Processed_data'
+
+        dataset = FACEDDataset(io_path=io_path,
+                               root_path=root_path,
+                               online_transform=transforms.ToTensor(),
+                               label_transform=transforms.Select('emotion'),
+                               num_worker=4)
+        self.assertEqual(len(dataset), 103320)  # 123 subjects * 28 videos * 30s
+        first_item = dataset[0]
+        self.assertEqual(first_item[0].shape, (30, 250))
+        last_item = dataset[103319]
+        self.assertEqual(last_item[0].shape, (30, 250))
+
+    def test_faced_feature_dataset(self):
+        io_path = f'./tmp_out/faced_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
+        root_path = './tmp_in/EEG_Features/DE'
+
+        dataset = FACEDFeatureDataset(
+            io_path=io_path,
+            root_path=root_path,
+            online_transform=transforms.ToTensor(),
+            label_transform=transforms.Select('emotion'),
+            num_worker=4)
+
+        self.assertEqual(len(dataset),
+                         103320)  # 123 subjects * 28 videos * 30 s
+        first_item = dataset[0]
+        self.assertEqual(first_item[0].shape, (30, 5))
+        last_item = dataset[103319]
+        self.assertEqual(last_item[0].shape, (30, 5))
+
     def test_seed_v_dataset(self):
         io_path = f'./tmp_out/seed_v_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
         root_path = './tmp_in/EEG_raw'
 
         dataset = SEEDVDataset(io_path=io_path,
-                              root_path=root_path,
-                              online_transform=transforms.ToTensor(),
-                              label_transform=transforms.Select('emotion'),
-                              num_worker=4)
+                               root_path=root_path,
+                               online_transform=transforms.ToTensor(),
+                               label_transform=transforms.Select('emotion'),
+                               num_worker=4)
 
         self.assertEqual(len(dataset), 29168)
         first_item = dataset[0]

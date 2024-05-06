@@ -27,7 +27,7 @@ In this tutorial, we demonstrate how to use TorchEEG to implement transfer learn
 
 from torcheeg.datasets import MAHNOBDataset
 from torcheeg import transforms
-from torcheeg.datasets.constants.emotion_recognition.mahnob import MAHNOB_CHANNEL_LOCATION_DICT
+from torcheeg.datasets.constants import MAHNOB_CHANNEL_LOCATION_DICT
 
 from torcheeg.transforms import after_hook_normalize
 

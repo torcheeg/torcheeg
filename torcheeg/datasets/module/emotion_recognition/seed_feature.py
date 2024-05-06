@@ -35,7 +35,7 @@ class SEEDFeatureDataset(BaseDataset):
 
         from torcheeg.datasets import SEEDFeatureDataset
         from torcheeg import transforms
-        from torcheeg.datasets.constants.emotion_recognition.seed import SEED_CHANNEL_LOCATION_DICT
+        from torcheeg.datasets.constants import SEED_CHANNEL_LOCATION_DICT
 
         dataset = SEEDFeatureDataset(root_path='./ExtractedFeatures',
                                      feature=['de_movingAve'],
@@ -56,7 +56,7 @@ class SEEDFeatureDataset(BaseDataset):
 
         from torcheeg.datasets import SEEDFeatureDataset
         from torcheeg import transforms
-        from torcheeg.datasets.constants.emotion_recognition.seed import SEED_ADJACENCY_MATRIX
+        from torcheeg.datasets.constants import SEED_ADJACENCY_MATRIX
         from torcheeg.transforms.pyg import ToG
         
         dataset = SEEDFeatureDataset(root_path='./Preprocessed_EEG',

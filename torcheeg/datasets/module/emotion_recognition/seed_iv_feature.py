@@ -33,7 +33,7 @@ class SEEDIVFeatureDataset(BaseDataset):
 
         from torcheeg.datasets import SEEDIVFeatureDataset
         from torcheeg import transforms
-        from torcheeg.datasets.constants.emotion_recognition.seed import SEED_IV_CHANNEL_LOCATION_DICT
+        from torcheeg.datasets.constants import SEED_IV_CHANNEL_LOCATION_DICT
         
         dataset = SEEDIVFeatureDataset(root_path='./eeg_feature_smooth',
                                        features=['de_movingAve'],
@@ -51,7 +51,7 @@ class SEEDIVFeatureDataset(BaseDataset):
 
         from torcheeg.datasets import SEEDIVFeatureDataset
         from torcheeg import transforms
-        from torcheeg.datasets.constants.emotion_recognition.seed import SEED_ADJACENCY_MATRIX
+        from torcheeg.datasets.constants import SEED_ADJACENCY_MATRIX
         from torcheeg.transforms.pyg import ToG
         
         dataset = SEEDIVFeatureDataset(root_path='./eeg_feature_smooth',
