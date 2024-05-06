@@ -32,7 +32,7 @@ class SEEDDataset(BaseDataset):
 
         from torcheeg.datasets import SEEDDataset
         from torcheeg import transforms
-        from torcheeg.datasets.constants.emotion_recognition.seed import SEED_CHANNEL_LOCATION_DICT
+        from torcheeg.datasets.constants import SEED_CHANNEL_LOCATION_DICT
 
         dataset = SEEDDataset(root_path='./Preprocessed_EEG',
                               offline_transform=transforms.Compose([
@@ -76,7 +76,7 @@ class SEEDDataset(BaseDataset):
 
         from torcheeg.datasets import SEEDDataset
         from torcheeg import transforms
-        from torcheeg.datasets.constants.emotion_recognition.seed import SEED_ADJACENCY_MATRIX
+        from torcheeg.datasets.constants import SEED_ADJACENCY_MATRIX
         from torcheeg.transforms.pyg import ToG
         
         dataset = SEEDDataset(root_path='./Preprocessed_EEG',

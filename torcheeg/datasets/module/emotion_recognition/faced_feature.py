@@ -37,7 +37,7 @@ class FACEDFeatureDataset(BaseDataset):
 
         from torcheeg.datasets import FACEDFeatureDataset
         from torcheeg import transforms
-        from torcheeg.datasets.constants.emotion_recognition.faced import FACED_CHANNEL_LOCATION_DICT
+        from torcheeg.datasets.constants import FACED_CHANNEL_LOCATION_DICT
         
         dataset = FACEDFeatureDataset(root_path='./EEG_Features/DE',
                                        offline_transform=transforms.ToGrid(FACED_CHANNEL_LOCATION_DICT),
@@ -54,7 +54,7 @@ class FACEDFeatureDataset(BaseDataset):
 
         from torcheeg.datasets import FACEDFeatureDataset
         from torcheeg import transforms
-        from torcheeg.datasets.constants.emotion_recognition.faced import FACED_ADJACENCY_MATRIX
+        from torcheeg.datasets.constants import FACED_ADJACENCY_MATRIX
         from torcheeg.transforms.pyg import ToG
         
         dataset = FACEDFeatureDataset(root_path='./EEG_Features/DE',

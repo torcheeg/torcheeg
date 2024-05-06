@@ -81,14 +81,12 @@ class FACEDDataset(BaseDataset):
     - Signals: Electroencephalogram (30 channels at 250Hz) and two channels of left/right mastoid signals from 123 subjects.
     - Rating: 28 video clips are annotated in valence and discrete emotion dimensions. The valence is divided into positive (1), negative (-1), and neutral (0). Discrete emotions are divided into anger (0), disgust (1), fear (2), sadness (3), neutral (4), amusement (5), inspiration (6), joy (7), and tenderness (8).
 
-    In order to use this dataset, the download folder :obj:`Processed_data`(download from this url: https://www.synapse.org/#!Synapse:syn50615881) is required, containing the following files:
+    In order to use this dataset, the download folder :obj:`Processed_data` (download from this url: https://www.synapse.org/#!Synapse:syn50615881) is required, containing the following files:
     
-    - Processed_data
-
-        + sub000.pkl
-        + sub001.pkl
-        + sub002.pkl
-        + ...
+    - sub000.pkl
+    - sub001.pkl
+    - sub002.pkl
+    - ...
 
     An example dataset for CNN-based methods:
 
@@ -96,15 +94,19 @@ class FACEDDataset(BaseDataset):
 
         from torcheeg.datasets import FACEDDataset
         from torcheeg import transforms
-        from torcheeg.datasets.constants.emotion_recognition.faced import FACED_CHANNEL_LOCATION_DICT
+        from torcheeg.datasets.constants import FACED_CHANNEL_LOCATION_DICT
 
         dataset = FACEDDataset(root_path='./Processed_data',
-                                 offline_transform=transforms.Compose([
-                                     transforms.BandDifferentialEntropy(),
-                                     transforms.ToGrid(FACED_CHANNEL_LOCATION_DICT)
-                                 ]),
-                                 online_transform=transforms.ToTensor(),
-                                 label_transform=transforms.Select('emotion'))
+                               offline_transform=transforms.Compose([
+                                   transforms.BandDifferentialEntropy(),
+                                   transforms.ToGrid(FACED_CHANNEL_LOCATION_DICT)
+                               ]),
+                               online_transform=transforms.ToTensor(),
+                               label_transform=transforms.Compose([
+                                   transforms.Select('emotion'),
+                                   transforms.Lambda(lambda x: x + 1)
+                               ]))
+
         print(dataset[0])
         # EEG signal (torch.Tensor[4, 8, 9]),
         # coresponding baseline signal (torch.Tensor[4, 8, 9]),
@@ -118,10 +120,14 @@ class FACEDDataset(BaseDataset):
         from torcheeg import transforms
 
         dataset = FACEDDataset(root_path='./Processed_data',
-                                 online_transform=transforms.Compose(
-                                     [transforms.ToTensor(),
-                                     transforms.To2d()]),
-                                 label_transform=transforms.Select('emotion'))
+                               online_transform=transforms.Compose(
+                                   [transforms.ToTensor(),
+                                    transforms.To2d()]),
+                               label_transform=transforms.Compose([
+                                   transforms.Select('emotion'),
+                                   transforms.Lambda(lambda x: x + 1)
+                               ]))
+
         print(dataset[0])
         # EEG signal (torch.Tensor[1, 30, 250]),
         # coresponding baseline signal (torch.Tensor[1, 30, 250]),
@@ -133,14 +139,15 @@ class FACEDDataset(BaseDataset):
 
         from torcheeg.datasets import FACEDDataset
         from torcheeg import transforms
-        from torcheeg.datasets.constants.emotion_recognition.faced import FACED_ADJACENCY_MATRIX
+        from torcheeg.datasets.constants import FACED_ADJACENCY_MATRIX
         from torcheeg.transforms.pyg import ToG
 
         dataset = FACEDDataset(root_path='./Processed_data',
-                                online_transform=transforms.Compose([
-                                    ToG(FACED_ADJACENCY_MATRIX)
-                                ]),
-                                 label_transform=transforms.Select('emotion'))
+                               online_transform=transforms.Compose([ToG(FACED_ADJACENCY_MATRIX)]),
+                               label_transform=transforms.Compose(
+                                    [transforms.Select('emotion'),
+                                    transforms.Lambda(lambda x: x + 1)]))
+
         print(dataset[0])
         # EEG signal (torch_geometric.data.Data),
         # coresponding baseline signal (torch_geometric.data.Data),

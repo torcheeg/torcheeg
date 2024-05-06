@@ -32,7 +32,7 @@ class SEEDVFeatureDataset(BaseDataset):
 
         from torcheeg.datasets import SEEDVFeatureDataset
         from torcheeg import transforms
-        from torcheeg.datasets.constants.emotion_recognition.seed_v import SEED_V_CHANNEL_LOCATION_DICT
+        from torcheeg.datasets.constants_v import SEED_V_CHANNEL_LOCATION_DICT
         
         dataset = SEEDVFeatureDataset(root_path='./EEG_DE_features',
                                        offline_transform=transforms.ToGrid         (SEED_V_CHANNEL_LOCATION_DICT),
@@ -49,7 +49,7 @@ class SEEDVFeatureDataset(BaseDataset):
 
         from torcheeg.datasets import SEEDVFeatureDataset
         from torcheeg import transforms
-        from torcheeg.datasets.constants.emotion_recognition.seed import SEED_ADJACENCY_MATRIX
+        from torcheeg.datasets.constants import SEED_ADJACENCY_MATRIX
         from torcheeg.transforms.pyg import ToG
         
         dataset = SEEDVFeatureDataset(root_path='./EEG_DE_features',

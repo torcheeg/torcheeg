@@ -33,7 +33,7 @@ class SEEDIVDataset(BaseDataset):
 
         from torcheeg.datasets import SEEDIVDataset
         from torcheeg import transforms
-        from torcheeg.datasets.constants.emotion_recognition.seed import SEED_IV_CHANNEL_LOCATION_DICT
+        from torcheeg.datasets.constants import SEED_IV_CHANNEL_LOCATION_DICT
         
         dataset = SEEDIVDataset(root_path='./eeg_raw_data',
                                 offline_transform=transforms.Compose([
@@ -74,7 +74,7 @@ class SEEDIVDataset(BaseDataset):
 
         from torcheeg.datasets import SEEDIVDataset
         from torcheeg import transforms
-        from torcheeg.datasets.constants.emotion_recognition.seed import SEEDIV_ADJACENCY_MATRIX
+        from torcheeg.datasets.constants import SEEDIV_ADJACENCY_MATRIX
         from torcheeg.transforms.pyg import ToG
         
         dataset = SEEDIVDataset(root_path='./eeg_raw_data',

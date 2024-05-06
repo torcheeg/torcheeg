@@ -34,7 +34,7 @@ class MPEDFeatureDataset(BaseDataset):
 
         from torcheeg.datasets import MPEDFeatureDataset
         from torcheeg import transforms
-        from torcheeg.datasets.constants.emotion_recognition.mped import MPED_CHANNEL_LOCATION_DICT
+        from torcheeg.datasets.constants import MPED_CHANNEL_LOCATION_DICT
 
         dataset = MPEDFeatureDataset(root_path='./EEG_feature',
                                      features=['PSD'],
@@ -54,7 +54,7 @@ class MPEDFeatureDataset(BaseDataset):
 
         from torcheeg.datasets import MPEDFeatureDataset
         from torcheeg import transforms
-        from torcheeg.datasets.constants.emotion_recognition.mped import MPED_ADJACENCY_MATRIX
+        from torcheeg.datasets.constants import MPED_ADJACENCY_MATRIX
         from torcheeg.transforms.pyg import ToG
 
         dataset = MPEDFeatureDataset(root_path='./Preprocessed_EEG',

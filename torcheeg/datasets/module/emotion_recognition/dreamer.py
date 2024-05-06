@@ -26,7 +26,7 @@ class DREAMERDataset(BaseDataset):
 
         from torcheeg.datasets import DREAMERDataset
         from torcheeg import transforms
-        from torcheeg.datasets.constants.emotion_recognition.dreamer import DREAMER_CHANNEL_LOCATION_DICT
+        from torcheeg.datasets.constants import DREAMER_CHANNEL_LOCATION_DICT
 
         dataset = DREAMERDataset(mat_path='./DREAMER.mat',
                                  offline_transform=transforms.Compose([
@@ -71,7 +71,7 @@ class DREAMERDataset(BaseDataset):
         
         from torcheeg.datasets import DREAMERDataset
         from torcheeg import transforms
-        from torcheeg.datasets.constants.emotion_recognition.dreamer import DREAMER_ADJACENCY_MATRIX
+        from torcheeg.datasets.constants import DREAMER_ADJACENCY_MATRIX
         from torcheeg.transforms.pyg import ToG
         
         dataset = DREAMERDataset(mat_path='./DREAMER.mat',

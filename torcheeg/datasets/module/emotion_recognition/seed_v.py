@@ -35,7 +35,7 @@ class SEEDVDataset(BaseDataset):
 
         from torcheeg.datasets import SEEDVDataset
         from torcheeg import transforms
-        from torcheeg.datasets.constants.emotion_recognition.seed import SEED_V_CHANNEL_LOCATION_DICT
+        from torcheeg.datasets.constants import SEED_V_CHANNEL_LOCATION_DICT
         
         dataset = SEEDVDataset(root_path='./EEG_raw',
                                 offline_transform=transforms.Compose([
@@ -76,7 +76,7 @@ class SEEDVDataset(BaseDataset):
 
         from torcheeg.datasets import SEEDVDataset
         from torcheeg import transforms
-        from torcheeg.datasets.constants.emotion_recognition.seed import SEED_V_ADJACENCY_MATRIX
+        from torcheeg.datasets.constants import SEED_V_ADJACENCY_MATRIX
         from torcheeg.transforms.pyg import ToG
         
         dataset = SEEDVDataset(root_path='./EEG_raw',
