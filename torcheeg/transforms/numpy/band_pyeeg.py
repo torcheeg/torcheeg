@@ -1,5 +1,5 @@
 from typing import Dict, Tuple, Union
-from scipy.signal import butter, lfilter, hann
+from scipy.signal import butter, lfilter 
 
 import numpy as np
 
