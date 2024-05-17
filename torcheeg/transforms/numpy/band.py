@@ -1,7 +1,6 @@
 from typing import Dict, Tuple, Union
 
 from scipy.signal import butter,  lfilter
-from scipy.signal.windows import hann
 
 import numpy as np
 
