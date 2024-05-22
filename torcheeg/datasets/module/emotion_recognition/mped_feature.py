@@ -32,6 +32,10 @@ class MPEDFeatureDataset(BaseDataset):
 
     .. code-block:: python
 
+        from torcheeg.datasets import MPEDFeatureDataset
+        from torcheeg import transforms
+        from torcheeg.datasets.constants import MPED_CHANNEL_LOCATION_DICT
+
         dataset = MPEDFeatureDataset(root_path='./EEG_feature',
                                      features=['PSD'],
                                      offline_transform=transforms.ToGrid       (MPED_CHANNEL_LOCATION_DICT),
@@ -47,7 +51,12 @@ class MPEDFeatureDataset(BaseDataset):
     An example dataset for GNN-based methods:
 
     .. code-block:: python
-    
+
+        from torcheeg.datasets import MPEDFeatureDataset
+        from torcheeg import transforms
+        from torcheeg.datasets.constants import MPED_ADJACENCY_MATRIX
+        from torcheeg.transforms.pyg import ToG
+
         dataset = MPEDFeatureDataset(root_path='./Preprocessed_EEG',
                                      features=['PSD'],
                                      online_transform=ToG(MPED_ADJACENCY_MATRIX),

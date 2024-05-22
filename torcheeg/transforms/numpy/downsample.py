@@ -11,9 +11,11 @@ class Downsample(EEGTransform):
 
     .. code-block:: python
 
-        transform = Downsample(num_points=32, axis=-1)
+        from torcheeg import transforms
+
+        t = transforms.Downsample(num_points=32, axis=-1)
         # normalize along the first dimension (electrode dimension)
-        transform(eeg=np.random.randn(32, 128))['eeg'].shape
+        t(eeg=np.random.randn(32, 128))['eeg'].shape
         >>> (32, 32)
 
     Args:

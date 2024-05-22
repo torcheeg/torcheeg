@@ -68,91 +68,62 @@ class ClassCentersFunc(Function):
 
 class CenterLossTrainer(ClassifierTrainer):
     r'''
-        A trainer trains classification model contains a decoder and a classifier. As for Center loss, it can make the output of the decoder close to the mean of decoded features within the same class. PLease refer to the following infomation to comprehend how the center loss works.
+        A trainer trains classification model contains a extractor and a classifier. As for Center loss, it can make the output of the extractor close to the mean of decoded features within the same class. PLease refer to the following infomation to comprehend how the center loss works.
 
         - Paper: FBMSNet: A Filter-Bank Multi-Scale Convolutional Neural Network for EEG-Based Motor Imagery Decoding
         - URL: https://ieeexplore.ieee.org/document/9837422
         - Related Project: https://github.com/Want2Vanish/FBMSNet
 
-        .. code-block:: python
-
-            trainer = CenterLossTrainer(decoder = decoder, 
-                                             classifier = classifier,
-                                             num_classes = your_classes,
-                                             feature_dim = your_decoded_dim)
-                                             
-            trainer.fit(train_loader, val_loader)
-            trainer.test(test_loader)
-
-        The model structure is required to contains a decoder block which generates the deep feature code and a classifier connected to the decoder to judge which class the feature code belong to.
-        Firstly, we should prepare a :obj:`decoder` model and a :obj:`classifier` model for  decoding and classifying from decoding ouput respectly. 
-        Here we take FBMSNet as example. :obj:`torcheeg.models.FBMSNet` contains decoder and classifer method already and what We need to do is just to inherit the model to define a decoder and a classifier,and then override the :obj:`forward` method . 
+        The model structure is required to contains a extractor block which generates the deep feature code and a classifier connected to the extractor to judge which class the feature code belong to.
+        Firstly, we should prepare a :obj:`extractor` model and a :obj:`classifier` model for  decoding and classifying from decoding ouput respectly. 
+        Here we take FBMSNet as example. :obj:`torcheeg.models.FBMSNet` contains extractor and classifer method already and what We need to do is just to inherit the model to define a extractor and a classifier,and then override the :obj:`forward` method . 
 
         .. code-block:: python
 
             from torcheeg.models import FBMSNet
+            from torcheeg.trainers import CenterLossTrainer
 
-            class FBMSDecoder(FBMSNet):
-                def forward(self,x):
-                    return self.decoder(x)
+            class Extractor(FBMSNet):
+                def forward(self, x):
+                    x = self.mixConv2d(x)
+                    x = self.scb(x)
+                    x = x.reshape([
+                        *x.shape[0:2], self.stride_factor,
+                        int(x.shape[3] / self.stride_factor)
+                    ])
+                    x = self.temporal_layer(x)
+                    return torch.flatten(x, start_dim=1)
 
-            class FBMSClassifier(FBMSNet):
-                def forward(self,x):
-                    return 
+            class Classifier(FBMSNet):
+                def forward(self, x):
+                    return self.fc(x)
                 
-            decoder  = FBMSDecoder(num_classes=4,
+            extractor  = Extractor(num_classes=4,
                                    num_electrodes=22,
                                    chunk_size=512,
                                    in_channels=9)
 
-            classifier = FBMSClassifier(num_classes=4,
-                                        num_electrodes=22,
-                                        chunk_size=512,
-                                        in_channels=9)
+            classifier = Classifier(num_classes=4,
+                                    num_electrodes=22,
+                                    chunk_size=512,
+                                    in_channels=9)
             
-            trainer = CenterLossTrainer(decoder=decoder, 
+            trainer = CenterLossTrainer(extractor=extractor, 
                                         classifier=classifier,
                                         num_classes=4,
                                         feature_dim=1152)
         
-        Custom model is OK. Feel free to refer to  this example:
-    
-        .. code-block:: python
-
-
-            class MyDecoder(nn.Module):
-                def __init__(self):
-                    self.layer = nn.Linear(128,64)   #(input dim, decoded dim)
-
-                def forward(self,x):
-                    return self.layer(x)
-
-            class MyClassifier(nn.Module):
-                def __init__(self):
-                    self.layer = nn.Linear(64,2)      #(decoded dim, num_classes)
-
-                def forward(self,x):classifier
-                    return self.layer(x)
-                
-            decoder  = MyDecoder()
-            classifier = MyClassifier()
-
-            trainer = CenterLossTrainer(decoder = decoder, 
-                                             classifier = classifier,
-                                             num_classes = 2,
-                                             feature_dim = 64)
-        
         Args:
-            decoder (nn.Module): The decoder which transforms eegsignal into 1D feature code.
-            classifier (nn.Module): The classifier that predict from the decoder output which class the siginals belong to.
-            feature_dim (int): The dimemsion of decoder output code whose mean values we can loosely regard as the "center". 
+            extractor (nn.Module): The extractor which transforms eegsignal into 1D feature code.
+            classifier (nn.Module): The classifier that predict from the extractor output which class the siginals belong to.
+            feature_dim (int): The dimemsion of extractor output code whose mean values we can loosely regard as the "center". 
             num_classes (int, optional): The number of categories in the dataset. 
             lammda (float): The weight of the center loss in total loss. (default: :obj:`5e-4`)
             lr (float): The learning rate. (default: :obj:`0.001`)
             weight_decay (float): The weight decay. (default: :obj:`0.0`)
             devices (int): The number of devices to use. (default: :obj:`1`)
             accelerator (str): The accelerator to use. Available options are: 'cpu', 'gpu'. (default: :obj:`"cpu"`)
-            metrics (list of str): The metrics to use. Available options are: 'precision', 'recall', 'f1_score', 'accuracy', 'matthews', 'auroc', and 'kappa'. (default: :obj:`['accuracy', 'precision', 'recall', 'f1score']`)
+            metrics (list of str): The metrics to use. Available options are: 'precision', 'recall', 'f1score', 'accuracy', 'matthews', 'auroc', and 'kappa'. (default: :obj:`['accuracy', 'precision', 'recall', 'f1score']`)
 
         .. automethod:: fit
         .. automethod:: test
@@ -160,7 +131,7 @@ class CenterLossTrainer(ClassifierTrainer):
 
     def __init__(
             self,
-            decoder,
+            extractor,
             classifier,
             feature_dim: int,
             num_classes: int,
@@ -173,10 +144,10 @@ class CenterLossTrainer(ClassifierTrainer):
                                   'f1score']):
 
         super(CenterLossTrainer,
-              self).__init__(decoder, num_classes, lr, weight_decay, devices,
+              self).__init__(extractor, num_classes, lr, weight_decay, devices,
                              accelerator, metrics)
 
-        self.decoder = decoder
+        self.extractor = extractor
         self.classifier = classifier
         self.center_loss = CentersLoss(num_classes, feature_dim)
         self.lammda = lammda
@@ -230,7 +201,7 @@ class CenterLossTrainer(ClassifierTrainer):
         model_optimizer.zero_grad()
 
         # center loss
-        feat = self.decoder(x)
+        feat = self.extractor(x)
         centerloss = self.center_loss(y, feat)
 
         # prediction cross entropy loss
@@ -283,7 +254,7 @@ class CenterLossTrainer(ClassifierTrainer):
                         batch_idx: int) -> torch.Tensor:
         x, y = batch
         # calculate feat y_pred
-        feat = self.decoder(x)
+        feat = self.extractor(x)
         y_hat = self.classifier(feat)
 
         # get loss (pred_loss,center loss,total_loss)
@@ -333,7 +304,7 @@ class CenterLossTrainer(ClassifierTrainer):
                   batch_idx: int) -> torch.Tensor:
         x, y = batch
         # centerloss
-        feat = self.decoder(x)
+        feat = self.extractor(x)
         centerloss = self.center_loss(y, feat)
 
         # predict loss
@@ -371,7 +342,7 @@ class CenterLossTrainer(ClassifierTrainer):
         self.test_metrics.reset()
 
     def configure_optimizers(self):
-        parameters = list(self.decoder.parameters())
+        parameters = list(self.extractor.parameters())
         parameters.extend(list(self.classifier.parameters()))
         trainable_parameters = list(
             filter(lambda p: p.requires_grad, parameters))

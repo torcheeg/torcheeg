@@ -25,6 +25,11 @@ class KFoldPerSubject:
 
     .. code-block:: python
 
+        from torcheeg.datasets import DEAPDataset
+        from torcheeg import transforms
+        from torcheeg.model_selection import KFoldPerSubject
+        from torcheeg.utils import DataLoader
+
         cv = KFoldPerSubject(n_splits=5, shuffle=True)
         dataset = DEAPDataset(root_path='./data_preprocessed_python',
                               online_transform=transforms.Compose([
@@ -46,6 +51,11 @@ class KFoldPerSubject:
     :obj:`KFoldPerSubject` allows the user to specify the index of the subject of interest, when the user need to report the performance on each subject.
 
     .. code-block:: python
+
+        from torcheeg.datasets import DEAPDataset
+        from torcheeg import transforms
+        from torcheeg.model_selection import KFoldPerSubject
+        from torcheeg.utils import DataLoader
 
         cv = KFoldPerSubject(n_splits=5, shuffle=True)
         dataset = DEAPDataset(root_path='./data_preprocessed_python',

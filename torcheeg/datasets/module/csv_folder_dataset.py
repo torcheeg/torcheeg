@@ -36,6 +36,9 @@ class CSVFolderDataset(BaseDataset):
         # | sub2       | 1        | 1     | './data/label2/sub2.fif' |
         # | sub2       | 2        | 2     | './data/label3/sub2.fif' |
 
+        from torcheeg.datasets import CSVFolderDataset
+        from torcheeg import transforms
+
         def default_read_fn(file_path, **kwargs):
             # Load EEG file
             raw = mne.io.read_raw(file_path)

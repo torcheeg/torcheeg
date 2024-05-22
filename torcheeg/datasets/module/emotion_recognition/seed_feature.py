@@ -33,6 +33,10 @@ class SEEDFeatureDataset(BaseDataset):
 
     .. code-block:: python
 
+        from torcheeg.datasets import SEEDFeatureDataset
+        from torcheeg import transforms
+        from torcheeg.datasets.constants import SEED_CHANNEL_LOCATION_DICT
+
         dataset = SEEDFeatureDataset(root_path='./ExtractedFeatures',
                                      feature=['de_movingAve'],
                                      offline_transform=transforms.ToGrid       (SEED_CHANNEL_LOCATION_DICT),
@@ -49,7 +53,12 @@ class SEEDFeatureDataset(BaseDataset):
     An example dataset for GNN-based methods:
 
     .. code-block:: python
-    
+
+        from torcheeg.datasets import SEEDFeatureDataset
+        from torcheeg import transforms
+        from torcheeg.datasets.constants import SEED_ADJACENCY_MATRIX
+        from torcheeg.transforms.pyg import ToG
+        
         dataset = SEEDFeatureDataset(root_path='./Preprocessed_EEG',
                                      features=['de_movingAve'],
                                      online_transform=ToG(SEED_ADJACENCY_MATRIX),

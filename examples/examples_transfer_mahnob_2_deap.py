@@ -22,14 +22,14 @@ In this tutorial, we demonstrate how to use TorchEEG to implement transfer learn
 # convert all EEG signals into Tensors, making them suitable for neural
 # network input.
 #
-# We use the `before_trial_normalize` function to normalize each EEG trial. This helps in reducing the variance between trials, thereby aiding the transfer generalizable knowledge from MAHNOB to DEAP.
+# We use the `after_hook_normalize` function to normalize each EEG trial. This helps in reducing the variance between trials, thereby aiding the transfer generalizable knowledge from MAHNOB to DEAP.
 #
 
 from torcheeg.datasets import MAHNOBDataset
 from torcheeg import transforms
-from torcheeg.datasets.constants.emotion_recognition.mahnob import MAHNOB_CHANNEL_LOCATION_DICT
+from torcheeg.datasets.constants import MAHNOB_CHANNEL_LOCATION_DICT
 
-from torcheeg.datasets.functional import before_trial_normalize
+from torcheeg.transforms import after_hook_normalize
 
 dataset = MAHNOBDataset(
     io_path='./examples_transfer_mahnob_2_deap/mahnob',
@@ -41,7 +41,7 @@ dataset = MAHNOBDataset(
         transforms.ToGrid(MAHNOB_CHANNEL_LOCATION_DICT)
     ]),
     online_transform=transforms.ToTensor(),
-    after_subject=before_trial_normalize,
+    after_subject=after_hook_normalize,
     label_transform=transforms.Compose(
         [transforms.Select('feltVlnc'),
          transforms.Binary(5.0)]),
@@ -133,7 +133,7 @@ state_dict = model.state_dict()
 
 from torcheeg.datasets import DEAPDataset
 
-from torcheeg.datasets.constants.emotion_recognition.deap import \
+from torcheeg.datasets.constants import \
     DEAP_CHANNEL_LOCATION_DICT
 
 dataset = DEAPDataset(

@@ -191,9 +191,11 @@ class DDPMTrainer(pl.LightningModule):
 
     .. code-block:: python
         
+        from torcheeg.trainers import DDPMTrainer
+        from torcheeg.models import BUNet
+
+        model = BUNet(in_channels=4)
         trainer = DDPMTrainer(model)
-        trainer.fit(train_loader, val_loader, max_epochs=1)
-        trainer.test(test_loader)
 
     Args:
         model (nn.Module): The denoising model takes the noisy samples and the current denoising conditions as input to predict the denoised samples. In this class, the current denoising condition is the current denoising time step. Typically, this model will be a UNet.

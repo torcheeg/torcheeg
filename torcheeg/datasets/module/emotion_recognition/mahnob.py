@@ -38,6 +38,10 @@ class MAHNOBDataset(BaseDataset):
 
     .. code-block:: python
     
+        from torcheeg.datasets import MAHNOBDataset
+        from torcheeg import transforms
+        from torcheeg.datasets.constants import MAHNOB_CHANNEL_LOCATION_DICT
+
         dataset = MAHNOBDataset(root_path='./Sessions',
                                 offline_transform=transforms.Compose([
                                     transforms.BandDifferentialEntropy(),
@@ -56,6 +60,9 @@ class MAHNOBDataset(BaseDataset):
     Another example dataset for CNN-based methods:
 
     .. code-block:: python
+    
+        from torcheeg.datasets import MAHNOBDataset
+        from torcheeg import transforms
 
         dataset = MAHNOBDataset(root_path='./Sessions',
                                 online_transform=transforms.Compose([
@@ -75,7 +82,12 @@ class MAHNOBDataset(BaseDataset):
     An example dataset for GNN-based methods:
 
     .. code-block:: python
-    
+
+        from torcheeg.datasets import MAHNOBDataset
+        from torcheeg import transforms
+        from torcheeg.datasets.constants import MAHNOB_ADJACENCY_MATRIX
+        from torcheeg.transforms.pyg import ToG
+
         dataset = MAHNOBDataset(root_path='./Sessions',
                                 online_transform=transforms.Compose([
                                     ToG(MAHNOB_ADJACENCY_MATRIX)

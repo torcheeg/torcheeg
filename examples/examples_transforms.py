@@ -17,7 +17,7 @@ signal, while 'baseline' corresponds to the processed baseline signal.
 import numpy as np
 from torcheeg import transforms
 
-from torcheeg.datasets.constants.emotion_recognition.deap import \
+from torcheeg.datasets.constants import \
     DEAP_CHANNEL_LOCATION_DICT
 
 t = transforms.ToGrid(DEAP_CHANNEL_LOCATION_DICT)

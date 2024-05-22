@@ -27,6 +27,11 @@ class KFoldCrossSubject:
 
     .. code-block:: python
 
+        from torcheeg.model_selection import KFoldCrossSubject
+        from torcheeg.datasets import DEAPDataset
+        from torcheeg import transforms
+        from torcheeg.utils import DataLoader
+
         cv = KFoldCrossSubject(n_splits=5, shuffle=True)
         dataset = DEAPDataset(root_path='./data_preprocessed_python',
                               online_transform=transforms.Compose([

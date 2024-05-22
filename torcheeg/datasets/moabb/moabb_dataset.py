@@ -21,6 +21,10 @@ class MOABBDataset(BaseDataset):
 
     .. code-block:: python
         
+        from moabb.datasets import BNCI2014001
+        from moabb.paradigms import LeftRightImagery
+        
+        from torcheeg import transforms
         import torcheeg.datasets.moabb as moabb_dataset
 
         dataset = BNCI2014001()

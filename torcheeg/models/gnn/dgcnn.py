@@ -81,7 +81,7 @@ class Chebynet(nn.Module):
             if i == 0:
                 result = self.gc1[i](x, adj[i])
             else:
-                result += self.gc1[i](x, adj[i])
+                result = result+  self.gc1[i](x, adj[i])
         result = F.relu(result)
         return result
 
@@ -98,8 +98,11 @@ class DGCNN(nn.Module):
 
     .. code-block:: python
 
-        dataset = SEEDDataset(io_path=f'./seed',
-                              root_path='./Preprocessed_EEG',
+        from torcheeg.models import DGCNN
+        from torcheeg.datasets import SEEDDataset
+        from torcheeg import transforms
+
+        dataset = SEEDDataset(root_path='./Preprocessed_EEG',
                               offline_transform=transforms.BandDifferentialEntropy(band_dict={
                                   "delta": [1, 4],
                                   "theta": [4, 8],
@@ -114,7 +117,11 @@ class DGCNN(nn.Module):
                                   transforms.Select('emotion'),
                                   transforms.Lambda(lambda x: x + 1)
                               ]))
+
         model = DGCNN(in_channels=5, num_electrodes=62, hid_channels=32, num_layers=2, num_classes=2)
+
+        x, y = next(iter(DataLoader(dataset, batch_size=64)))
+        model(x)
 
     Args:
         in_channels (int): The feature dimension of each electrode. (default: :obj:`5`)

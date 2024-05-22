@@ -12,8 +12,10 @@ class ARRCoefficient(EEGTransform):
 
     .. code-block:: python
 
-        transform = ARRCoefficient(order=4)
-        transform(eeg=np.random.randn(32, 128))['eeg'].shape
+        from torcheeg import transforms
+
+        t = transforms.ARRCoefficient(order=4)
+        t(eeg=np.random.randn(32, 128))['eeg'].shape
         >>> (32, 4)
 
     Args:

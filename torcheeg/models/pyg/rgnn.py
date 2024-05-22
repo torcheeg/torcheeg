@@ -101,8 +101,14 @@ class RGNN(torch.nn.Module):
 
     .. code-block:: python
 
-        dataset = SEEDDataset(io_path=f'./seed',
-                              root_path='./Preprocessed_EEG',
+        from torcheeg.datasets import SEEDDataset
+        from torcheeg.models import RGNN
+        from torcheeg.transforms.pyg import ToG
+        from torcheeg.datasets.constants import SEED_STANDARD_ADJACENCY_MATRIX
+        from torch_geometric.data import DataLoader
+
+
+        dataset = SEEDDataset(root_path='./Preprocessed_EEG',
                               offline_transform=transforms.BandDifferentialEntropy(),
                               online_transform=ToG(SEED_STANDARD_ADJACENCY_MATRIX),
                               label_transform=transforms.Compose([
@@ -110,6 +116,7 @@ class RGNN(torch.nn.Module):
                                   transforms.Lambda(lambda x: int(x) + 1),
                               ]),
                               num_worker=8)
+
         model = RGNN(adj=torch.Tensor(SEED_STANDARD_ADJACENCY_MATRIX),
                      in_channels=5,
                      num_electrodes=62,
@@ -118,6 +125,9 @@ class RGNN(torch.nn.Module):
                      num_classes=3,
                      dropout=0.7,
                      learn_edge_weights=True)
+
+        x, y = next(iter(DataLoader(dataset, batch_size=64)))
+        model(x)
 
     Args:
         adj (torch.Tensor): The adjacency matrix corresponding to the EEG representation, where 1.0 means the node is adjacent and 0.0 means the node is not adjacent. The matrix shape should be [num_electrodes, num_electrodes].

@@ -87,16 +87,21 @@ class VanillaTransformer(nn.Module):
 
     .. code-block:: python
 
-        dataset = DEAPDataset(io_path=f'./deap',
-                    root_path='./data_preprocessed_python',
-                    offline_transform=transforms.To2d(),
-                    online_transform=transforms.Compose([
-                        transforms.ToTensor(),
-                    ]),
-                    label_transform=transforms.Compose([
-                        transforms.Select('valence'),
-                        transforms.Binary(5.0),
-                    ]))
+        from torcheeg.datasets import DEAPDataset
+        from torcheeg.models import VanillaTransformer
+        from torcheeg import transforms
+        from torch.utils.data import DataLoader
+
+        dataset = DEAPDataset(root_path='./data_preprocessed_python',
+                              offline_transform=transforms.To2d(),
+                              online_transform=transforms.Compose([
+                                  transforms.ToTensor(),
+                              ]),
+                              label_transform=transforms.Compose([
+                                  transforms.Select('valence'),
+                                  transforms.Binary(5.0),
+                              ]))
+
         model = VanillaTransformer(chunk_size=128,
                             num_electrodes=32,
                             patch_size=32,
@@ -106,6 +111,9 @@ class VanillaTransformer(nn.Module):
                             head_channels=64,
                             mlp_channels=64,
                             num_classes=2)
+        
+        x, y = next(iter(DataLoader(dataset, batch_size=64)))
+        model(x)
 
     Args:
         chunk_size (int): Number of data points included in each EEG chunk. (default: :obj:`128`)

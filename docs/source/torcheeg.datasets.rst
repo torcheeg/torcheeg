@@ -22,10 +22,14 @@ Emotion Recognition Datasets
     SEEDFeatureDataset
     SEEDIVDataset
     SEEDIVFeatureDataset
+    SEEDVDataset
+    SEEDVFeatureDataset
     AMIGOSDataset
     MAHNOBDataset
     BCI2022Dataset
     MPEDFeatureDataset
+    FACEDDataset
+    FACEDFeatureDataset
 
 Personal Identification Datasets
 ----------------------------------
@@ -67,6 +71,16 @@ Steady-state Visual Evoked Potential Datasets
 
     TSUBenckmarkDataset
 
+Sleep Stage Detection Datasets 
+---------------------------------------------------------
+
+.. autosummary::
+    :toctree: generated
+    :nosignatures:
+    :template: datasettemplate.rst
+
+    SleepEDFxDataset
+
 Customized Datasets
 ---------------------------------------------------------
 
@@ -77,10 +91,3 @@ Customized Datasets
 
     FolderDataset
     CSVFolderDataset
-
-Hooks
----------------------------------------------------------
-
-.. autofunction:: before_trial_normalize
-.. autofunction:: after_trial_normalize
-.. autofunction:: after_trial_moving_avg

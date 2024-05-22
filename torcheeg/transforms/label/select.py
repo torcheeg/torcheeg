@@ -9,16 +9,20 @@ class Select(LabelTransform):
 
     .. code-block:: python
 
-        transform = Select(key='valence')
-        transform(y={'valence': 4.5, 'arousal': 5.5, 'subject_id': 7})['y']
+        from torcheeg import transforms
+
+        t = transforms.Select(key='valence')
+        t(y={'valence': 4.5, 'arousal': 5.5, 'subject_id': 7})['y']
         >>> 4.5
 
     :obj:`Select` allows multiple values to be selected and returned as a list. Suitable for multi-classification tasks or multi-task learning.
 
     .. code-block:: python
+        
+        from torcheeg import transforms
 
-        transform = Select(key=['valence', 'arousal'])
-        transform(y={'valence': 4.5, 'arousal': 5.5, 'subject_id': 7})['y']
+        t = transforms.Select(key=['valence', 'arousal'])
+        t(y={'valence': 4.5, 'arousal': 5.5, 'subject_id': 7})['y']
         >>> [4.5, 5.5]
 
     Args:

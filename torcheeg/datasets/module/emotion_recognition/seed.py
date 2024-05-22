@@ -30,6 +30,10 @@ class SEEDDataset(BaseDataset):
 
     .. code-block:: python
 
+        from torcheeg.datasets import SEEDDataset
+        from torcheeg import transforms
+        from torcheeg.datasets.constants import SEED_CHANNEL_LOCATION_DICT
+
         dataset = SEEDDataset(root_path='./Preprocessed_EEG',
                               offline_transform=transforms.Compose([
                                   transforms.BandDifferentialEntropy(),
@@ -49,6 +53,9 @@ class SEEDDataset(BaseDataset):
 
     .. code-block:: python
 
+        from torcheeg.datasets import SEEDDataset
+        from torcheeg import transforms
+
         dataset = SEEDDataset(root_path='./Preprocessed_EEG',
                               online_transform=transforms.Compose([
                                   transforms.ToTensor(),
@@ -56,7 +63,7 @@ class SEEDDataset(BaseDataset):
                               ]),
                               label_transform=transforms.Compose([
                                   transforms.Select('emotion'),
-                                  transforms.Lambda(x: x + 1)
+                                  transforms.Lambda(lambda x: x + 1)
                               ]))
         print(dataset[0])
         # EEG signal (torch.Tensor[62, 200]),
@@ -66,14 +73,19 @@ class SEEDDataset(BaseDataset):
     An example dataset for GNN-based methods:
 
     .. code-block:: python
-    
+
+        from torcheeg.datasets import SEEDDataset
+        from torcheeg import transforms
+        from torcheeg.datasets.constants import SEED_ADJACENCY_MATRIX
+        from torcheeg.transforms.pyg import ToG
+        
         dataset = SEEDDataset(root_path='./Preprocessed_EEG',
                               online_transform=transforms.Compose([
                                   ToG(SEED_ADJACENCY_MATRIX)
                               ]),
                               label_transform=transforms.Compose([
                                   transforms.Select('emotion'),
-                                  transforms.Lambda(x: x + 1)
+                                  transforms.Lambda(lambda x: x + 1)
                               ]))
         print(dataset[0])
         # EEG signal (torch_geometric.data.Data),
@@ -170,7 +182,6 @@ class SEEDDataset(BaseDataset):
         # loop for each trial
         for trial_id in trial_ids:
 
-            # extract baseline signals
             trial_samples = samples[trial_id]  # channel(62), timestep(n*200)
             if before_trial:
                 trial_samples = before_trial(trial_samples)

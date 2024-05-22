@@ -4,7 +4,8 @@ TorchEEG
 |PyPI Version| |Docs Status| |Downloads| |Join the Chat|
 
 `Documentation <https://torcheeg.readthedocs.io/>`__ \| `TorchEEG
-Examples <https://github.com/tczhangzhi/torcheeg/tree/main/examples>`__
+Examples <https://github.com/torcheeg/torcheeg/tree/main/examples>`__ \|
+`Paper <https://www.sciencedirect.com/science/article/pii/S0957417424004159>`__
 
 TorchEEG is a library built on PyTorch for EEG signal analysis. TorchEEG
 aims to provide a plug-and-play EEG analysis tool, so that researchers
@@ -255,7 +256,7 @@ e.g. ``./tmp_in/data_preprocessed_python``.
    from torcheeg.datasets import DEAPDataset
    from torcheeg import transforms
 
-   from torcheeg.datasets.constants.emotion_recognition.deap import \
+   from torcheeg.datasets.constants import \
        DEAP_CHANNEL_LOCATION_DICT
 
    dataset = DEAPDataset(
@@ -365,6 +366,22 @@ License
 TorchEEG has a MIT license, as found in the
 `LICENSE <https://github.com/tczhangzhi/torcheeg/blob/main/LICENSE>`__
 file.
+
+Citation
+--------
+
+If you find this project useful for your research, please cite:
+
+.. code:: latex
+
+   @article{zhang2024torcheeg,
+       title = {{TorchEEGEMO}: A deep learning toolbox towards {EEG}-based emotion recognition},
+       journal = {Expert Systems with Applications},
+       pages = {123550},
+       year = {2024},
+       issn = {0957-4174},
+       author = {Zhi Zhang and Sheng-hua Zhong and Yan Liu}
+   }
 
 .. |PyPI Version| image:: https://badge.fury.io/py/torcheeg.svg
    :target: https://pypi.python.org/pypi/torcheeg

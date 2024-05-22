@@ -27,11 +27,12 @@ class BetaVAETrainer(pl.LightningModule):
 
     .. code-block:: python
         
+        from torcheeg.models import BEncoder, BDecoder
+        from torcheeg.trainers import BetaVAETrainer
+
         encoder = BEncoder(in_channels=4)
         decoder = BDecoder(in_channels=64, out_channels=4)
         trainer = BetaVAETrainer(encoder, decoder)
-        trainer.fit(train_loader, val_loader)
-        trainer.test(test_loader)
 
     Args:
         encoder (nn.Module): The encoder, whose inputs are EEG signals, outputs are two batches of vectors of the same dimension, representing the mean and variance estimated in the reparameterization trick.

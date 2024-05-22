@@ -117,23 +117,31 @@ class ArjunViT(nn.Module):
 
     .. code-block:: python
 
-        dataset = DEAPDataset(io_path=f'./deap',
-                    root_path='./data_preprocessed_python',
-                    offline_transform=transforms.Compose([
-                        transforms.MeanStdNormalize(),
-                        transforms.To2d()
-                    ]),
-                    online_transform=transforms.Compose([
-                        transforms.ToTensor(),
-                    ]),
-                    label_transform=transforms.Compose([
-                        transforms.Select('valence'),
-                        transforms.Binary(5.0),
-                    ]))
+        from torcheeg.datasets import DEAPDataset
+        from torcheeg import transforms
+        from torcheeg.models import ArjunViT
+        from torch.utils.data import DataLoader
+
+        dataset = DEAPDataset(root_path='./data_preprocessed_python',
+                              offline_transform=transforms.Compose([
+                                  transforms.MeanStdNormalize(),
+                                  transforms.To2d()
+                              ]),
+                              online_transform=transforms.Compose([
+                                  transforms.ToTensor(),
+                              ]),
+                              label_transform=transforms.Compose([
+                                  transforms.Select('valence'),
+                                  transforms.Binary(5.0),
+                              ]))
+
         model = ArjunViT(chunk_size=128,
                          t_patch_size=50,
                          num_electrodes=32,
                          num_classes=2)
+
+        x, y = next(iter(DataLoader(dataset, batch_size=64)))
+        model(x)
 
     Args:
        num_electrodes (int): The number of electrodes. (default: :obj:`32`)

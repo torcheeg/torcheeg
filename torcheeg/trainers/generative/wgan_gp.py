@@ -49,8 +49,6 @@ class WGANGPTrainer(pl.LightningModule):
         g_model = BGenerator(in_channels=128)
         d_model = BDiscriminator(in_channels=4)
         trainer = WGANGPTrainer(generator, discriminator)
-        trainer.fit(train_loader, val_loader)
-        trainer.test(test_loader)
 
     Args:
         generator (nn.Module): The generator model for EEG signal generation, whose inputs are Gaussian distributed random vectors, outputs are generated EEG signals. The dimensions of the input vector should be defined on the :obj:`in_channel` attribute. The output layer does not need to have a softmax activation function.
