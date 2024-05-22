@@ -36,14 +36,33 @@ class CORALTrainer(_MMDLikeTrainer):
 
     .. code-block:: python
 
+        from torcheeg.models import CCNN
+        from torcheeg.trainers import CORALTrainer
+
+        class Extractor(CCNN):
+            def forward(self, x):
+                x = self.conv1(x)
+                x = self.conv2(x)
+                x = self.conv3(x)
+                x = self.conv4(x)
+                x = x.flatten(start_dim=1)
+                return x
+
+        class Classifier(CCNN):
+            def forward(self, x):
+                x = self.lin1(x)
+                x = self.lin2(x)
+                return x
+
+        extractor = Extractor(in_channels=5, num_classes=3)
+        classifier = Classifier(in_channels=5, num_classes=3)
+
         trainer = CORALTrainer(extractor,
-                             classifier,
-                             num_classes=10,
-                             devices=1,
-                             weight_domain=1.0,
-                             accelerator='gpu')
-        trainer.fit(source_loader, target_loader, val_loader)
-        trainer.test(test_loader)
+                               classifier,
+                               num_classes=3,
+                               devices=1,
+                               weight_domain=1.0,
+                               accelerator='gpu')
 
     Args:
         extractor (nn.Module): The feature extraction model learns the feature representation of the EEG signal by forcing the correlation matrixes of source and target data to be close.
@@ -57,7 +76,7 @@ class CORALTrainer(_MMDLikeTrainer):
         warmup_epochs (int): The number of epochs for the warmup phase, during which the weight of the CORAL loss is 0. (default: :obj:`0`)
         devices (int): The number of devices to use. (default: :obj:`1`)
         accelerator (str): The accelerator to use. Available options are: 'cpu', 'gpu'. (default: :obj:`"cpu"`)
-        metrics (list of str): The metrics to use. Available options are: 'precision', 'recall', 'f1_score', 'accuracy', 'matthews', 'auroc', and 'kappa'. (default: :obj:`["accuracy"]`)
+        metrics (list of str): The metrics to use. Available options are: 'precision', 'recall', 'f1score', 'accuracy', 'matthews', 'auroc', and 'kappa'. (default: :obj:`["accuracy"]`)
 
     .. automethod:: fit
     .. automethod:: test

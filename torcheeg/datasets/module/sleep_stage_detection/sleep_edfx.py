@@ -1,13 +1,14 @@
 import os
-import pickle as pkl
-import pandas as pd
 from typing import Any, Callable, Dict, Tuple, Union
+
 import mne
-from ..base_dataset import BaseDataset
+import pandas as pd
+
 from ....utils import get_random_dir_path
+from ..base_dataset import BaseDataset
 
 
-class SleepEDFDataset(BaseDataset):
+class SleepEDFxDataset(BaseDataset):
     r'''
     A dataset for studying human sleep stages (expanded version), of which a small subset was previously contributed in 2002, is now available in PhysioNet. The database now includes 61 full-night polysomnograms of healthy subjects and of subjects with mild difficulty falling asleep, with accompanying expert annotations of sleep stages.
     This class generates training samples and test samples according to the given parameters, and caches the generated results in a unified input and output format (IO). The relevant information of the dataset is as follows:
@@ -17,7 +18,7 @@ class SleepEDFDataset(BaseDataset):
     - Download URL: https://www.physionet.org/content/sleep-edfx/1.0.0/
     - Reference: B Kemp, AH Zwinderman, B Tuk, HAC Kamphuisen, JJL Oberyé. Analysis of a sleep-dependent neuronal feedback loop: the slow-wave microcontinuity of the EEG. IEEE-BME 47(9):1185-1194 (2000)
     - Signals: 197 whole-night PolySomnoGraphic sleep recordings, containing EEG, EOG, chin EMG, and event markers. Corresponding hypnograms (sleep patterns) were manually scored by well-trained technicians according to the Rechtschaffen and Kales manual, and are also available. 
-    - sleep stages: W, R, 1, 2, 3, 4, M (Movement time) and ? (not scored).
+    - Sleep stages: W, R, 1, 2, 3, 4, M (Movement time) and ? (not scored).
     
     In order to use this dataset, the download folder :obj:`sleep-edf-database-expanded-1.0.0` is required, containing the following files and directories:
     
@@ -27,31 +28,39 @@ class SleepEDFDataset(BaseDataset):
     - ST-subjects.xls (file)
     - ...
 
-    Here is a configure setting to obtain raw eeg examples:
+    An example dataset for CNN-based methods:
 
     .. code-block:: python
-    
-        dataset =SleepEDFDataset(root_path="D:\datasets\sleep-edf-database-expanded-1.0.0",io_path=".torcheeg\datasets_1709471408553_wDTQD",
-                num_channels=4,
-                chunk_size = 3000,
-                remove_unclear_example = True,
-                online_transform=transforms.ToTensor(),
-                label_transform=transforms.Compose([ transforms.Select(key="stage"),
-                                                     transforms.Mapping( map_dict={"W":0,"1":1,"2":2,"3":3,"4":4,"R":5} ) ])))
+
+        from torcheeg.datasets import SleepEDFxDataset
+        from torcheeg import transforms
+        
+        dataset = SleepEDFxDataset(root_path="./sleep-edf-database-expanded-1.0.0",
+                           num_channels=4,
+                           chunk_size=3000,
+                           remove_unclear_example=True,
+                           online_transform=transforms.ToTensor(),
+                           label_transform=transforms.Compose([
+                               transforms.Select(key="stage"),
+                               transforms.Mapping(map_dict={
+                                   "W": 0,
+                                   "1": 1,
+                                   "2": 2,
+                                   "3": 3,
+                                   "4": 4,
+                                   "R": 5
+                               })
+                           ]))
         
         print(dataset[0])
-        # EEG signal (torch.Tensor[4,3000]),
-        # coresponding baseline signal (torch.Tensor[4, 9, 9]),
+        # EEG signal (torch.Tensor[2, 3000]),
         # label (int)
-
-    
-    In particular, TorchEEG utilizes the producer-consumer model to allow multi-process data preprocessing. If your data preprocessing is time consuming, consider increasing :obj:`num_worker` for higher speedup. If running under Windows, please use the proper idiom in the main module:
-
+            
     Args:
         root_path (str): Downloaded data folder (unzipped sleep-edf-database-expanded-1.0.0.zip) (default: :obj:`'./sleep-edf-database-expanded-1.0.0'`)
         chunk_size (int): Number of data points included in each EEG chunk as training or test samples.  (default: :obj:`3000`)
         overlap (int): Number of overlapping data points between different chunks when dividing EEG chunks. (default: :obj:`0`)
-        num_channel (int): Number of channels used, of which the first 4 channels are EEG signals. (default: :obj:`4`)
+        num_channel (int): Number of channels used, of which the first 4 channels are EEG signals. (default: :obj:`2`)
         version (str): There are two studies corresponding to two different dataset called "cassette" and "Telemetry" in the downloaded data folder. Available options are ['cassette','Telemetry'] (default: :obj:`"cattesse"`)
         remove_unclear_example (bool): Whether to remove the examples which are labels as "?". (default: :obj:`True`)
         online_transform (Callable, optional): The transformation of the EEG signals and baseline EEG signals. The input is a :obj:`np.ndarray`, and the ouput is used as the first and second value of each element in the dataset. (default: :obj:`None`)
@@ -70,8 +79,8 @@ class SleepEDFDataset(BaseDataset):
                  root_path: str = './sleep-edf-database-expanded-1.0.0',
                  chunk_size: int = 3000,
                  overlap: int = 0,
-                 num_channel: int = 4,
-                 version: str= "cassette",
+                 num_channel: int = 2,
+                 version: str = "cassette",
                  remove_unclear_example: bool = True,
                  online_transform: Union[None, Callable] = None,
                  offline_transform: Union[None, Callable] = None,
@@ -88,15 +97,17 @@ class SleepEDFDataset(BaseDataset):
         if io_path is None:
             io_path = get_random_dir_path(dir_prefix='datasets')
 
-        assert version in ["cassette","Telemetry"],f"please choose \"version\" in ['cassette','Telemetry'].{version}(current setting) is not available. "
+        assert version in [
+            "cassette", "Telemetry"
+        ], f"please choose \"version\" in ['cassette','Telemetry'].{version}(current setting) is not available. "
         # pass all arguments to super class
         params = {
             'root_path': root_path,
             'chunk_size': chunk_size,
             'overlap': overlap,
-            'num_channel':num_channel,
-            'version':version,
-            'remove_unclear_example':remove_unclear_example,
+            'num_channel': num_channel,
+            'version': version,
+            'remove_unclear_example': remove_unclear_example,
             'online_transform': online_transform,
             'offline_transform': offline_transform,
             'label_transform': label_transform,
@@ -117,84 +128,96 @@ class SleepEDFDataset(BaseDataset):
     @staticmethod
     def process_record(file: Any = None,
                        root_path: str = './sleep-edf-database-expanded-1.0.0',
-                       version:str = "cassette",
+                       version: str = "cassette",
                        chunk_size: int = 3000,
                        overlap: int = 0,
-                       num_channel: int =4,
-                       remove_unclear_example: bool =  True,
+                       num_channel: int = 2,
+                       remove_unclear_example: bool = True,
                        before_trial: Union[None, Callable] = None,
                        offline_transform: Union[None, Callable] = None,
                        **kwargs):
         file_name = file  # an element from file name list
         # derive the given arguments (kwargs)
-        eeg_dir = "sleep-"+version
-        file_path = os.path.join(root_path,eeg_dir, file_name)
-        
+        eeg_dir = "sleep-" + version
+        file_path = os.path.join(root_path, eeg_dir, file_name)
+
         eeg = mne.io.read_raw_edf(file_path).get_data()
         eeg = eeg[:num_channel]
 
-        ann_file_name = list(filter(lambda x:x[-13:]=="Hypnogram.edf" and x[:7] == file_name[:7] ,os.listdir(os.path.join(root_path,eeg_dir))))[0]
-        ann = mne.read_annotations(os.path.join(root_path,eeg_dir,ann_file_name))
-    
+        ann_file_name = list(
+            filter(
+                lambda x: x[-13:] == "Hypnogram.edf" and x[:7] == file_name[:7],
+                os.listdir(os.path.join(root_path, eeg_dir))))[0]
+        ann = mne.read_annotations(
+            os.path.join(root_path, eeg_dir, ann_file_name))
+
         subject_id = int(file_name[3:5])
-        trial_id = int(file_name[5])-1
+        trial_id = int(file_name[5]) - 1
         meta_info = {'subject_id': subject_id, 'trial_id': trial_id}
         if eeg_dir == "sleep-cassette":
-            suject_info = pd.read_excel(os.path.join(root_path ,"SC-subjects.xls"))  
-            query = suject_info[(suject_info["subject"]== subject_id) & (suject_info["night"] == trial_id+1)]
-            meta_info["age"],meta_info["sex"],meta_info["light_off"] = query.values[0][-3:]
+            suject_info = pd.read_excel(
+                os.path.join(root_path, "SC-subjects.xls"))
+            query = suject_info[(suject_info["subject"] == subject_id)
+                                & (suject_info["night"] == trial_id + 1)]
+            meta_info["age"], meta_info["sex"], meta_info[
+                "light_off"] = query.values[0][-3:]
         else:
-            subject_info = pd.read_excel(os.path.join(root_path ,"ST-subjects.xls"))
-            query = subject_info[subject_info["Subject - age - sex"]==subject_id]
-            meta_info["age"],meta_info["sex"] = query.values[0,1:3]
-            Placebo_night = query[ ['Placebo night']].values[0,0]
-            meta_info["night"] = 'Placebo night' if trial_id+1 == Placebo_night else 'Temazepam night'
-            meta_info["light_off"] = query['Unnamed: 4'].values[0] if trial_id +1 == Placebo_night else query['Unnamed: 6'].values[0]
+            subject_info = pd.read_excel(
+                os.path.join(root_path, "ST-subjects.xls"))
+            query = subject_info[subject_info["Subject - age - sex"] ==
+                                 subject_id]
+            meta_info["age"], meta_info["sex"] = query.values[0, 1:3]
+            Placebo_night = query[['Placebo night']].values[0, 0]
+            meta_info[
+                "night"] = 'Placebo night' if trial_id + 1 == Placebo_night else 'Temazepam night'
+            meta_info["light_off"] = query['Unnamed: 4'].values[
+                0] if trial_id + 1 == Placebo_night else query[
+                    'Unnamed: 6'].values[0]
 
         write_pointer = 0
-        
+
         if before_trial:
             eeg = before_trial(eeg)
             # record the common meta info
 
         start_at = 0
-        assert chunk_size > 0 and chunk_size <=eeg.shape[1] ,f"please set the chunk_size  correctly.(current chunk_size = {chunk_size})"
+        assert chunk_size > 0 and chunk_size <= eeg.shape[
+            1], f"please set the chunk_size orrectly.(current chunk_size = {chunk_size})"
         end_at = start_at + chunk_size
         step = chunk_size - overlap
-        
 
         ann_cur = 0
         cur_stage_time = 0
-        while ann_cur<len(ann.duration):
+        while ann_cur < len(ann.duration):
             stage = ann.description[ann_cur][-1]
-            if cur_stage_time + chunk_size > ann.duration[ann_cur]*100 :
-                start_at += int(ann.duration[ann_cur])-cur_stage_time
+            if cur_stage_time + chunk_size > ann.duration[ann_cur] * 100:
+                start_at += int(ann.duration[ann_cur]) - cur_stage_time
                 end_at = start_at + chunk_size
                 ann_cur += 1
                 cur_stage_time = 0
                 continue
-            
+
             if stage == "?" and remove_unclear_example:
                 start_at += step
                 end_at = start_at + chunk_size
-                cur_stage_time+=step
+                cur_stage_time += step
                 continue
 
             clip_sample = eeg[:, start_at:end_at]
             t_eeg = clip_sample
-    
+
             if not offline_transform is None:
                 t = offline_transform(eeg=clip_sample)
                 t_eeg = t['eeg']
 
             clip_id = f'subject{subject_id}_night{trial_id}_{write_pointer}'
             write_pointer += 1
-                # record meta info for each signal
+            # record meta info for each signal
             record_info = {
                 'start_at': start_at,
                 'end_at': end_at,
                 'clip_id': clip_id,
-                'stage':stage
+                'stage': stage
             }
             record_info.update(meta_info)
 
@@ -203,16 +226,19 @@ class SleepEDFDataset(BaseDataset):
             start_at += step
             cur_stage_time += step
             end_at = start_at + chunk_size
-    
-    def set_records(self,
-                    root_path: str ='D:\datasets\sleep-edf-database-expanded-1.0.0' ,
-                    **kwargs):
+
+    def set_records(
+            self,
+            root_path: str = './sleep-edf-database-expanded-1.0.0',
+            **kwargs):
         assert os.path.exists(
             root_path
         ), f'root_path ({root_path}) does not exist. Please download the dataset and set the root_path to the downloaded path.'
 
-        self.eeg_dir ="sleep-"+ kwargs["version"] 
-        return list(filter(lambda item:item[-7:]=="PSG.edf",os.listdir(os.path.join(root_path,self.eeg_dir))))
+        self.eeg_dir = "sleep-" + kwargs["version"]
+        return list(
+            filter(lambda item: item[-7:] == "PSG.edf",
+                   os.listdir(os.path.join(root_path, self.eeg_dir))))
 
     def __getitem__(self, index: int) -> Tuple:
         info = self.read_info(index)
@@ -239,7 +265,7 @@ class SleepEDFDataset(BaseDataset):
                 'chunk_size': self.chunk_size,
                 'overlap': self.overlap,
                 'num_channel': self.num_channel,
-                'version':self.version,
+                'version': self.version,
                 'online_transform': self.online_transform,
                 'offline_transform': self.offline_transform,
                 'label_transform': self.label_transform,

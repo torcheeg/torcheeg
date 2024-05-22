@@ -11,14 +11,16 @@ class MeanStdNormalize(EEGTransform):
 
     .. code-block:: python
 
-        transform = MeanStdNormalize(axis=0)
+        from torcheeg import transforms
+
+        t = transforms.MeanStdNormalize(axis=0)
         # normalize along the first dimension (electrode dimension)
-        transform(eeg=np.random.randn(32, 128))['eeg'].shape
+        t(eeg=np.random.randn(32, 128))['eeg'].shape
         >>> (32, 128)
 
-        transform = MeanStdNormalize(axis=1)
+        t = transforms.MeanStdNormalize(axis=1)
         # normalize along the second dimension (temproal dimension)
-        transform(eeg=np.random.randn(32, 128))['eeg'].shape
+        t(eeg=np.random.randn(32, 128))['eeg'].shape
         >>> (32, 128)
 
     Args:
@@ -93,14 +95,18 @@ class MinMaxNormalize(EEGTransform):
 
     .. code-block:: python
 
-        transform = MinMaxNormalize(axis=0)
+        from torcheeg import transforms
+
+        t = transforms.MinMaxNormalize(axis=0)
         # normalize along the first dimension (electrode dimension)
-        transform(eeg=np.random.randn(32, 128))['eeg'].shape
+        t(eeg=np.random.randn(32, 128))['eeg'].shape
         >>> (32, 128)
 
-        transform = MinMaxNormalize(axis=1)
+        from torcheeg import transforms
+        
+        t = transforms.MinMaxNormalize(axis=1)
         # normalize along the second dimension (temproal dimension)
-        transform(eeg=np.random.randn(32, 128))['eeg'].shape
+        t(eeg=np.random.randn(32, 128))['eeg'].shape
         >>> (32, 128)
 
     Args:

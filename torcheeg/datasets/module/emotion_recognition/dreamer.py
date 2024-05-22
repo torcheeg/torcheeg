@@ -24,6 +24,10 @@ class DREAMERDataset(BaseDataset):
 
     .. code-block:: python
 
+        from torcheeg.datasets import DREAMERDataset
+        from torcheeg import transforms
+        from torcheeg.datasets.constants import DREAMER_CHANNEL_LOCATION_DICT
+
         dataset = DREAMERDataset(mat_path='./DREAMER.mat',
                                  offline_transform=transforms.Compose([
                                      transforms.BandDifferentialEntropy(),
@@ -43,6 +47,9 @@ class DREAMERDataset(BaseDataset):
 
     .. code-block:: python
 
+        from torcheeg.datasets import DREAMERDataset
+        from torcheeg import transforms
+
         dataset = DREAMERDataset(mat_path='./DREAMER.mat',
                                  online_transform=transforms.Compose([
                                      transforms.To2d(),
@@ -61,7 +68,12 @@ class DREAMERDataset(BaseDataset):
     An example dataset for GNN-based methods:
 
     .. code-block:: python
-    
+        
+        from torcheeg.datasets import DREAMERDataset
+        from torcheeg import transforms
+        from torcheeg.datasets.constants import DREAMER_ADJACENCY_MATRIX
+        from torcheeg.transforms.pyg import ToG
+        
         dataset = DREAMERDataset(mat_path='./DREAMER.mat',
                                  online_transform=transforms.Compose([
                                      ToG(DREAMER_ADJACENCY_MATRIX)
@@ -74,8 +86,6 @@ class DREAMERDataset(BaseDataset):
         # EEG signal (torch_geometric.data.Data),
         # coresponding baseline signal (torch_geometric.data.Data),
         # label (int)
-
-    In particular, TorchEEG utilizes the producer-consumer model to allow multi-process data preprocessing. If your data preprocessing is time consuming, consider increasing :obj:`num_worker` for higher speedup. If running under Windows, please use the proper idiom in the main module:
     
     Args:
         mat_path (str): Downloaded data files in pickled matlab formats (default: :obj:`'./DREAMER.mat'`)

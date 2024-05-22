@@ -15,17 +15,26 @@ class FBCCNN(nn.Module):
 
     .. code-block:: python
 
-        dataset = DEAPDataset(io_path=f'./deap',
-                    root_path='./data_preprocessed_python',
-                    online_transform=transforms.Compose([
-                        transforms.BandPowerSpectralDensity(),
-                        transforms.ToGrid(DEAP_CHANNEL_LOCATION_DICT)
-                    ]),
-                    label_transform=transforms.Compose([
-                        transforms.Select('valence'),
-                        transforms.Binary(5.0),
-                    ]))
+        from torcheeg.datasets import DEAPDataset
+        from torcheeg import transforms
+        from torcheeg.datasets.constants import DEAP_CHANNEL_LOCATION_DICT
+        from torcheeg.models import FBCCNN
+        from torch.utils.data import DataLoader
+
+        dataset = DEAPDataset(root_path='./data_preprocessed_python',
+                              online_transform=transforms.Compose([
+                                  transforms.BandPowerSpectralDensity(),
+                                  transforms.ToGrid(DEAP_CHANNEL_LOCATION_DICT)
+                              ]),
+                              label_transform=transforms.Compose([
+                                  transforms.Select('valence'),
+                                  transforms.Binary(5.0),
+                              ]))
+
         model = FBCCNN(num_classes=2, in_channels=4, grid_size=(9, 9))
+
+        x, y = next(iter(DataLoader(dataset, batch_size=64)))
+        model(x)
 
     Args:
         in_channels (int): The feature dimension of each electrode, i.e., :math:`N` in the paper. (default: :obj:`4`)

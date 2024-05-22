@@ -11,7 +11,10 @@ class PickElectrode(EEGTransform):
 
     .. code-block:: python
 
-        transform = PickElectrode(PickElectrode.to_index_list(
+        from torcheeg import transforms
+        from torcheeg.datasets.constants import DEAP_CHANNEL_LIST
+
+        t = transforms.PickElectrode(transforms.PickElectrode.to_index_list(
             ['FP1', 'AF3', 'F3', 'F7',
              'FC5', 'FC1', 'C3', 'T7',
              'CP5', 'CP1', 'P3', 'P7',
@@ -19,7 +22,7 @@ class PickElectrode(EEGTransform):
              'F4', 'F8', 'FC6', 'FC2',
              'C4', 'T8', 'CP6', 'CP2',
              'P4', 'P8', 'PO4', 'O2'], DEAP_CHANNEL_LIST))
-        transform(eeg=np.random.randn(32, 128))['eeg'].shape
+        t(eeg=np.random.randn(32, 128))['eeg'].shape
         >>> (28, 128)
 
     Args:

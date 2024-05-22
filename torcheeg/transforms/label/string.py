@@ -11,20 +11,22 @@ class StringToInt(LabelTransform):
     
     .. code-block:: python
 
-        transform = StringToInt()
-        transform(y='None')['y']
+        from torcheeg import transforms
+
+        t = transforms.StringToInt()
+        t(y='None')['y']
         >>> 0
 
-        transform = StringToInt()
-        transform(y='sub001')['y']
+        t = transforms.StringToInt()
+        t(y='sub001')['y']
         >>> 1
 
     :obj:`StringToInt` allows converting a list of strings to a list of numbers with the same conversion behavior as a single string.
 
     .. code-block:: python
 
-        transform = StringToInt()
-        transform(y=['sub001', '4'])['y']
+        t = transforms.StringToInt()
+        t(y=['sub001', '4'])['y']
         >>> 1, 4
 
     .. automethod:: __call__

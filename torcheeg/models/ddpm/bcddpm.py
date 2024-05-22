@@ -132,7 +132,9 @@ class BCUNet(nn.Module):
 
     .. code-block:: python
 
-        .. code-block:: python
+        import torch
+
+        from torcheeg.models.ddpm import BCUNet
 
         noise = torch.randn(1, 4, 9, 9)
         t = torch.randint(low=1, high=1000, size=(1, ))

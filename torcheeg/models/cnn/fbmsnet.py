@@ -2,7 +2,7 @@ import torch.nn.functional as F
 from typing import Tuple, Optional
 import torch
 import torch.nn as nn
-from .fbcnet import VarLayer, MaxLayer, StdLayer, LogVarLayer, LinearWithConstraint, MeanLayer, swish,Conv2dWithConstraint
+from .fbcnet import VarLayer, MaxLayer, StdLayer, LogVarLayer, LinearWithConstraint, MeanLayer, swish, Conv2dWithConstraint
 
 
 ## CONV_SAME_PADDING
@@ -16,6 +16,7 @@ def _same_pad_arg(input_size, kernel_size, stride, dilation, **_):
     pad_h = _calc_same_pad(ih, kh, stride[0], dilation[0])
     pad_w = _calc_same_pad(iw, kw, stride[1], dilation[1])
     return [pad_w // 2, pad_w - pad_w // 2, pad_h // 2, pad_h - pad_h // 2]
+
 
 def conv2d_same(x,
                 weight: torch.Tensor,
@@ -50,8 +51,8 @@ class SamePadConv2d(nn.Conv2d):
                              dilation, groups, bias)
 
     def forward(self, x):
-        return conv2d_same(x, self.weight, self.bias, self.stride,
-                           self.padding, self.dilation, self.groups)
+        return conv2d_same(x, self.weight, self.bias, self.stride, self.padding,
+                           self.dilation, self.groups)
 
 
 ## MIX_CONV
@@ -136,8 +137,7 @@ class MixedConv2d(nn.ModuleDict):
         self.out_channels = sum(out_splits)
 
         for idx, (k, in_ch,
-                  out_ch) in enumerate(zip(kernel_size, in_splits,
-                                           out_splits)):
+                  out_ch) in enumerate(zip(kernel_size, in_splits, out_splits)):
             conv_groups = out_ch if depthwise else 1
             self.add_module(
                 str(idx),
@@ -158,9 +158,6 @@ class MixedConv2d(nn.ModuleDict):
         return x
 
 
-
-
-
 class FBMSNet(nn.Module):
     r'''
         FBMSNet, a novel multiscale temporal convolutional neural network for MI decoding tasks, employs Mixed Conv to extract multiscale temporal features which  enhance the intra-class compactness and improve the inter-class separability with the joint supervision of the center loss andcenter loss.
@@ -173,48 +170,36 @@ class FBMSNet(nn.Module):
 
         .. code-block:: python
 
-            # Define 9 nonoverlapping frequency bands, each with a 4 Hz bandwidth and spanning from 4 to 40 Hz.
-            Freq_range_per_band = {'sub band1': [4, 8],
-                                'sub band2': [8, 12],
-                                'sub band3': [12, 16],
-                                'sub band4': [16, 20],
-                                'sub band5': [20, 24],
-                                'sub band6': [24, 28],
-                                'sub band7': [28, 32],
-                                'sub band8': [32, 36],
-                                'sub band9': [36, 40]}
-            dataset =BCICIV2aDataset(io_path=f'./tmp_out/bciciv2a/band_9_filters',
-                                    root_path='./BCICIV_2a_mat',
-                                    chunk_size=512,
-                                    offline_transform=transforms.BandSignal(band_dict=Freq_range_per_band,
-                                                                            sampling_rate=250),
-                                    online_transform=transforms.ToTensor(),
-                                    label_transform=transforms.Compose([
-                                    transforms.Select('label'),
-                                    transforms.Lambda(lambda x:x-1),
-                        ]))
-            data = Dataloader(dataset)
+            from torcheeg.datasets import BCICIV2aDataset
+            from torcheeg import transforms
+            from torcheeg.models import FBMSNet
+            from torch.utils.data import DataLoader
 
-            model = FBMSNet(num_classes=4,
-                            num_electrodes=22,
-                            chunk_size=512,
-                            in_channels=9 )
+            freq_range_per_band = {
+                'sub band1': [4, 8],
+                'sub band2': [8, 12],
+                'sub band3': [12, 16],
+                'sub band4': [16, 20],
+                'sub band5': [20, 24],
+                'sub band6': [24, 28],
+                'sub band7': [28, 32],
+                'sub band8': [32, 36],
+                'sub band9': [36, 40]
+            }
+            dataset = BCICIV2aDataset(root_path='./BCICIV_2a_mat',
+                                      chunk_size=512,
+                                      offline_transform=transforms.BandSignal(band_dict=freq_range_per_band,
+                                                                              sampling_rate=250),
+                                      online_transform=transforms.ToTensor(),
+                                      label_transform=transforms.Compose(
+                                          [transforms.Select('label'),
+                                          transforms.Lambda(lambda x: x - 1)]))
 
-        There are two ways to use the model. The first one, the effective way to get the prediction result but it don't output the decoded feature. 
+            model = FBMSNet(num_classes=4, num_electrodes=22, chunk_size=512, in_channels=9)
 
-        .. code-block:: python
-
-            x,y = next(iter(data))
-            pred = model(x)
-
-        To obtain the decoded feature, use :obj:`decoder` method. If we want to obtain prediction results based on the encoded features, use :obj:`classifier` method.
-
-        .. code-block:: python
-
-            x,y = next(iter(data))
-            feature = model.decoder(x)
-            pred = model.classifier(feature)
-
+            x, y = next(iter(DataLoader(dataset, batch_size=64)))
+            model(x)
+            
         Args:
             num_electrodes (int): The number of electrodes. 
             chunk_size (int): Number of data points included in each EEG chunk. 
@@ -224,9 +209,6 @@ class FBMSNet(nn.Module):
             temporal (str): The temporal layer used, with options including VarLayer, StdLayer, LogVarLayer, MeanLayer, and MaxLayer, used to compute statistics using different techniques in the temporal dimension. (default: :obj:`LogVarLayer`)
             num_feature (int): The number of Mixed Conv output channels which can stand for various kinds of feature. (default: :obj:`36`)
             dilatability (int): The expansion multiple of the channels after the input bands pass through spatial convolutional blocks. (default: :obj:`8`
-
-        .. automethod:: decoder
-        .. automethod:: classifier
     '''
 
     def __init__(self,
@@ -309,34 +291,6 @@ class FBMSNet(nn.Module):
                                  *args,
                                  **kwargs), nn.LogSoftmax(dim=1))
 
-    def decoder(self, x):
-        r'''
-        Args:
-            x (torch.Tensor): EEG signal representation, the ideal input shape is :obj:`[n, in_channel, num_electrodes, chunk_size ]`. Here, :obj:`n` corresponds to the batch size, :obj:`in_channels` corresponds to the number of sub bands.
-
-        Returns:
-           torch.Tensor[size of batch, length of deep feature code]: The extracted deep features.
-        '''
-        x = self.mixConv2d(x)
-        x = self.scb(x)
-        x = x.reshape([
-            *x.shape[0:2], self.stride_factor,
-            int(x.shape[3] / self.stride_factor)
-        ])
-        x = self.temporal_layer(x)
-        return torch.flatten(x, start_dim=1)
-
-    def classifier(self, feature):
-        r'''
-        With feature which is ouput by decoder inputed,the classifier ouput the predicted probability that the samples belong to the classes. 
-
-        Args:
-            feature (torch.Tensor): The extracted deep features. The ideal input shape is :obj:`[batch size,1152]`where feature dim is fixed as :obj:`1152`.
-        Returns:
-           torch.Tensor[size of batch, num_classes]: The predicted probability that the samples belong to the classes.
-        '''
-        return self.fc(feature)
-
     def forward(self, x):
         r'''
         Args:
@@ -345,8 +299,16 @@ class FBMSNet(nn.Module):
         Returns:
             torch.Tensor[size of batch,number of classes]: The predicted probability that the samples belong to the classes.
         '''
-        f = self.decoder(x)
-        return self.classifier(f)
+        x = self.mixConv2d(x)
+        x = self.scb(x)
+        x = x.reshape([
+            *x.shape[0:2], self.stride_factor,
+            int(x.shape[3] / self.stride_factor)
+        ])
+        x = self.temporal_layer(x)
+        x = torch.flatten(x, start_dim=1)
+
+        return self.fc(x)
 
     def feature_dim(self, in_channels, num_electrodes, chunk_size):
         data = torch.ones((1, in_channels, num_electrodes, chunk_size))

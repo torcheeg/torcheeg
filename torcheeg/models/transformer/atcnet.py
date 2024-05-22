@@ -10,12 +10,17 @@ class ATCNet(nn.Module):
     - URL: https://github.com/Altaheri/EEG-ATCNet
 
     .. code-block:: python
-    
+        
+        import torch
+        
+        from torcheeg.models import ATCNet
+
         model = ATCNet(in_channels=1,
                        num_classes=4,
                        num_windows=3,
                        num_electrodes=22,
                        chunk_size=128)
+
         input = torch.rand(2, 1, 22, 128) # (batch_size, in_channels, num_electrodes,chunk_size) 
         output = model(input)
 

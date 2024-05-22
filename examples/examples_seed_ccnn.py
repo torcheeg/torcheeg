@@ -21,7 +21,7 @@ In this tutorial, we'll demonstrate how you can leverage TorchEEG to train a Con
 
 from torcheeg.datasets import SEEDDataset
 from torcheeg import transforms
-from torcheeg.datasets.constants.emotion_recognition.seed import SEED_CHANNEL_LOCATION_DICT
+from torcheeg.datasets.constants import SEED_CHANNEL_LOCATION_DICT
 
 dataset = SEEDDataset(io_path=f'./examples_seed_ccnn/seed',
                       root_path='./Preprocessed_EEG',

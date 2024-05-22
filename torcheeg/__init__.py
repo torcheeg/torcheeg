@@ -1,7 +1,7 @@
 import mne
 import logging
 
-__version__ = '1.1.1'
+__version__ = '1.1.2'
 
 
 def set_log_level(level: str = "INFO", third_party: str = "CRITICAL"):

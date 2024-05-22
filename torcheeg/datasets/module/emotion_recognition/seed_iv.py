@@ -13,7 +13,7 @@ class SEEDIVDataset(BaseDataset):
 
     - Author: Zheng et al.
     - Year: 2018
-    - Download URL: https://ieeexplore.ieee.org/abstract/document/8283814
+    - Download URL: https://bcmi.sjtu.edu.cn/home/seed/seed-iv.html
     - Reference: Zheng W L, Liu W, Lu Y, et al. Emotionmeter: A multimodal framework for recognizing human emotions[J]. IEEE transactions on cybernetics, 2018, 49(3): 1110-1122.
     - Stimulus: 168 film clips.
     - Signals: Electroencephalogram (62 channels at 200Hz) and eye movement data of 15 subjects (8 females). Each subject conducts the experiments in three sessions, and each session contains 24 trials (6 per emotional category) totally 15 people x 3 sessions x 24 trials.
@@ -31,10 +31,14 @@ class SEEDIVDataset(BaseDataset):
 
     .. code-block:: python
 
+        from torcheeg.datasets import SEEDIVDataset
+        from torcheeg import transforms
+        from torcheeg.datasets.constants import SEED_IV_CHANNEL_LOCATION_DICT
+        
         dataset = SEEDIVDataset(root_path='./eeg_raw_data',
                                 offline_transform=transforms.Compose([
                                     transforms.BandDifferentialEntropy(),
-                                    transforms.ToGrid(SEEDIV_CHANNEL_LOCATION_DICT)
+                                    transforms.ToGrid(SEED_IV_CHANNEL_LOCATION_DICT)
                                 ]),
                                 online_transform=transforms.ToTensor(),
                                 label_transform=transforms.Compose([
@@ -50,6 +54,9 @@ class SEEDIVDataset(BaseDataset):
 
     .. code-block:: python
 
+        from torcheeg.datasets import SEEDIVDataset
+        from torcheeg import transforms
+
         dataset = SEEDIVDataset(root_path='./eeg_raw_data',
                                 online_transform=transforms.Compose([
                                     transforms.ToTensor(),
@@ -64,7 +71,12 @@ class SEEDIVDataset(BaseDataset):
     An example dataset for GNN-based methods:
 
     .. code-block:: python
-    
+
+        from torcheeg.datasets import SEEDIVDataset
+        from torcheeg import transforms
+        from torcheeg.datasets.constants import SEEDIV_ADJACENCY_MATRIX
+        from torcheeg.transforms.pyg import ToG
+        
         dataset = SEEDIVDataset(root_path='./eeg_raw_data',
                                 online_transform=transforms.Compose([
                                     ToG(SEED_IV_ADJACENCY_MATRIX)

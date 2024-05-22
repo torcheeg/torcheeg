@@ -12,10 +12,12 @@ class Contrastive(EEGTransform):
 
     .. code-block:: python
 
-        transform = Contrastive(RandomNoise(), num_views=2)
-        transform(eeg=torch.randn(32, 128))['eeg'][0].shape
+        from torcheeg import transforms
+
+        t = Contrastive(transforms.RandomNoise(), num_views=2)
+        t(eeg=torch.randn(32, 128))['eeg'][0].shape
         >>> (32, 128)
-        transform(eeg=torch.randn(32, 128))['eeg'][1].shape
+        t(eeg=torch.randn(32, 128))['eeg'][1].shape
         >>> (32, 128)
 
     .. automethod:: __call__

@@ -14,7 +14,7 @@ class SEEDIVFeatureDataset(BaseDataset):
 
     - Author: Zheng et al.
     - Year: 2018
-    - Download URL: https://ieeexplore.ieee.org/abstract/document/8283814
+    - Download URL: https://bcmi.sjtu.edu.cn/home/seed/seed-iv.html
     - Reference: Zheng W L, Liu W, Lu Y, et al. Emotionmeter: A multimodal framework for recognizing human emotions[J]. IEEE transactions on cybernetics, 2018, 49(3): 1110-1122.
     - Stimulus: 168 film clips.
     - Signals: Electroencephalogram (62 channels at 200Hz) and eye movement data of 15 subjects (8 females). Each subject conducts the experiments in three sessions, and each session contains 24 trials (6 per emotional category) totally 15 people x 3 sessions x 24 trials.
@@ -31,9 +31,13 @@ class SEEDIVFeatureDataset(BaseDataset):
 
     .. code-block:: python
 
+        from torcheeg.datasets import SEEDIVFeatureDataset
+        from torcheeg import transforms
+        from torcheeg.datasets.constants import SEED_IV_CHANNEL_LOCATION_DICT
+        
         dataset = SEEDIVFeatureDataset(root_path='./eeg_feature_smooth',
                                        features=['de_movingAve'],
-                                       offline_transform=transforms.ToGrid         (SEED_CHANNEL_LOCATION_DICT),
+                                       offline_transform=transforms.ToGrid         (SEED_IV_CHANNEL_LOCATION_DICT),
                                        online_transform=transforms.ToTensor(),
                                        label_transform=transforms.Select('emotion'))
         print(dataset[0])
@@ -44,7 +48,12 @@ class SEEDIVFeatureDataset(BaseDataset):
     An example dataset for GNN-based methods:
 
     .. code-block:: python
-    
+
+        from torcheeg.datasets import SEEDIVFeatureDataset
+        from torcheeg import transforms
+        from torcheeg.datasets.constants import SEED_ADJACENCY_MATRIX
+        from torcheeg.transforms.pyg import ToG
+        
         dataset = SEEDIVFeatureDataset(root_path='./eeg_feature_smooth',
                                        features=['de_movingAve'],
                                        online_transform=ToG(SEED_ADJACENCY_MATRIX),
@@ -201,9 +210,9 @@ class SEEDIVFeatureDataset(BaseDataset):
 
                 # record meta info for each signal
                 record_info = {
-                    'start_at': i * 400,
+                    'start_at': i * 800,
                     'end_at': (i + 1) *
-                    400,  # The size of the sliding time windows for feature extraction is 4 seconds.
+                    800,  # The size of the sliding time windows for feature extraction is 4 seconds.
                     'clip_id': clip_id
                 }
                 record_info.update(trial_meta_info)

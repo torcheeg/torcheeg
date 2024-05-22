@@ -34,8 +34,10 @@ class RandomNoise(RandomEEGTransform):
     
     .. code-block:: python
 
-        transform = RandomNoise(p=0.5)
-        transform(eeg=torch.randn(32, 128))['eeg'].shape
+        from torcheeg import transforms
+
+        t = transforms.RandomNoise(p=0.5)
+        t(eeg=torch.randn(32, 128))['eeg'].shape
         >>> (32, 128)
 
     Args:
@@ -123,7 +125,7 @@ class RandomMask(RandomEEGTransform):
 
     def random_apply(self, eeg: torch.Tensor, **kwargs) -> torch.Tensor:
         mask = torch.rand_like(eeg)
-        mask = (mask < self.ratio).to(eeg.dtype)
+        mask = (mask > self.ratio).to(eeg.dtype)
         return eeg * mask
 
     @property
@@ -174,7 +176,7 @@ class RandomMask2D(RandomEEGTransform):
     def random_apply(self, eeg: torch.Tensor, **kwargs) -> torch.Tensor:
         # mask at the electrode dimension
         mask = torch.rand(eeg.shape[1], device=eeg.device)
-        mask = (mask < self.ratio).to(eeg.dtype)
+        mask = (mask > self.ratio).to(eeg.dtype)
         # to the same shape of eeg
         mask = mask.unsqueeze(0).unsqueeze(2).repeat(eeg.shape[0], 1,
                                                      eeg.shape[2])
@@ -228,7 +230,7 @@ class RandomMaskGrid(RandomEEGTransform):
     def random_apply(self, eeg: torch.Tensor, **kwargs) -> torch.Tensor:
         # mask at the electrode dimension
         mask = torch.rand(eeg.shape[1], eeg.shape[2], device=eeg.device)
-        mask = (mask < self.ratio).to(eeg.dtype)
+        mask = (mask > self.ratio).to(eeg.dtype)
         mask = mask.unsqueeze(0).repeat(eeg.shape[0], 1, 1)
         return eeg * mask
 

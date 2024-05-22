@@ -2,9 +2,9 @@ import unittest
 
 import numpy as np
 import torch
-from torcheeg.datasets.constants.emotion_recognition.deap import (DEAP_ADJACENCY_MATRIX, DEAP_CHANNEL_LIST,
-                                                                  DEAP_CHANNEL_LOCATION_DICT, DEAP_LOCATION_LIST)
-from torcheeg.datasets.constants.emotion_recognition.seed import \
+from torcheeg.datasets.constants import (DEAP_ADJACENCY_MATRIX, DEAP_CHANNEL_LIST,
+                                                                  DEAP_CHANNEL_LOCATION_DICT)
+from torcheeg.datasets.constants import \
     SEED_CHANNEL_LIST, SEED_GENERAL_REGION_LIST
 from torcheeg.transforms.pyg import ToG
 from torcheeg.utils import (plot_2d_tensor, plot_3d_tensor, plot_feature_topomap, plot_raw_topomap, plot_signal,
@@ -25,6 +25,10 @@ class TestVisualize(unittest.TestCase):
                                    channel_list=DEAP_CHANNEL_LIST,
                                    feature_list=["theta", "alpha", "beta", "gamma"])
         self.assertEqual(img.shape, (347, 1550, 4))
+        img = plot_feature_topomap(mock_eeg,
+                                   channel_list=DEAP_CHANNEL_LIST,
+                                   feature_list=["theta", "alpha", "beta", "gamma"],fig_shape=(2,2))
+        self.assertEqual(img.shape, (784, 774, 4))
 
     def test_plot_signal(self):
         mock_eeg = torch.randn(32, 128)

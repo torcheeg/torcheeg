@@ -87,8 +87,10 @@ class BandApproximateEntropy(BandTransform):
 
     .. code-block:: python
 
-        transform = BandApproximateEntropy()
-        transform(eeg=np.random.randn(32, 128))['eeg'].shape
+        from torcheeg import transforms
+
+        t = transforms.BandApproximateEntropy()
+        t(eeg=np.random.randn(32, 128))['eeg'].shape
         >>> (32, 4)
 
     Args:
@@ -175,8 +177,10 @@ class BandSampleEntropy(BandTransform):
 
     .. code-block:: python
 
-        transform = BandSampleEntropy()
-        transform(eeg=np.random.randn(32, 128))['eeg'].shape
+        from torcheeg import transforms
+
+        t = transforms.BandSampleEntropy()
+        t(eeg=np.random.randn(32, 128))['eeg'].shape
         >>> (32, 4)
 
     Args:
@@ -259,8 +263,10 @@ class BandSVDEntropy(BandTransform):
 
     .. code-block:: python
 
-        transform = BandSVDEntropy()
-        transform(eeg=np.random.randn(32, 128))['eeg'].shape
+        from torcheeg import transforms
+
+        t = transforms.BandSVDEntropy()
+        t(eeg=np.random.randn(32, 128))['eeg'].shape
         >>> (32, 4)
 
     Args:
@@ -338,8 +344,10 @@ class BandDetrendedFluctuationAnalysis(BandTransform):
 
     .. code-block:: python
 
-        transform = BandDetrendedFluctuationAnalysis()
-        transform(eeg=np.random.randn(32, 128))['eeg'].shape
+        from torcheeg import transforms
+
+        t = transforms.BandDetrendedFluctuationAnalysis()
+        t(eeg=np.random.randn(32, 128))['eeg'].shape
         >>> (32, 4)
 
     Args:
@@ -441,8 +449,10 @@ class BandHiguchiFractalDimension(BandTransform):
 
     .. code-block:: python
 
-        transform = BandHiguchiFractalDimension()
-        transform(eeg=np.random.randn(32, 128))['eeg'].shape
+        from torcheeg import transforms
+
+        t = transforms.BandHiguchiFractalDimension()
+        t(eeg=np.random.randn(32, 128))['eeg'].shape
         >>> (32, 4)
 
     Args:
@@ -519,8 +529,10 @@ class BandHjorth(BandTransform):
 
     .. code-block:: python
 
-        transform = BandHjorth()
-        transform(eeg=np.random.randn(32, 128))['eeg'].shape
+        from torcheeg import transforms
+
+        t = transforms.BandHjorth()
+        t(eeg=np.random.randn(32, 128))['eeg'].shape
         >>> (32, 4)
 
     Args:
@@ -611,8 +623,10 @@ class BandHurst(BandTransform):
 
     .. code-block:: python
 
-        transform = BandHurst()
-        transform(eeg=np.random.randn(32, 128))['eeg'].shape
+        from torcheeg import transforms
+
+        t = transforms.BandHurst()
+        t(eeg=np.random.randn(32, 128))['eeg'].shape
         >>> (32, 4)
 
     If the output H=0.5,the behavior of the EEG signals is similar to random walk. If H<0.5, the EEG signals cover less "distance" than a random walk, vice verse.
@@ -669,8 +683,10 @@ class BandPetrosianFractalDimension(BandTransform):
 
     .. code-block:: python
 
-        transform = BandHiguchiFractalDimension()
-        transform(eeg=np.random.randn(32, 128))['eeg'].shape
+        from torcheeg import transforms
+
+        t = transforms.BandHiguchiFractalDimension()
+        t(eeg=np.random.randn(32, 128))['eeg'].shape
         >>> (32, 4)
 
     Args:
@@ -757,8 +773,10 @@ class BandBinPower(EEGTransform):
 
     .. code-block:: python
 
-        transform = BandBinPower()
-        transform(eeg=np.random.randn(32, 128))['eeg'].shape
+        from torcheeg import transforms
+
+        t = transforms.BandBinPower()
+        t(eeg=np.random.randn(32, 128))['eeg'].shape
         >>> (32, 4)
 
     Args:
@@ -830,8 +848,10 @@ class BandSpectralEntropy(EEGTransform):
 
     .. code-block:: python
 
-        transform = BandSampleEntropy()
-        transform(eeg=np.random.randn(32, 128))['eeg'].shape
+        from torcheeg import transforms
+
+        t = transforms.BandSampleEntropy()
+        t(eeg=np.random.randn(32, 128))['eeg'].shape
         >>> (32, 4)
 
     Args:

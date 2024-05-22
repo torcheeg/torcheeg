@@ -11,11 +11,13 @@ class Concatenate(EEGTransform):
 
     .. code-block:: python
 
-        transform = Concatenate([
-            BandDifferentialEntropy(),
-            BandMeanAbsoluteDeviation()
+        from torcheeg import transforms
+
+        t = transforms.Concatenate([
+            transforms.BandDifferentialEntropy(),
+            transforms.BandMeanAbsoluteDeviation()
         ])
-        transform(eeg=np.random.randn(32, 128))['eeg'].shape
+        t(eeg=np.random.randn(32, 128))['eeg'].shape
         >>> (32, 8)
 
     Args:
@@ -85,30 +87,34 @@ class MapChunk(EEGTransform):
 
     .. code-block:: python
 
-        transform = MapChunk(
-            BandDifferentialEntropy(),
+        from torcheeg import transforms
+
+        t = transforms.MapChunk(
+            transforms.BandDifferentialEntropy(),
             chunk_size=250,
             overlap=0
         )
-        transform(eeg=np.random.randn(64, 1000))['eeg'].shape
+        t(eeg=np.random.randn(64, 1000))['eeg'].shape
         >>> (64, 16)
 
     TorchEEG allows feature fusion at multiple scales:
 
     .. code-block:: python
 
-        transform = Concatenate([
-            MapChunk(
-                BandDifferentialEntropy()
+        from torcheeg import transforms
+
+        t = transforms.Concatenate([
+            transforms.MapChunk(
+                transforms.BandDifferentialEntropy()
                 chunk_size=250,
                 overlap=0),  # 4 chunk * 4-dim feature
-            MapChunk(
-                BandDifferentialEntropy()
+            transforms.MapChunk(
+                transforms.BandDifferentialEntropy()
                 chunk_size=500,
                 overlap=0),  # 2 chunk * 4-dim feature
-            BandDifferentialEntropy()  # 1 chunk * 4-dim feature
+            transforms.BandDifferentialEntropy()  # 1 chunk * 4-dim feature
         ])
-        transform(eeg=np.random.randn(64, 1000))['eeg'].shape
+        t(eeg=np.random.randn(64, 1000))['eeg'].shape
         >>> (64, 28) # 4 * 4 + 2 * 4 + 1 * 4
 
     Args:

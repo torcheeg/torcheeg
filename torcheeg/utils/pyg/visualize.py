@@ -32,6 +32,11 @@ def plot_graph(data: Data,
     - ...
 
     .. code-block:: python
+        
+        from torcheeg.utils.pyg import plot_graph
+        from torcheeg.datasets.constants import DEAP_CHANNEL_LOCATION_DICT
+        from torcheeg.transforms.pyg import ToG
+        import numpy as np
 
         eeg = np.random.randn(32, 128)
         g = ToG(DEAP_ADJACENCY_MATRIX)(eeg=eeg)['eeg']

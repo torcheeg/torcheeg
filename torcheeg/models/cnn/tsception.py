@@ -14,27 +14,33 @@ class TSCeption(nn.Module):
 
     .. code-block:: python
 
-        dataset = DEAPDataset(io_path=f'./deap',
-                    root_path='./data_preprocessed_python',
-                    chunk_size=512,
-                    num_baseline=1,
-                    baseline_chunk_size=512,
-                    offline_transform=transforms.Compose([
-                        PickElectrode(PickElectrode.to_index_list(
-                        ['FP1', 'AF3', 'F3', 'F7',
-                        'FC5', 'FC1', 'C3', 'T7',
-                        'CP5', 'CP1', 'P3', 'P7',
-                        'PO3','O1', 'FP2', 'AF4',
-                        'F4', 'F8', 'FC6', 'FC2',
-                        'C4', 'T8', 'CP6', 'CP2',
-                        'P4', 'P8', 'PO4', 'O2'], DEAP_CHANNEL_LIST)),
-                        transforms.To2d()
-                    ]),
-                    online_transform=transforms.ToTensor(),
-                    label_transform=transforms.Compose([
-                        transforms.Select('valence'),
-                        transforms.Binary(5.0),
-                    ]))
+        from torcheeg.datasets import DEAPDataset
+        from torcheeg import transforms
+        from torcheeg.datasets.constants import DEAP_CHANNEL_LIST
+        from torcheeg.models import TSCeption
+        from torch.utils.data import DataLoader
+
+        dataset = DEAPDataset(root_path='./data_preprocessed_python',
+                              chunk_size=512,
+                              num_baseline=1,
+                              baseline_chunk_size=512,
+                              offline_transform=transforms.Compose([
+                                  transforms.PickElectrode(PickElectrode.to_index_list(
+                                  ['FP1', 'AF3', 'F3', 'F7',
+                                  'FC5', 'FC1', 'C3', 'T7',
+                                  'CP5', 'CP1', 'P3', 'P7',
+                                  'PO3','O1', 'FP2', 'AF4',
+                                  'F4', 'F8', 'FC6', 'FC2',
+                                  'C4', 'T8', 'CP6', 'CP2',
+                                  'P4', 'P8', 'PO4', 'O2'], DEAP_CHANNEL_LIST)),
+                                  transforms.To2d()
+                              ]),
+                              online_transform=transforms.ToTensor(),
+                              label_transform=transforms.Compose([
+                                  transforms.Select('valence'),
+                                  transforms.Binary(5.0),
+                              ]))
+
         model = TSCeption(num_classes=2,
                           num_electrodes=28,
                           sampling_rate=128,
@@ -42,6 +48,9 @@ class TSCeption(nn.Module):
                           num_S=15,
                           hid_channels=32,
                           dropout=0.5)
+
+        x, y = next(iter(DataLoader(dataset, batch_size=64)))
+        model(x)
 
     Args:
         num_electrodes (int): The number of electrodes. (default: :obj:`28`)
@@ -53,6 +62,7 @@ class TSCeption(nn.Module):
         sampling_rate (int): The sampling rate of the EEG signals, i.e., :math:`f_s` in the paper. (default: :obj:`128`)
         dropout (float): Probability of an element to be zeroed in the dropout layers. (default: :obj:`0.5`)
     '''
+
     def __init__(self,
                  num_electrodes: int = 28,
                  num_T: int = 15,
@@ -77,25 +87,39 @@ class TSCeption(nn.Module):
         self.pool = 8
         # by setting the convolutional kernel being (1,lenght) and the strids being 1 we can use conv2d to
         # achieve the 1d convolution operation
-        self.Tception1 = self.conv_block(in_channels, num_T, (1, int(self.inception_window[0] * sampling_rate)), 1, self.pool)
-        self.Tception2 = self.conv_block(in_channels, num_T, (1, int(self.inception_window[1] * sampling_rate)), 1, self.pool)
-        self.Tception3 = self.conv_block(in_channels, num_T, (1, int(self.inception_window[2] * sampling_rate)), 1, self.pool)
+        self.Tception1 = self.conv_block(
+            in_channels, num_T,
+            (1, int(self.inception_window[0] * sampling_rate)), 1, self.pool)
+        self.Tception2 = self.conv_block(
+            in_channels, num_T,
+            (1, int(self.inception_window[1] * sampling_rate)), 1, self.pool)
+        self.Tception3 = self.conv_block(
+            in_channels, num_T,
+            (1, int(self.inception_window[2] * sampling_rate)), 1, self.pool)
 
-        self.Sception1 = self.conv_block(num_T, num_S, (int(num_electrodes), 1), 1, int(self.pool * 0.25))
-        self.Sception2 = self.conv_block(num_T, num_S, (int(num_electrodes * 0.5), 1), (int(num_electrodes * 0.5), 1),
+        self.Sception1 = self.conv_block(num_T, num_S, (int(num_electrodes), 1),
+                                         1, int(self.pool * 0.25))
+        self.Sception2 = self.conv_block(num_T, num_S,
+                                         (int(num_electrodes * 0.5), 1),
+                                         (int(num_electrodes * 0.5), 1),
                                          int(self.pool * 0.25))
         self.fusion_layer = self.conv_block(num_S, num_S, (3, 1), 1, 4)
         self.BN_t = nn.BatchNorm2d(num_T)
         self.BN_s = nn.BatchNorm2d(num_S)
         self.BN_fusion = nn.BatchNorm2d(num_S)
 
-        self.fc = nn.Sequential(nn.Linear(num_S, hid_channels), nn.ReLU(), nn.Dropout(dropout),
+        self.fc = nn.Sequential(nn.Linear(num_S, hid_channels), nn.ReLU(),
+                                nn.Dropout(dropout),
                                 nn.Linear(hid_channels, num_classes))
 
-    def conv_block(self, in_channels: int, out_channels: int, kernel: int, stride: int, pool_kernel: int) -> nn.Module:
+    def conv_block(self, in_channels: int, out_channels: int, kernel: int,
+                   stride: int, pool_kernel: int) -> nn.Module:
         return nn.Sequential(
-            nn.Conv2d(in_channels=in_channels, out_channels=out_channels, kernel_size=kernel, stride=stride),
-            nn.LeakyReLU(), nn.AvgPool2d(kernel_size=(1, pool_kernel), stride=(1, pool_kernel)))
+            nn.Conv2d(in_channels=in_channels,
+                      out_channels=out_channels,
+                      kernel_size=kernel,
+                      stride=stride), nn.LeakyReLU(),
+            nn.AvgPool2d(kernel_size=(1, pool_kernel), stride=(1, pool_kernel)))
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         r'''

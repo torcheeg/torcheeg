@@ -121,8 +121,12 @@ class LGGNet(nn.Module):
 
     .. code-block:: python
 
-        dataset = SEEDDataset(io_path=f'./seed',
-                              root_path='./Preprocessed_EEG',
+        from torcheeg.datasets import SEEDDataset
+        from torcheeg.models import LGGNet
+        from torcheeg import transforms
+        from torcheeg.datasets.constants import SEED_GENERAL_REGION_LIST
+
+        dataset = SEEDDataset(root_path='./Preprocessed_EEG',
                               offline_transform=transforms.Compose([
                                   transforms.MeanStdNormalize(),
                                   transforms.To2d()
@@ -135,6 +139,9 @@ class LGGNet(nn.Module):
                                   transforms.Lambda(lambda x: x + 1)
                               ]))
         model = LGGNet(region_list=SEED_GENERAL_REGION_LIST, chunk_size=128, num_electrodes=32, hid_channels=32, num_classes=2)
+        
+        x, y = next(iter(DataLoader(dataset, batch_size=64)))
+        model(x)
 
     The current built-in :obj:`region_list` includs:
 

@@ -11,12 +11,14 @@ class RearrangeElectrode(EEGTransform):
 
     .. code-block:: python
 
-        transform = RearrangeElectrode(
+        from torcheeg import transforms
+
+        t = transforms.RearrangeElectrode(
             source=['FP1', 'F3', 'F7'],
             target=['F3', 'F7', 'FP1', 'AF2'],
             missing='mean'
         )
-        transform(eeg=np.random.randn(3, 128))['eeg'].shape
+        t(eeg=np.random.randn(3, 128))['eeg'].shape
         >>> (4, 128)
 
     Args:

@@ -33,6 +33,10 @@ class TSUBenckmarkDataset(BaseDataset):
 
     .. code-block:: python
 
+        from torcheeg.datasets import TSUBenckmarkDataset
+        from torcheeg import transforms
+        from torcheeg.datasets.constants.ssvep.tsubenchmark import TSUBenckmark_CHANNEL_LOCATION_DICT
+
         dataset = TSUBenckmarkDataset(root_path='./TSUBenchmark',
                                       offline_transform=transforms.Compose([
                                           transforms.BandDifferentialEntropy(),
@@ -73,22 +77,6 @@ class TSUBenckmarkDataset(BaseDataset):
         # EEG signal (torch_geometric.data.Data),
         # coresponding baseline signal (torch_geometric.data.Data),
         # label (int)
-        
-    In particular, TorchEEG utilizes the producer-consumer model to allow multi-process data preprocessing. If your data preprocessing is time consuming, consider increasing :obj:`num_worker` for higher speedup. If running under Windows, please use the proper idiom in the main module:
-
-    .. code-block:: python
-    
-        if __name__ == '__main__':
-            dataset = TSUBenckmarkDataset(root_path='./TSUBenchmark',
-                                          online_transform=transforms.Compose([
-                                              ToG(TSUBenckmark_ADJACENCY_MATRIX)
-                                          ]),
-                                          label_transform=transforms.Select(['freq']),
-                                          num_worker=4)
-            print(dataset[0])
-            # EEG signal (torch_geometric.data.Data),
-            # coresponding baseline signal (torch_geometric.data.Data),
-            # label (int)
 
     Args:
         root_path (str): Downloaded data files in matlab (unzipped TSUBenchmark.zip) formats (default: :obj:`'./TSUBenchmark'`)

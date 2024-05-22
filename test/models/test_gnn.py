@@ -3,7 +3,7 @@ import unittest
 import torch
 from torch_geometric.data import Batch, Data
 
-from torcheeg.datasets.constants.emotion_recognition.deap import \
+from torcheeg.datasets.constants import \
     DEAP_GENERAL_REGION_LIST
 from torcheeg.models import DGCNN, LGGNet
 from torcheeg.models.pyg import GIN, RGNN

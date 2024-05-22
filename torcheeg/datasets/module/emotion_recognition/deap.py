@@ -30,7 +30,11 @@ class DEAPDataset(BaseDataset):
     An example dataset for CNN-based methods:
 
     .. code-block:: python
-    
+
+        from torcheeg.datasets import DEAPDataset
+        from torcheeg import transforms
+        from torcheeg.datasets.constants import DEAP_CHANNEL_LOCATION_DICT
+
         dataset = DEAPDataset(root_path='./data_preprocessed_python',
                               offline_transform=transforms.Compose([
                                   transforms.BandDifferentialEntropy(),
@@ -50,6 +54,9 @@ class DEAPDataset(BaseDataset):
 
     .. code-block:: python
 
+        from torcheeg.datasets import DEAPDataset
+        from torcheeg import transforms
+
         dataset = DEAPDataset(root_path='./data_preprocessed_python',
                               online_transform=transforms.Compose([
                                   transforms.To2d(),
@@ -68,7 +75,12 @@ class DEAPDataset(BaseDataset):
     An example dataset for GNN-based methods:
 
     .. code-block:: python
-    
+
+        from torcheeg.datasets import DEAPDataset
+        from torcheeg import transforms
+        from torcheeg.datasets.constants import DEAP_ADJACENCY_MATRIX
+        from torcheeg.transforms.pyg import ToG
+
         dataset = DEAPDataset(root_path='./data_preprocessed_python',
                               online_transform=transforms.Compose([
                                   ToG(DEAP_ADJACENCY_MATRIX)
@@ -81,8 +93,6 @@ class DEAPDataset(BaseDataset):
         # EEG signal (torch_geometric.data.Data),
         # coresponding baseline signal (torch_geometric.data.Data),
         # label (int)
-
-    In particular, TorchEEG utilizes the producer-consumer model to allow multi-process data preprocessing. If your data preprocessing is time consuming, consider increasing :obj:`num_worker` for higher speedup. If running under Windows, please use the proper idiom in the main module:
 
     Args:
         root_path (str): Downloaded data files in pickled python/numpy (unzipped data_preprocessed_python.zip) formats (default: :obj:`'./data_preprocessed_python'`)

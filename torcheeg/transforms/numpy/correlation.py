@@ -45,8 +45,10 @@ class PearsonCorrelation(CorrelationTransform):
 
     .. code-block:: python
 
-        transform = PearsonCorrelation()
-        transform(eeg=np.random.randn(32, 128))['eeg'].shape
+        from torcheeg import transforms
+
+        t = transforms.PearsonCorrelation()
+        t(eeg=np.random.randn(32, 128))['eeg'].shape
         >>> (1, 32, 32)
 
     Args:
@@ -91,8 +93,10 @@ class PhaseLockingCorrelation(CorrelationTransform):
 
     .. code-block:: python
 
-        transform = PhaseLockingCorrelation()
-        transform(eeg=np.random.randn(32, 128))['eeg'].shape
+        from torcheeg import transforms
+
+        t = transforms.PhaseLockingCorrelation()
+        t(eeg=np.random.randn(32, 128))['eeg'].shape
         >>> (1, 32, 32)
 
     Args:

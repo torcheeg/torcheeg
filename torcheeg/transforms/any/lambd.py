@@ -9,8 +9,10 @@ class Lambda(BaseTransform):
 
     .. code-block:: python
 
-        transform = Lambda(targets=['y'], lambda x: x + 1)
-        transform(y=1)['y']
+        from torcheeg import transforms
+
+        t = transforms.Lambda(targets=['y'], lambda x: x + 1)
+        t(y=1)['y']
         >>> 2
 
     Args:

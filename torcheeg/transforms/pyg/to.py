@@ -21,8 +21,11 @@ class ToG(EEGTransform):
 
     .. code-block:: python
 
-        transform = ToG(adj=DEAP_ADJACENCY_MATRIX)
-        transform(eeg=np.random.randn(32, 128))['eeg']
+        from torcheeg.transforms.pyg import ToG
+        from torcheeg.datasets.constants import DEAP_ADJACENCY_MATRIX
+
+        t = ToG(adj=DEAP_ADJACENCY_MATRIX)
+        t(eeg=np.random.randn(32, 128))['eeg']
         >>> torch_geometric.data.Data
 
     Args:
@@ -127,20 +130,22 @@ class ToDynamicG(EEGTransform):
 
     .. code-block:: python
 
-        transform = ToDynamicG(edge_func='gaussian_distance', sigma=1.0, top_k=10, complete_graph=False)
-        transform(eeg=np.random.randn(32, 128))['eeg']
+        from torcheeg.transforms.pyg import ToDynamicG
+
+        t = ToDynamicG(edge_func='gaussian_distance', sigma=1.0, top_k=10, complete_graph=False)
+        t(eeg=np.random.randn(32, 128))['eeg']
         >>> Data(edge_index=[2, 320], x=[32, 128], edge_weight=[320])
 
-        transform = ToDynamicG(edge_func='absolute_pearson_correlation_coefficient', threshold=0.1, binary=True)
-        transform(eeg=np.random.randn(32, 128))['eeg']
+        t = ToDynamicG(edge_func='absolute_pearson_correlation_coefficient', threshold=0.1, binary=True)
+        t(eeg=np.random.randn(32, 128))['eeg']
         >>> Data(edge_index=[2, 310], x=[32, 128], edge_weight=[310])
 
-        transform = ToDynamicG(edge_func='phase_locking_value')
-        transform(eeg=np.random.randn(32, 128))['eeg']
+        t = ToDynamicG(edge_func='phase_locking_value')
+        t(eeg=np.random.randn(32, 128))['eeg']
         >>> Data(edge_index=[2, 992], x=[32, 128], edge_weight=[992])
 
-        transform = ToDynamicG(edge_func=lambda x, y: (x * y).mean())
-        transform(eeg=np.random.randn(32, 128))['eeg']
+        t = ToDynamicG(edge_func=lambda x, y: (x * y).mean())
+        t(eeg=np.random.randn(32, 128))['eeg']
         >>> Data(edge_index=[2, 1024], x=[32, 128], edge_weight=[1024])
 
     Args:

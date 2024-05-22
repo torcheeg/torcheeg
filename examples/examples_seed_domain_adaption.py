@@ -14,20 +14,20 @@ In this tutorial, you'll learn how to utilize TorchEEG's Associative Domain Adap
 #
 # In offline preprocessing, each electrode's EEG signal is segmented into 4 sub-bands. We then calculate the differential entropy for each sub-band as a feature. The signals are debaselined, mapped onto a grid, and finally saved locally. 
 #
-# For online processing, we convert all EEG signals into Tensors for neural network input. Additionally, we apply before_trial_normalize to reduce trial variance effects on cross-subject emotion recognition.
+# For online processing, we convert all EEG signals into Tensors for neural network input. Additionally, we apply after_hook_normalize to reduce trial variance effects on cross-subject emotion recognition.
 #
 
 from torcheeg.datasets import SEEDFeatureDataset
 from torcheeg import transforms
-from torcheeg.datasets.constants.emotion_recognition.seed import SEED_CHANNEL_LOCATION_DICT
-from torcheeg.datasets.functional import before_trial_normalize
+from torcheeg.datasets.constants import SEED_CHANNEL_LOCATION_DICT
+from torcheeg.transforms import after_hook_normalize
 from pytorch_lightning.callbacks import ModelCheckpoint
 import numpy as np
 
 dataset = SEEDFeatureDataset(
     io_path=f'./examples_seed_domain_adaption/seed',
     root_path='./ExtractedFeatures',
-    after_session=before_trial_normalize,
+    after_session=after_hook_normalize,
     offline_transform=transforms.Compose(
         [transforms.ToGrid(SEED_CHANNEL_LOCATION_DICT)]),
     online_transform=transforms.ToTensor(),  # seed do not have baseline signals
