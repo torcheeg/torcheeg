@@ -3,6 +3,7 @@ from typing import Union, Dict, List
 import numpy as np
 
 from ..base_transform import EEGTransform
+from scipy.signal import resample
 
 
 class Downsample(EEGTransform):
@@ -61,3 +62,52 @@ class Downsample(EEGTransform):
             'num_points': self.num_points,
             'axis': self.axis
         })
+    
+
+
+
+
+class SetSamplingRate(EEGTransform):
+    r'''
+    Change the EEG signal to another sampling rate.
+
+    .. code-block:: python
+
+        from torcheeg import transforms
+
+        t = SetSamplingRate(origin=500,target_sampling_rate=128)
+        t(eeg=np.random.randn(32, 1000))['eeg'].shape
+        >>> (32, 256)
+
+    Args:
+        origin (int): Original sampling rate of EEG.
+        target_sampling_rate (int): Target sampling rate of EEG.
+        apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (default: :obj:`False`)
+    
+    .. automethod:: __call__
+    '''
+    def __init__(self,origin:int, target_sampling_rate:int, apply_to_baseline=False):
+        super(SetSamplingRate, self).__init__(apply_to_baseline=apply_to_baseline)
+        self.original_rate = origin
+        self.new_rate = target_sampling_rate
+
+
+    def apply(self, eeg, **kwargs) -> any:
+        assert len(eeg.shape) == 2, 'Make sure the EEG in 2D shape.'
+        new_length = int(eeg.shape[-1] *  self.new_rate/ self.original_rate)
+        
+        
+        result = []
+        for signal in eeg:
+            resampled_signal = resample(signal, new_length)
+          
+            result.append(resampled_signal)
+        return np.stack(result,axis=0)
+    
+    @property
+    def __repr__(self)->any :
+        return  f'''{
+                'original_sampling_rate': self.original_rate,
+                'target_sampling_rate': self.new_rate,
+                'apply_to_baseline':self.apply_to_baseline
+            }'''

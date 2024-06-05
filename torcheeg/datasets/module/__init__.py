@@ -1,4 +1,5 @@
 from .base_dataset import BaseDataset
+from .base_multimodal import BaseMultiModalDataset
 from .folder_dataset import FolderDataset
 from .csv_folder_dataset import CSVFolderDataset
 from .sleep_stage_detection import *
