@@ -102,7 +102,8 @@ class TSCeption(nn.Module):
         self.Sception2 = self.conv_block(num_T, num_S,
                                          (int(num_electrodes * 0.5), 1),
                                          (int(num_electrodes * 0.5), 1),
-                                         int(self.pool * 0.25))
+                                         int(self.pool * 0.25),
+                                         padding=(0, 0, 1, 0) if num_electrodes % 2 == 1 else 0)
         self.fusion_layer = self.conv_block(num_S, num_S, (3, 1), 1, 4)
         self.BN_t = nn.BatchNorm2d(num_T)
         self.BN_s = nn.BatchNorm2d(num_S)
@@ -113,8 +114,9 @@ class TSCeption(nn.Module):
                                 nn.Linear(hid_channels, num_classes))
 
     def conv_block(self, in_channels: int, out_channels: int, kernel: int,
-                   stride: int, pool_kernel: int) -> nn.Module:
+                   stride: int, pool_kernel: int, padding: int = 0) -> nn.Module:
         return nn.Sequential(
+            nn.ZeroPad2d(padding) if padding != 0 else nn.Identity(),
             nn.Conv2d(in_channels=in_channels,
                       out_channels=out_channels,
                       kernel_size=kernel,
