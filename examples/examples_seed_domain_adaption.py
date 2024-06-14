@@ -121,7 +121,7 @@ for j, sub_dataset in enumerate(subset.split(dataset)):
 
         trainer = ADATrainer(extractor=extractor,
                              classifier=classifier,
-                             num_classes=2,
+                             num_classes=3,
                              lr=1e-4,
                              weight_decay=0.0,
                              accelerator='gpu')
