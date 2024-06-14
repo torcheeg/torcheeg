@@ -291,6 +291,13 @@ If you would like to contribute new datasets, deep learning methods, and extensi
         </a>
     </td>
     <td align="center">
+        <a href="https://github.com/HaveAnIdeaCy">
+            <img src="https://avatars.githubusercontent.com/u/49177516?v=4" width="100;" alt="HaveAnIdeaCy"/>
+            <br />
+            <sub><b>Null</b></sub>
+        </a>
+    </td>
+    <td align="center">
         <a href="https://github.com/Nhix00">
             <img src="https://avatars.githubusercontent.com/u/75837033?v=4" width="100;" alt="Nhix00"/>
             <br />
