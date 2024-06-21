@@ -93,16 +93,19 @@ class SetSamplingRate(EEGTransform):
 
 
     def apply(self, eeg, **kwargs) -> any:
-        assert len(eeg.shape) == 2, 'Make sure the EEG in 2D shape.'
         new_length = int(eeg.shape[-1] *  self.new_rate/ self.original_rate)
-        
-        
+    
         result = []
-        for signal in eeg:
+        
+        eeg_ = eeg.reshape(-1,eeg.shape[-1])
+
+        for signal in eeg_:
             resampled_signal = resample(signal, new_length)
           
             result.append(resampled_signal)
-        return np.stack(result,axis=0)
+        result = np.stack(result,axis=0)
+        return result.reshape(*eeg.shape[:-1],new_length)
+        
     
     @property
     def __repr__(self)->any :
