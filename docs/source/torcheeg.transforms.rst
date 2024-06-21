@@ -19,6 +19,7 @@ Datatype-independent Transforms
     Compose
     Lambda
     BaselineRemoval
+    BaselineCorrection
 
 .. currentmodule:: torcheeg.transforms
 
@@ -59,6 +60,7 @@ Numpy-based Transforms
     Concatenate
     MapChunk
     Downsample
+    SetSamplingRate
     RearrangeElectrode
     Flatten
 
