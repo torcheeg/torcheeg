@@ -262,20 +262,27 @@ If you would like to contribute new datasets, deep learning methods, and extensi
         </a>
     </td>
     <td align="center">
+        <a href="https://github.com/nmq443">
+            <img src="https://avatars.githubusercontent.com/u/83683836?v=4" width="100;" alt="nmq443"/>
+            <br />
+            <sub><b>Nguyen Minh Quang</b></sub>
+        </a>
+    </td>
+    <td align="center">
         <a href="https://github.com/MicheleBarsotti">
             <img src="https://avatars.githubusercontent.com/u/48720814?v=4" width="100;" alt="MicheleBarsotti"/>
             <br />
             <sub><b>Meekele_b</b></sub>
         </a>
-    </td>
+    </td></tr>
+<tr>
     <td align="center">
         <a href="https://github.com/dawin2015">
             <img src="https://avatars.githubusercontent.com/u/12325204?v=4" width="100;" alt="dawin2015"/>
             <br />
             <sub><b>Liu-darong</b></sub>
         </a>
-    </td></tr>
-<tr>
+    </td>
     <td align="center">
         <a href="https://github.com/Nhix00">
             <img src="https://avatars.githubusercontent.com/u/75837033?v=4" width="100;" alt="Nhix00"/>

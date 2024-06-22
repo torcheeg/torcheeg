@@ -175,22 +175,21 @@ class ToInterpolatedGrid(EEGTransform):
 
         loc_x_list = []
         loc_y_list = []
-        for _, (loc_y, loc_x) in channel_location_dict.items():
+        for _, (loc_x, loc_y) in channel_location_dict.items():
             loc_x_list.append(loc_x)
             loc_y_list.append(loc_y)
 
         self.width = max(loc_x_list) + 1
         self.height = max(loc_y_list) + 1
 
-        grid_y, grid_x = np.mgrid[
+        self.grid_x, self.grid_y = np.mgrid[
             min(self.location_array[:, 0]):max(self.location_array[:, 0]
-                                               ):self.height * 1j,
+                                               ):self.width * 1j,
             min(self.location_array[:,
                                     1]):max(self.location_array[:,
-                                                                1]):self.width *
+                                                                1]):self.height *
             1j, ]
-        self.grid_y = grid_y
-        self.grid_x = grid_x
+
 
     def __call__(self,
                  *args,
