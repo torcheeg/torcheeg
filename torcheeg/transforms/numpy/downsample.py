@@ -86,7 +86,7 @@ class SetSamplingRate(EEGTransform):
         axis (int, optional): The dimension to normalize, when no dimension is specified, the entire data is normalized. (default: :obj:`-1`)
         scale (bool, optional): Whether to scale the resampled signal so that ``y`` and ``y_hat`` have approximately equal total energy. (default: :obj:`False`)
         res_type (str, optional): The resampling method to use. (default: :obj:`'soxr_hq'`), options:
-        
+
             'soxr_vhq', 'soxr_hq', 'soxr_mq' or 'soxr_lq'
                 `soxr` Very high-, High-, Medium-, Low-quality FFT-based bandlimited interpolation.
                 ``'soxr_hq'`` is the default setting of `soxr`.
