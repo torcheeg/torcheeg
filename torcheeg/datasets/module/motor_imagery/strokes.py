@@ -6,6 +6,7 @@ from scipy.io import loadmat
 import re
 import pandas as pd
 import mne
+import numpy as np
 
 
 class StrokePatientsMIDataset(BaseDataset):
@@ -131,7 +132,7 @@ class StrokePatientsMIDataset(BaseDataset):
         super().__init__(**params)
         # save all arguments to __dict__
         self.__dict__.update(params)
-
+        self.info = self.merge_info()
     
 
     @staticmethod
@@ -289,7 +290,10 @@ class StrokePatientsMIDataset(BaseDataset):
             })
 
 
-
+    def merge_info(self):
+        subjects_info = self.subjects_info.copy()
+        subjects_info['subject_id'] =   np.array(list(map(lambda x: int(x[-2:]), self.subjects_info['Participant_ID'].values)))
+        return pd.merge(self.info,subjects_info,on='subject_id')
 
 
 class StrokePatientsMIProcessedDataset(StrokePatientsMIDataset):

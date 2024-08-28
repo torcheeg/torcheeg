@@ -89,7 +89,7 @@ class LeaveOneSubjectOut:
         subjects.sort()
         return subjects
 
-    def split(self, dataset: BaseDataset) -> Tuple[BaseDataset, BaseDataset]:
+    def split(self, dataset: BaseDataset, subject = None) -> Tuple[BaseDataset, BaseDataset]:
         if not os.path.exists(self.split_path):
             log.info(
                 f'📊 | Create the split of train and test set.'
@@ -108,17 +108,29 @@ class LeaveOneSubjectOut:
             )
 
         subjects = self.subjects
-
-        for subject in subjects:
+        if subject is not None:
             train_info = pd.read_csv(
-                os.path.join(self.split_path, f'train_subject_{subject}.csv'))
+                    os.path.join(self.split_path, f'train_subject_{subject}.csv'))
             test_info = pd.read_csv(
-                os.path.join(self.split_path, f'test_subject_{subject}.csv'))
-
+                    os.path.join(self.split_path, f'test_subject_{subject}.csv'))
             train_dataset = copy(dataset)
             train_dataset.info = train_info
 
             test_dataset = copy(dataset)
             test_dataset.info = test_info
-
+            
             yield train_dataset, test_dataset
+        else:
+            for subject in subjects:
+                train_info = pd.read_csv(
+                    os.path.join(self.split_path, f'train_subject_{subject}.csv'))
+                test_info = pd.read_csv(
+                    os.path.join(self.split_path, f'test_subject_{subject}.csv'))
+
+                train_dataset = copy(dataset)
+                train_dataset.info = train_info
+
+                test_dataset = copy(dataset)
+                test_dataset.info = test_info
+
+                yield train_dataset, test_dataset
