@@ -1,7 +1,7 @@
 import unittest
 
 import numpy as np
-from torcheeg.transforms import ToGrid, ToInterpolatedGrid, To2d, MeanStdNormalize, MinMaxNormalize, BandSignal, BandDifferentialEntropy, BandPowerSpectralDensity, BandMeanAbsoluteDeviation, BandKurtosis, BandSkewness, Concatenate, MapChunk, PickElectrode, CWTSpectrum, ARRCoefficient, PearsonCorrelation, PhaseLockingCorrelation, BandApproximateEntropy, BandSampleEntropy, BandSVDEntropy, BandDetrendedFluctuationAnalysis, BandHiguchiFractalDimension, BandHjorth, BandHurst, BandPetrosianFractalDimension, BandBinPower, BandSpectralEntropy, DWTDecomposition, Downsample, Compose, RearrangeElectrode, Flatten
+from torcheeg.transforms import ToGrid, ToInterpolatedGrid, To2d, MeanStdNormalize, MinMaxNormalize, BandSignal, BandDifferentialEntropy, BandPowerSpectralDensity, BandMeanAbsoluteDeviation, BandKurtosis, BandSkewness, Concatenate, MapChunk, PickElectrode, CWTSpectrum, ARRCoefficient, PearsonCorrelation, PhaseLockingCorrelation, BandApproximateEntropy, BandSampleEntropy, BandSVDEntropy, BandDetrendedFluctuationAnalysis, BandHiguchiFractalDimension, BandHjorth, BandHurst, BandPetrosianFractalDimension, BandBinPower, BandSpectralEntropy, DWTDecomposition, Downsample, Compose, RearrangeElectrode, Flatten,SetSamplingRate
 from torcheeg.datasets.constants import DEAP_CHANNEL_LOCATION_DICT, DEAP_CHANNEL_LIST, M3CV_CHANNEL_LOCATION_DICT
 
 
@@ -61,6 +61,11 @@ class TestNumpyTransforms(unittest.TestCase):
         transformed_eeg = ToInterpolatedGrid(M3CV_CHANNEL_LOCATION_DICT)(
             eeg=eeg)
         self.assertEqual(transformed_eeg['eeg'].shape, (128, 9, 11))
+
+        pos_array = list(M3CV_CHANNEL_LOCATION_DICT.values())
+        for i,channel_signal in enumerate(eeg):
+            x,y = pos_array[i]
+            self.assertTrue( np.abs(transformed_eeg['eeg'][:,x,y] - channel_signal).sum()<1e-6)
 
     def test_mean_std_normalize(self):
         eeg = np.random.randn(32, 128)
@@ -219,6 +224,21 @@ class TestNumpyTransforms(unittest.TestCase):
         eeg = np.random.randn(32, 128)
         transformed_eeg = Downsample(num_points=32, axis=-1)(eeg=eeg)
         self.assertEqual(transformed_eeg['eeg'].shape, (32, 32))
+    
+    def test_set_sampling_rate(self):
+        eeg = np.random.randn(32, 128)
+        transformed_eeg = SetSamplingRate(origin_sampling_rate=128,target_sampling_rate=64)(eeg=eeg)
+        self.assertEqual(transformed_eeg['eeg'].shape, (32, 64))
+        
+        eeg = np.random.randn(32, 128)
+        transformed_eeg = SetSamplingRate(origin_sampling_rate=64,target_sampling_rate=128)(eeg=eeg)
+        self.assertEqual(transformed_eeg['eeg'].shape, (32, 256))
+
+        eeg = np.random.randn(32, 128,4)
+        transformed_eeg = SetSamplingRate(origin_sampling_rate=128,target_sampling_rate=256,axis=1)(eeg=eeg)
+        self.assertEqual(transformed_eeg['eeg'].shape, (32, 256, 4))
+
+
 
     def test_rearrange_electrode(self):
         src_eeg = np.random.rand(3, 128)
