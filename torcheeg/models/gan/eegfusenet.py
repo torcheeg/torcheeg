@@ -7,7 +7,7 @@ class EEGfuseNet(nn.Module):
     r'''
     EEGFuseNet: A hybrid unsupervised network which can fuse high-dimensional EEG to obtain deep feature characterization and generate similar signals. For more details, please refer to the following information.
 
-    - Paper: Z. Liang, R. Zhou, L. Zhang, L. Li, G. Huang, Z. Zhang, and S. Ishii, EEGFuseNet: Hybrid Unsupervised Deep Feature Characterization and Fusion for High-Dimensional EEG With an #Application to Emotion Recognition, IEEE Transactions on Neural Systems and Rehabilitation Engineering, 29, pp. 1913-1925, 2021.
+    - Paper: Z. Liang, R. Zhou, L. Zhang, L. Li, G. Huang, Z. Zhang, and S. Ishii, EEGFuseNet: Hybrid Unsupervised Deep Feature Characterization and Fusion for High-Dimensional EEG With an #Application to Emotion Recognition, IEEE Transactions on Neural Systems and Rehabilitation Engineering, 29, pp. 1913-1925, 2021.
     - URL: https://github.com/KAZABANA/EEGfusenet
 
     .. code-block:: python
@@ -22,7 +22,7 @@ class EEGfuseNet(nn.Module):
                            hid_channels_cnn=1,
                            chunk_size=128)
         input = torch.rand(2, 1, 20, 128)
-        output, features = model(output)
+        output, features = model(input)
 
     Args:
         in_channels (int): The number of channels of the signal corresponding to each electrode. If the original signal is used as input, in_channels is set to 1; if the original signal is split into multiple sub-bands, in_channels is set to the number of bands. (default: :obj:`1`)
@@ -41,7 +41,8 @@ class EEGfuseNet(nn.Module):
                  hid_channels_cnn: int = 1,
                  chunk_size: int = 384):
         super(EEGfuseNet, self).__init__()
-
+        self.in_channels = in_channels
+        self.num_electrodes = num_electrodes
         self.hid_channels_cnn = hid_channels_cnn
         self.hid_channels_gru = hid_channels_gru
         self.length = chunk_size / 32
@@ -126,7 +127,7 @@ class EEGfuseNet(nn.Module):
                                                       stride=1,
                                                       padding=0)
         self.deconv1 = nn.ConvTranspose2d(16 * hid_channels_cnn,
-                                          1, (1, int(chunk_size / 2 + 1)),
+                                          in_channels, (1, int(chunk_size / 2 + 1)),
                                           stride=1,
                                           padding=(0, int(chunk_size / 4)))
 

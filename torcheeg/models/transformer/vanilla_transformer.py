@@ -93,7 +93,6 @@ class VanillaTransformer(nn.Module):
         from torch.utils.data import DataLoader
 
         dataset = DEAPDataset(root_path='./data_preprocessed_python',
-                              offline_transform=transforms.To2d(),
                               online_transform=transforms.Compose([
                                   transforms.ToTensor(),
                               ]),
@@ -104,7 +103,7 @@ class VanillaTransformer(nn.Module):
 
         model = VanillaTransformer(chunk_size=128,
                             num_electrodes=32,
-                            patch_size=32,
+                            t_patch_size=32,
                             hid_channels=32,
                             depth=3,
                             heads=4,
@@ -116,9 +115,9 @@ class VanillaTransformer(nn.Module):
         model(x)
 
     Args:
+        num_electrodes (int): The number of electrodes in the EEG signal. (default: :obj:`32`)
         chunk_size (int): Number of data points included in each EEG chunk. (default: :obj:`128`)
-        grid_size (tuple): Spatial dimensions of grid-like EEG representation. (default: :obj:`(9, 9)`)
-        patch_size (tuple): The size (resolution) of each input patch. (default: :obj:`(3, 3)`)
+        t_patch_size (int): The temporal size of each input patch. (default: :obj:`32`)
         hid_channels (int): The feature dimension of embeded patch. (default: :obj:`32`)
         depth (int): The number of attention layers for each transformer block. (default: :obj:`3`)
         heads (int): The number of attention heads for each attention layer. (default: :obj:`4`)
