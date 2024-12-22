@@ -305,6 +305,13 @@ If you would like to contribute new datasets, deep learning methods, and extensi
         </a>
     </td>
     <td align="center">
+        <a href="https://github.com/sanjay7178">
+            <img src="https://avatars.githubusercontent.com/u/97831658?v=4" width="100;" alt="sanjay7178"/>
+            <br />
+            <sub><b>Sai Sanjay </b></sub>
+        </a>
+    </td>
+    <td align="center">
         <a href="https://github.com/gitter-badger">
             <img src="https://avatars.githubusercontent.com/u/8518239?v=4" width="100;" alt="gitter-badger"/>
             <br />
