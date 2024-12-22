@@ -70,6 +70,7 @@ Steady-state Visual Evoked Potential Datasets
     :template: datasettemplate.rst
 
     TSUBenckmarkDataset
+    SanDiegoSSVEPDataset
 
 Sleep Stage Detection Datasets 
 ---------------------------------------------------------
