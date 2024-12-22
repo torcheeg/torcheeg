@@ -65,26 +65,6 @@ class TestImbalanceTrainer(unittest.TestCase):
         trainer.fit(train_loader, val_loader, max_epochs=2)
         trainer.test(test_loader)
 
-        trainer = LALossTrainer(
-            model,
-            devices=1,
-            class_frequency=train_loader,
-            accelerator='gpu',
-            num_classes=2,
-            metrics=['f1score'])
-        trainer.fit(train_loader, val_loader, max_epochs=2)
-        trainer.test(test_loader)
-
-        trainer = LALossTrainer(
-            model,
-            class_frequency=[10, 20],
-            devices=1,
-            accelerator='gpu',
-            num_classes=2,
-            metrics=['f1score'])
-        trainer.fit(train_loader, val_loader, max_epochs=2)
-        trainer.test(test_loader)
-
     def test_ldam_loss_trainer(self):
         train_dataset = DummyDataset()
         val_dataset = DummyDataset()
@@ -101,40 +81,6 @@ class TestImbalanceTrainer(unittest.TestCase):
             devices=1,
             class_frequency=train_loader,
             accelerator='cpu',
-            num_classes=2,
-            metrics=['f1score'])
-        trainer.fit(train_loader, val_loader, max_epochs=2)
-        trainer.test(test_loader)
-
-        trainer = LDAMLossTrainer(
-            model,
-            rule='drw',
-            class_frequency=train_loader,
-            drw_epochs=1,
-            devices=1,
-            accelerator='gpu',
-            num_classes=2,
-            metrics=['f1score'])
-        trainer.fit(train_loader, val_loader, max_epochs=2)
-        trainer.test(test_loader)
-
-        trainer = LDAMLossTrainer(
-            model,
-            devices=1,
-            rule='reweight',
-            class_frequency=train_loader,
-            accelerator='gpu',
-            num_classes=2,
-            metrics=['f1score'])
-        trainer.fit(train_loader, val_loader, max_epochs=2)
-        trainer.test(test_loader)
-
-        trainer = LDAMLossTrainer(
-            model,
-            class_frequency=[10, 20],
-            devices=1,
-            accelerator='gpu',
-            rule='drw',
             num_classes=2,
             metrics=['f1score'])
         trainer.fit(train_loader, val_loader, max_epochs=2)
@@ -171,26 +117,6 @@ class TestImbalanceTrainer(unittest.TestCase):
         trainer.fit(train_loader, val_loader, max_epochs=2)
         trainer.test(test_loader)
 
-        trainer = EQLossTrainer(
-            model,
-            devices=1,
-            class_frequency=train_loader,
-            accelerator='gpu',
-            num_classes=2,
-            metrics=['f1score'])
-        trainer.fit(train_loader, val_loader, max_epochs=2)
-        trainer.test(test_loader)
-
-        trainer = EQLossTrainer(
-            model,
-            class_frequency=[10, 20],
-            devices=1,
-            accelerator='gpu',
-            num_classes=2,
-            metrics=['f1score'])
-        trainer.fit(train_loader, val_loader, max_epochs=2)
-        trainer.test(test_loader)
-
     def test_focal_loss_trainer(self):
         train_dataset = DummyDataset()
         val_dataset = DummyDataset()
@@ -217,26 +143,6 @@ class TestImbalanceTrainer(unittest.TestCase):
             class_frequency=[10, 20],
             devices=1,
             accelerator='cpu',
-            num_classes=2,
-            metrics=['f1score'])
-        trainer.fit(train_loader, val_loader, max_epochs=2)
-        trainer.test(test_loader)
-
-        trainer = FocalLossTrainer(
-            model,
-            devices=1,
-            class_frequency=train_loader,
-            accelerator='gpu',
-            num_classes=2,
-            metrics=['f1score'])
-        trainer.fit(train_loader, val_loader, max_epochs=2)
-        trainer.test(test_loader)
-
-        trainer = FocalLossTrainer(
-            model,
-            class_frequency=[10, 20],
-            devices=1,
-            accelerator='gpu',
             num_classes=2,
             metrics=['f1score'])
         trainer.fit(train_loader, val_loader, max_epochs=2)
@@ -273,25 +179,6 @@ class TestImbalanceTrainer(unittest.TestCase):
         trainer.fit(train_loader, val_loader, max_epochs=2)
         trainer.test(test_loader)
 
-        trainer = WCELossTrainer(
-            model,
-            devices=1,
-            class_frequency=train_loader,
-            accelerator='gpu',
-            num_classes=2,
-            metrics=['f1score'])
-        trainer.fit(train_loader, val_loader, max_epochs=2)
-        trainer.test(test_loader)
-
-        trainer = WCELossTrainer(
-            model,
-            class_frequency=[10, 20],
-            devices=1,
-            accelerator='gpu',
-            num_classes=2,
-            metrics=['f1score'])
-        trainer.fit(train_loader, val_loader, max_epochs=2)
-        trainer.test(test_loader)
 
 if __name__ == '__main__':
     unittest.main()

@@ -1,6 +1,10 @@
 from typing import Dict, Tuple, Union
-from scipy.signal.windows import hann 
 from scipy.signal import butter, lfilter
+try:
+    from scipy.signal.windows import hann
+except ImportError:
+    from scipy.signal import hann
+import numpy as np
 
 import numpy as np
 

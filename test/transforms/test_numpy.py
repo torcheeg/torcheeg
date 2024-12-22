@@ -1,7 +1,7 @@
 import unittest
 
 import numpy as np
-from torcheeg.transforms import ToGrid, ToInterpolatedGrid, To2d, MeanStdNormalize, MinMaxNormalize, BandSignal, BandDifferentialEntropy, BandPowerSpectralDensity, BandMeanAbsoluteDeviation, BandKurtosis, BandSkewness, Concatenate, MapChunk, PickElectrode, CWTSpectrum, ARRCoefficient, PearsonCorrelation, PhaseLockingCorrelation, BandApproximateEntropy, BandSampleEntropy, BandSVDEntropy, BandDetrendedFluctuationAnalysis, BandHiguchiFractalDimension, BandHjorth, BandHurst, BandPetrosianFractalDimension, BandBinPower, BandSpectralEntropy, DWTDecomposition, Downsample, Compose, RearrangeElectrode, Flatten
+from torcheeg.transforms import ToGrid, ToInterpolatedGrid, To2d, MeanStdNormalize, MinMaxNormalize, BandSignal, BandDifferentialEntropy, BandPowerSpectralDensity, BandMeanAbsoluteDeviation, BandKurtosis, BandSkewness, Concatenate, MapChunk, PickElectrode, CWTSpectrum, ARRCoefficient, PearsonCorrelation, PhaseLockingCorrelation, BandApproximateEntropy, BandSampleEntropy, BandSVDEntropy, BandDetrendedFluctuationAnalysis, BandHiguchiFractalDimension, BandHjorth, BandHurst, BandPetrosianFractalDimension, BandBinPower, BandSpectralEntropy, DWTDecomposition, Downsample, Compose, RearrangeElectrode, Flatten, OrderElectrode
 from torcheeg.datasets.constants import DEAP_CHANNEL_LOCATION_DICT, DEAP_CHANNEL_LIST, M3CV_CHANNEL_LOCATION_DICT
 
 
@@ -23,6 +23,13 @@ class TestNumpyTransforms(unittest.TestCase):
 
         transformed_eeg = CWTSpectrum(contourf=True)(eeg=eeg)
         self.assertEqual(transformed_eeg['eeg'].shape, (32, 480, 640, 4))
+    
+    def test_order_electrode(self):
+        eeg = np.random.rand(6, 3000)
+        source_electrodes = ['F3', 'F4', 'C3', 'C4', 'O1', 'O2']
+        target_electrodes = ['F3', 'F4', 'C3']
+        transformed_eeg = OrderElectrode(source_electrodes=source_electrodes, target_electrodes=target_electrodes)(eeg=eeg)
+        self.assertEqual(transformed_eeg['eeg'].shape, (3, 3000))
 
     def test_pick_electrode(self):
         eeg = np.random.randn(32, 128)

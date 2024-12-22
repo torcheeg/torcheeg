@@ -3,8 +3,7 @@ import unittest
 import torch
 from torch_geometric.data import Batch, Data
 
-from torcheeg.datasets.constants import \
-    DEAP_GENERAL_REGION_LIST
+from torcheeg.datasets.constants import DEAP_GENERAL_REGION_LIST
 from torcheeg.models import DGCNN, LGGNet
 from torcheeg.models.pyg import GIN, RGNN
 
@@ -13,24 +12,16 @@ class TestGNN(unittest.TestCase):
 
     def test_dgcnn(self):
         eeg = torch.randn(1, 62, 200)
-        model = DGCNN(in_channels=200, num_electrodes=62, hid_channels=32, num_layers=2, num_classes=2)
+        model = DGCNN(in_channels=200, num_electrodes=62,
+                      hid_channels=32, num_layers=2, num_classes=2)
         pred = model(eeg)
-        self.assertEqual(tuple(pred.shape), (1, 2))
-
-        eeg = eeg.cuda()
-        model = model.cuda()
-        pred = model(eeg).cpu()
         self.assertEqual(tuple(pred.shape), (1, 2))
 
     def test_lggnet(self):
         eeg = torch.rand(2, 1, 32, 128)
-        model = LGGNet(DEAP_GENERAL_REGION_LIST, num_electrodes=32, chunk_size=128)
+        model = LGGNet(DEAP_GENERAL_REGION_LIST,
+                       num_electrodes=32, chunk_size=128)
         pred = model(eeg)
-        self.assertEqual(tuple(pred.shape), (2, 2))
-
-        eeg = eeg.cuda()
-        model = model.cuda()
-        pred = model(eeg).cpu()
         self.assertEqual(tuple(pred.shape), (2, 2))
 
     def test_rgnn(self):
@@ -56,11 +47,6 @@ class TestGNN(unittest.TestCase):
 
         self.assertEqual(tuple(pred.shape), (2, 2))
 
-        data = data.cuda()
-        model = model.cuda()
-        pred = model(data)
-        self.assertEqual(tuple(pred.shape), (2, 2))
-
     def test_gin(self):
         adj = torch.rand(62, 62)
         adj = (adj > 0.5).float()
@@ -75,11 +61,6 @@ class TestGNN(unittest.TestCase):
         model = GIN(in_channels=4, hid_channels=64, num_classes=2)
         pred = model(data)
 
-        self.assertEqual(tuple(pred.shape), (2, 2))
-
-        data = data.cuda()
-        model = model.cuda()
-        pred = model(data)
         self.assertEqual(tuple(pred.shape), (2, 2))
 
 

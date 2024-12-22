@@ -8,7 +8,7 @@ install_requires = [
     'scipy>=1.7.3, <= 1.10.1', 'scikit-learn>=1.0.2', 'lmdb>=1.3.0', 'einops>=0.4.1',
     'mne>=1.0.3', 'xmltodict>=0.13.0', 'networkx>=2.6.3', 'PyWavelets>=1.3.0',
     'spectrum>=0.8.1', 'torchmetrics>=0.10.0', 'mne_connectivity>=0.4.0',
-    'pytorch-lightning>=1.9.5'
+    'pytorch-lightning>=1.9.5', 'wfdb>=4.1.2'
 ]
 
 test_requires = ['pytest>=7.1.2']

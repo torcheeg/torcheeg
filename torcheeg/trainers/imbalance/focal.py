@@ -63,13 +63,13 @@ class FocalLossTrainer(ClassifierTrainer):
             num_classes (int): The number of classes in the dataset.
             class_frequency (List[int] or Dataloader): The frequency of each class in the dataset. It can be a list of integers or a dataloader to calculate the frequency of each class in the dataset, traversing the data batch (:obj:`torch.utils.data.dataloader.DataLoader`, :obj:`torch_geometric.loader.DataLoader`, etc). (default: :obj:`None`)
             gamma (float): The gamma parameter. (default: :obj:`1.0`)
-            rule (str): The rule to adjust the weight of each class. Available options are: 'none', 'reweight', 'drw' (deferred re-balancing optimization schedule). (default: :obj:`none`)
+            rule (str): The rule to adjust the weight of each class. Availabel options are: 'none', 'reweight', 'drw' (deferred re-balancing optimization schedule). (default: :obj:`none`)
             beta_reweight (float): The beta parameter for reweighting. It is only used when :obj:`rule` is 'reweight' or 'drw'. (default: :obj:`0.9999`)
             drw_epochs (int): The number of epochs to use DRW. It is only used when :obj:`rule` is 'drw'. (default: :obj:`160`)
             lr (float): The learning rate. (default: :obj:`0.001`)
             weight_decay (float): The weight decay. (default: :obj:`0.0`)
             devices (int): The number of devices to use. (default: :obj:`1`)
-            accelerator (str): The accelerator to use. Available options are: 'cpu', 'gpu'. (default: :obj:`"cpu"`)
+            accelerator (str): The accelerator to use. Availabel options are: 'cpu', 'gpu'. (default: :obj:`"cpu"`)
     '''
 
     def __init__(self,

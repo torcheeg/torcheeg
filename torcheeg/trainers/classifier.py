@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Tuple, Union
 
 import pytorch_lightning as pl
 import torch
@@ -69,9 +69,9 @@ class ClassifierTrainer(pl.LightningModule):
             lr (float): The learning rate. (default: :obj:`0.001`)
             weight_decay (float): The weight decay. (default: :obj:`0.0`)
             devices (int): The number of devices to use. (default: :obj:`1`)
-            accelerator (str): The accelerator to use. Available options are: 'cpu', 'gpu'. (default: :obj:`"cpu"`)
-            metrics (list of str): The metrics to use. Available options are: 'precision', 'recall', 'f1score', 'accuracy', 'matthews', 'auroc', and 'kappa'. (default: :obj:`["accuracy"]`)
-        
+            accelerator (str): The accelerator to use. Availabel options are: 'cpu', 'gpu'. (default: :obj:`"cpu"`)
+            metrics (list of str): The metrics to use. Availabel options are: 'precision', 'recall', 'f1score', 'accuracy', 'matthews', 'auroc', and 'kappa'. (default: :obj:`["accuracy"]`)
+
         .. automethod:: fit
         .. automethod:: test
     '''
@@ -83,6 +83,7 @@ class ClassifierTrainer(pl.LightningModule):
                  weight_decay: float = 0.0,
                  devices: int = 1,
                  accelerator: str = "cpu",
+                 verbose: bool = True,
                  metrics: List[str] = ["accuracy"]):
 
         super().__init__()
@@ -97,6 +98,7 @@ class ClassifierTrainer(pl.LightningModule):
         self.metrics = metrics
 
         self.ce_fn = nn.CrossEntropyLoss()
+        self.verbose = verbose
 
         self.init_metrics(metrics, num_classes)
 
@@ -128,6 +130,15 @@ class ClassifierTrainer(pl.LightningModule):
                              **kwargs)
         return trainer.fit(self, train_loader, val_loader)
 
+    def predict(self, test_loader: DataLoader, *args,
+                **kwargs) -> Union[List[Any], List[List[Any]], None]:
+        trainer = pl.Trainer(devices=1,
+                             # devices=self.devices, # multi-gpu prediction leads to None output
+                             accelerator=self.accelerator,
+                             *args,
+                             **kwargs)
+        return trainer.predict(self, test_loader)
+
     def test(self, test_loader: DataLoader, *args,
              **kwargs) -> _EVALUATE_OUTPUT:
         r'''
@@ -140,8 +151,8 @@ class ClassifierTrainer(pl.LightningModule):
                              **kwargs)
         return trainer.test(self, test_loader)
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        return self.model(x)
+    def forward(self, x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
+        return self.model(x, *args, **kwargs)
 
     def training_step(self, batch: Tuple[torch.Tensor],
                       batch_idx: int) -> torch.Tensor:
@@ -149,45 +160,48 @@ class ClassifierTrainer(pl.LightningModule):
         y_hat = self(x)
         loss = self.ce_fn(y_hat, y)
 
-        # log to prog_bar
-        self.log("train_loss",
-                 self.train_loss(loss),
-                 prog_bar=True,
-                 on_epoch=False,
-                 logger=False,
-                 on_step=True)
+        if self.verbose:
 
-        for i, metric_value in enumerate(self.train_metrics.values()):
-            self.log(f"train_{self.metrics[i]}",
-                     metric_value(y_hat, y),
+            self.log("train_loss",
+                     self.train_loss(loss),
                      prog_bar=True,
                      on_epoch=False,
                      logger=False,
                      on_step=True)
 
+            for i, metric_value in enumerate(self.train_metrics.values()):
+                self.log(f"train_{self.metrics[i]}",
+                         metric_value(y_hat, y),
+                         prog_bar=True,
+                         on_epoch=False,
+                         logger=False,
+                         on_step=True)
+
         return loss
 
     def on_train_epoch_end(self) -> None:
-        self.log("train_loss",
-                 self.train_loss.compute(),
-                 prog_bar=False,
-                 on_epoch=True,
-                 on_step=False,
-                 logger=True)
-        for i, metric_value in enumerate(self.train_metrics.values()):
-            self.log(f"train_{self.metrics[i]}",
-                     metric_value.compute(),
+        if self.verbose:
+
+            self.log("train_loss",
+                     self.train_loss.compute(),
                      prog_bar=False,
                      on_epoch=True,
                      on_step=False,
                      logger=True)
+            for i, metric_value in enumerate(self.train_metrics.values()):
+                self.log(f"train_{self.metrics[i]}",
+                         metric_value.compute(),
+                         prog_bar=False,
+                         on_epoch=True,
+                         on_step=False,
+                         logger=True)
 
-        # print the metrics
-        str = "\n[Train] "
-        for key, value in self.trainer.logged_metrics.items():
-            if key.startswith("train_"):
-                str += f"{key}: {value:.3f} "
-        log.info(str + '\n')
+            # print the metrics
+            str = "\n[Train] "
+            for key, value in self.trainer.logged_metrics.items():
+                if key.startswith("train_"):
+                    str += f"{key}: {value:.3f} "
+            log.info(str)
 
         # reset the metrics
         self.train_loss.reset()
@@ -204,26 +218,28 @@ class ClassifierTrainer(pl.LightningModule):
         return loss
 
     def on_validation_epoch_end(self) -> None:
-        self.log("val_loss",
-                 self.val_loss.compute(),
-                 prog_bar=False,
-                 on_epoch=True,
-                 on_step=False,
-                 logger=True)
-        for i, metric_value in enumerate(self.val_metrics.values()):
-            self.log(f"val_{self.metrics[i]}",
-                     metric_value.compute(),
+        if self.verbose:
+
+            self.log("val_loss",
+                     self.val_loss.compute(),
                      prog_bar=False,
                      on_epoch=True,
                      on_step=False,
                      logger=True)
+            for i, metric_value in enumerate(self.val_metrics.values()):
+                self.log(f"val_{self.metrics[i]}",
+                         metric_value.compute(),
+                         prog_bar=False,
+                         on_epoch=True,
+                         on_step=False,
+                         logger=True)
 
-        # print the metrics
-        str = "\n[Val] "
-        for key, value in self.trainer.logged_metrics.items():
-            if key.startswith("val_"):
-                str += f"{key}: {value:.3f} "
-        log.info(str + '\n')
+            # print the metrics
+            str = "\n[Val] "
+            for key, value in self.trainer.logged_metrics.items():
+                if key.startswith("val_"):
+                    str += f"{key}: {value:.3f} "
+            log.info(str)
 
         self.val_loss.reset()
         self.val_metrics.reset()
@@ -239,26 +255,27 @@ class ClassifierTrainer(pl.LightningModule):
         return loss
 
     def on_test_epoch_end(self) -> None:
-        self.log("test_loss",
-                 self.test_loss.compute(),
-                 prog_bar=False,
-                 on_epoch=True,
-                 on_step=False,
-                 logger=True)
-        for i, metric_value in enumerate(self.test_metrics.values()):
-            self.log(f"test_{self.metrics[i]}",
-                     metric_value.compute(),
+        if self.verbose:
+            self.log("test_loss",
+                     self.test_loss.compute(),
                      prog_bar=False,
                      on_epoch=True,
                      on_step=False,
                      logger=True)
+            for i, metric_value in enumerate(self.test_metrics.values()):
+                self.log(f"test_{self.metrics[i]}",
+                         metric_value.compute(),
+                         prog_bar=False,
+                         on_epoch=True,
+                         on_step=False,
+                         logger=True)
 
-        # print the metrics
-        str = "\n[Test] "
-        for key, value in self.trainer.logged_metrics.items():
-            if key.startswith("test_"):
-                str += f"{key}: {value:.3f} "
-        log.info(str + '\n')
+            # print the metrics
+            str = "\n[Test] "
+            for key, value in self.trainer.logged_metrics.items():
+                if key.startswith("test_"):
+                    str += f"{key}: {value:.3f} "
+            log.info(str)
 
         self.test_loss.reset()
         self.test_metrics.reset()
@@ -278,4 +295,5 @@ class ClassifierTrainer(pl.LightningModule):
                      dataloader_idx: int = 0):
         x, y = batch
         y_hat = self(x)
+        # print(y_hat)
         return y_hat

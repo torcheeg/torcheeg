@@ -149,7 +149,7 @@ class ToDynamicG(EEGTransform):
         >>> Data(edge_index=[2, 1024], x=[32, 128], edge_weight=[1024])
 
     Args:
-        edge_func (str or Callable): Algorithms for computing functional connections. You can use the algorithms provided by TorchEEG, including gaussian_distance, absolute_pearson_correlation_coefficient and phase_locking_value. Or you can use custom functions by passing a callable object containing two parameters representing the signal of the two electrodes, and other named parameters (passed in when initializing the transform), and outputs the value of the functional connection between the two electrodes. (default: :obj:`gaussian_distance`)
+        edge_func (str or Callable): Algorithms for computing functional connections. You can use the algorithms provided by TorchEEG, including gaussian_distance, absolute_pearson_correlation_coefficient and phase_locking_value. Or you can use custom functions by passing a Callable object containing two parameters representing the signal of the two electrodes, and other named parameters (passed in when initializing the transform), and outputs the value of the functional connection between the two electrodes. (default: :obj:`gaussian_distance`)
         add_self_loop (bool): Whether to add self-loop edges to the graph. (default: :obj:`True`)
         threshold (float, optional): Used to cut edges when not None. Edges whose weights exceed a threshold are retained. (default: :obj:`None`)
         top_k (int, optional): Used to cut edges when not None. Keep the k edges connected to each node with the largest weights. (default: :obj:`None`)

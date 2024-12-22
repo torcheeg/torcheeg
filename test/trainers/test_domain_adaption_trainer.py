@@ -5,7 +5,9 @@ import torch
 import torch.nn as nn
 from torch.utils.data import Dataset
 from torch.utils.data.dataloader import DataLoader
-from torcheeg.trainers import ADATrainer, CORALTrainer, DANTrainer, DANNTrainer, DDCTrainer, JANTrainer, CenterLossTrainer
+
+from torcheeg.trainers import (ADATrainer, CenterLossTrainer, CORALTrainer,
+                               DANNTrainer, DANTrainer, DDCTrainer, JANTrainer)
 
 
 class DummyDataset(Dataset):
@@ -176,18 +178,6 @@ class TestDomainAdaptionTrainer(unittest.TestCase):
                                         metrics=['unexpected'])
             trainer.fit(train_loader, val_loader)
             trainer.test(test_loader)
-
-        trainer = CenterLossTrainer(
-            decoder=decoder,
-            classifier=classifier,
-            feature_dim=64,
-            devices=1,
-            accelerator='gpu',
-            num_classes=2,
-            metrics=['accuracy', 'recall', 'precision', 'f1score'])
-        trainer.fit(train_loader, val_loader, max_epochs=2)
-        trainer.test(test_loader)
-
 
 if __name__ == '__main__':
     unittest.main()

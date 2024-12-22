@@ -1,11 +1,13 @@
 import random
 import unittest
-import torch.nn as nn
+
 import torch
+import torch.nn as nn
 from torch.utils.data import Dataset
 from torch.utils.data.dataloader import DataLoader
-from torcheeg.trainers import DDPMTrainer, CDDPMTrainer
-from torcheeg.models import BUNet, BCUNet
+
+from torcheeg.models import BCUNet, BUNet
+from torcheeg.trainers import CDDPMTrainer, DDPMTrainer
 
 
 class DummyDataset(Dataset):
@@ -31,7 +33,8 @@ class Extractor(nn.Module):
                                    nn.Conv2d(64, 128, kernel_size=4, stride=1),
                                    nn.ReLU())
         self.conv3 = nn.Sequential(nn.ZeroPad2d((1, 2, 1, 2)),
-                                   nn.Conv2d(128, 256, kernel_size=4, stride=1),
+                                   nn.Conv2d(
+                                       128, 256, kernel_size=4, stride=1),
                                    nn.ReLU())
         self.conv4 = nn.Sequential(nn.ZeroPad2d((1, 2, 1, 2)),
                                    nn.Conv2d(256, 64, kernel_size=4, stride=1),
@@ -58,7 +61,8 @@ class Classifier(nn.Module):
                                    nn.Conv2d(64, 128, kernel_size=4, stride=1),
                                    nn.ReLU())
         self.conv3 = nn.Sequential(nn.ZeroPad2d((1, 2, 1, 2)),
-                                   nn.Conv2d(128, 256, kernel_size=4, stride=1),
+                                   nn.Conv2d(
+                                       128, 256, kernel_size=4, stride=1),
                                    nn.ReLU())
         self.conv4 = nn.Sequential(nn.ZeroPad2d((1, 2, 1, 2)),
                                    nn.Conv2d(256, 64, kernel_size=4, stride=1),
@@ -93,11 +97,11 @@ class TestDDPMTrainer(unittest.TestCase):
         model = BUNet(in_channels=4)
 
         trainer = DDPMTrainer(model,
-                             metric_extractor=Extractor(),
-                             metric_classifier=Classifier(),
-                             metric_num_features=9 * 9 * 64,
-                             metrics=['fid', 'is'],
-                             accelerator='gpu')
+                              metric_extractor=Extractor(),
+                              metric_classifier=Classifier(),
+                              metric_num_features=9 * 9 * 64,
+                              metrics=['fid', 'is'],
+                              accelerator='cpu')
         trainer.fit(train_loader, val_loader, max_epochs=1)
         trainer.test(test_loader)
 
@@ -113,13 +117,14 @@ class TestDDPMTrainer(unittest.TestCase):
         model = BCUNet(in_channels=4)
 
         trainer = CDDPMTrainer(model,
-                             metric_extractor=Extractor(),
-                             metric_classifier=Classifier(),
-                             metric_num_features=9 * 9 * 64,
-                             metrics=['fid', 'is'],
-                             accelerator='gpu')
+                               metric_extractor=Extractor(),
+                               metric_classifier=Classifier(),
+                               metric_num_features=9 * 9 * 64,
+                               metrics=['fid', 'is'],
+                               accelerator='cpu')
         trainer.fit(train_loader, val_loader, max_epochs=1)
         trainer.test(test_loader)
+
 
 if __name__ == '__main__':
     unittest.main()

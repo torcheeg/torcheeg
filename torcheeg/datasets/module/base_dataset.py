@@ -233,9 +233,9 @@ class BaseDataset(Dataset):
             except StopIteration:
                 break
 
-            if 'eeg' in obj and 'key' in obj:
+            if obj and 'eeg' in obj and 'key' in obj:
                 eeg_io.write_eeg(obj['eeg'], obj['key'])
-            if 'info' in obj:
+            if obj and 'info' in obj:
                 info_io.write_info(obj['info'])
 
         if file_id == 0:
@@ -485,7 +485,7 @@ class BaseDataset(Dataset):
         for record, eeg_io in self.eeg_io_router.items():
             result.eeg_io_router[record] = eeg_io.__copy__()
         # deep copy info (for further modification)
-        result.info = self.info
+        result.info = self.info.__copy__()
 
         return result
 
