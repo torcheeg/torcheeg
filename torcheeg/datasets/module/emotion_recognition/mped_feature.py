@@ -22,11 +22,14 @@ class MPEDFeatureDataset(BaseDataset):
 
     In order to use this dataset, the download folder :obj:`EEG_feature` is required, containing the following files:
     
-    - HHS
-    - Hjorth
-    - HOC
-    - ...
-    - STFT
+    .. code-block:: python
+    
+        EEG_feature/
+        ├── HHS/
+        ├── Hjorth/
+        ├── HOC/
+        ├── ...
+        └── STFT/
 
     An example dataset for CNN-based methods:
 
@@ -203,13 +206,13 @@ class MPEDFeatureDataset(BaseDataset):
         assert os.path.exists(
             root_path
         ), f'root_path ({root_path}) does not exist. Please download the dataset and set the root_path to the downloaded path.'
-        avaliable_features = os.listdir(root_path)
+        available_features = os.listdir(root_path)
 
         assert set(feature).issubset(
-            set(avaliable_features)
+            set(available_features)
         ), 'The features supported by the MPEDFeature dataset are HHS, Hjorth, PSD, STFT, HOC. The input features are not a subset of the list of supported features.'
 
-        file_list = os.listdir(os.path.join(root_path, avaliable_features[0]))
+        file_list = os.listdir(os.path.join(root_path, available_features[0]))
         return file_list
 
     def __getitem__(self, index: int) -> Tuple[any, any, int, int, int]:

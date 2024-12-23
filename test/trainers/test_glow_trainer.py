@@ -33,7 +33,7 @@ class TestGlowTrainer(unittest.TestCase):
 
         model = BGlow(in_channels=4)
 
-        trainer = GlowTrainer(model, accelerator='gpu')
+        trainer = GlowTrainer(model, accelerator='cpu')
         trainer.fit(train_loader, val_loader, max_epochs=1)
         trainer.test(test_loader)
 
@@ -47,7 +47,7 @@ class TestGlowTrainer(unittest.TestCase):
         test_loader = DataLoader(test_dataset, batch_size=4)
 
         model = BCGlow(in_channels=4)
-        trainer = CGlowTrainer(model, accelerator='gpu')
+        trainer = CGlowTrainer(model, accelerator='cpu')
         trainer.fit(train_loader, val_loader, max_epochs=1)
         trainer.test(test_loader)
 

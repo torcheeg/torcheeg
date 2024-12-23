@@ -1,9 +1,21 @@
 import unittest
 
-from torcheeg.transforms import Select, Binary, BinariesToCategory, StringToInt, BinaryOneVSRest, FixCategory, Mapping
+from torcheeg.transforms import Select, Binary, BinariesToCategory, StringToInt, BinaryOneVSRest, FixCategory, Mapping, Multilabel, Normalize
 
 
 class TestLabelTransforms(unittest.TestCase):
+    def test_normalize(self):
+        t = Normalize(min=0.0, max=1.0)
+        self.assertEqual(t(y=0.5)['y'], 0.5)
+
+    def test_multilabel(self):
+        t = Multilabel([
+            Select('valence'),
+            Select('subject_id')
+        ])
+        self.assertEqual(
+            t(y={'valence': 4.5, 'arousal': 5.5, 'subject_id': 7})['y'], [4.5, 7])
+
     def test_select(self):
         info = {'valence': 4.5, 'arousal': 5.5, 'subject_id': 7}
         transformed_label = Select(key='valence')(y=info)

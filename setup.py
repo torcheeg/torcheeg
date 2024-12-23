@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-__version__ = '1.1.2'
+__version__ = '1.1.3'
 URL = 'https://github.com/tczhangzhi/torcheeg'
 
 install_requires = [
@@ -8,7 +8,7 @@ install_requires = [
     'scipy>=1.7.3, <= 1.10.1', 'scikit-learn>=1.0.2', 'lmdb>=1.3.0', 'einops>=0.4.1',
     'mne>=1.0.3', 'xmltodict>=0.13.0', 'networkx>=2.6.3', 'PyWavelets>=1.3.0',
     'spectrum>=0.8.1', 'torchmetrics>=0.10.0', 'mne_connectivity>=0.4.0',
-    'pytorch-lightning>=1.9.5'
+    'pytorch-lightning>=1.9.5', 'wfdb>=4.1.2'
 ]
 
 test_requires = ['pytest>=7.1.2']
@@ -29,7 +29,7 @@ readme = open('README.rst').read()
 
 setup(
     name='torcheeg',
-    version='1.1.2',
+    version='1.1.3',
     description=
     'TorchEEG is a library built on PyTorch for EEG signal analysis. TorchEEG aims to provide a plug-and-play EEG analysis tool, so that researchers can quickly reproduce EEG analysis work and start new EEG analysis research without paying attention to technical details unrelated to the research focus.',
     license='MIT',

@@ -23,16 +23,16 @@ class MAHNOBDataset(BaseDataset):
     
     In order to use this dataset, the download folder :obj:`Sessions` (Physiological files of emotion elicitation) is required, containing the following files:
     
-    - 1
+    .. code-block:: python
 
-      + Part_1_N_Trial1_emotion.bdf
-      + session.xml
-
-    - ...
-    - 3810
-    
-      + Part_30_S_Trial20_emotion.bdf
-      + session.xml
+        Sessions/
+        ├── 1/
+        │   ├── Part_1_N_Trial1_emotion.bdf
+        │   └── session.xml
+        ├── ...
+        └── 3810/
+            ├── Part_30_S_Trial20_emotion.bdf
+            └── session.xml
 
     An example dataset for CNN-based methods:
 

@@ -23,11 +23,14 @@ class SEEDVDataset(BaseDataset):
 
     In order to use this dataset, the download folder :obj:`EEG_raw` is required, containing the following files:
     
-    - 10_1_20180507.cnt
-    - 10_2_20180524.cnt
-    - 10_3_20180626.cnt
-    - ...
-    - 9_3_20180728.cnt
+    .. code-block:: python
+    
+        EEG_raw/
+        ├── 10_1_20180507.cnt
+        ├── 10_2_20180524.cnt
+        ├── 10_3_20180626.cnt
+        ├── ...
+        └── 9_3_20180728.cnt
 
     An example dataset for CNN-based methods:
 

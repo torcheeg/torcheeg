@@ -21,13 +21,16 @@ class TSUBenckmarkDataset(BaseDataset):
 
     In order to use this dataset, the download folder :obj:`data_preprocessed_python` is required, containing the following files:
     
-    - Readme.txt
-    - Sub_info.txt
-    - 64-channels.loc
-    - Freq_Phase.mat
-    - S1.mat
-    - ...
-    - S35.mat
+    .. code-block:: python
+
+        data_preprocessed_python/
+        ├── Readme.txt
+        ├── Sub_info.txt
+        ├── 64-channels.loc
+        ├── Freq_Phase.mat
+        ├── S1.mat
+        ├── ...
+        └── S35.mat
 
     An example dataset for CNN-based methods:
 

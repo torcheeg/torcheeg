@@ -70,6 +70,7 @@ Steady-state Visual Evoked Potential Datasets
     :template: datasettemplate.rst
 
     TSUBenckmarkDataset
+    SanDiegoSSVEPDataset
 
 Sleep Stage Detection Datasets 
 ---------------------------------------------------------
@@ -79,6 +80,9 @@ Sleep Stage Detection Datasets
     :nosignatures:
     :template: datasettemplate.rst
 
+    HMCDataset
+    ISRUCDataset
+    P2018Dataset
     SleepEDFxDataset
 
 Customized Datasets
@@ -91,3 +95,6 @@ Customized Datasets
 
     FolderDataset
     CSVFolderDataset
+    MNERawDataset
+    ConcatDataset
+    PairDataset

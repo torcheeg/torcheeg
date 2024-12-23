@@ -2,7 +2,7 @@ import logging
 import os
 import re
 from copy import copy
-from typing import Dict, Tuple, Union
+from typing import Callable, Dict, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -51,14 +51,16 @@ class KFoldCrossSubject:
 
     Args:
         n_splits (int): Number of folds. Must be at least 2. (default: :obj:`5`)
-        shuffle (bool): Whether to shuffle the data before splitting into batches. Note that the samples within each split will not be shuffled. (default: :obj:`False`)
-        random_state (int, optional): When shuffle is :obj:`True`, :obj:`random_state` affects the ordering of the indices, which controls the randomness of each fold. Otherwise, this parameter has no effect. (default: :obj:`None`)
-        split_path (str): The path to data partition information. If the path exists, read the existing partition from the path. If the path does not exist, the current division method will be saved for next use. If set to None, a random path will be generated. (default: :obj:`None`)
+        shuffle (bool): Whether to shuffle the data before splitting into batches. Note that samples within each split will not be shuffled. (default: :obj:`False`)
+        label_transform (Callable, optional): Function that returns the stratified label for each sample. If set to None, it will not be stratified. (default: :obj:`None`)
+        random_state (int, optional): When shuffle is :obj:`True`, :obj:`random_state` affects the ordering of the indices, which controls the randomness of each fold. If shuffle is :obj:`False`, this parameter has no effect. (default: :obj:`None`)
+        split_path (str): Path to data partition information. If the path exists, the existing partition will be read from it. If the path does not exist, the current division method will be saved for future use. If set to None, a random path will be generated. (default: :obj:`None`)
     '''
 
     def __init__(self,
                  n_splits: int = 5,
                  shuffle: bool = False,
+                 label_transform: Callable = None,
                  random_state: Union[None, int] = None,
                  split_path: Union[None, str] = None):
         if split_path is None:
@@ -68,17 +70,38 @@ class KFoldCrossSubject:
         self.shuffle = shuffle
         self.random_state = random_state
         self.split_path = split_path
+        self.label_transform = label_transform
 
-        self.k_fold = model_selection.KFold(n_splits=n_splits,
-                                            shuffle=shuffle,
-                                            random_state=random_state)
+        if n_splits < 2:
+            raise ValueError(
+                f'Number of splits must be at least 2, but got {n_splits}.')
+
+        if label_transform:
+            self.k_fold = model_selection.StratifiedKFold(n_splits=n_splits,
+                                                          shuffle=shuffle,
+                                                          random_state=random_state)
+        else:
+            self.k_fold = model_selection.KFold(n_splits=n_splits,
+                                                shuffle=shuffle,
+                                                random_state=random_state)
 
     def split_info_constructor(self, info: pd.DataFrame) -> None:
         subject_ids = list(set(info['subject_id']))
 
+        if self.label_transform:
+            subject_labels = []
+            for subject_id in subject_ids:
+                subject_info = info[info['subject_id'] == subject_id]
+                subject_label = subject_info.apply(
+                    lambda info: self.label_transform(y=info.to_dict())['y'], axis=1).mean()
+                subject_labels.append(subject_label)
+            enumerater = enumerate(
+                self.k_fold.split(subject_ids, subject_labels))
+        else:
+            enumerater = enumerate(self.k_fold.split(subject_ids))
+
         for fold_id, (train_index_subject_ids,
-                      test_index_subject_ids) in enumerate(
-                          self.k_fold.split(subject_ids)):
+                      test_index_subject_ids) in enumerater:
 
             if len(train_index_subject_ids) == 0 or len(
                     test_index_subject_ids) == 0:
@@ -140,9 +163,9 @@ class KFoldCrossSubject:
 
         for fold_id in fold_ids:
             train_info = pd.read_csv(
-                os.path.join(self.split_path, f'train_fold_{fold_id}.csv'))
+                os.path.join(self.split_path, f'train_fold_{fold_id}.csv'), low_memory=False)
             test_info = pd.read_csv(
-                os.path.join(self.split_path, f'test_fold_{fold_id}.csv'))
+                os.path.join(self.split_path, f'test_fold_{fold_id}.csv'), low_memory=False)
 
             train_dataset = copy(dataset)
             train_dataset.info = train_info

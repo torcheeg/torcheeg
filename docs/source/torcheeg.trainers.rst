@@ -8,7 +8,7 @@ torcheeg.trainers
 
 .. currentmodule:: torcheeg.trainers
 
-Basic Classification
+Basic
 ----------------------------------
 
 .. autosummary::
@@ -17,6 +17,7 @@ Basic Classification
    :template: trainertemplate.rst
 
    ClassifierTrainer
+   RegressorTrainer
 
 Cross-domain Classification
 ----------------------------------

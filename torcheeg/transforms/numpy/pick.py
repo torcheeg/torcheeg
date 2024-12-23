@@ -85,3 +85,71 @@ class PickElectrode(EEGTransform):
         return dict(super().repr_body, **{
             'pick_list': [...]
         })
+
+class OrderElectrode(EEGTransform):
+    r'''
+    Pick specific electrodes from the input EEG representation.
+
+    Args:
+        source_electrodes (List[str]): List of electrode names in the source EEG data.
+        target_electrodes (List[str]): List of electrode names to pick from the source.
+        padding_value (float): Value to use for padding when a target electrode is not in the source.
+
+    .. code-block:: python
+
+        from torcheeg import transforms
+
+        fake_eeg = np.random.rand(3, 3000)
+        source_electrodes = ['F3', 'F4', 'C3', 'C4', 'O1', 'O2']
+        target_electrodes = ['F3', 'F4', 'C3']
+
+        t = transforms.PickTransform(source_electrodes=source_electrodes, 
+                                     target_electrodes=target_electrodes,
+                                     padding_value=0)
+        t_eeg = t(eeg=fake_eeg)['eeg']
+        print(t_eeg.shape)
+        >>> (3, 3000)
+
+    .. automethod:: __call__
+    '''
+
+    def __init__(self, source_electrodes: List[str], target_electrodes: List[str], padding_value: float = 0):
+        super().__init__()
+        self.source_electrodes = source_electrodes
+        self.target_electrodes = target_electrodes
+        self.padding_value = padding_value
+
+    def __call__(self,
+                 *args,
+                 eeg: np.ndarray,
+                 baseline: Union[np.ndarray, None] = None,
+                 **kwargs) -> Dict[str, np.ndarray]:
+        r'''
+        Args:
+            eeg (np.ndarray): The input EEG signals.
+            baseline (np.ndarray, optional): The corresponding baseline signal, if apply_to_baseline is set to True and baseline is passed, the baseline signal will be transformed with the same way as the experimental signal.
+
+        Returns:
+            Dict[str, np.ndarray]: The transformed results.
+        '''
+        return super().__call__(*args, eeg=eeg, baseline=baseline, **kwargs)
+
+    def apply(self, eeg: np.ndarray, **kwargs) -> np.ndarray:
+        if len(eeg.shape) != 2:
+            raise ValueError(
+                "Input EEG should be a 2D array with shape (electrodes, time_points)")
+
+        num_electrodes, num_time_points = eeg.shape
+
+        if num_electrodes != len(self.source_electrodes):
+            raise ValueError(
+                f"Number of electrodes in EEG ({num_electrodes}) does not match the number of source electrodes ({len(self.source_electrodes)})")
+
+        result = np.full((len(self.target_electrodes),
+                         num_time_points), self.padding_value, dtype=eeg.dtype)
+
+        for i, target_electrode in enumerate(self.target_electrodes):
+            if target_electrode in self.source_electrodes:
+                source_index = self.source_electrodes.index(target_electrode)
+                result[i] = eeg[source_index]
+        return result

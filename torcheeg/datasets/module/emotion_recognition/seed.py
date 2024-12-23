@@ -20,11 +20,14 @@ class SEEDDataset(BaseDataset):
 
     In order to use this dataset, the download folder :obj:`Preprocessed_EEG` is required, containing the following files:
     
-    - label.mat
-    - readme.txt
-    - 10_20131130.mat
-    - ...
-    - 9_20140704.mat
+    .. code-block:: python
+    
+        Preprocessed_EEG/
+        ├── label.mat
+        ├── readme.txt
+        ├── 10_20131130.mat
+        ├── ...
+        └── 9_20140704.mat
 
     An example dataset for CNN-based methods:
 

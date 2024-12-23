@@ -78,6 +78,10 @@ class MeanStdNormalize(EEGTransform):
             shape[axis] = -1
             mean = self.mean.reshape(*shape)
             std = self.std.reshape(*shape)
+
+        if np.any(std == 0):
+            std[std == 0] = 1
+            
         return (eeg - mean) / std
 
     @property

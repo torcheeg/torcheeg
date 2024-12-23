@@ -21,11 +21,14 @@ class SEEDIVDataset(BaseDataset):
 
     In order to use this dataset, the download folder :obj:`eeg_raw_data` is required, containing the following files:
     
-    - label.mat
-    - readme.txt
-    - 10_20131130.mat
-    - ...
-    - 9_20140704.mat
+    .. code-block:: python
+    
+        eeg_raw_data/
+        ├── label.mat
+        ├── readme.txt
+        ├── 10_20131130.mat
+        ├── ...
+        └── 9_20140704.mat
 
     An example dataset for CNN-based methods:
 

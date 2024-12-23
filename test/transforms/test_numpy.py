@@ -1,11 +1,38 @@
 import unittest
 
 import numpy as np
-from torcheeg.transforms import ToGrid, ToInterpolatedGrid, To2d, MeanStdNormalize, MinMaxNormalize, BandSignal, BandDifferentialEntropy, BandPowerSpectralDensity, BandMeanAbsoluteDeviation, BandKurtosis, BandSkewness, Concatenate, MapChunk, PickElectrode, CWTSpectrum, ARRCoefficient, PearsonCorrelation, PhaseLockingCorrelation, BandApproximateEntropy, BandSampleEntropy, BandSVDEntropy, BandDetrendedFluctuationAnalysis, BandHiguchiFractalDimension, BandHjorth, BandHurst, BandPetrosianFractalDimension, BandBinPower, BandSpectralEntropy, DWTDecomposition, Downsample, Compose, RearrangeElectrode, Flatten
-from torcheeg.datasets.constants import DEAP_CHANNEL_LOCATION_DICT, DEAP_CHANNEL_LIST, M3CV_CHANNEL_LOCATION_DICT
+
+from torcheeg.datasets.constants import (DEAP_CHANNEL_LIST,
+                                         DEAP_CHANNEL_LOCATION_DICT,
+                                         M3CV_CHANNEL_LOCATION_DICT)
+from torcheeg.transforms import (ARRCoefficient, BandApproximateEntropy,
+                                 BandBinPower,
+                                 BandDetrendedFluctuationAnalysis,
+                                 BandDifferentialEntropy,
+                                 BandHiguchiFractalDimension, BandHjorth,
+                                 BandHurst, BandKurtosis,
+                                 BandMeanAbsoluteDeviation,
+                                 BandPetrosianFractalDimension,
+                                 BandPowerSpectralDensity, BandSampleEntropy,
+                                 BandSignal, BandSkewness, BandSpectralEntropy,
+                                 BandSVDEntropy, Compose, Concatenate,
+                                 CWTSpectrum, Downsample, DWTDecomposition,
+                                 Flatten, MapChunk, MeanStdNormalize,
+                                 MinMaxNormalize, OrderElectrode,
+                                 PearsonCorrelation, PhaseLockingCorrelation,
+                                 PickElectrode, RearrangeElectrode,
+                                 SetSamplingRate, To2d, ToGrid,
+                                 ToInterpolatedGrid, HorizontalFlip)
 
 
 class TestNumpyTransforms(unittest.TestCase):
+
+    def test_horizontal_flip(self):
+        eeg = np.random.randn(32, 128)
+        transformed_eeg = HorizontalFlip(
+            location_dict=DEAP_CHANNEL_LOCATION_DICT, channel_dim=0)(eeg=eeg)
+        self.assertEqual(transformed_eeg['eeg'].shape, (32, 128))
+
     def test_flatten(self):
         eeg = np.random.randn(62, 5)
         transformed_eeg = Flatten()(eeg=eeg)
@@ -23,6 +50,14 @@ class TestNumpyTransforms(unittest.TestCase):
 
         transformed_eeg = CWTSpectrum(contourf=True)(eeg=eeg)
         self.assertEqual(transformed_eeg['eeg'].shape, (32, 480, 640, 4))
+
+    def test_order_electrode(self):
+        eeg = np.random.rand(6, 3000)
+        source_electrodes = ['F3', 'F4', 'C3', 'C4', 'O1', 'O2']
+        target_electrodes = ['F3', 'F4', 'C3']
+        transformed_eeg = OrderElectrode(
+            source_electrodes=source_electrodes, target_electrodes=target_electrodes)(eeg=eeg)
+        self.assertEqual(transformed_eeg['eeg'].shape, (3, 3000))
 
     def test_pick_electrode(self):
         eeg = np.random.randn(32, 128)
@@ -61,6 +96,12 @@ class TestNumpyTransforms(unittest.TestCase):
         transformed_eeg = ToInterpolatedGrid(M3CV_CHANNEL_LOCATION_DICT)(
             eeg=eeg)
         self.assertEqual(transformed_eeg['eeg'].shape, (128, 9, 11))
+
+        pos_array = list(M3CV_CHANNEL_LOCATION_DICT.values())
+        for i, channel_signal in enumerate(eeg):
+            x, y = pos_array[i]
+            self.assertTrue(
+                np.abs(transformed_eeg['eeg'][:, x, y] - channel_signal).sum() < 1e-6)
 
     def test_mean_std_normalize(self):
         eeg = np.random.randn(32, 128)
@@ -125,7 +166,8 @@ class TestNumpyTransforms(unittest.TestCase):
 
     def test_concat(self):
         eeg = np.random.randn(32, 128)
-        transformed_eeg = Concatenate([BandSkewness(), BandBinPower()])(eeg=eeg)
+        transformed_eeg = Concatenate(
+            [BandSkewness(), BandBinPower()])(eeg=eeg)
         self.assertEqual(transformed_eeg['eeg'].shape, (32, 8))
 
         transformed_eeg = Concatenate(
@@ -220,11 +262,27 @@ class TestNumpyTransforms(unittest.TestCase):
         transformed_eeg = Downsample(num_points=32, axis=-1)(eeg=eeg)
         self.assertEqual(transformed_eeg['eeg'].shape, (32, 32))
 
+    def test_set_sampling_rate(self):
+        eeg = np.random.randn(32, 128)
+        transformed_eeg = SetSamplingRate(
+            origin_sampling_rate=128, target_sampling_rate=64)(eeg=eeg)
+        self.assertEqual(transformed_eeg['eeg'].shape, (32, 64))
+
+        eeg = np.random.randn(32, 128)
+        transformed_eeg = SetSamplingRate(
+            origin_sampling_rate=64, target_sampling_rate=128)(eeg=eeg)
+        self.assertEqual(transformed_eeg['eeg'].shape, (32, 256))
+
+        eeg = np.random.randn(32, 128, 4)
+        transformed_eeg = SetSamplingRate(
+            origin_sampling_rate=128, target_sampling_rate=256, axis=1)(eeg=eeg)
+        self.assertEqual(transformed_eeg['eeg'].shape, (32, 256, 4))
+
     def test_rearrange_electrode(self):
         src_eeg = np.random.rand(3, 128)
         tgt_eeg = RearrangeElectrode(source=['FP1', 'F3', 'F7'],
-                                 target=['F3', 'F7', 'FP1', 'AF2'],
-                                 missing='mean')(eeg=src_eeg)['eeg']
+                                     target=['F3', 'F7', 'FP1', 'AF2'],
+                                     missing='mean')(eeg=src_eeg)['eeg']
         self.assertEqual(tgt_eeg.shape, (4, 128))
 
         self.assertEqual(src_eeg[0, :].tolist(), tgt_eeg[2, :].tolist())

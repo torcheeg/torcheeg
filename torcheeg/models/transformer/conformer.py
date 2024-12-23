@@ -4,7 +4,7 @@ import torch
 
 import torch.nn.functional as F
 from einops import rearrange
-from einops.layers.torch import Rearrange, Reduce
+from einops.layers.torch import Rearrange
 
 
 class PatchEmbedding(nn.Module):
@@ -159,8 +159,6 @@ class ClassificationHead(nn.Sequential):
 class Conformer(nn.Module):
     r'''
     The EEG Conformer model is based on the paper "EEG Conformer: Convolutional Transformer for EEG Decoding and Visualization". For more details, please refer to the following information. 
-
-    It is worth noting that this model is not designed for EEG analysis, but shows good performance and can serve as a good research start.
 
     - Paper: Song Y, Zheng Q, Liu B, et al. EEG Conformer: Convolutional Transformer for EEG Decoding and Visualization[J]. IEEE Transactions on Neural Systems and Rehabilitation Engineering, 2022.
     - URL: https://ieeexplore.ieee.org/document/9991178

@@ -23,10 +23,13 @@ class BCICIV2aDataset(BaseDataset):
 
     In order to use this dataset, the download folder :obj:`BCICIV_2a_mat` is required, containing the following files:
 
-    - http://bnci-horizon-2020.eu/database/data-sets/001-2014/A01T.mat
-    - http://bnci-horizon-2020.eu/database/data-sets/001-2014/A01E.mat
-    - ...
-    - http://bnci-horizon-2020.eu/database/data-sets/001-2014/A09E.mat
+    .. code-block:: python
+
+        BCICIV_2a_mat/
+        ├── A01T.mat
+        ├── A01E.mat
+        ├── ...
+        └── A09E.mat
 
     An example dataset for CNN-based methods:
 

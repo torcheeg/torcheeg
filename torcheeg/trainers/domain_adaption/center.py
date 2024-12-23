@@ -122,8 +122,8 @@ class CenterLossTrainer(ClassifierTrainer):
             lr (float): The learning rate. (default: :obj:`0.001`)
             weight_decay (float): The weight decay. (default: :obj:`0.0`)
             devices (int): The number of devices to use. (default: :obj:`1`)
-            accelerator (str): The accelerator to use. Available options are: 'cpu', 'gpu'. (default: :obj:`"cpu"`)
-            metrics (list of str): The metrics to use. Available options are: 'precision', 'recall', 'f1score', 'accuracy', 'matthews', 'auroc', and 'kappa'. (default: :obj:`['accuracy', 'precision', 'recall', 'f1score']`)
+            accelerator (str): The accelerator to use. Availabel options are: 'cpu', 'gpu'. (default: :obj:`"cpu"`)
+            metrics (list of str): The metrics to use. Availabel options are: 'precision', 'recall', 'f1score', 'accuracy', 'matthews', 'auroc', and 'kappa'. (default: :obj:`['accuracy', 'precision', 'recall', 'f1score']`)
 
         .. automethod:: fit
         .. automethod:: test
@@ -140,8 +140,7 @@ class CenterLossTrainer(ClassifierTrainer):
             weight_decay: float = 0.0,
             devices: int = 1,
             accelerator: str = "cpu",
-            metrics: List[str] = ['accuracy', 'precision', 'recall',
-                                  'f1score']):
+            metrics: List[str] = ["accuracy"]):
 
         super(CenterLossTrainer,
               self).__init__(extractor, num_classes, lr, weight_decay, devices,

@@ -22,9 +22,12 @@ class SEEDVFeatureDataset(BaseDataset):
 
     In order to use this dataset, the download folder :obj:`EEG_DE_features` is required, containing the following folder:
     
-    - 1_123.npz
-    - 2_123.npz
-    - ...
+    .. code-block:: python
+    
+        EEG_DE_features/
+        ├── 1_123.npz
+        ├── 2_123.npz
+        └── ...
 
     An example dataset for CNN-based methods:
 

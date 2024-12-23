@@ -78,8 +78,8 @@ class SimCLRTrainer(pl.LightningModule):
         weight_decay (float): The weight decay. (default: :obj:`0.0`)
         temperature (float): The temperature. (default: :obj:`0.1`)
         devices (int): The number of GPUs to use. (default: :obj:`1`)
-        accelerator (str): The accelerator to use. Available options are: 'cpu', 'gpu'. (default: :obj:`"cpu"`)
-        metrics (List[str]): The metrics to use. Available options are: 'acc_top1', 'acc_top5', 'acc_mean_pos'. (default: :obj:`["acc_top1"]`)
+        accelerator (str): The accelerator to use. Availabel options are: 'cpu', 'gpu'. (default: :obj:`"cpu"`)
+        metrics (List[str]): The metrics to use. Availabel options are: 'acc_top1', 'acc_top5', 'acc_mean_pos'. (default: :obj:`["acc_top1"]`)
 
     .. automethod:: fit
     '''

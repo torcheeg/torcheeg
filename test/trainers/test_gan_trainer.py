@@ -99,7 +99,7 @@ class TestWGANGPTrainer(unittest.TestCase):
                              metric_classifier=Classifier(),
                              metric_num_features=9 * 9 * 64,
                              metrics=['fid', 'is'],
-                             accelerator='gpu')
+                             accelerator='cpu')
         trainer.fit(train_loader, val_loader, max_epochs=1)
         trainer.test(test_loader)
 
@@ -121,7 +121,7 @@ class TestWGANGPTrainer(unittest.TestCase):
                               metric_classifier=Classifier(),
                               metric_num_features=9 * 9 * 64,
                               metrics=['fid'],
-                             accelerator='gpu')
+                             accelerator='cpu')
         trainer.fit(train_loader, val_loader, max_epochs=1)
         trainer.test(test_loader)
 

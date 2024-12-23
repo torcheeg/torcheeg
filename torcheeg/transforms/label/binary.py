@@ -49,7 +49,12 @@ class Binary(LabelTransform):
 
     def apply(self, y: Union[int, float, List], **kwargs) -> Union[int, List]:
         if isinstance(y, list):
-            return [int(l >= self.threshold) for l in y]
+            return [self.binarialize(l) for l in y]
+        return self.binarialize(y)
+    
+    def binarialize(self, y: Union[int, float]) -> int:
+        if np.isnan(y):
+            return np.random.randint(2)
         return int(y >= self.threshold)
 
     @property

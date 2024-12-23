@@ -1,6 +1,11 @@
 from typing import Dict, Tuple, Union
-from scipy.signal.windows import hann 
+
 from scipy.signal import butter, lfilter
+
+try:
+    from scipy.signal.windows import hann
+except ImportError:
+    from scipy.signal import hann
 
 import numpy as np
 
@@ -26,7 +31,8 @@ class BandTransform(EEGTransform):
                      "gamma": [31, 49]
                  },
                  apply_to_baseline: bool = False):
-        super(BandTransform, self).__init__(apply_to_baseline=apply_to_baseline)
+        super(BandTransform, self).__init__(
+            apply_to_baseline=apply_to_baseline)
         self.sampling_rate = sampling_rate
         self.order = order
         self.band_dict = band_dict
@@ -75,9 +81,10 @@ class BandSignal(BandTransform):
         order (int): The order of the filter. (default: :obj:`5`)
         band_dict: (dict): Band name and the critical sampling rate or frequencies. By default, the differential entropy of the four sub-bands, theta, alpha, beta and gamma, is calculated. (default: :obj:`{...}`)
         apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (default: :obj:`False`)
-    
+
     .. automethod:: __call__
     '''
+
     def __call__(self,
                  *args,
                  eeg: np.ndarray,
@@ -120,7 +127,7 @@ class BandDifferentialEntropy(BandTransform):
     - Related Project: https://github.com/qeebeast7/SFCSAN/
 
     In most cases, choosing :obj:`BandDifferentialEntropy` and :obj:`BandDifferentialEntropyV1` does not make much difference. If you have other comments, please feel free to pull request.
-    
+
     .. code-block:: python
 
         from torcheeg import transforms
@@ -134,9 +141,10 @@ class BandDifferentialEntropy(BandTransform):
         order (int): The order of the filter. (default: :obj:`5`)
         band_dict: (dict): Band name and the critical sampling rate or frequencies. By default, the differential entropy of the four sub-bands, theta, alpha, beta and gamma, is calculated. (default: :obj:`{...}`)
         apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (default: :obj:`False`)
-    
+
     .. automethod:: __call__
     '''
+
     def __call__(self,
                  *args,
                  eeg: np.ndarray,
@@ -175,9 +183,10 @@ class BandDifferentialEntropyV1(EEGTransform):
         order (int): The order of the filter. (default: :obj:`5`)
         band_dict: (dict): Band name and the critical sampling rate or frequencies. By default, the differential entropy of the four sub-bands, theta, alpha, beta and gamma, is calculated. (default: :obj:`{...}`)
         apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (default: :obj:`False`)
-    
+
     .. automethod:: __call__
     '''
+
     def __init__(self,
                  sampling_rate: int = 128,
                  fft_n: int = None,
@@ -275,6 +284,7 @@ class BandPowerSpectralDensity(EEGTransform):
 
     .. automethod:: __call__
     '''
+
     def __init__(self,
                  sampling_rate: int = 128,
                  fft_n: int = None,
@@ -365,9 +375,10 @@ class BandMeanAbsoluteDeviation(BandTransform):
         sampling_rate (int): The original sampling rate of EEG signals in Hz. (default: :obj:`128`)
         order (int): The order of the filter. (default: :obj:`5`)
         band_dict: (dict): Band name and the critical sampling rate or frequencies. By default, the mean absolute deviation of the four sub-bands, theta, alpha, beta and gamma, is calculated. (default: :obj:`{...}`)
-    
+
     .. automethod:: __call__
     '''
+
     def __call__(self,
                  *args,
                  eeg: np.ndarray,
@@ -402,9 +413,10 @@ class BandKurtosis(BandTransform):
         sampling_rate (int): The original sampling rate of EEG signals in Hz. (default: :obj:`128`)
         order (int): The order of the filter. (default: :obj:`5`)
         band_dict: (dict): Band name and the critical sampling rate or frequencies. By default, the kurtosis of the four sub-bands, theta, alpha, beta and gamma, is calculated. (default: :obj:`{...}`)
-    
+
     .. automethod:: __call__
     '''
+
     def __call__(self,
                  *args,
                  eeg: np.ndarray,
@@ -454,6 +466,7 @@ class BandSkewness(BandTransform):
 
     .. automethod:: __call__
     '''
+
     def __call__(self,
                  *args,
                  eeg: np.ndarray,

@@ -59,8 +59,8 @@ class WGANGPTrainer(pl.LightningModule):
         weight_decay: (float): The weight decay (L2 penalty). (default: :obj:`0.0`)
         latent_channels (int): The dimension of the latent vector. If not specified, it will be inferred from the :obj:`in_channels` attribute of the generator. (default: :obj:`None`)
         devices (int): The number of GPUs to use. (default: :obj:`1`)
-        accelerator (str): The accelerator to use. Available options are: 'cpu', 'gpu'. (default: :obj:`"cpu"`)
-        metrics (List[str]): The metrics to use. The metrics to use. Available options are: 'fid', 'is'. (default: :obj:`[]`)
+        accelerator (str): The accelerator to use. Availabel options are: 'cpu', 'gpu'. (default: :obj:`"cpu"`)
+        metrics (List[str]): The metrics to use. The metrics to use. Availabel options are: 'fid', 'is'. (default: :obj:`[]`)
         metric_extractor (nn.Module): The feature extractor model for computing the FID score. (default: :obj:`None`)
         metric_classifier (nn.Module): The classifier model for computing the IS score. (default: :obj:`None`)
         metric_num_features (int): The number of features extracted by the metric_extractor. If not specified, it will be inferred from the :obj:`in_channels` attribute of the metric_extractor. (default: :obj:`None`)
@@ -420,8 +420,8 @@ class CWGANGPTrainer(WGANGPTrainer):
         weight_decay: (float): The weight decay (L2 penalty). (default: :obj:`0.0`)
         latent_channels (int): The dimension of the latent vector. If not specified, it will be inferred from the :obj:`in_channels` attribute of the generator. (default: :obj:`None`)
         devices (int): The number of GPUs to use. (default: :obj:`1`)
-        accelerator (str): The accelerator to use. Available options are: 'cpu', 'gpu'. (default: :obj:`"cpu"`)
-        metrics (List[str]): The metrics to use. The metrics to use. Available options are: 'fid', 'is'. (default: :obj:`[]`)
+        accelerator (str): The accelerator to use. Availabel options are: 'cpu', 'gpu'. (default: :obj:`"cpu"`)
+        metrics (List[str]): The metrics to use. The metrics to use. Availabel options are: 'fid', 'is'. (default: :obj:`[]`)
     
     .. automethod:: fit
     .. automethod:: test
