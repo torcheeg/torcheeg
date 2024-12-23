@@ -3,9 +3,28 @@ from typing import Callable, Dict, List, Union
 import numpy as np
 import torch
 from scipy.signal import hilbert
-from torch_geometric.data import Data
 
 from ..base_transform import EEGTransform
+
+
+class LazyLoader:
+    def __init__(self, lib_name):
+        self._lib_name = lib_name
+        self._module = None
+
+    def __getattr__(self, name):
+        if self._module is None:
+            try:
+                self._module = __import__(self._lib_name)
+            except ImportError:
+                raise ImportError(
+                    f"To use this functionality, you need to install `{self._lib_name}`. "
+                    f"Please refer to https://pytorch-geometric.readthedocs.io/en/latest/notes/installation.html"
+                )
+        return getattr(self._module, name)
+
+
+pyg = LazyLoader('torch_geometric')
 
 
 class ToG(EEGTransform):
@@ -36,9 +55,10 @@ class ToG(EEGTransform):
         binary (bool): Whether to binarize the weights on the edges to 0 and 1. If set to True, binarization are done after topk and threshold, the edge weights that still have values are set to 1, otherwise they are set to 0. (default: :obj:`False`)
         complete_graph (bool): Whether to build as a complete graph. If False, only construct edges between electrodes based on non-zero elements; if True, construct variables between all electrodes and set the weight of non-existing edges to 0. (default: :obj:`False`)
         apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (default: :obj:`False`)
-    
+
     .. automethod:: __call__
     '''
+
     def __init__(self,
                  adj: List[List],
                  add_self_loop: bool = True,
@@ -84,7 +104,7 @@ class ToG(EEGTransform):
                  *args,
                  eeg: Union[np.ndarray, torch.Tensor],
                  baseline: Union[np.ndarray, None] = None,
-                 **kwargs) -> Dict[str, Data]:
+                 **kwargs) -> Dict[str, 'pyg.data.Data']:
         r'''
         Args:
             eeg (np.ndarray): The input EEG signals in shape of [number of electrodes, number of data points].
@@ -95,8 +115,8 @@ class ToG(EEGTransform):
         '''
         return super().__call__(*args, eeg=eeg, baseline=baseline, **kwargs)
 
-    def apply(self, eeg: Union[np.ndarray, torch.Tensor], **kwargs) -> Data:
-        data = Data(edge_index=self.adj._indices())
+    def apply(self, eeg: Union[np.ndarray, torch.Tensor], **kwargs) -> 'pyg.data.Data':
+        data = pyg.data.Data(edge_index=self.adj._indices())
         if isinstance(eeg, np.ndarray):
             data.x = torch.from_numpy(eeg).float()
         else:
@@ -156,9 +176,10 @@ class ToDynamicG(EEGTransform):
         binary (bool): Whether to binarize the weights on the edges to 0 and 1. If set to True, binarization are done after topk and threshold, the edge weights that still have values are set to 1, otherwise they are set to 0. (default: :obj:`False`)
         complete_graph (bool): Whether to build as a complete graph. If False, only construct edges between electrodes based on non-zero elements; if True, construct variables between all electrodes and set the weight of non-existing edges to 0. (default: :obj:`False`)
         apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (default: :obj:`False`)
-    
+
     .. automethod:: __call__
     '''
+
     def __init__(self,
                  edge_func: Union[str, Callable] = 'gaussian_distance',
                  add_self_loop: bool = True,
@@ -248,7 +269,7 @@ class ToDynamicG(EEGTransform):
                  *args,
                  eeg: Union[np.ndarray, torch.Tensor],
                  baseline: Union[np.ndarray, None] = None,
-                 **kwargs) -> Dict[str, Data]:
+                 **kwargs) -> Dict[str, 'pyg.data.Data']:
         r'''
         Args:
             eeg (np.ndarray): The input EEG signals in shape of [number of electrodes, number of data points].
@@ -259,9 +280,9 @@ class ToDynamicG(EEGTransform):
         '''
         return super().__call__(*args, eeg=eeg, baseline=baseline, **kwargs)
 
-    def apply(self, eeg: Union[np.ndarray, torch.Tensor], **kwargs) -> Data:
+    def apply(self, eeg: Union[np.ndarray, torch.Tensor], **kwargs) -> 'pyg.data.Data':
         adj = self.adj(eeg)
-        data = Data(edge_index=adj._indices())
+        data = pyg.data.Data(edge_index=adj._indices())
         if isinstance(eeg, np.ndarray):
             data.x = torch.from_numpy(eeg).float()
         else:

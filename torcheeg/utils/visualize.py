@@ -1,9 +1,11 @@
 import io
-from typing import List, Tuple, Union
+import itertools
+from typing import Dict, List, Tuple, Union
 
 import matplotlib
 import matplotlib.pyplot as plt
 import mne
+import networkx as nx
 import numpy as np
 import PIL
 import torch
@@ -13,6 +15,27 @@ from mne_connectivity.viz import plot_connectivity_circle
 from pylab import cm
 
 mne.set_log_level('CRITICAL')
+
+
+class LazyLoader:
+    def __init__(self, lib_name):
+        self._lib_name = lib_name
+        self._module = None
+
+    def __getattr__(self, name):
+        if self._module is None:
+            try:
+                self._module = __import__(self._lib_name)
+            except ImportError:
+                raise ImportError(
+                    f"To use this functionality, you need to install `{self._lib_name}`. "
+                    f"Please refer to https://pytorch-geometric.readthedocs.io/en/latest/notes/installation.html"
+                )
+        return getattr(self._module, name)
+
+
+pyg = LazyLoader('torch_geometric')
+
 
 default_montage = mne.channels.make_standard_montage('standard_1020')
 
@@ -55,7 +78,7 @@ def plot_raw_topomap(tensor: torch.Tensor,
         sampling_rate (int): Sample rate of the data.
         plot_second_list (list): The time (second) at which the topographic map is drawn. (default: :obj:`[0.0, 0.25, 0.5, 0.75]`)
         montage (any): Channel positions and digitization points defined in obj:`mne`. (default: :obj:`mne.channels.make_standard_montage('standard_1020')`)
-    
+
     Returns:
         np.ndarray: The output image in the form of :obj:`np.ndarray`.
     '''
@@ -116,7 +139,7 @@ def plot_feature_topomap(tensor: torch.Tensor,
         feature_list (list): . The names of feature dimensions displayed on the output image, whose length should be consistent with the dimensions of features. If set to None, the dimension index of the feature is used instead. (default: :obj:`None`)
         montage (any): Channel positions and digitization points defined in obj:`mne`. (default: :obj:`mne.channels.make_standard_montage('standard_1020')`)
         fig_shape (Tuple[int, int], optional): The shape of the sub graphs (width, height). If `None`, the layout is automatically set to (1, len(feature_list)). (default: :obj:`None`)
-    
+
     Returns:
         np.ndarray: The output image in the form of :obj:`np.ndarray`.
     '''
@@ -211,7 +234,7 @@ def plot_signal(tensor: torch.Tensor,
         channel_list (list): The channel name lists corresponding to the input EEG signal. If the dataset in TorchEEG is used, please refer to the CHANNEL_LIST related constants in the :obj:`torcheeg.constants` module.
         sampling_rate (int): Sample rate of the data.
         montage (any): Channel positions and digitization points defined in obj:`mne`. (default: :obj:`mne.channels.make_standard_montage('standard_1020')`)
-    
+
     Returns:
         np.ndarray: The output image in the form of :obj:`np.ndarray`.
     '''
@@ -250,7 +273,7 @@ def plot_3d_tensor(tensor: torch.Tensor,
     Args:
         tensor (torch.Tensor): The input 3-D tensor.
         color (colors.Colormap or str): The color map used for the face color of the axes. (default: :obj:`hsv`)
-    
+
     Returns:
         np.ndarray: The output image in the form of :obj:`np.ndarray`.
     '''
@@ -295,11 +318,11 @@ def plot_2d_tensor(tensor: torch.Tensor,
         :align: center
 
     |
-    
+
     Args:
         tensor (torch.Tensor): The input 2-D tensor.
         color (colors.Colormap or str): The color map used for the face color of the axes. (default: :obj:`hsv`)
-    
+
     Returns:
         np.ndarray: The output image in the form of :obj:`np.ndarray`.
     '''
@@ -328,10 +351,10 @@ def plot_adj_connectivity(adj: torch.Tensor,
     .. code-block:: python
 
         import torch
-        
+
         from torcheeg.utils import plot_adj_connectivity
         from torcheeg.constants import SEED_CHANNEL_LIST
-        
+
         adj = torch.randn(62, 62) # relationship between 62 electrodes
         img = plot_adj_connectivity(adj, SEED_CHANNEL_LIST)
         # If using jupyter, the output image will be drawn on notebooks.
@@ -341,14 +364,14 @@ def plot_adj_connectivity(adj: torch.Tensor,
         :align: center
 
     |
-    
+
     Args:
         adj (torch.Tensor): The input 2-D adjacency tensor.
         channel_list (list): The electrode name of the row/column in the input adjacency matrix, used to label the electrode corresponding to the node on circular networks. If set to None, the electrode's index is used. (default: :obj:`None`)
         region_list (list): region_list (list): The region list where the electrodes are divided into different brain regions. If set, electrodes in the same area will be aligned on the map and filled with the same color. (default: :obj:`None`)
         num_connectivity (int): The number of connections to retain on circular networks, where edges with larger weights in the adjacency matrix will be limitedly retained, and the excess is omitted. (default: :obj:`50`)
         linewidth (float): Line width to use for connections. (default: :obj:`1.5`)
-    
+
     Returns:
         np.ndarray: The output image in the form of :obj:`np.ndarray`.
     '''
@@ -411,6 +434,91 @@ def plot_adj_connectivity(adj: torch.Tensor,
                              linewidth=linewidth,
                              fontsize_names=16)
     fig.tight_layout()
+    img = plot2image(fig)
+    plt.show()
+
+    return np.array(img)
+
+
+def plot_graph(data: 'pyg.data.Data',
+               channel_location_dict: Dict[str, List[int]],
+               color: Union[colors.Colormap, str] = 'hsv'):
+    r'''
+    Visualize a graph structure. For the electrode position information, please refer to constants grouped by dataset:
+
+    - datasets.constants.emotion_recognition.deap.DEAP_CHANNEL_LOCATION_DICT
+    - datasets.constants.emotion_recognition.dreamer.DREAMER_CHANNEL_LOCATION_DICT
+    - datasets.constants.emotion_recognition.seed.SEED_CHANNEL_LOCATION_DICT
+    - ...
+
+    .. code-block:: python
+
+        from torcheeg.utils.pyg import plot_graph
+        from torcheeg.datasets.constants import DEAP_CHANNEL_LOCATION_DICT
+        from torcheeg.transforms.pyg import ToG
+        import numpy as np
+
+        eeg = np.random.randn(32, 128)
+        g = ToG(DEAP_ADJACENCY_MATRIX)(eeg=eeg)['eeg']
+        img = plot_graph(g)
+        # If using jupyter, the output image will be drawn on notebooks.
+
+    .. image:: _static/plot_graph.png
+        :alt: The output image of plot_graph
+        :align: center
+
+    |
+
+    Args:
+        data (torch_geometric.data.Data): The input graph structure represented by torch_geometric.
+        channel_location_dict (dict): Electrode location information. Represented in dictionary form, where :obj:`key` corresponds to the electrode name and :obj:`value` corresponds to the row index and column index of the electrode on the grid.
+        color (colors.Colormap or str): The color map used for the face color of the axes. (default: :obj:`hsv`)
+
+    Returns:
+        np.ndarray: The output image in the form of :obj:`np.ndarray`.
+    '''
+    fig = plt.figure()
+
+    # convert to networkx
+    edge_attrs = ['edge_weight'] * len(data.edge_weight.tolist())
+    g = pyg.utils.to_networkx(data, edge_attrs=edge_attrs)
+
+    # get color of edges
+    edge_weights = [
+        edgedata["edge_weight"] for _, _, edgedata in g.edges(data=True)
+    ]
+    colormap = cm.get_cmap(color)
+    edge_colors = colormap(edge_weights)
+
+    # get posistion of nodes
+    # flip bottom down
+    max_pos = max(list(itertools.chain(*channel_location_dict.values())))
+    # rot 90
+    pos = {
+        i: [v[1], max_pos - v[0]]
+        for i, v in enumerate(channel_location_dict.values())
+    }
+    labels = {i: v for i, v in enumerate(channel_location_dict.keys())}
+
+    # draw network
+    nx.draw_networkx(g,
+                     node_size=550,
+                     node_color='w',
+                     edgecolors='w',
+                     pos=pos,
+                     labels=labels,
+                     with_labels=True,
+                     edge_color=edge_colors)
+
+    plt.colorbar(matplotlib.cm.ScalarMappable(cmap=colormap))
+
+    # remove margin
+    plt.gca().set_axis_off()
+    plt.subplots_adjust(top=1, bottom=0, right=1, left=0, hspace=0, wspace=0)
+    plt.margins(0, 0)
+    plt.gca().xaxis.set_major_locator(plt.NullLocator())
+    plt.gca().yaxis.set_major_locator(plt.NullLocator())
+
     img = plot2image(fig)
     plt.show()
 

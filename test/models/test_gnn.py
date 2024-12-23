@@ -4,8 +4,7 @@ import torch
 from torch_geometric.data import Batch, Data
 
 from torcheeg.datasets.constants import DEAP_GENERAL_REGION_LIST
-from torcheeg.models import DGCNN, LGGNet
-from torcheeg.models.pyg import GIN, RGNN
+from torcheeg.models import DGCNN, LGGNet, GIN, RGNN
 
 
 class TestGNN(unittest.TestCase):

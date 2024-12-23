@@ -57,7 +57,7 @@ transformed_eeg = transforms.BandDifferentialEntropy()(eeg=eeg)['eeg']
 #
 
 from torcheeg.datasets.constants import DEAP_ADJACENCY_MATRIX
-from torcheeg.transforms.pyg import ToG
+from torcheeg.transforms.graph import ToG
 
 eeg = np.random.randn(32, 128)
 transformed_eeg = ToG(DEAP_ADJACENCY_MATRIX)(eeg=eeg)['eeg']

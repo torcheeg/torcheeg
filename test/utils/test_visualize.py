@@ -2,14 +2,16 @@ import unittest
 
 import numpy as np
 import torch
-from torcheeg.datasets.constants import (DEAP_ADJACENCY_MATRIX, DEAP_CHANNEL_LIST,
-                                                                  DEAP_CHANNEL_LOCATION_DICT)
-from torcheeg.datasets.constants import \
-    SEED_CHANNEL_LIST, SEED_GENERAL_REGION_LIST
-from torcheeg.transforms.pyg import ToG
-from torcheeg.utils import (plot_2d_tensor, plot_3d_tensor, plot_feature_topomap, plot_raw_topomap, plot_signal,
-                            plot_adj_connectivity)
-from torcheeg.utils.pyg import plot_graph
+
+from torcheeg.datasets.constants import (DEAP_ADJACENCY_MATRIX,
+                                         DEAP_CHANNEL_LIST,
+                                         DEAP_CHANNEL_LOCATION_DICT,
+                                         SEED_CHANNEL_LIST,
+                                         SEED_GENERAL_REGION_LIST)
+from torcheeg.transforms.graph import ToG
+from torcheeg.utils import (plot_2d_tensor, plot_3d_tensor,
+                            plot_adj_connectivity, plot_feature_topomap,
+                            plot_graph, plot_raw_topomap, plot_signal)
 
 
 class TestVisualize(unittest.TestCase):

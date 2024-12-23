@@ -7,7 +7,7 @@ import scipy.io as scio
 from ..base_dataset import BaseDataset
 from ....utils import get_random_dir_path
 
-log = logging.getLogger(__name__)
+log = logging.getLogger('torcheeg')
 
 
 class BCICIV2aDataset(BaseDataset):

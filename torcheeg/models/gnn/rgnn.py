@@ -1,11 +1,46 @@
+from typing import Tuple, Union
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch_geometric.data import Batch
-from torch_geometric.nn import SGConv, global_add_pool
 from torch_scatter import scatter_add
 
-from typing import Union, Tuple
+
+class LazyLoader:
+    def __init__(self, lib_name):
+        self._lib_name = lib_name
+        self._module = None
+        self._dummy_classes = {}
+
+    def __getattr__(self, name):
+        if self._module is None:
+            if name == 'nn':
+                return LazySubModule(self, 'nn')
+            try:
+                self._module = __import__(self._lib_name)
+            except ImportError:
+                raise ImportError(
+                    f"To use this functionality, you need to install `{self._lib_name}`. "
+                    f"Please refer to https://pytorch-geometric.readthedocs.io/en/latest/notes/installation.html"
+                )
+        return getattr(self._module, name)
+
+
+class LazySubModule:
+    def __init__(self, parent, name):
+        self._parent = parent
+        self._name = name
+
+    def __getattr__(self, name):
+        if name not in self._parent._dummy_classes:
+            self._parent._dummy_classes[name] = type(name, (), {
+                '__init__': lambda *args, **kwargs: None,
+                '__getattr__': lambda self, name: None
+            })
+        return self._parent._dummy_classes[name]
+
+
+pyg = LazyLoader('torch_geometric')
 
 
 def maybe_num_electrodes(index: torch.Tensor, num_electrodes: Union[int, None] = None) -> int:
@@ -37,21 +72,23 @@ def add_remaining_self_loops(edge_index: torch.Tensor,
             loop_weight[row[inv_mask]] = remaining_edge_weight
 
         edge_weight = torch.cat([edge_weight[mask], loop_weight], dim=0)
-    loop_index = torch.arange(0, num_electrodes, dtype=row.dtype, device=row.device)
+    loop_index = torch.arange(
+        0, num_electrodes, dtype=row.dtype, device=row.device)
     loop_index = loop_index.unsqueeze(0).repeat(2, 1)
     edge_index = torch.cat([edge_index[:, mask], loop_index], dim=1)
 
     return edge_index, edge_weight
 
 
-class NewSGConv(SGConv):
+class NewSGConv(pyg.nn.SGConv):
     def __init__(self,
                  in_channels: int,
                  out_channels: int,
                  num_layers: int = 1,
                  cached: bool = False,
                  bias: bool = True):
-        super(NewSGConv, self).__init__(in_channels, out_channels, K=num_layers, cached=cached, bias=bias)
+        super(NewSGConv, self).__init__(in_channels, out_channels,
+                                        K=num_layers, cached=cached, bias=bias)
 
     # allow negative edge weights
     @staticmethod
@@ -61,10 +98,12 @@ class NewSGConv(SGConv):
              improved: bool = False,
              dtype: Union[torch.dtype, None] = None):
         if adj is None:
-            adj = torch.ones((edge_index.size(1), ), dtype=dtype, device=edge_index.device)
+            adj = torch.ones((edge_index.size(1), ),
+                             dtype=dtype, device=edge_index.device)
 
         fill_value = 1 if not improved else 2
-        edge_index, adj = add_remaining_self_loops(edge_index, adj, fill_value, num_electrodes)
+        edge_index, adj = add_remaining_self_loops(
+            edge_index, adj, fill_value, num_electrodes)
         row, col = edge_index
         deg = scatter_add(torch.abs(adj), row, dim=0, dim_size=num_electrodes)
         deg_inv_sqrt = deg.pow(-0.5)
@@ -75,18 +114,19 @@ class NewSGConv(SGConv):
     def forward(self, x: torch.Tensor, edge_index: torch.Tensor, adj: Union[None, torch.Tensor] = None) -> torch.Tensor:
         """"""
         if not self.cached or self.cached_result is None:
-            edge_index, norm = NewSGConv.norm(edge_index, x.size(0), adj, dtype=x.dtype)
+            edge_index, edge_weight = NewSGConv.norm(
+                edge_index, x.size(0), adj, dtype=x.dtype)
 
             for k in range(self.K):
-                x = self.propagate(edge_index, x=x, norm=norm)
+                x = self.propagate(edge_index, x=x, edge_weight=edge_weight)
             self.cached_result = x
 
         return self.lin(self.cached_result)
 
-    def message(self, x_j: torch.Tensor, norm: torch.Tensor) -> torch.Tensor:
+    def message(self, x_j: torch.Tensor, edge_weight: torch.Tensor) -> torch.Tensor:
         # x_j: (batch_size*num_electrodes*num_electrodes, in_channels)
-        # norm: (batch_size*num_electrodes*num_electrodes, )
-        return norm.view(-1, 1) * x_j
+        # edge_weight: (batch_size*num_electrodes*num_electrodes, )
+        return edge_weight.view(-1, 1) * x_j
 
 
 class RGNN(torch.nn.Module):
@@ -139,6 +179,7 @@ class RGNN(torch.nn.Module):
         dropout (float): Probability of an element to be zeroed in the dropout layers at the output fully-connected layer. (default: :obj:`0.7`)
         learn_edge_weights (bool): Whether to learn a set of parameters to adjust the adjacency matrix. (default: :obj:`True`)
     '''
+
     def __init__(self,
                  adj: Union[torch.Tensor, list],
                  num_electrodes: int = 62,
@@ -159,16 +200,19 @@ class RGNN(torch.nn.Module):
         self.dropout = dropout
         self.learn_edge_weights = learn_edge_weights
 
-        self.xs, self.ys = torch.tril_indices(self.num_electrodes, self.num_electrodes, offset=0)
+        self.xs, self.ys = torch.tril_indices(
+            self.num_electrodes, self.num_electrodes, offset=0)
         if isinstance(adj, list):
             adj = torch.tensor(adj)
-        adj = adj.reshape(self.num_electrodes, self.num_electrodes)[self.xs, self.ys]  # strict lower triangular values
+        adj = adj.reshape(self.num_electrodes, self.num_electrodes)[
+            self.xs, self.ys]  # strict lower triangular values
         self.adj = nn.Parameter(adj, requires_grad=learn_edge_weights)
 
-        self.conv1 = NewSGConv(in_channels=in_channels, out_channels=hid_channels, num_layers=num_layers)
+        self.conv1 = NewSGConv(in_channels=in_channels,
+                               out_channels=hid_channels, num_layers=num_layers)
         self.fc = nn.Linear(hid_channels, num_classes)
 
-    def forward(self, data: Batch) -> torch.Tensor:
+    def forward(self, data: 'pyg.data.Batch') -> torch.Tensor:
         r'''
         Args:
             data (torch_geometric.data.Batch): EEG signal representation, the ideal input shape of data.x is :obj:`[n, 62, 4]`. Here, :obj:`n` corresponds to the batch size, :obj:`62` corresponds to the number of electrodes, and :obj:`4` corresponds to :obj:`in_channels`.
@@ -178,13 +222,15 @@ class RGNN(torch.nn.Module):
         '''
         batch_size = data.num_graphs
         x, edge_index = data.x, data.edge_index
-        adj = torch.zeros((self.num_electrodes, self.num_electrodes), device=edge_index.device)
+        adj = torch.zeros(
+            (self.num_electrodes, self.num_electrodes), device=edge_index.device)
         adj[self.xs.to(adj.device), self.ys.to(adj.device)] = self.adj
-        adj = adj + adj.transpose(1, 0) - torch.diag(adj.diagonal())  # copy values from lower tri to upper tri
+        # copy values from lower tri to upper tri
+        adj = adj + adj.transpose(1, 0) - torch.diag(adj.diagonal())
         adj = adj.reshape(-1).repeat(batch_size)
         x = F.relu(self.conv1(x, edge_index, adj))
 
-        x = global_add_pool(x, data.batch, size=batch_size)
+        x = pyg.nn.global_add_pool(x, data.batch, size=batch_size)
         x = F.dropout(x, p=self.dropout, training=self.training)
         x = self.fc(x)
 
