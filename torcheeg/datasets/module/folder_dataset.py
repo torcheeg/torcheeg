@@ -129,14 +129,22 @@ class FolderDataset(BaseDataset):
         self.__dict__.update(params)
 
     @staticmethod
-    def process_record(file: Any = None,
+    def read_record(record: Tuple, read_fn: Union[None, Callable] = None, **kwargs) -> Dict:
+        file_path, _, _ = record
+        trial_samples = read_fn(file_path, **kwargs)
+
+        return {
+            'trial_samples': trial_samples,
+        }
+
+    @staticmethod
+    def process_record(record: Tuple,
+                       trial_samples: mne.Epochs,
                        offline_transform: Union[None, Callable] = None,
-                       read_fn: Union[None, Callable] = None,
                        **kwargs):
 
-        file_path, subject_id, label = file
+        _, subject_id, label = record
 
-        trial_samples = read_fn(file_path, **kwargs)
         events = [i[0] for i in trial_samples.events]
         events.append(
             events[-1] +

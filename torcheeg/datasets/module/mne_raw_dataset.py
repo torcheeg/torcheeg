@@ -87,12 +87,16 @@ class MNERawDataset(BaseDataset):
         self.__dict__.update(params)
 
     @staticmethod
-    def process_record(file: Any = None,
+    def read_record(record: str, **kwargs) -> Dict:
+        return {}
+    
+    @staticmethod
+    def process_record(record: Tuple,
                        offline_transform: Union[None, Callable] = None,
                        chunk_size: int = 500,
                        overlap: int = 0,
                        **kwargs):
-        raw, info = file
+        raw, info = record
         data, times = raw[:, :]
         
         # Calculate the step size
