@@ -22,16 +22,18 @@ class FACEDFeatureDataset(BaseDataset):
 
     In order to use this dataset, the download folder :obj:`EEG_Features`(download from this url: https://www.synapse.org/#!Synapse:syn52368847) is required, containing the following files:
     
-    - EEG_Features
-        - DE
-            + sub000.pkl.pkl (two .pkl is a mistake, when __init__ function is auto called, it will be renamed to sub000.pkl by func: rename_pkl_files)
-            + sub001.pkl.pkl
-            + sub002.pkl.pkl
-            + ...
-        - PSD
-            + sub000.pkl.pkl
-            + ...
-            
+    .. code-block:: python
+    
+        EEG_Features/
+        ├── DE/
+        │   ├── sub000.pkl.pkl  # will be renamed to sub000.pkl automatically
+        │   ├── sub001.pkl.pkl
+        │   ├── sub002.pkl.pkl
+        │   └── ...
+        └── PSD/
+            ├── sub000.pkl.pkl
+            └── ...
+
     An example dataset for CNN-based methods:
 
     .. code-block:: python

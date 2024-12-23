@@ -22,11 +22,14 @@ class MPEDFeatureDataset(BaseDataset):
 
     In order to use this dataset, the download folder :obj:`EEG_feature` is required, containing the following files:
     
-    - HHS
-    - Hjorth
-    - HOC
-    - ...
-    - STFT
+    .. code-block:: python
+    
+        EEG_feature/
+        ├── HHS/
+        ├── Hjorth/
+        ├── HOC/
+        ├── ...
+        └── STFT/
 
     An example dataset for CNN-based methods:
 

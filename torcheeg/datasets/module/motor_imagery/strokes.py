@@ -23,17 +23,20 @@ class StrokePatientsMIDataset(BaseDataset):
     
     In order to use this dataset, the downlowd root path is required, containing the following files and directories:
     
-    - sourcedata (dir)
-    - edffile (dir)
-    - task-motor-imagery_events.tsv
-    - ...
+    .. code-block:: python
+
+        StrokePatientsMIDataset/
+        ├── sourcedata/
+        ├── edffile/
+        ├── task-motor-imagery_events.tsv
+        └── ...
     
     An example:
     
     .. code-block:: python
 
         from torcheeg.transforms import Select,BandSignal
-        dataset = StrokePatientsMIDataset(root_path='your unzipped root path',
+        dataset = StrokePatientsMIDataset(root_path='./StrokePatientsMIDataset',
                                 chunk_size=500,  # 1 second
                                 overlap = 0,
                                 io_path= './stroke_dataset_cache',

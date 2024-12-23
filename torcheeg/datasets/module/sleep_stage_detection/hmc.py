@@ -57,13 +57,15 @@ class HMCDataset(BaseDataset):
 
     In order to use this dataset, the following file structure is required:
 
-    - HMC/
-        - recordings/
-            - SN001.edf
-            - SN001.sleepscoring.edf
-            - SN002.edf
-            - SN002.sleepscoring.edf
-            - ...
+    .. code-block:: python
+
+        HMC/
+        └── recordings/
+            ├── SN001.edf
+            ├── SN001.sleepscoring.edf
+            ├── SN002.edf
+            ├── SN002.sleepscoring.edf
+            └── ...
 
     An example dataset:
 

@@ -19,12 +19,15 @@ class M3CVDataset(BaseDataset):
 
     In order to use this dataset, the download dataset folder :obj:`aistudio` is required, containing the following files:
     
-    - Calibration_Info.csv
-    - Enrollment_Info.csv
-    - Testing_Info.csv
-    - Calibration (unzipped Calibration.zip)
-    - Testing (unzipped Testing.zip)
-    - Enrollment (unzipped Enrollment.zip)
+    .. code-block:: python
+    
+        aistudio/
+        ├── Calibration_Info.csv
+        ├── Enrollment_Info.csv
+        ├── Testing_Info.csv
+        ├── Calibration/
+        ├── Testing/
+        └── Enrollment/
 
     An example dataset for CNN-based methods:
 

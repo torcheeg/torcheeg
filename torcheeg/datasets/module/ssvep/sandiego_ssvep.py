@@ -18,24 +18,26 @@ class  SanDiegoSSVEPDataset(BaseDataset):
     - Signals: Electroencephalogram (8 channels at 256Hz). Training and testing sets have been divided for each participant (totally 10 participants) in original datasets .
     - label: The order of the stimulus frequencies in the EEG data is [9.25, 11.25, 13.25, 9.75, 11.75, 13.75, 10.25, 12.25, 14.25, 10.75, 12.75, 14.75] Hz which are labeled to range(0,12).
     
-    
     In order to use this dataset, the download folder is required, containing the following files:
     
-    - S01testEEG.mat
-    - S01trainEEG.mat
-    - S02testEEG.mat
-    - ...
-    - S010testEEG.mat
-    - S010trainEEG.mat
+    .. code-block:: python
+
+        archive/
+        ├── S01testEEG.mat
+        ├── S01trainEEG.mat
+        ├── S02testEEG.mat
+        ├── ...
+        ├── S010testEEG.mat
+        └── S010trainEEG.mat
 
     An example:
     
     .. code-block:: python
 
         from torcheeg.transforms import Select,BandSignal
-        dataset = SanDiegoSSVEPDataset(root_path=r'D:\datasets\archive',
+        dataset = SanDiegoSSVEPDataset(root_path=r'./archive',
                                 chunk_size=512,  #2 second
-                                io_path= r'D:\datasets\tmp_out\sandiego',
+                                io_path= r'./tmp_out/sandiego',
                                 offline_transform=BandSignal(sampling_rate=256,band_dict={'frequency_range':[8,16]}),
                                 label_transform=Select('label')
         )

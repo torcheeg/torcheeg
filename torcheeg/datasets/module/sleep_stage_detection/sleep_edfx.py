@@ -67,14 +67,16 @@ class SleepEDFxDataset(BaseDataset):
 
     In order to use this dataset, the following file structure is required:
 
-    - sleep-edf-database-expanded-1.0.0/
-        - sleep-telemetry/
-            - ST7222JA-Hypnogram.edf
-            - ST7061J0-PSG.edf
-            - ST7041JO-Hypnogram.edf
-            - ST7021J0-PSG.edf
-        - sleep-telemetry/
-            - ...
+    .. code-block:: python
+
+        sleep-edf-database-expanded-1.0.0/
+        ├── sleep-telemetry/
+        │   ├── ST7222JA-Hypnogram.edf
+        │   ├── ST7061J0-PSG.edf
+        │   ├── ST7041JO-Hypnogram.edf
+        │   └── ST7021J0-PSG.edf
+        └── sleep-telemetry/
+            └── ...
 
     An example dataset:
 

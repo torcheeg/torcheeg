@@ -22,13 +22,15 @@ class P2018Dataset(BaseDataset):
 
     In order to use this dataset, the following file structure is required:
 
-    - P2018/
-        - training/
-            - tr03-0005
-            - tr03-0029
-            - tr03-0052
-            - tr03-0061
-            - ...
+    .. code-block:: python
+
+        P2018/
+        └── training/
+            ├── tr03-0005
+            ├── tr03-0029
+            ├── tr03-0052
+            ├── tr03-0061
+            └── ...
 
     An example dataset:
 

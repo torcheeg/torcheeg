@@ -83,10 +83,13 @@ class FACEDDataset(BaseDataset):
 
     In order to use this dataset, the download folder :obj:`Processed_data` (download from this url: https://www.synapse.org/#!Synapse:syn50615881) is required, containing the following files:
     
-    - sub000.pkl
-    - sub001.pkl
-    - sub002.pkl
-    - ...
+    .. code-block:: python
+    
+        Processed_data/
+        ├── sub000.pkl
+        ├── sub001.pkl
+        ├── sub002.pkl
+        └── ...
 
     An example dataset for CNN-based methods:
 

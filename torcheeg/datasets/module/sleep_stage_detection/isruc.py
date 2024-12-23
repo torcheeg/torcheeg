@@ -65,16 +65,18 @@ class ISRUCDataset(BaseDataset):
 
     In order to use this dataset, the following file structure is required:
     
-    - ISRUC-SLEEP/
-        - Subgroup_1/
-            - 1/
-                - 1.rec
-                - 1_1.txt
-            - ...
-        - Subgroup_2/
-            - ...
-        - Subgroup_3/
-            - ...
+    .. code-block:: python
+    
+        ISRUC-SLEEP/
+        ├── Subgroup_1/
+        │   ├── 1/
+        │   │   ├── 1.rec
+        │   │   └── 1_1.txt
+        │   └── ...
+        ├── Subgroup_2/
+        │   └── ...
+        └── Subgroup_3/
+            └── ...
     
     An example dataset:
 

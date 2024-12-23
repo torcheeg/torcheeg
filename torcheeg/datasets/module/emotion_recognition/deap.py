@@ -21,11 +21,14 @@ class DEAPDataset(BaseDataset):
     
     In order to use this dataset, the download folder :obj:`data_preprocessed_python` is required, containing the following files:
     
-    - s01.dat
-    - s02.dat
-    - s03.dat
-    - ...
-    - s32.dat
+    .. code-block:: python
+    
+        data_preprocessed_python/
+        ├── s01.dat
+        ├── s02.dat
+        ├── s03.dat
+        ├── ...
+        └── s32.dat
 
     An example dataset for CNN-based methods:
 
