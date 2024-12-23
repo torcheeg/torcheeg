@@ -21,8 +21,8 @@ class TestSleepStageDetectionDataset(unittest.TestCase):
         dataset = SleepEDFxDataset(io_path=io_path,
                                    root_path=root_path,
                                    online_transform=transforms.ToTensor(),
-                                   num_worker=4)
-
+                                   num_worker=8)
+        self.assertEqual(len(dataset), 457652)
         first_item = dataset[0]
         self.assertEqual(first_item[0].shape, (2, 3000))
 
@@ -33,8 +33,9 @@ class TestSleepStageDetectionDataset(unittest.TestCase):
         dataset = HMCDataset(io_path=io_path,
                              root_path=root_path,
                              online_transform=transforms.ToTensor(),
-                             num_worker=4)
+                             num_worker=8)
         
+        self.assertEqual(len(dataset), 106954)
         first_item = dataset[0]
         self.assertEqual(first_item[0].shape, (4, 3000))
 
@@ -45,8 +46,9 @@ class TestSleepStageDetectionDataset(unittest.TestCase):
         dataset = ISRUCDataset(io_path=io_path,
                                root_path=root_path,
                                online_transform=transforms.ToTensor(),
-                               num_worker=4)
+                               num_worker=8)
 
+        self.assertEqual(len(dataset), 113283)
         first_item = dataset[0]
         self.assertEqual(first_item[0].shape, (6, 3000))
 
@@ -57,8 +59,9 @@ class TestSleepStageDetectionDataset(unittest.TestCase):
         dataset = P2018Dataset(io_path=io_path,
                                root_path=root_path,
                                online_transform=transforms.ToTensor(),
-                               num_worker=4)
+                               num_worker=8)
 
+        self.assertEqual(len(dataset), 892563)
         first_item = dataset[0]
         self.assertEqual(first_item[0].shape, (6, 3000))
 

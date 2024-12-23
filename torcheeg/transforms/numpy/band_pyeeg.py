@@ -1,4 +1,5 @@
 from typing import Dict, Tuple, Union
+
 from scipy.signal import butter, lfilter
 
 try:

@@ -1,10 +1,13 @@
 import unittest
 
-import torch
 import numpy as np
+import torch
 
-from torcheeg.transforms import BaselineRemoval, Lambda, Compose, ToTensor, Resize, RandomNoise, RandomMask, BandDifferentialEntropy, MeanStdNormalize, ToGrid, Select, Binary,BaselineCorrection
 from torcheeg.datasets.constants import DEAP_CHANNEL_LOCATION_DICT
+from torcheeg.transforms import (BandDifferentialEntropy, BaselineCorrection,
+                                 BaselineRemoval, Binary, Compose, Lambda,
+                                 MeanStdNormalize, RandomMask, RandomNoise,
+                                 Resize, Select, ToGrid, ToTensor)
 
 
 class TestAnyTransforms(unittest.TestCase):

@@ -11,3 +11,4 @@ from .rearrange import *
 from .reshape import *
 from .spectrum import *
 from .to import *
+from .flip import *
