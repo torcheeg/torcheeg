@@ -39,4 +39,4 @@ plot_adj_connectivity
 plot_graph
 -----------------------------------------------------------
 
-.. autofunction:: torcheeg.utils.pyg.plot_graph
+.. autofunction:: torcheeg.utils.plot_graph
