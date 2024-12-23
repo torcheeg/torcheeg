@@ -80,6 +80,9 @@ Sleep Stage Detection Datasets
     :nosignatures:
     :template: datasettemplate.rst
 
+    HMCDataset
+    ISRUCDataset
+    P2018Dataset
     SleepEDFxDataset
 
 Customized Datasets
@@ -92,3 +95,6 @@ Customized Datasets
 
     FolderDataset
     CSVFolderDataset
+    MNERawDataset
+    ConcatDataset
+    PairDataset

@@ -25,6 +25,11 @@ Convolutional Neural Networks
    TSCeption
    CCNN
    SSTEmotionNet
+   TinySleepNet
+   DeepSleepNet
+   USleep
+   TSLANet
+   CSPNet
 
 Recurrent Neural Networks
 ----------------------------------
@@ -63,6 +68,9 @@ Transformer
    VanillaTransformer
    ViT
    ATCNet
+   Conformer
+   LaBraM
+   TCNet
 
 Generative Adversarial Network
 ----------------------------------

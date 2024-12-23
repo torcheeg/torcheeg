@@ -63,6 +63,8 @@ Numpy-based Transforms
     SetSamplingRate
     RearrangeElectrode
     Flatten
+    HorizontalFlip
+    OrderElectrode
 
 .. currentmodule:: torcheeg.transforms
 
@@ -114,6 +116,8 @@ Label Transforms
     BinariesToCategory
     StringToInt
     Mapping
+    Multilabel
+    Normalize
 
 .. contents:: We also provide hooks for preprocessing signals, which can leverage global information from trials, sessions, and subjects, and thus can improve the performance of prediction models, especially generalization. Please refer to the paper you are comparing to determine whether you should use it to conduct a fair comparison.
     :depth: 2
