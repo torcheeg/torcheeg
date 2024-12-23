@@ -1,9 +1,25 @@
-from typing import Union, Dict, List
+from typing import Union, Dict
 
 import numpy as np
 
 from ..base_transform import EEGTransform
 import scipy
+
+
+class LazyLoader:
+    def __init__(self, lib_name):
+        self._lib_name = lib_name
+        self._module = None
+
+    def __getattr__(self, name):
+        if self._module is None:
+            try:
+                self._module = __import__(self._lib_name)
+            except ImportError:
+                raise ImportError(
+                    f"To use this functionality, you need to install `{self._lib_name}`. "
+                )
+        return getattr(self._module, name)
 
 
 class Downsample(EEGTransform):
@@ -23,9 +39,10 @@ class Downsample(EEGTransform):
         num_points (int): The number of data points after downsampling.
         axis (int, optional): The dimension to normalize, when no dimension is specified, the entire data is normalized. (default: :obj:`-1`)
         apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (default: :obj:`False`)
-    
+
     .. automethod:: __call__
     '''
+
     def __init__(self,
                  num_points: int,
                  axis: Union[int, None] = -1,
@@ -62,9 +79,6 @@ class Downsample(EEGTransform):
             'num_points': self.num_points,
             'axis': self.axis
         })
-    
-
-
 
 
 class SetSamplingRate(EEGTransform):
@@ -121,33 +135,31 @@ class SetSamplingRate(EEGTransform):
             .. note::
                 When using ``res_type='polyphase'``, only integer sampling rates are
                 supported.
-    
+
     .. automethod:: __call__
     '''
-    def __init__(self,origin_sampling_rate:int, target_sampling_rate:int, 
+
+    def __init__(self, origin_sampling_rate: int, target_sampling_rate: int,
                  apply_to_baseline=False,
-                 axis= -1,
-                 scale:bool=False,
-                 res_type:str='soxr_hq'):
-        
-        super(SetSamplingRate, self).__init__(apply_to_baseline=apply_to_baseline)
+                 axis=-1,
+                 scale: bool = False,
+                 res_type: str = 'soxr_hq'):
+
+        super(SetSamplingRate, self).__init__(
+            apply_to_baseline=apply_to_baseline)
         self.original_rate = origin_sampling_rate
         self.new_rate = target_sampling_rate
         self.axis = axis
         self.scale = scale
         self.res_type = res_type
 
-    
     def apply(self,
-        eeg: np.ndarray,
-        **kwargs
-    ) -> np.ndarray:
-        # First, validate the audio buffer
-        import lazy_loader as lazy
-        # Lazy-load optional dependencies
-        samplerate = lazy.load("samplerate")
-        resampy = lazy.load("resampy")
-        soxr = lazy.load('soxr')
+              eeg: np.ndarray,
+              **kwargs
+              ) -> np.ndarray:
+        samplerate = LazyLoader("samplerate")
+        resampy = LazyLoader("resampy")
+        soxr = LazyLoader('soxr')
 
         eeg = eeg.astype(np.float32)
 
@@ -194,7 +206,8 @@ class SetSamplingRate(EEGTransform):
                 quality=self.res_type,
             )
         else:
-            EEG_res = resampy.resample(eeg, self.original_rate, self.new_rate, filter=self.res_type, axis=self.axis)
+            EEG_res = resampy.resample(
+                eeg, self.original_rate, self.new_rate, filter=self.res_type, axis=self.axis)
 
         if self.scale:
             EEG_res /= np.sqrt(ratio)
@@ -202,10 +215,9 @@ class SetSamplingRate(EEGTransform):
         # Match dtypes
         return np.asarray(EEG_res, dtype=eeg.dtype)
 
-    
     @property
-    def __repr__(self)->any :
-        return  f'''{
+    def __repr__(self) -> any:
+        return f'''{
                 'original_sampling_rate': self.original_rate,
                 'target_sampling_rate': self.new_rate,
                 'apply_to_baseline':self.apply_to_baseline

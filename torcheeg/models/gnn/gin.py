@@ -2,8 +2,25 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from torch_geometric.nn import GINConv
-from torch_geometric.data import Batch
+
+class LazyLoader:
+    def __init__(self, lib_name):
+        self._lib_name = lib_name
+        self._module = None
+
+    def __getattr__(self, name):
+        if self._module is None:
+            try:
+                self._module = __import__(self._lib_name)
+            except ImportError:
+                raise ImportError(
+                    f"To use this functionality, you need to install `{self._lib_name}`. "
+                    f"Please refer to https://pytorch-geometric.readthedocs.io/en/latest/notes/installation.html"
+                )
+        return getattr(self._module, name)
+
+
+pyg = LazyLoader('torch_geometric')
 
 
 class GIN(nn.Module):
@@ -43,6 +60,7 @@ class GIN(nn.Module):
         hid_channels (int): The number of hidden nodes in the GRU layers and the fully connected layer. (default: :obj:`64`)
         num_classes (int): The number of classes to predict. (default: :obj:`2`)
     '''
+
     def __init__(self,
                  in_channels: int = 4,
                  hid_channels: int = 64,
@@ -55,23 +73,23 @@ class GIN(nn.Module):
 
         nn1 = nn.Sequential(nn.Linear(in_channels, hid_channels), nn.ReLU(),
                             nn.Linear(hid_channels, hid_channels))
-        self.conv1 = GINConv(nn1)
+        self.conv1 = pyg.nn.GINConv(nn1)
         self.bn1 = nn.BatchNorm1d(hid_channels)
 
         nn2 = nn.Sequential(nn.Linear(hid_channels, hid_channels), nn.ReLU(),
                             nn.Linear(hid_channels, hid_channels))
-        self.conv2 = GINConv(nn2)
+        self.conv2 = pyg.nn.GINConv(nn2)
         self.bn2 = nn.BatchNorm1d(hid_channels)
 
         nn3 = nn.Sequential(nn.Linear(hid_channels, hid_channels), nn.ReLU(),
                             nn.Linear(hid_channels, hid_channels))
-        self.conv3 = GINConv(nn3)
+        self.conv3 = pyg.nn.GINConv(nn3)
         self.bn3 = nn.BatchNorm1d(hid_channels)
 
         self.fc1 = nn.Linear(hid_channels, hid_channels)
         self.fc2 = nn.Linear(hid_channels, num_classes)
 
-    def forward(self, data: Batch) -> torch.Tensor:
+    def forward(self, data: 'pyg.data.Batch') -> torch.Tensor:
         r'''
         Args:
             data (torch_geometric.data.Batch): EEG signal representation, the ideal input shape of data.x is :obj:`[n, 62, 4]`. Here, :obj:`n` corresponds to the batch size, :obj:`62` corresponds to the number of electrodes, and :obj:`4` corresponds to :obj:`in_channels`.

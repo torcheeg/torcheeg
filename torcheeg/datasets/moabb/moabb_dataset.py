@@ -11,7 +11,7 @@ from ..module.base_dataset import BaseDataset
 from moabb.datasets.base import BaseDataset as _MOABBDataset
 from moabb.paradigms.base import BaseParadigm as _MOABBParadigm
 
-log = logging.getLogger(__name__)
+log = logging.getLogger('torcheeg')
 
 class MOABBDataset(BaseDataset):
     '''
