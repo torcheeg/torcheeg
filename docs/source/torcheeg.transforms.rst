@@ -75,8 +75,8 @@ PyG-based Transforms
     :nosignatures:
     :template: transformtemplate.rst
 
-    pyg.ToG
-    pyg.ToDynamicG
+    ToG
+    ToDynamicG
 
 .. currentmodule:: torcheeg.transforms
 

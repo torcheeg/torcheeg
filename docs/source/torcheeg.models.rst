@@ -52,8 +52,8 @@ Graph Neural Networks
 
    DGCNN
    LGGNet
-   pyg.RGNN
-   pyg.GIN
+   RGNN
+   GIN
 
 Transformer
 ----------------------------------
