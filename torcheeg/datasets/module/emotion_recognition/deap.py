@@ -1,16 +1,17 @@
 import os
 import pickle as pkl
-
 from typing import Any, Callable, Dict, Tuple, Union
 
-from ..base_dataset import BaseDataset
+import numpy as np
+
 from ....utils import get_random_dir_path
+from ..base_dataset import BaseDataset
 
 
 class DEAPDataset(BaseDataset):
     r'''
     A multimodal dataset for the analysis of human affective states. This class generates training samples and test samples according to the given parameters, and caches the generated results in a unified input and output format (IO). The relevant information of the dataset is as follows:
-    
+
     - Author: Koelstra et al.
     - Year: 2012
     - Download URL: https://www.eecs.qmul.ac.uk/mmv/datasets/deap/download.html
@@ -18,11 +19,11 @@ class DEAPDataset(BaseDataset):
     - Stimulus: 40 one-minute long excerpts from music videos.
     - Signals: Electroencephalogram (32 channels at 512Hz, downsampled to 128Hz), skinconductance level (SCL), respiration amplitude, skin temperature,electrocardiogram, blood volume by plethysmograph, electromyograms ofZygomaticus and Trapezius muscles (EMGs), electrooculogram (EOG), face video (for 22 participants).
     - Rating: Arousal, valence, like/dislike, dominance (all ona scale from 1 to 9), familiarity (on a scale from 1 to 5).
-    
+
     In order to use this dataset, the download folder :obj:`data_preprocessed_python` is required, containing the following files:
-    
+
     .. code-block:: python
-    
+
         data_preprocessed_python/
         ├── s01.dat
         ├── s02.dat
@@ -164,8 +165,37 @@ class DEAPDataset(BaseDataset):
         self.__dict__.update(params)
 
     @staticmethod
-    def process_record(file: Any = None,
-                       root_path: str = './data_preprocessed_python',
+    def read_record(record: str, root_path: str = './data_preprocessed_python', **kwargs) -> Dict:
+        with open(os.path.join(root_path, record), 'rb') as f:
+            pkl_data = pkl.load(f, encoding='iso-8859-1')
+
+        samples = pkl_data['data']  # trial(40), channel(32), timestep(63*128)
+        labels = pkl_data['labels']
+
+        return {
+            'samples': samples,
+            'labels': labels
+        }
+
+    @staticmethod
+    def fake_record(**kwargs) -> Dict:
+        num_trials = 40
+        num_channels = 32
+        trial_length = 63 * 128
+        
+        samples = np.random.randn(num_trials, num_channels, trial_length)
+        
+        labels = np.random.uniform(1, 9, (num_trials, 4))
+        
+        return {
+            'samples': samples,
+            'labels': labels
+        }
+
+    @staticmethod
+    def process_record(record: str,
+                       samples: np.ndarray,
+                       labels: np.ndarray,
                        chunk_size: int = 128,
                        overlap: int = 0,
                        num_channel: int = 32,
@@ -174,15 +204,7 @@ class DEAPDataset(BaseDataset):
                        before_trial: Union[None, Callable] = None,
                        offline_transform: Union[None, Callable] = None,
                        **kwargs):
-        file_name = file  # an element from file name list
-
-        # derive the given arguments (kwargs)
-        with open(os.path.join(root_path, file_name), 'rb') as f:
-            pkl_data = pkl.load(f, encoding='iso-8859-1')
-
-        samples = pkl_data['data']  # trial(40), channel(32), timestep(63*128)
-        labels = pkl_data['labels']
-        subject_id = file_name
+        subject_id = record
 
         write_pointer = 0
 
@@ -205,7 +227,7 @@ class DEAPDataset(BaseDataset):
             trial_rating = labels[trial_id]
 
             for label_index, label_name in enumerate(
-                ['valence', 'arousal', 'dominance', 'liking']):
+                    ['valence', 'arousal', 'dominance', 'liking']):
                 trial_meta_info[label_name] = trial_rating[label_index]
 
             start_at = baseline_chunk_size * num_baseline
@@ -233,12 +255,12 @@ class DEAPDataset(BaseDataset):
 
                 # put baseline signal into IO
                 if not 'baseline_id' in trial_meta_info:
-                    trial_base_id = f'{file_name}_{write_pointer}'
+                    trial_base_id = f'{record}_{write_pointer}'
                     yield {'eeg': t_baseline, 'key': trial_base_id}
                     write_pointer += 1
                     trial_meta_info['baseline_id'] = trial_base_id
 
-                clip_id = f'{file_name}_{write_pointer}'
+                clip_id = f'{record}_{write_pointer}'
                 write_pointer += 1
 
                 # record meta info for each signal

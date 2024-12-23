@@ -1,9 +1,11 @@
 import os
-from typing import Callable, Dict, Tuple, Union, Any
+from typing import Callable, Dict, Tuple, Union
 
+import numpy as np
 import scipy.io as scio
-from ..base_dataset import BaseDataset
+
 from ....utils import get_random_dir_path
+from ..base_dataset import BaseDataset
 
 
 class DREAMERDataset(BaseDataset):
@@ -68,12 +70,12 @@ class DREAMERDataset(BaseDataset):
     An example dataset for GNN-based methods:
 
     .. code-block:: python
-        
+
         from torcheeg.datasets import DREAMERDataset
         from torcheeg import transforms
         from torcheeg.datasets.constants import DREAMER_ADJACENCY_MATRIX
         from torcheeg.transforms.pyg import ToG
-        
+
         dataset = DREAMERDataset(mat_path='./DREAMER.mat',
                                  online_transform=transforms.Compose([
                                      ToG(DREAMER_ADJACENCY_MATRIX)
@@ -86,7 +88,7 @@ class DREAMERDataset(BaseDataset):
         # EEG signal (torch_geometric.data.Data),
         # coresponding baseline signal (torch_geometric.data.Data),
         # label (int)
-    
+
     Args:
         mat_path (str): Downloaded data files in pickled matlab formats (default: :obj:`'./DREAMER.mat'`)
         chunk_size (int): Number of data points included in each EEG chunk as training or test samples. If set to -1, the EEG signal of a trial is used as a sample of a chunk. (default: :obj:`128`)
@@ -154,8 +156,61 @@ class DREAMERDataset(BaseDataset):
         self.__dict__.update(params)
 
     @staticmethod
-    def process_record(file: Any = None,
-                       mat_path: str = './DREAMER.mat',
+    def read_record(record: str, mat_path: str = './DREAMER.mat', **kwargs) -> Dict:
+        mat_data = scio.loadmat(mat_path,
+                                verify_compressed_data_integrity=False)
+
+        return {
+            'mat_data': mat_data,
+        }
+
+    @staticmethod
+    def fake_record(**kwargs) -> Dict:
+        num_trials = 18
+        num_channel = 14
+        trial_length = 7680
+        baseline_length = 61 * 128
+        
+        score_valence = np.random.uniform(1, 5, (num_trials, 1))
+        score_arousal = np.random.uniform(1, 5, (num_trials, 1))
+        score_dominance = np.random.uniform(1, 5, (num_trials, 1))
+        
+        stimuli_data = np.zeros((num_trials, 1), dtype=object)
+        baseline_data = np.zeros((num_trials, 1), dtype=object)
+        
+        for i in range(num_trials):
+            stimuli_data[i, 0] = np.random.rand(trial_length, num_channel)
+            baseline_data[i, 0] = np.random.rand(baseline_length, num_channel)
+        
+        eeg_data = {
+            'stimuli': np.array([[stimuli_data]]),
+            'baseline': np.array([[baseline_data]])
+        }
+        
+        subject_data = {
+            'EEG': np.array([[eeg_data]]),
+            'ScoreValence': np.array([[score_valence]]),
+            'ScoreArousal': np.array([[score_arousal]]),
+            'ScoreDominance': np.array([[score_dominance]])
+        }
+        
+        data_array = np.zeros((1, 1), dtype=object)
+        data_array[0, 0] = subject_data
+        
+        mat_data = {
+            'DREAMER': np.array([[{
+                'Data': data_array
+            }]])
+        }
+        
+        return {
+            'mat_data': mat_data,
+            'record': 0
+        }
+
+    @staticmethod
+    def process_record(record: str,
+                       mat_data: Dict,
                        chunk_size: int = 128,
                        overlap: int = 0,
                        num_channel: int = 14,
@@ -164,9 +219,7 @@ class DREAMERDataset(BaseDataset):
                        before_trial: Union[None, Callable] = None,
                        offline_transform: Union[None, Callable] = None,
                        **kwargs):
-        subject = file
-        mat_data = scio.loadmat(mat_path,
-                                verify_compressed_data_integrity=False)
+        subject = record
 
         trial_len = len(
             mat_data['DREAMER'][0, 0]['Data'][0,
@@ -188,9 +241,9 @@ class DREAMERDataset(BaseDataset):
                                                               num_channel,
                                                               num_baseline,
                                                               baseline_chunk_size
-                                                          ).mean(
+            ).mean(
                                                               axis=1
-                                                          )  # channel(14), timestep(128)
+            )  # channel(14), timestep(128)
 
             # record the common meta info
             trial_meta_info = {'subject_id': subject, 'trial_id': trial_id}

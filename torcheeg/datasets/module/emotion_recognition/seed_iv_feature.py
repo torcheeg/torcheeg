@@ -22,9 +22,9 @@ class SEEDIVFeatureDataset(BaseDataset):
     - Features: de_movingAve, de_LDS, psd_movingAve, psd_LDS, dasm_movingAve, dasm_LDS, rasm_movingAve, rasm_LDS, asm_movingAve, asm_LDS, dcau_movingAve, dcau_LDS of 4-second long windows
 
     In order to use this dataset, the download folder :obj:`eeg_feature_smooth` is required, containing the following folder:
-    
+
     .. code-block:: python
-    
+
         eeg_feature_smooth/
         ├── 1/
         ├── 2/
@@ -37,7 +37,7 @@ class SEEDIVFeatureDataset(BaseDataset):
         from torcheeg.datasets import SEEDIVFeatureDataset
         from torcheeg import transforms
         from torcheeg.datasets.constants import SEED_IV_CHANNEL_LOCATION_DICT
-        
+
         dataset = SEEDIVFeatureDataset(root_path='./eeg_feature_smooth',
                                        features=['de_movingAve'],
                                        offline_transform=transforms.ToGrid         (SEED_IV_CHANNEL_LOCATION_DICT),
@@ -56,7 +56,7 @@ class SEEDIVFeatureDataset(BaseDataset):
         from torcheeg import transforms
         from torcheeg.datasets.constants import SEED_ADJACENCY_MATRIX
         from torcheeg.transforms.pyg import ToG
-        
+
         dataset = SEEDIVFeatureDataset(root_path='./eeg_feature_smooth',
                                        features=['de_movingAve'],
                                        online_transform=ToG(SEED_ADJACENCY_MATRIX),
@@ -65,7 +65,7 @@ class SEEDIVFeatureDataset(BaseDataset):
         # EEG signal (torch_geometric.data.Data),
         # coresponding baseline signal (torch_geometric.data.Data),
         # label (int)
-        
+
     Args:
         root_path (str): Downloaded data files in matlab (unzipped ExtractedFeatures.zip) formats (default: :obj:`'./ExtractedFeatures'`)
         feature (list): A list of selected feature names. The selected features corresponding to each electrode will be concatenated together. Feature names supported by the SEED dataset include de_movingAve, de_LDS, psd_movingAve, and etc. (default: :obj:`['de_movingAve']`)
@@ -124,25 +124,51 @@ class SEEDIVFeatureDataset(BaseDataset):
         self.__dict__.update(params)
 
     @staticmethod
-    def process_record(feature: list = ['de_movingAve'],
+    def read_record(record: str,
+                    **kwargs) -> Dict:
+
+        samples = scio.loadmat(record,
+                               verify_compressed_data_integrity=False
+                               )  # trial (15), channel(62), timestep(n*200)
+        return {
+            'samples': samples,
+        }
+
+    @staticmethod
+    def fake_record(record: str, **kwargs) -> Dict:
+        num_trials = 15
+        num_channels = 62
+        num_timesteps = 200
+        num_bands = 5
+
+        samples = {}
+        for trial in range(1, num_trials + 1):
+            key = f'de_movingAve{trial}'
+            samples[key] = np.random.randn(
+                num_timesteps, num_channels, num_bands) * 0.5
+
+        return {
+            'record': '1/10_20151014.mat',
+            'samples': samples,
+        }
+
+    @staticmethod
+    def process_record(record: str,
+                       samples: Dict,
+                       feature: list = ['de_movingAve'],
                        num_channel: int = 62,
                        offline_transform: Union[None, Callable] = None,
                        before_trial: Union[None, Callable] = None,
-                       file: Any = None,
                        **kwargs):
-        file_path = file  # an element from file name list
 
-        session_id = os.path.basename(os.path.dirname(file_path))
-        _, file_name = os.path.split(file_path)
+        session_id = os.path.basename(os.path.dirname(record))
+        _, file_name = os.path.split(record)
 
         subject = int(os.path.basename(file_name).split('.')[0].split('_')
                       [0])  # subject (15)
         date = int(os.path.basename(file_name).split('.')[0].split('_')
                    [1])  # period (3)
 
-        samples = scio.loadmat(file_path,
-                               verify_compressed_data_integrity=False
-                               )  # trial (15), channel(62), timestep(n*200)
         # label file
         labels = [
             [
@@ -202,7 +228,6 @@ class SEEDIVFeatureDataset(BaseDataset):
                 'date': date
             }
 
-            trial_queue = []
             for i, clip_sample in enumerate(trial_samples):
                 t_eeg = clip_sample
                 if not offline_transform is None:
@@ -215,7 +240,8 @@ class SEEDIVFeatureDataset(BaseDataset):
                 record_info = {
                     'start_at': i * 800,
                     'end_at': (i + 1) *
-                    800,  # The size of the sliding time windows for feature extraction is 4 seconds.
+                    # The size of the sliding time windows for feature extraction is 4 seconds.
+                    800,
                     'clip_id': clip_id
                 }
                 record_info.update(trial_meta_info)

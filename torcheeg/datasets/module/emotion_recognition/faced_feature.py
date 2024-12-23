@@ -1,6 +1,8 @@
 import os
 import pickle as pkl
-from typing import Any, Callable, Dict, Tuple, Union
+from typing import Callable, Dict, Tuple, Union
+
+import numpy as np
 
 from ....utils import get_random_dir_path
 from ..base_dataset import BaseDataset
@@ -21,9 +23,9 @@ class FACEDFeatureDataset(BaseDataset):
     - Rating: 28 video clips are annotated in valence and discrete emotion dimensions. The valence is divided into positive (1), negative (-1), and neutral (0). Discrete emotions are divided into anger (0), disgust (1), fear (2), sadness (3), neutral (4), amusement (5), inspiration (6), joy (7), and tenderness (8).
 
     In order to use this dataset, the download folder :obj:`EEG_Features`(download from this url: https://www.synapse.org/#!Synapse:syn52368847) is required, containing the following files:
-    
+
     .. code-block:: python
-    
+
         EEG_Features/
         ├── DE/
         │   ├── sub000.pkl.pkl  # will be renamed to sub000.pkl automatically
@@ -41,7 +43,7 @@ class FACEDFeatureDataset(BaseDataset):
         from torcheeg.datasets import FACEDFeatureDataset
         from torcheeg import transforms
         from torcheeg.datasets.constants import FACED_CHANNEL_LOCATION_DICT
-        
+
         dataset = FACEDFeatureDataset(root_path='./EEG_Features/DE',
                                        offline_transform=transforms.ToGrid(FACED_CHANNEL_LOCATION_DICT),
                                        online_transform=transforms.ToTensor(),
@@ -59,7 +61,7 @@ class FACEDFeatureDataset(BaseDataset):
         from torcheeg import transforms
         from torcheeg.datasets.constants import FACED_ADJACENCY_MATRIX
         from torcheeg.transforms.pyg import ToG
-        
+
         dataset = FACEDFeatureDataset(root_path='./EEG_Features/DE',
                                        online_transform=ToG(FACED_ADJACENCY_MATRIX),
                                        label_transform=transforms.Select('emotion'))
@@ -67,7 +69,7 @@ class FACEDFeatureDataset(BaseDataset):
         # EEG signal (torch_geometric.data.Data),
         # coresponding baseline signal (torch_geometric.data.Data),
         # label (int)
-        
+
     Args:
         root_path (str): Downloaded data files in matlab (unzipped EEG_Features.zip) formats (default: :obj:`'./EEG_Features/DE'`, optional: :obj:`'./EEG_Features/PSD'`)
         num_channel (int): Number of channels used, of which the first 30 channels are EEG signals. (default: :obj:`30`)
@@ -82,6 +84,7 @@ class FACEDFeatureDataset(BaseDataset):
         num_worker (int): Number of subprocesses to use for data loading. 0 means that the data will be loaded in the main process. (default: :obj:`0`)
         verbose (bool): Whether to display logs during processing, such as progress bars, etc. (default: :obj:`True`)    
     '''
+
     def rename_pkl_files(self, root_path):
         for dirpath, dirnames, filenames in os.walk(root_path):
             for filename in filenames:
@@ -131,22 +134,42 @@ class FACEDFeatureDataset(BaseDataset):
         self.__dict__.update(params)
 
     @staticmethod
-    def process_record(num_channel: int = 30,
-                       offline_transform: Union[None, Callable] = None,
-                       before_trial: Union[None, Callable] = None,
-                       file: Any = None,
-                       **kwargs):
-        # get file name from path ,such as 'sub087.pkl'
-        file_name = os.path.basename(file)
-
-        subject_id = int(file_name.split('.')[0]
-                         [3:])  # get int value from 'sub087.pkl', such as 87
-
-        # load the file
-        with open(os.path.join(file), 'rb') as f:
+    def read_record(record: str, **kwargs) -> Dict:
+        with open(os.path.join(record), 'rb') as f:
             data = pkl.load(
                 f, encoding='iso-8859-1'
             )  # 28(trials), 32(channels), 30s(time points), 5(frequency bands)
+        return {
+            'data': data
+        }
+
+    @staticmethod
+    def fake_record(record: str, **kwargs) -> Dict:
+        num_trials = 28
+        num_channels = 32
+        time_points = 30
+        freq_bands = 5
+
+        data = np.random.rand(num_trials, num_channels,
+                              time_points, freq_bands)
+        data = np.abs(data)
+        return {
+            'data': data,
+            'record': 'sub087.pkl'
+        }
+
+    @staticmethod
+    def process_record(record: str,
+                       data: np.ndarray,
+                       num_channel: int = 30,
+                       offline_transform: Union[None, Callable] = None,
+                       before_trial: Union[None, Callable] = None,
+                       **kwargs):
+        # get file name from path ,such as 'sub087.pkl'
+        file_name = os.path.basename(record)
+
+        subject_id = int(file_name.split('.')[0]
+                         [3:])  # get int value from 'sub087.pkl', such as 87
 
         write_pointer = 0
 
@@ -171,7 +194,7 @@ class FACEDFeatureDataset(BaseDataset):
                 record_info = {
                     'start_at': i * 250,
                     'end_at': (i + 1) *
-                    250,  # The size of the sliding time windows for feature 
+                    250,  # The size of the sliding time windows for feature
                     'clip_id': clip_id,
                     'valence': VALENCE_DICT[trial_id + 1],
                     'emotion': EMOTION_DICT[trial_id + 1],

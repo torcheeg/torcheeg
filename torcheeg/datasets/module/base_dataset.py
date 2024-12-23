@@ -50,21 +50,22 @@ class BaseDataset(Dataset):
             if self.num_worker == 0:
                 try:
                     worker_results = []
-                    for file_id, file in tqdm(enumerate(records),
-                                              disable=not self.verbose,
-                                              desc="[PROCESS]",
-                                              total=len(records),
-                                              position=0,
-                                              leave=None):
+                    for record_id, record in tqdm(enumerate(records),
+                                                  disable=not self.verbose,
+                                                  desc="[PROCESS]",
+                                                  total=len(records),
+                                                  position=0,
+                                                  leave=None):
                         worker_results.append(
-                            self.save_record(io_path=self.io_path,
-                                             io_size=self.io_size,
-                                             io_mode=self.io_mode,
-                                             file=file,
-                                             file_id=file_id,
-                                             process_record=self.process_record,
-                                             verbose=self.verbose,
-                                             **kwargs))
+                            self.handle_record(io_path=self.io_path,
+                                               io_size=self.io_size,
+                                               io_mode=self.io_mode,
+                                               record=record,
+                                               record_id=record_id,
+                                               read_record=self.read_record,
+                                               process_record=self.process_record,
+                                               verbose=self.verbose,
+                                               **kwargs))
                 except Exception as e:
                     # shutil to delete the database
                     shutil.rmtree(self.io_path)
@@ -73,21 +74,22 @@ class BaseDataset(Dataset):
                 # catch the exception
                 try:
                     worker_results = Parallel(n_jobs=self.num_worker)(
-                        delayed(self.save_record)(
+                        delayed(self.handle_record)(
                             io_path=io_path,
                             io_size=io_size,
                             io_mode=io_mode,
-                            file_id=file_id,
-                            file=file,
+                            record_id=record_id,
+                            record=record,
+                            read_record=self.read_record,
                             process_record=self.process_record,
                             verbose=self.verbose,
                             **kwargs)
-                        for file_id, file in tqdm(enumerate(records),
-                                                  disable=not self.verbose,
-                                                  desc="[PROCESS]",
-                                                  total=len(records),
-                                                  position=0,
-                                                  leave=None))
+                        for record_id, record in tqdm(enumerate(records),
+                                                      disable=not self.verbose,
+                                                      desc="[PROCESS]",
+                                                      total=len(records),
+                                                      position=0,
+                                                      leave=None))
                 except Exception as e:
                     # shutil to delete the database
                     shutil.rmtree(self.io_path)
@@ -124,9 +126,9 @@ class BaseDataset(Dataset):
             if self.after_trial is not None or self.after_session is not None or self.after_subject is not None:
                 # catch the exception
                 try:
-                    self.post_process_record(after_trial=after_trial,
-                                             after_session=after_session,
-                                             after_subject=after_subject)
+                    self.update_record(after_trial=after_trial,
+                                       after_session=after_session,
+                                       after_subject=after_subject)
                 except Exception as e:
                     # shutil to delete the database
                     shutil.rmtree(self.io_path)
@@ -189,15 +191,16 @@ class BaseDataset(Dataset):
             "Method set_records is not implemented in class BaseDataset")
 
     @staticmethod
-    def save_record(io_path: Union[None, str] = None,
-                    io_size: int = 1048576,
-                    io_mode: str = 'lmdb',
-                    file: Any = None,
-                    file_id: int = None,
-                    process_record: Callable = None,
-                    verbose: bool = True,
-                    **kwargs):
-        _record_id = str(file_id)
+    def handle_record(io_path: Union[None, str] = None,
+                      io_size: int = 1048576,
+                      io_mode: str = 'lmdb',
+                      record: Any = None,
+                      record_id: int = None,
+                      read_record: Callable = None,
+                      process_record: Callable = None,
+                      verbose: bool = True,
+                      **kwargs):
+        _record_id = str(record_id)
         meta_info_io_path = os.path.join(io_path, f'_record_{_record_id}',
                                          'info.csv')
         eeg_signal_io_path = os.path.join(io_path, f'_record_{_record_id}',
@@ -208,11 +211,13 @@ class BaseDataset(Dataset):
                              io_size=io_size,
                              io_mode=io_mode)
 
-        gen = process_record(file=file, **kwargs)
+        kwargs['record'] = record
+        kwargs.update(read_record(**kwargs))
+        gen = process_record(**kwargs)
 
-        if file_id == 0:
+        if record_id == 0:
             pbar = tqdm(disable=not verbose,
-                        desc=f"[RECORD {file}]",
+                        desc=f"[RECORD {record}]",
                         position=1,
                         leave=None)
 
@@ -227,7 +232,7 @@ class BaseDataset(Dataset):
                 # get the current class name
                 obj = next(gen)
 
-                if file_id == 0:
+                if record_id == 0:
                     pbar.update(1)
 
             except StopIteration:
@@ -238,7 +243,7 @@ class BaseDataset(Dataset):
             if obj and 'info' in obj:
                 info_io.write_info(obj['info'])
 
-        if file_id == 0:
+        if record_id == 0:
             pbar.close()
 
         return {
@@ -248,12 +253,35 @@ class BaseDataset(Dataset):
         }
 
     @staticmethod
-    def process_record(file: Any = None, **kwargs):
+    def read_record(this: Any, **kwargs):
+        '''
+        The IO method for reading the database. It is used to describe how the files are read. It is called in parallel by :obj:`joblib.Parallel` in :obj:`__init__` of the class, the output of this method will be passed to :obj:`process_record`.
+
+        Args:
+            this (Any): The record to be processed. It is an element in the list returned by set_records. (default: :obj:`Any`)
+            **kwargs: The arguments derived from :obj:`__init__` of the class.
+
+        .. code-block:: python
+
+            def read_record(**kwargs):
+                return {
+                    'samples': ...
+                    'labels': ...
+                }
+
+        '''
+
+        raise NotImplementedError(
+            "Method read_record is not implemented in class BaseDataset"
+        )
+
+    @staticmethod
+    def process_record(**kwargs):
         '''
         The IO method for generating the database. It is used to describe how files are processed to generate the database. It is called in parallel by :obj:`joblib.Parallel` in :obj:`__init__` of the class.
 
         Args:
-            file (Any): The file to be processed. It is an element in the list returned by set_records. (default: :obj:`Any`)
+            this (Any): The record to be processed. It is an element in the list returned by set_records. (default: :obj:`Any`)
             **kwargs: The arguments derived from :obj:`__init__` of the class.
 
         .. code-block:: python
@@ -279,10 +307,10 @@ class BaseDataset(Dataset):
         raise NotImplementedError(
             "Method process_record is not implemented in class BaseDataset")
 
-    def post_process_record(self,
-                            after_trial: Callable = None,
-                            after_session: Callable = None,
-                            after_subject: Callable = None):
+    def update_record(self,
+                      after_trial: Callable = None,
+                      after_session: Callable = None,
+                      after_subject: Callable = None):
         '''
         The hook method for post-processing the data. It is used to describe how to post-process the data.
         '''
@@ -303,7 +331,7 @@ class BaseDataset(Dataset):
             #         "No subject_id column found in info, after_subject hook is ignored."
             #     )
         if after_subject is None:
-            after_subject = lambda x: x
+            def after_subject(x): return x
 
         for _, subject_info in subject_df:
 
@@ -321,7 +349,7 @@ class BaseDataset(Dataset):
                 #         "No session_id column found in info, after_session hook is ignored."
                 #     )
             if after_session is None:
-                after_session = lambda x: x
+                def after_session(x): return x
 
             for _, session_info in session_df:
 
@@ -335,7 +363,7 @@ class BaseDataset(Dataset):
                             "No trial_id column found in info, after_trial hook is ignored."
                         )
                 if after_trial is None:
-                    after_trial = lambda x: x
+                    def after_trial(x): return x
 
                 session_samples = []
                 for _, trial_info in trial_df:
@@ -401,7 +429,7 @@ class BaseDataset(Dataset):
         Args:
             record (str): The record id of the EEG signal to be queried.
             key (str): The index of the EEG signal to be queried.
-            
+
         Returns:
             any: The EEG signal sample.
         '''
@@ -428,7 +456,7 @@ class BaseDataset(Dataset):
 
         Args:
             index (int): The index of the meta information to be queried.
-            
+
         Returns:
             dict: The meta information.
         '''

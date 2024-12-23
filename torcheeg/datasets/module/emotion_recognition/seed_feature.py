@@ -1,11 +1,12 @@
 import os
 import re
-from typing import Any, Callable, Dict, Tuple, Union
+from typing import Callable, Dict, Tuple, Union
 
 import numpy as np
 import scipy.io as scio
-from ..base_dataset import BaseDataset
+
 from ....utils import get_random_dir_path
+from ..base_dataset import BaseDataset
 
 
 class SEEDFeatureDataset(BaseDataset):
@@ -22,9 +23,9 @@ class SEEDFeatureDataset(BaseDataset):
     - Feature: de_movingAve, de_LDS, psd_movingAve, psd_LDS, dasm_movingAve, dasm_LDS, rasm_movingAve, rasm_LDS, asm_movingAve, asm_LDS, dcau_movingAve, dcau_LDS of 1-second long windows
 
     In order to use this dataset, the download folder :obj:`Preprocessed_EEG` is required, containing the following files:
-    
+
     .. code-block:: python
-    
+
         Preprocessed_EEG/
         ├── label.mat
         ├── readme.txt
@@ -61,7 +62,7 @@ class SEEDFeatureDataset(BaseDataset):
         from torcheeg import transforms
         from torcheeg.datasets.constants import SEED_ADJACENCY_MATRIX
         from torcheeg.transforms.pyg import ToG
-        
+
         dataset = SEEDFeatureDataset(root_path='./Preprocessed_EEG',
                                      features=['de_movingAve'],
                                      online_transform=ToG(SEED_ADJACENCY_MATRIX),
@@ -132,19 +133,11 @@ class SEEDFeatureDataset(BaseDataset):
         self.__dict__.update(params)
 
     @staticmethod
-    def process_record(file: Any = None,
-                       root_path: str = './ExtractedFeatures',
-                       feature: list = ['de_movingAve'],
-                       num_channel: int = 62,
-                       before_trial: Union[None, Callable] = None,
-                       offline_transform: Union[None, Callable] = None,
-                       **kwargs):
-        file_name, session_id = file
+    def read_record(record: str,
+                    root_path: str = './ExtractedFeatures',
+                    **kwargs) -> Dict:
 
-        subject = int(os.path.basename(file_name).split('.')[0].split('_')
-                      [0])  # subject (15)
-        date = int(os.path.basename(file_name).split('.')[0].split('_')
-                   [1])  # period (3)
+        file_name, _ = record
 
         samples = scio.loadmat(os.path.join(root_path, file_name),
                                verify_compressed_data_integrity=False
@@ -153,6 +146,48 @@ class SEEDFeatureDataset(BaseDataset):
         labels = scio.loadmat(
             os.path.join(root_path, 'label.mat'),
             verify_compressed_data_integrity=False)['label'][0]
+
+        return {
+            'samples': samples,
+            'labels': labels
+        }
+
+    @staticmethod
+    def fake_record(record: str, **kwargs) -> Dict:
+        num_trials = 15
+        num_channels = 62
+        num_timesteps = 200
+        num_bands = 5
+
+        samples = {}
+        for trial in range(1, num_trials + 1):
+            key = f'de_movingAve{trial}'
+            samples[key] = np.random.randn(
+                num_timesteps, num_channels, num_bands) * 0.5
+
+        labels = np.random.randint(0, 3, num_trials)
+
+        return {
+            'record': ('10_20131130.mat', 0),
+            'samples': samples,
+            'labels': labels
+        }
+
+    @staticmethod
+    def process_record(record: Tuple,
+                       samples: Dict,
+                       labels: np.ndarray,
+                       feature: list = ['de_movingAve'],
+                       num_channel: int = 62,
+                       before_trial: Union[None, Callable] = None,
+                       offline_transform: Union[None, Callable] = None,
+                       **kwargs):
+        file_name, session_id = record
+
+        subject = int(os.path.basename(file_name).split('.')[0].split('_')
+                      [0])  # subject (15)
+        date = int(os.path.basename(file_name).split('.')[0].split('_')
+                   [1])  # period (3)
 
         trial_ids = [
             int(re.findall(r"de_movingAve(\d+)", key)[0])

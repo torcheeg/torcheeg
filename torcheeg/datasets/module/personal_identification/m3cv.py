@@ -1,26 +1,27 @@
 import os
-from typing import Any, Callable, Dict, Tuple, Union
+from typing import Callable, Dict, Tuple, Union
 
+import numpy as np
 import pandas as pd
 import scipy.io as scio
 
-from ..base_dataset import BaseDataset
 from ....utils import get_random_dir_path
+from ..base_dataset import BaseDataset
 
 
 class M3CVDataset(BaseDataset):
     r'''
     A reliable EEG-based biometric system should be able to withstand changes in an individual's mental state (cross-task test) and still be able to successfully identify an individual after several days (cross-session test). The authors built an EEG dataset M3CV with 106 subjects, two sessions of experiment on different days, and multiple paradigms. Ninety-five of the subjects participated in two sessions of the experiments, separated by more than 6 days. The experiment includes 6 common EEG experimental paradigms including resting state, sensory and cognitive task, and brain-computer interface.
-    
+
     - Author: Huang et al.
     - Year: 2022
     - Download URL: https://aistudio.baidu.com/aistudio/datasetdetail/151025/0
     - Signals: Electroencephalogram (64 channels and one marker channel at 250Hz).
 
     In order to use this dataset, the download dataset folder :obj:`aistudio` is required, containing the following files:
-    
+
     .. code-block:: python
-    
+
         aistudio/
         ├── Calibration_Info.csv
         ├── Enrollment_Info.csv
@@ -57,7 +58,7 @@ class M3CVDataset(BaseDataset):
 
         from torcheeg.datasets import M3CVDataset
         from torcheeg import transforms
-    
+
         dataset = M3CVDataset(io_path=f'./m3cv',
                               root_path='./aistudio',
                               online_transform=transforms.Compose([
@@ -81,7 +82,7 @@ class M3CVDataset(BaseDataset):
         from torcheeg import transforms
         from torcheeg.datasets.constants.personal_identification.m3cv import M3CV_ADJACENCY_MATRIX
         from torcheeg.transforms.pyg import ToG
-        
+
         dataset = M3CVDataset(io_path=f'./m3cv',
                               root_path='./aistudio',
                               online_transform=transforms.Compose([
@@ -156,77 +157,89 @@ class M3CVDataset(BaseDataset):
         self.__dict__.update(params)
 
     @staticmethod
-    def process_record(file: Any = None,
-                       root_path: str = './aistudio',
-                       subset: str = 'Enrollment',
+    def read_record(record: Dict,
+                    root_path: str = './aistudio',
+                    subset: str = 'Enrollment', **kwargs) -> Dict:
+        epoch_id = record['EpochID']
+        trial_samples = scio.loadmat(
+            os.path.join(root_path, subset, epoch_id))['epoch_data']
+        return {
+            'trial_samples': trial_samples,
+        }
+
+    @staticmethod
+    def fake_record(record: Dict, **kwargs) -> Dict:
+        num_channel = 64
+        num_timepoint = 2000
+
+        trial_samples = np.random.rand(num_channel, num_timepoint)
+        return {
+            'record': {
+                'EpochID': 'fake_epoch',
+                'SubjectID': 'fake_subject',
+                'Session': 'fake_session',
+                'Task': 'fake_task',
+                'Usage': 'fake_usage',
+            },
+            'trial_samples': trial_samples,
+        }
+
+    @staticmethod
+    def process_record(record: Dict,
+                       trial_samples: np.ndarray,
                        chunk_size: int = 1000,
                        overlap: int = 0,
                        num_channel: int = 64,
                        offline_transform: Union[None, Callable] = None,
                        before_trial: Union[None, Callable] = None,
                        **kwargs):
-        start_idx, end_idx = file
-
-        df = pd.read_csv(os.path.join(root_path, f'{subset}_Info.csv'))
-        df = df.iloc[start_idx:end_idx]
-
-        # calculate moving step
         write_pointer = 0
 
-        start_epoch = None
+        epoch_meta_info = {
+            'epoch_id': record['EpochID'],
+            'subject_id': record['SubjectID'],
+            'session': record['Session'],
+            'task': record['Task'],
+            'usage': record['Usage'],
+        }
 
-        for _, epoch_info in df.iterrows():
-            epoch_meta_info = {
-                'epoch_id': epoch_info['EpochID'],
-                'subject_id': epoch_info['SubjectID'],
-                'session': epoch_info['Session'],
-                'task': epoch_info['Task'],
-                'usage': epoch_info['Usage'],
+        epoch_id = epoch_meta_info['epoch_id']
+
+        if before_trial:
+            trial_samples = before_trial(trial_samples)
+
+        start_at = 0
+        if chunk_size <= 0:
+            dynamic_chunk_size = trial_samples.shape[1] - start_at
+        else:
+            dynamic_chunk_size = chunk_size
+
+        # chunk with chunk size
+        end_at = dynamic_chunk_size
+        # calculate moving step
+        step = dynamic_chunk_size - overlap
+
+        while end_at <= trial_samples.shape[1]:
+            clip_sample = trial_samples[:num_channel, start_at:end_at]
+            t_eeg = clip_sample
+
+            if not offline_transform is None:
+                t_eeg = offline_transform(eeg=clip_sample)['eeg']
+
+            clip_id = f'{epoch_id}_{write_pointer}'
+            write_pointer += 1
+
+            # record meta info for each signal
+            record_info = {
+                'start_at': start_at,
+                'end_at': end_at,
+                'clip_id': clip_id
             }
+            record_info.update(epoch_meta_info)
+            yield {'eeg': t_eeg, 'key': clip_id, 'info': record_info}
 
-            epoch_id = epoch_meta_info['epoch_id']
-
-            if start_epoch is None:
-                start_epoch = epoch_id
-
-            trial_samples = scio.loadmat(
-                os.path.join(root_path, subset, epoch_id))['epoch_data']
-            if before_trial:
-                trial_samples = before_trial(trial_samples)
-
-            start_at = 0
-            if chunk_size <= 0:
-                dynamic_chunk_size = trial_samples.shape[1] - start_at
-            else:
-                dynamic_chunk_size = chunk_size
-
-            # chunk with chunk size
-            end_at = dynamic_chunk_size
-            # calculate moving step
-            step = dynamic_chunk_size - overlap
-
-            trial_queue = []
-            while end_at <= trial_samples.shape[1]:
-                clip_sample = trial_samples[:num_channel, start_at:end_at]
-                t_eeg = clip_sample
-
-                if not offline_transform is None:
-                    t_eeg = offline_transform(eeg=clip_sample)['eeg']
-
-                clip_id = f'after{start_epoch}_{write_pointer}'
-                write_pointer += 1
-
-                # record meta info for each signal
-                record_info = {
-                    'start_at': start_at,
-                    'end_at': end_at,
-                    'clip_id': clip_id
-                }
-                record_info.update(epoch_meta_info)
-                yield {'eeg': t_eeg, 'key': clip_id, 'info': record_info}
-
-                start_at = start_at + step
-                end_at = start_at + dynamic_chunk_size
+            start_at = start_at + step
+            end_at = start_at + dynamic_chunk_size
 
     def set_records(self,
                     root_path: str = './aistudio',
@@ -241,16 +254,7 @@ class M3CVDataset(BaseDataset):
         ], f"Unavailable subset name {subset}, and available options include 'Enrollment', 'Calibration', and 'Testing'."
 
         df = pd.read_csv(os.path.join(root_path, f'{subset}_Info.csv'))
-        # split the dataset into 60 blocks, each of which contains len(df) // 60 samples, the start and end index of each block are recorded in block_list
-        block_list = []
-        for i in range(60):
-            start = i * len(df) // 60
-            end = (i + 1) * len(df) // 60
-            block_list.append((start, end))
-        # the last block contains the remaining samples
-        if len(df) % 60 != 0:
-            block_list[-1] = (block_list[-1][0], len(df))
-        return block_list
+        return df.to_dict(orient='records')
 
     def __getitem__(self, index: int) -> Tuple:
         info = self.read_info(index)

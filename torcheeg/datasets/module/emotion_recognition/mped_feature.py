@@ -21,9 +21,9 @@ class MPEDFeatureDataset(BaseDataset):
     - Feature: HHS, Hjorth, PSD, STFT, and HOC
 
     In order to use this dataset, the download folder :obj:`EEG_feature` is required, containing the following files:
-    
+
     .. code-block:: python
-    
+
         EEG_feature/
         ├── HHS/
         ├── Hjorth/
@@ -125,32 +125,70 @@ class MPEDFeatureDataset(BaseDataset):
         self.__dict__.update(params)
 
     @staticmethod
-    def process_record(file: Any = None,
-                       root_path: str = './EEG_feature',
-                       feature: list = ['PSD'],
+    def read_record(record: str,
+                    root_path: str = './EEG_feature',
+                    feature: list = ['PSD'],
+                    **kwargs) -> Dict:
+
+        samples_dict = {}
+        for cur_feature in feature:
+            samples_dict[cur_feature] = scio.loadmat(
+                os.path.join(root_path, cur_feature, record),
+                verify_compressed_data_integrity=False)  # (1, 30)
+
+        return {
+            'samples_dict': samples_dict
+        }
+
+    @staticmethod
+    def fake_record(record: str, **kwargs) -> Dict:
+        num_trials = 30
+        num_channels = 62
+        num_timepoints = 120
+
+        samples_dict = {
+            'PSD': {
+                'PSD': np.random.rand(1, num_trials, num_channels, num_timepoints, 5),
+                '__header__': None,
+                '__version__': '1.0',
+                '__globals__': []
+            },
+            'Hjorth': {
+                'alpha': np.random.rand(1, num_trials, num_channels, num_timepoints, 3),
+                'beta': np.random.rand(1, num_trials, num_channels, num_timepoints, 3),
+                'delta': np.random.rand(1, num_trials, num_channels, num_timepoints, 3),
+                'gamma': np.random.rand(1, num_trials, num_channels, num_timepoints, 3),
+                'theta': np.random.rand(1, num_trials, num_channels, num_timepoints, 3),
+                'whole': np.random.rand(1, num_trials, num_channels, num_timepoints, 3),
+                '__header__': None,
+                '__version__': '1.0',
+                '__globals__': []
+            }
+        }
+        return {
+            'samples_dict': samples_dict
+        }
+
+    @staticmethod
+    def process_record(record: str,
+                       samples_dict: dict,
                        num_channel: int = 62,
                        before_trial: Union[None, Callable] = None,
                        offline_transform: Union[None, Callable] = None,
                        **kwargs):
-        file_name = file
 
         labels = [
             0, 2, 1, 4, 3, 5, 6, 7, 1, 2, 3, 6, 7, 4, 5, 0, 1, 5, 6, 2, 2, 1, 7,
             6, 4, 4, 3, 5, 3, 7
         ]  # 0-resting status, 1-neutral, 2-joy, 3-funny, 4-angry, 5-fear, 6-disgust, 7-sadness
 
-        subject = os.path.basename(file_name).split('.')[0].split('_')[0]
+        subject = os.path.basename(record).split('.')[0].split('_')[0]
 
-        samples_dict = {}
-        for cur_feature in feature:
-            samples_dict[cur_feature] = scio.loadmat(
-                os.path.join(root_path, cur_feature, file_name),
-                verify_compressed_data_integrity=False)  # (1, 30)
         write_pointer = 0
 
         for trial_id in range(30):
             trial_samples = []
-            for cur_feature, samples in samples_dict.items():
+            for _, samples in samples_dict.items():
                 for sub_band in samples.keys():
                     # HHS: hhs_A, hhs_E
                     # Hjorth/HOC: alpha, beta, delta, gamma, theta, whole
@@ -191,7 +229,7 @@ class MPEDFeatureDataset(BaseDataset):
                 if not offline_transform is None:
                     t_eeg = offline_transform(eeg=clip_sample)['eeg']
 
-                clip_id = f'{file_name}_{write_pointer}'
+                clip_id = f'{record}_{write_pointer}'
                 write_pointer += 1
 
                 # record meta info for each signal

@@ -118,11 +118,42 @@ class BCICIV2aDataset(BaseDataset):
         self.__dict__.update(params)
 
     @staticmethod
-    def process_record(file: Any = None,
+    def read_record(record: str, **kwargs) -> Dict:
+        a_data = scio.loadmat(record)['data']
+
+        return {
+            'a_data': a_data,
+        }
+
+    @staticmethod
+    def fake_record(**kwargs) -> Dict:
+        a_data = np.zeros((1, 9), dtype=object)
+
+        for run_id in range(9):
+            X = np.random.randn(10000, 25)
+            trials = np.array([0, 300, 600])
+
+            y = np.array([0, 1, 0])
+            artifacts = np.array([0, 0, 0])
+
+            inner_struct = np.zeros((1, 1), dtype=object)
+            inner_data = [X, trials, y, None, None, artifacts]
+            inner_struct[0, 0] = inner_data
+
+            a_data[0, run_id] = inner_struct
+
+        return {
+            'record': 'A01T.mat',
+            'a_data': a_data
+        }
+
+    @staticmethod
+    def process_record(record: str,
+                       a_data: np.ndarray,
                        offset: int = 0,
-                       chunk_size: int = 128,
+                       chunk_size: int = 7 * 250,
                        overlap: int = 0,
-                       num_channel: int = 14,
+                       num_channel: int = 22,
                        skip_trial_with_artifacts: bool = False,
                        before_trial: Union[None, Callable] = None,
                        offline_transform: Union[None, Callable] = None,
@@ -134,13 +165,11 @@ class BCICIV2aDataset(BaseDataset):
             dynamic_chunk_size = int(chunk_size)
 
         # get file name without extension
-        file_name = os.path.splitext(os.path.basename(file))[0]
+        file_name = os.path.splitext(os.path.basename(record))[0]
         # the last letter of the file name is the session, the rest is the subject
         subject = file_name[:-1]
         session = file_name[-1]
         write_pointer = 0
-
-        a_data = scio.loadmat(file)['data']
 
         for run_id in range(0, a_data.size):
             # a_data: (1, 9) struct, 1-3: 25 channel EOG test (eyes open, eyes closed, movement), 4-9: 6 runs
