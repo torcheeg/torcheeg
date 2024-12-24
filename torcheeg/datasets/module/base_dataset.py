@@ -1,10 +1,12 @@
 import logging
 import os
 import shutil
+from copy import copy
 from typing import Any, Callable, Dict, Union
-import torch
+
 import numpy as np
 import pandas as pd
+import torch
 from joblib import Parallel, delayed
 from torch.utils.data import Dataset
 from tqdm import tqdm
@@ -142,10 +144,7 @@ class BaseDataset(Dataset):
 
         info_merged = []
 
-        # Choose eager or lazy loading based on number of records
-        self.lazy_io = len(records) > self.lazy_threshold
-
-        if self.lazy_io:
+        if len(records) > self.lazy_threshold:
             # Store paths instead of EEGSignalIO instances
             self.eeg_signal_paths = {}
             for record in records:
@@ -184,8 +183,18 @@ class BaseDataset(Dataset):
 
         self.info = pd.concat(info_merged, ignore_index=True)
 
+    def is_lazy(self):
+        assert hasattr(self, 'eeg_io_router') or hasattr(
+            self, 'eeg_signal_paths'), "The dataset should contain eeg_io_router or eeg_signal_paths."
+        if hasattr(self, 'eeg_io_router') and len(self.eeg_io_router) > 0:
+            return False
+        if hasattr(
+                self, 'eeg_signal_paths') and len(self.eeg_signal_paths) > 0:
+            return True
+        raise ValueError("Both eeg_io_router and eeg_signal_paths are empty.")
+
     def read_eeg(self, record: str, key: str) -> Any:
-        if self.lazy_io:
+        if self.is_lazy():
             # Create temporary EEGSignalIO instance
             eeg_io = EEGSignalIO(
                 self.eeg_signal_paths[record],
@@ -198,7 +207,7 @@ class BaseDataset(Dataset):
             return eeg_io.read_eeg(key)
 
     def write_eeg(self, record: str, key: str, eeg: Any):
-        if self.lazy_io:
+        if self.is_lazy():
             # Create temporary EEGSignalIO instance
             eeg_io = EEGSignalIO(
                 self.eeg_signal_paths[record],
@@ -271,7 +280,7 @@ class BaseDataset(Dataset):
             if k not in ['eeg_io_router', 'info', 'eeg_signal_paths']
         })
 
-        if self.lazy_io:
+        if self.is_lazy():
             # Copy paths for lazy loading
             result.eeg_signal_paths = self.eeg_signal_paths.copy()
             result.eeg_io_router = None
@@ -279,10 +288,10 @@ class BaseDataset(Dataset):
             # Original eager loading copy
             result.eeg_io_router = {}
             for record, eeg_io in self.eeg_io_router.items():
-                result.eeg_io_router[record] = eeg_io.__copy__()
+                result.eeg_io_router[record] = copy(eeg_io)
 
         # Deep copy info
-        result.info = self.info.__copy__()
+        result.info = copy(self.info)
         return result
 
     def set_records(self, **kwargs):

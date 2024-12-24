@@ -23,7 +23,9 @@ class FakeDataset(BaseDataset):
                     })
 
         self.info = pd.DataFrame(data)
-        self.eeg_io_router = {}
+        self.eeg_io_router = {
+            'fake_router': 'fake_router'
+        }
 
     def __getitem__(self, index):
         row = self.info.iloc[index]

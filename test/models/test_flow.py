@@ -11,7 +11,7 @@ class TestFlow(unittest.TestCase):
         model = BGlow()
         # forward to calculate loss function
         mock_eeg = torch.randn(2, 4, 32, 32)
-        nll_loss = model(mock_eeg)
+        z, nll_loss = model(mock_eeg)
         loss = nll_loss.mean()
 
         # sample a generated result
@@ -24,7 +24,7 @@ class TestFlow(unittest.TestCase):
         mock_eeg = torch.randn(2, 4, 32, 32)
         y = torch.randint(0, 2, (2, ))
 
-        nll_loss, y_logits = model(mock_eeg, y)
+        z, nll_loss, y_logits = model(mock_eeg, y)
         loss = nll_loss.mean() + F.cross_entropy(y_logits, y)
 
         # sample a generated result

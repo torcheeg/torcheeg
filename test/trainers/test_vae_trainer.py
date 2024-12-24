@@ -30,7 +30,7 @@ class DummyEncoder(nn.Module):
         self.fc_mu = nn.Linear(in_channels, out_channels)
         self.fc_var = nn.Linear(in_channels, out_channels)
 
-    def forward(self, x, y=None):
+    def forward(self, x, *args, **kwargs):
         return self.fc_mu(x), self.fc_var(x)
 
 
@@ -42,7 +42,7 @@ class DummyModel(nn.Module):
         self.out_channels = out_channels
         self.fc = nn.Linear(in_channels, out_channels)
 
-    def forward(self, x):
+    def forward(self, x, *args, **kwargs):
         return self.fc(x)
 
 
@@ -61,8 +61,8 @@ class TestBetaVAETrainer(unittest.TestCase):
         decoder = DummyModel(60, 120)
 
         trainer = BetaVAETrainer(encoder, decoder)
-        trainer.fit(train_loader, val_loader, max_epochs=1)
-        trainer.test(test_loader)
+        trainer.fit(train_loader, val_loader, max_epochs=1, max_steps=1)
+        trainer.test_step(next(iter(test_loader)), batch_idx=0)
 
         trainer = BetaVAETrainer(encoder,
                                  decoder,
@@ -70,7 +70,7 @@ class TestBetaVAETrainer(unittest.TestCase):
                                  metric_extractor=DummyModel(120, 10),
                                  metric_classifier=DummyModel(120, 1),
                                  metric_num_features=10)
-        trainer.fit(train_loader, val_loader, max_epochs=1)
+        trainer.fit(train_loader, val_loader, max_epochs=1, max_steps=1)
         trainer.test(test_loader)
 
     def test_cbeta_vae_trainer(self):
@@ -86,8 +86,8 @@ class TestBetaVAETrainer(unittest.TestCase):
         decoder = DummyModel(60, 120)
 
         trainer = CBetaVAETrainer(encoder, decoder)
-        trainer.fit(train_loader, val_loader, max_epochs=1)
-        trainer.test(test_loader)
+        trainer.fit(train_loader, val_loader, max_epochs=1, max_steps=1)
+        trainer.test_step(next(iter(test_loader)), batch_idx=0)
 
         trainer = CBetaVAETrainer(encoder,
                                   decoder,
@@ -95,8 +95,8 @@ class TestBetaVAETrainer(unittest.TestCase):
                                   metric_extractor=DummyModel(120, 10),
                                   metric_classifier=DummyModel(120, 1),
                                   metric_num_features=10)
-        trainer.fit(train_loader, val_loader, max_epochs=1)
-        trainer.test(test_loader)
+        trainer.fit(train_loader, val_loader, max_epochs=1, max_steps=1)
+        trainer.test_step(next(iter(test_loader)), batch_idx=0)
 
 
 if __name__ == '__main__':

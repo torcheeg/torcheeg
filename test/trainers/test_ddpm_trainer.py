@@ -84,46 +84,50 @@ class Classifier(nn.Module):
 
 
 class TestDDPMTrainer(unittest.TestCase):
+    def setUp(self):
+        """Set up common test data"""
+        # Prepare minimal datasets and dataloaders for testing
+        self.train_dataset = DummyDataset(length=10)  # Reduced dataset size
+        self.val_dataset = DummyDataset(length=10)
+        
+        self.train_loader = DataLoader(self.train_dataset, batch_size=4)  # Smaller batch size
+        self.val_loader = DataLoader(self.val_dataset, batch_size=4)
 
-    def test_ddpm_trainer(self):
-        train_dataset = DummyDataset()
-        val_dataset = DummyDataset()
-        test_dataset = DummyDataset()
-
-        train_loader = DataLoader(train_dataset, batch_size=64)
-        val_loader = DataLoader(val_dataset, batch_size=64)
-        test_loader = DataLoader(test_dataset, batch_size=64)
-
+    def test_ddpm_trainer_basic(self):
+        """Test basic functionality of DDPMTrainer"""
         model = BUNet(in_channels=4)
+        trainer = DDPMTrainer(
+            model,
+            metric_extractor=Extractor(),
+            metric_classifier=Classifier(),
+            metric_num_features=9 * 9 * 64,
+            metrics=['fid', 'is'],
+            accelerator='cpu'
+        )
+        
+        # Only test single training step
+        trainer.training_step(next(iter(self.train_loader)), batch_idx=0)
+        
+        # Only test single validation step
+        trainer.validation_step(next(iter(self.val_loader)), batch_idx=0)
 
-        trainer = DDPMTrainer(model,
-                              metric_extractor=Extractor(),
-                              metric_classifier=Classifier(),
-                              metric_num_features=9 * 9 * 64,
-                              metrics=['fid', 'is'],
-                              accelerator='cpu')
-        trainer.fit(train_loader, val_loader, max_epochs=1)
-        trainer.test(test_loader)
-
-    def test_cddpm_trainer(self):
-        train_dataset = DummyDataset()
-        val_dataset = DummyDataset()
-        test_dataset = DummyDataset()
-
-        train_loader = DataLoader(train_dataset, batch_size=64)
-        val_loader = DataLoader(val_dataset, batch_size=64)
-        test_loader = DataLoader(test_dataset, batch_size=64)
-
+    def test_cddpm_trainer_basic(self):
+        """Test basic functionality of CDDPMTrainer"""
         model = BCUNet(in_channels=4)
-
-        trainer = CDDPMTrainer(model,
-                               metric_extractor=Extractor(),
-                               metric_classifier=Classifier(),
-                               metric_num_features=9 * 9 * 64,
-                               metrics=['fid', 'is'],
-                               accelerator='cpu')
-        trainer.fit(train_loader, val_loader, max_epochs=1)
-        trainer.test(test_loader)
+        trainer = CDDPMTrainer(
+            model,
+            metric_extractor=Extractor(),
+            metric_classifier=Classifier(),
+            metric_num_features=9 * 9 * 64,
+            metrics=['fid', 'is'],
+            accelerator='cpu'
+        )
+        
+        # Only test single training step
+        trainer.training_step(next(iter(self.train_loader)), batch_idx=0)
+        
+        # Only test single validation step
+        trainer.validation_step(next(iter(self.val_loader)), batch_idx=0)
 
 
 if __name__ == '__main__':

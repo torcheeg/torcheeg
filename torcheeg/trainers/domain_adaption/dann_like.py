@@ -65,6 +65,7 @@ class _DANNLikeTrainer(ClassifierTrainer):
                  warmup_epochs: int = 0,
                  devices: int = 1,
                  accelerator: str = "cpu",
+                 verbose: bool = False,
                  metrics: List[str] = ["accuracy"]):
         super(ClassifierTrainer, self).__init__()
 
@@ -87,6 +88,7 @@ class _DANNLikeTrainer(ClassifierTrainer):
 
         self.num_classes = num_classes
         self.metrics = metrics
+        self.verbose = verbose
         self.init_metrics(metrics, num_classes)
 
         self.ce_fn = nn.CrossEntropyLoss()

@@ -10,12 +10,9 @@ class LazyLoader:
     def __init__(self, lib_name):
         self._lib_name = lib_name
         self._module = None
-        self._dummy_classes = {}
 
     def __getattr__(self, name):
         if self._module is None:
-            if name == 'nn':
-                return LazySubModule(self, 'nn')
             try:
                 self._module = __import__(self._lib_name)
             except ImportError:
@@ -24,20 +21,6 @@ class LazyLoader:
                     f"Please refer to https://pytorch-geometric.readthedocs.io/en/latest/notes/installation.html"
                 )
         return getattr(self._module, name)
-
-
-class LazySubModule:
-    def __init__(self, parent, name):
-        self._parent = parent
-        self._name = name
-
-    def __getattr__(self, name):
-        if name not in self._parent._dummy_classes:
-            self._parent._dummy_classes[name] = type(name, (), {
-                '__init__': lambda *args, **kwargs: None,
-                '__getattr__': lambda self, name: None
-            })
-        return self._parent._dummy_classes[name]
 
 
 pyg = LazyLoader('torch_geometric')
@@ -78,55 +61,6 @@ def add_remaining_self_loops(edge_index: torch.Tensor,
     edge_index = torch.cat([edge_index[:, mask], loop_index], dim=1)
 
     return edge_index, edge_weight
-
-
-class NewSGConv(pyg.nn.SGConv):
-    def __init__(self,
-                 in_channels: int,
-                 out_channels: int,
-                 num_layers: int = 1,
-                 cached: bool = False,
-                 bias: bool = True):
-        super(NewSGConv, self).__init__(in_channels, out_channels,
-                                        K=num_layers, cached=cached, bias=bias)
-
-    # allow negative edge weights
-    @staticmethod
-    def norm(edge_index: torch.Tensor,
-             num_electrodes: int,
-             adj: torch.Tensor,
-             improved: bool = False,
-             dtype: Union[torch.dtype, None] = None):
-        if adj is None:
-            adj = torch.ones((edge_index.size(1), ),
-                             dtype=dtype, device=edge_index.device)
-
-        fill_value = 1 if not improved else 2
-        edge_index, adj = add_remaining_self_loops(
-            edge_index, adj, fill_value, num_electrodes)
-        row, col = edge_index
-        deg = scatter_add(torch.abs(adj), row, dim=0, dim_size=num_electrodes)
-        deg_inv_sqrt = deg.pow(-0.5)
-        deg_inv_sqrt[deg_inv_sqrt == float('inf')] = 0
-
-        return edge_index, deg_inv_sqrt[row] * adj * deg_inv_sqrt[col]
-
-    def forward(self, x: torch.Tensor, edge_index: torch.Tensor, adj: Union[None, torch.Tensor] = None) -> torch.Tensor:
-        """"""
-        if not self.cached or self.cached_result is None:
-            edge_index, edge_weight = NewSGConv.norm(
-                edge_index, x.size(0), adj, dtype=x.dtype)
-
-            for k in range(self.K):
-                x = self.propagate(edge_index, x=x, edge_weight=edge_weight)
-            self.cached_result = x
-
-        return self.lin(self.cached_result)
-
-    def message(self, x_j: torch.Tensor, edge_weight: torch.Tensor) -> torch.Tensor:
-        # x_j: (batch_size*num_electrodes*num_electrodes, in_channels)
-        # edge_weight: (batch_size*num_electrodes*num_electrodes, )
-        return edge_weight.view(-1, 1) * x_j
 
 
 class RGNN(torch.nn.Module):
@@ -207,6 +141,56 @@ class RGNN(torch.nn.Module):
         adj = adj.reshape(self.num_electrodes, self.num_electrodes)[
             self.xs, self.ys]  # strict lower triangular values
         self.adj = nn.Parameter(adj, requires_grad=learn_edge_weights)
+
+        class NewSGConv(pyg.nn.SGConv):
+            def __init__(self,
+                         in_channels: int,
+                         out_channels: int,
+                         num_layers: int = 1,
+                         cached: bool = False,
+                         bias: bool = True):
+                super(NewSGConv, self).__init__(in_channels, out_channels,
+                                                K=num_layers, cached=cached, bias=bias)
+
+            # allow negative edge weights
+            @staticmethod
+            def norm(edge_index: torch.Tensor,
+                     num_electrodes: int,
+                     adj: torch.Tensor,
+                     improved: bool = False,
+                     dtype: Union[torch.dtype, None] = None):
+                if adj is None:
+                    adj = torch.ones((edge_index.size(1), ),
+                                     dtype=dtype, device=edge_index.device)
+
+                fill_value = 1 if not improved else 2
+                edge_index, adj = add_remaining_self_loops(
+                    edge_index, adj, fill_value, num_electrodes)
+                row, col = edge_index
+                deg = scatter_add(torch.abs(adj), row, dim=0,
+                                  dim_size=num_electrodes)
+                deg_inv_sqrt = deg.pow(-0.5)
+                deg_inv_sqrt[deg_inv_sqrt == float('inf')] = 0
+
+                return edge_index, deg_inv_sqrt[row] * adj * deg_inv_sqrt[col]
+
+            def forward(self, x: torch.Tensor, edge_index: torch.Tensor, adj: Union[None, torch.Tensor] = None) -> torch.Tensor:
+                """"""
+                if not self.cached or self.cached_result is None:
+                    edge_index, edge_weight = NewSGConv.norm(
+                        edge_index, x.size(0), adj, dtype=x.dtype)
+
+                    for k in range(self.K):
+                        x = self.propagate(
+                            edge_index, x=x, edge_weight=edge_weight)
+                    self.cached_result = x
+
+                return self.lin(self.cached_result)
+
+            def message(self, x_j: torch.Tensor, edge_weight: torch.Tensor) -> torch.Tensor:
+                # x_j: (batch_size*num_electrodes*num_electrodes, in_channels)
+                # edge_weight: (batch_size*num_electrodes*num_electrodes, )
+                return edge_weight.view(-1, 1) * x_j
 
         self.conv1 = NewSGConv(in_channels=in_channels,
                                out_channels=hid_channels, num_layers=num_layers)

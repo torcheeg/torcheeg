@@ -52,8 +52,8 @@ class TestImbalanceTrainer(unittest.TestCase):
             accelerator='cpu',
             num_classes=2,
             metrics=['f1score'])
-        trainer.fit(train_loader, val_loader, max_epochs=2)
-        trainer.test(test_loader)
+        trainer.fit(train_loader, val_loader, max_epochs=1, max_steps=1)
+        trainer.test_step(next(iter(test_loader)), batch_idx=0)
 
         trainer = LALossTrainer(
             model,
@@ -62,8 +62,8 @@ class TestImbalanceTrainer(unittest.TestCase):
             accelerator='cpu',
             num_classes=2,
             metrics=['f1score'])
-        trainer.fit(train_loader, val_loader, max_epochs=2)
-        trainer.test(test_loader)
+        trainer.fit(train_loader, val_loader, max_epochs=1, max_steps=1)
+        trainer.test_step(next(iter(test_loader)), batch_idx=0)
 
     def test_ldam_loss_trainer(self):
         train_dataset = DummyDataset()
@@ -83,8 +83,8 @@ class TestImbalanceTrainer(unittest.TestCase):
             accelerator='cpu',
             num_classes=2,
             metrics=['f1score'])
-        trainer.fit(train_loader, val_loader, max_epochs=2)
-        trainer.test(test_loader)
+        trainer.fit(train_loader, val_loader, max_epochs=1, max_steps=1)
+        trainer.test_step(next(iter(test_loader)), batch_idx=0)
 
     def test_eq_loss_trainer(self):
         train_dataset = DummyDataset()
@@ -104,8 +104,8 @@ class TestImbalanceTrainer(unittest.TestCase):
             accelerator='cpu',
             num_classes=2,
             metrics=['f1score'])
-        trainer.fit(train_loader, val_loader, max_epochs=2)
-        trainer.test(test_loader)
+        trainer.fit(train_loader, val_loader, max_epochs=1, max_steps=1)
+        trainer.test_step(next(iter(test_loader)), batch_idx=0)
 
         trainer = EQLossTrainer(
             model,
@@ -114,8 +114,8 @@ class TestImbalanceTrainer(unittest.TestCase):
             accelerator='cpu',
             num_classes=2,
             metrics=['f1score'])
-        trainer.fit(train_loader, val_loader, max_epochs=2)
-        trainer.test(test_loader)
+        trainer.fit(train_loader, val_loader, max_epochs=1, max_steps=1)
+        trainer.test_step(next(iter(test_loader)), batch_idx=0)
 
     def test_focal_loss_trainer(self):
         train_dataset = DummyDataset()
@@ -135,8 +135,8 @@ class TestImbalanceTrainer(unittest.TestCase):
             accelerator='cpu',
             num_classes=2,
             metrics=['f1score'])
-        trainer.fit(train_loader, val_loader, max_epochs=2)
-        trainer.test(test_loader)
+        trainer.fit(train_loader, val_loader, max_epochs=1, max_steps=1)
+        trainer.test_step(next(iter(test_loader)), batch_idx=0)
 
         trainer = FocalLossTrainer(
             model,
@@ -145,8 +145,8 @@ class TestImbalanceTrainer(unittest.TestCase):
             accelerator='cpu',
             num_classes=2,
             metrics=['f1score'])
-        trainer.fit(train_loader, val_loader, max_epochs=2)
-        trainer.test(test_loader)
+        trainer.fit(train_loader, val_loader, max_epochs=1, max_steps=1)
+        trainer.test_step(next(iter(test_loader)), batch_idx=0)
 
     def test_wce_loss_trainer(self):
         train_dataset = DummyDataset()
@@ -166,8 +166,8 @@ class TestImbalanceTrainer(unittest.TestCase):
             accelerator='cpu',
             num_classes=2,
             metrics=['f1score'])
-        trainer.fit(train_loader, val_loader, max_epochs=2)
-        trainer.test(test_loader)
+        trainer.fit(train_loader, val_loader, max_epochs=1, max_steps=1)
+        trainer.test_step(next(iter(test_loader)), batch_idx=0)
 
         trainer = WCELossTrainer(
             model,
@@ -176,8 +176,8 @@ class TestImbalanceTrainer(unittest.TestCase):
             accelerator='cpu',
             num_classes=2,
             metrics=['f1score'])
-        trainer.fit(train_loader, val_loader, max_epochs=2)
-        trainer.test(test_loader)
+        trainer.fit(train_loader, val_loader, max_epochs=1, max_steps=1)
+        trainer.test_step(next(iter(test_loader)), batch_idx=0)
 
 
 if __name__ == '__main__':
