@@ -26,7 +26,7 @@ jobs:
         python -m pip install --upgrade pip
         pip install https://download.pytorch.org/whl/cpu/torch-2.4.1%2Bcpu-cp38-cp38-linux_x86_64.whl
         pip install https://data.pyg.org/whl/torch-2.4.0%2Bcpu/torch_scatter-2.1.2%2Bpt24cpu-cp38-cp38-linux_x86_64.whl
-        pip install torch_sparse-0.6.18+pt24cpu-cp38-cp38-linux_x86_64.whl
+        pip install https://data.pyg.org/whl/torch-2.4.0%2Bcpu/torch_sparse-0.6.18%2Bpt24cpu-cp38-cp38-linux_x86_64.whl
         
     - name: Create constraints file
       run: |
