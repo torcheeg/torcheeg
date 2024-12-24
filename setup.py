@@ -11,7 +11,10 @@ install_requires = [
     'pytorch-lightning>=1.9.5', 'wfdb>=4.1.2'
 ]
 
-test_requires = ['pytest>=7.1.2']
+test_requires = [
+    'torch>=1.10.1',
+    'pytest>=7.1.2'
+]
 
 model_plugin_requires = [
     'torch-scatter',
