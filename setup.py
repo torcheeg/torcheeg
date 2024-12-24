@@ -18,8 +18,6 @@ test_requires = [
 model_plugin_requires = [
     'torch-scatter',
     'torch-sparse',
-    'torch-cluster',
-    'torch-spline-conv',
     'torch_geometric>=2.0.3',
 ]
 
