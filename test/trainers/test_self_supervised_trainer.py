@@ -44,7 +44,7 @@ class TestSelfSupervisedTrainer(unittest.TestCase):
         model = DummyModel()
 
         trainer = SimCLRTrainer(model, extract_channels=10)
-        trainer.fit(train_loader, val_loader, max_epochs=1)
+        trainer.fit(train_loader, val_loader, max_epochs=1, max_steps=1)
 
     def test_byol_trainer(self):
         train_dataset = DummyDataset()
@@ -56,7 +56,7 @@ class TestSelfSupervisedTrainer(unittest.TestCase):
         model = DummyModel()
 
         trainer = BYOLTrainer(model, extract_channels=10)
-        trainer.fit(train_loader, val_loader, max_epochs=1)
+        trainer.fit(train_loader, val_loader, max_epochs=1, max_steps=1)
 
 
 

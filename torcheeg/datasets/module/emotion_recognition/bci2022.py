@@ -2,6 +2,7 @@ import os
 from typing import Any, Callable, Dict, Tuple, Union
 
 import joblib
+import numpy as np
 
 from ....utils import get_random_dir_path
 from ..base_dataset import BaseDataset
@@ -54,7 +55,7 @@ VALENCE_DICT = {
 }
 
 EMOTION_DICT = {
-    1: 0,  # anger	
+    1: 0,  # anger
     2: 0,
     3: 0,
     4: 1,  # disgust
@@ -98,9 +99,9 @@ class BCI2022Dataset(BaseDataset):
     - Rating: 28 video clips are annotated in valence and discrete emotion dimensions. The valence is divided into positive (1), negative (-1), and neutral (0). Discrete emotions are divided into anger (0), disgust (1), fear (2), sadness (3), neutral (4), amusement (5), excitation (6), happiness (7), and warmth (8).
 
     In order to use this dataset, the download folder :obj:`TrainSet` is required, containing the following files:
-    
+
     .. code-block:: python
-    
+
         TrainSet_first_batch/
         ├── sub1/
         ├── sub10/
@@ -161,7 +162,7 @@ class BCI2022Dataset(BaseDataset):
         from torcheeg.datasets import BCI2022Dataset
         from torcheeg import transforms
         from torcheeg.datasets.constants import BCI2022_ADJACENCY_MATRIX
-        
+
         dataset = BCI2022Dataset(root_path='./TrainSet',
                                  online_transform=transforms.Compose(
                                      [transforms.ToG(BCI2022_ADJACENCY_MATRIX)]),
@@ -231,7 +232,41 @@ class BCI2022Dataset(BaseDataset):
         self.__dict__.update(params)
 
     @staticmethod
-    def process_record(file: Any = None,
+    def read_record(record: str, **kwargs) -> Dict:
+        file_name = os.path.basename(record)  # an element from file name list
+        samples = joblib.load(os.path.join(
+            record, f'{file_name}.pkl'))  # channel(33), timestep(n*250)
+        return {
+            'samples': samples
+        }
+
+    @staticmethod
+    def fake_record(**kwargs) -> Dict:
+        duration = 10
+        num_samples = duration * 550
+        num_channels = 33
+        
+        eeg_data = np.random.randn(num_channels - 1, num_samples)
+        
+        events = np.zeros(num_samples)
+        
+        events[500] = 1
+        events[525] = 240
+        events[1500] = 241
+        
+        events[2000] = 2
+        events[2025] = 240
+        events[3000] = 241
+        
+        samples = np.vstack([eeg_data, events])
+        
+        return {
+            'samples': samples
+        }
+
+    @staticmethod
+    def process_record(record: str,
+                       samples: np.ndarray,
                        chunk_size: int = 250,
                        overlap: int = 0,
                        channel_num: int = 30,
@@ -239,12 +274,11 @@ class BCI2022Dataset(BaseDataset):
                        offline_transform: Union[None, Callable] = None,
                        **kwargs):
 
-        file_name = os.path.basename(file)  # an element from file name list
-        reorder = 'TrainSet_first_batch' in file_name  # bool, the first batch needs to be reordered
-
-        subject = file_name  # subject (54)
-        samples = joblib.load(os.path.join(
-            file, f'{file_name}.pkl'))  # channel(33), timestep(n*250)
+        # an element from record name list
+        record_name = os.path.basename(record)
+        # bool, the first batch needs to be reordered
+        reorder = 'TrainSet_first_batch' in record_name
+        subject = record_name  # subject (54)
 
         events = samples[-1]
         if reorder:

@@ -55,7 +55,7 @@ def format_subject_id(recording_file: str, root_path: str):
 class ISRUCDataset(BaseDataset):
     r'''
     A polysomnographic (PSG) dataset named ISRUC-Sleep that was created aiming to help sleep researchers in their studies. This class generates training samples and test samples according to the given parameters, and caches the generated results in a unified input and output format (IO). The relevant information of the dataset is as follows:
-    
+
     - Author: Khalighi et al. 
     - Year: 2016
     - Download URL: https://sleeptight.isr.uc.pt/
@@ -64,9 +64,9 @@ class ISRUCDataset(BaseDataset):
     - Rating: Sleep stages were annotated in 30 second contiguous intervals (Sleep stage W, Sleep stage N1, Sleep stage N2, Sleep stage N3, Sleep stage R, Lights off@@EEG F4-A1).
 
     In order to use this dataset, the following file structure is required:
-    
+
     .. code-block:: python
-    
+
         ISRUC-SLEEP/
         ├── Subgroup_1/
         │   ├── 1/
@@ -77,7 +77,7 @@ class ISRUCDataset(BaseDataset):
         │   └── ...
         └── Subgroup_3/
             └── ...
-    
+
     An example dataset:
 
     .. code-block:: python
@@ -120,6 +120,7 @@ class ISRUCDataset(BaseDataset):
         num_worker (int): Number of subprocesses to use for data loading. 0 means that the data will be loaded in the main process. (default: :obj:`0`)
         verbose (bool): Whether to display logs during processing, such as progress bars, etc. (default: :obj:`True`)
     '''
+
     def __init__(self,
                  root_path: str = './ISRUC-SLEEP',
                  groups: List = [0, 1, 2],
@@ -168,23 +169,17 @@ class ISRUCDataset(BaseDataset):
         super().__init__(**params)
 
     @staticmethod
-    def process_record(file: Any = None,
-                       root_path: str = './ISRUC-SLEEP',
-                       channels: List = ['F3-M2',
-                                         'C3-M2',
-                                         'O1-M2',
-                                         'F4-M1',
-                                         'C4-M1',
-                                         'O2-M1'],
-                       l_freq: float = 0.5,
-                       h_freq: float = 30,
-                       sfreq: int = 100,
-                       before_trial: Union[None, Callable] = None,
-                       offline_transform: Union[None, Callable] = None,
-                       **kwargs):
-
-        recording_file, scoring_file, group = file
-        subject_id = format_subject_id(recording_file, root_path)
+    def read_record(record: Tuple,
+                    channels: List = ['F3-M2',
+                                      'C3-M2',
+                                      'O1-M2',
+                                      'F4-M1',
+                                      'C4-M1',
+                                      'O2-M1'],
+                    l_freq: float = 0.5,
+                    h_freq: float = 30,
+                    sfreq: int = 100, **kwargs) -> Dict:
+        recording_file, scoring_file, group = record
 
         raw = None
         with tempfile.TemporaryDirectory(dir='/dev/shm') as temp_dir:
@@ -209,6 +204,39 @@ class ISRUCDataset(BaseDataset):
             line_str = line.strip()
             if line_str != '':
                 epochs_label.append(label2id[line_str])
+
+        return {
+            'epochs_data': epochs_data,
+            'epochs_label': epochs_label,
+        }
+
+    @staticmethod
+    def fake_record(record: Tuple, **kwargs) -> Dict:
+        num_epochs = 4
+        num_channel = 6
+        num_timepoint = 3000
+
+        epochs_data = np.random.rand(num_epochs, num_channel, num_timepoint)
+        epochs_label = ['Sleep stage W', 'Sleep stage N1',
+                        'Sleep stage N2', 'Sleep stage N3']
+
+        return {
+            'record': ('fake_record', 'fake_record', 'fake_record'),
+            'epochs_data': epochs_data,
+            'epochs_label': epochs_label,
+        }
+
+    @staticmethod
+    def process_record(record: Tuple,
+                       epochs_data: np.ndarray,
+                       epochs_label: List[str],
+                       root_path: str = './ISRUC-SLEEP',
+                       before_trial: Union[None, Callable] = None,
+                       offline_transform: Union[None, Callable] = None,
+                       **kwargs):
+
+        recording_file, scoring_file, group = record
+        subject_id = format_subject_id(recording_file, root_path)
 
         if before_trial:
             epochs_data = before_trial(epochs_data)

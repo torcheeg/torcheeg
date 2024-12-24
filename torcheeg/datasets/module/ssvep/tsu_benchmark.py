@@ -1,10 +1,12 @@
 import os
 import re
-from typing import Any, Callable, Dict, Tuple, Union
+from typing import Callable, Dict, Tuple, Union
 
+import numpy as np
 import scipy.io as scio
-from ..base_dataset import BaseDataset
+
 from ....utils import get_random_dir_path
+from ..base_dataset import BaseDataset
 
 
 class TSUBenckmarkDataset(BaseDataset):
@@ -20,7 +22,7 @@ class TSUBenckmarkDataset(BaseDataset):
     - Rating: Frequency and phase values for the 40 trials.
 
     In order to use this dataset, the download folder :obj:`data_preprocessed_python` is required, containing the following files:
-    
+
     .. code-block:: python
 
         data_preprocessed_python/
@@ -70,7 +72,7 @@ class TSUBenckmarkDataset(BaseDataset):
     An example dataset for GNN-based methods:
 
     .. code-block:: python
-    
+
         dataset = TSUBenckmarkDataset(root_path='./TSUBenchmark',
                                       online_transform=transforms.Compose([
                                           ToG(TSUBenckmark_ADJACENCY_MATRIX)
@@ -94,7 +96,7 @@ class TSUBenckmarkDataset(BaseDataset):
         io_path (str): The path to generated unified data IO, cached as an intermediate result. If set to None, a random path will be generated. (default: :obj:`None`)
         num_worker (int): Number of subprocesses to use for data loading. 0 means that the data will be loaded in the main process. (default: :obj:`0`)
         verbose (bool): Whether to display logs during processing, such as progress bars, etc. (default: :obj:`True`)
-    
+
     '''
 
     def __init__(self,
@@ -137,29 +139,55 @@ class TSUBenckmarkDataset(BaseDataset):
         self.__dict__.update(params)
 
     @staticmethod
-    def process_record(file: Any = None,
-                       root_path: str = './TSUBenchmark',
+    def read_record(record: str,
+                    root_path: str = './TSUBenchmark', **kwargs) -> Dict:
+
+        samples = scio.loadmat(os.path.join(root_path,
+                                            record))['data'].transpose(
+                                                2, 3, 0, 1)
+
+        freq_phase = scio.loadmat(os.path.join(root_path, 'Freq_Phase.mat'))
+        freqs = freq_phase['freqs'][0]
+        phases = freq_phase['phases'][0]
+
+        return {
+            'samples': samples,
+            'freqs': freqs,
+            'phases': phases
+        }
+
+    @staticmethod
+    def fake_record(record: str, **kwargs) -> Dict:
+        num_trials = 20
+        num_blocks = 6
+        num_channels = 64
+        num_samples = 1500
+
+        samples = np.random.rand(
+            num_trials, num_blocks, num_channels, num_samples)
+        freqs = np.random.rand(num_trials, num_blocks)
+        phases = np.random.rand(num_trials, num_blocks)
+
+        return {
+            'record': 'S34.mat',
+            'samples': samples,
+            'freqs': freqs,
+            'phases': phases
+        }
+
+    @staticmethod
+    def process_record(record: str,
+                       samples: np.ndarray,
+                       freqs: np.ndarray,
+                       phases: np.ndarray,
                        chunk_size: int = 250,
                        overlap: int = 0,
                        num_channel: int = 64,
                        offline_transform: Union[None, Callable] = None,
                        before_trial: Union[None, Callable] = None,
                        **kwargs):
-        file_name = file
 
-        subject = int(re.findall(r'S(\d*).mat', file_name)[0])  # subject (35)
-        freq_phase = scio.loadmat(os.path.join(root_path, 'Freq_Phase.mat'))
-        freqs = freq_phase['freqs'][0]
-        phases = freq_phase['phases'][0]
-
-        samples = scio.loadmat(os.path.join(root_path,
-                                            file_name))['data'].transpose(
-                                                2, 3, 0, 1)
-        # 40, 6, 64, 1500
-        # Target number: 40
-        # Block number: 6
-        # Electrode number: 64
-        # Time points: 1500
+        subject = int(re.findall(r'S(\d*).mat', record)[0])  # subject (35)
 
         write_pointer = 0
 
@@ -190,7 +218,6 @@ class TSUBenckmarkDataset(BaseDataset):
                 # calculate moving step
                 step = dynamic_chunk_size - overlap
 
-                block_queue = []
                 while end_at <= block_samples.shape[1]:
                     clip_sample = block_samples[:num_channel, start_at:end_at]
 
@@ -198,7 +225,7 @@ class TSUBenckmarkDataset(BaseDataset):
                     if not offline_transform is None:
                         t_eeg = offline_transform(eeg=clip_sample)['eeg']
 
-                    clip_id = f'{file_name}_{write_pointer}'
+                    clip_id = f'{record}_{write_pointer}'
                     write_pointer += 1
 
                     # record meta info for each signal

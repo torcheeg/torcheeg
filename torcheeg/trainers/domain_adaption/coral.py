@@ -6,7 +6,7 @@ import torch.nn as nn
 from .mmd_like import _MMDLikeTrainer
 
 
-def compute_covariance(data):
+def compute_covariance(data, eps: float = 1e-6):
     n = data.size(0)
 
     device = data.device
@@ -18,8 +18,8 @@ def compute_covariance(data):
     mult_right_terms = torch.div(mult_right_terms, n)
 
     mult_left_terms = torch.mm(data.t(), data)
-    covariance_matrix = 1 / (n - 1) * torch.add(mult_left_terms, -1 *
-                                                (mult_right_terms))
+    covariance_matrix = 1 / ((n - 1) * torch.add(mult_left_terms, -1 *
+                                                (mult_right_terms)) + eps)
 
     return covariance_matrix
 

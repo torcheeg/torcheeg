@@ -1,11 +1,15 @@
 import os
-from typing import Callable, Dict, Tuple, Union
-from ..base_dataset import BaseDataset
-from ....utils import get_random_dir_path
-from scipy.io import loadmat
 import re
+from typing import Callable, Dict, Tuple, Union
 
-class  SanDiegoSSVEPDataset(BaseDataset):
+import numpy as np
+from scipy.io import loadmat
+
+from ....utils import get_random_dir_path
+from ..base_dataset import BaseDataset
+
+
+class SanDiegoSSVEPDataset(BaseDataset):
     '''
     San Diego Square Joint Frequnecy-Phase Modulation SSVEP Dataset: lightweight dataset for studying SSVEP. For more information, please refer to the details below.
 
@@ -17,9 +21,9 @@ class  SanDiegoSSVEPDataset(BaseDataset):
     - Stimulus: 12 different frequencies and phases of visual stimuli.
     - Signals: Electroencephalogram (8 channels at 256Hz). Training and testing sets have been divided for each participant (totally 10 participants) in original datasets .
     - label: The order of the stimulus frequencies in the EEG data is [9.25, 11.25, 13.25, 9.75, 11.75, 13.75, 10.25, 12.25, 14.25, 10.75, 12.75, 14.75] Hz which are labeled to range(0,12).
-    
+
     In order to use this dataset, the download folder is required, containing the following files:
-    
+
     .. code-block:: python
 
         archive/
@@ -31,7 +35,7 @@ class  SanDiegoSSVEPDataset(BaseDataset):
         └── S010trainEEG.mat
 
     An example:
-    
+
     .. code-block:: python
 
         from torcheeg.transforms import Select,BandSignal
@@ -58,9 +62,10 @@ class  SanDiegoSSVEPDataset(BaseDataset):
         num_worker (int): Number of subprocesses to use for data loading. 0 means that the data will be loaded in the main process. (default: :obj:`0`)
         verbose (bool): Whether to display logs during processing, such as progress bars, etc. (default: :obj:`True`)
     '''
+
     def __init__(self,
-                 root_path = './archive',
-                 chunk_size:int =256,
+                 root_path='./archive',
+                 chunk_size: int = 256,
                  online_transform: Union[None, Callable] = None,
                  offline_transform: Union[None, Callable] = None,
                  label_transform: Union[None, Callable] = None,
@@ -75,12 +80,11 @@ class  SanDiegoSSVEPDataset(BaseDataset):
                  verbose: bool = True):
         if io_path is None:
             io_path = get_random_dir_path(dir_prefix='datasets')
-        
-        
+
         # pass all arguments to super class
         params = {
             'root_path': root_path,
-            'chunk_size':chunk_size,
+            'chunk_size': chunk_size,
             'online_transform': online_transform,
             'offline_transform': offline_transform,
             'label_transform': label_transform,
@@ -98,39 +102,66 @@ class  SanDiegoSSVEPDataset(BaseDataset):
         # save all arguments to __dict__
         self.__dict__.update(params)
 
+    @staticmethod
+    def read_record(record: str,
+                    root_path: str = './archive', **kwargs) -> Dict:
+
+        file_path = os.path.join(root_path, record)
+        data = loadmat(file_path)
+        eeg = data['X'].transpose(-1, -2, -3)
+        y = data['y'][0]
+
+        return {
+            'eeg': eeg,
+            'y': y,
+        }
 
     @staticmethod
-    def process_record(file,
-                       root_path,
-                       chunk_size,
-                       offline_transform:Union[None, Callable],
+    def fake_record(record: str,
+                    root_path: str = './archive', **kwargs) -> Dict:
+        n_trials = 10
+        n_channels = 22
+        n_times = 1000
+        
+        eeg = np.random.randn(n_trials, n_channels, n_times)
+        y = np.random.randint(1, 5, size=(n_trials,))
+        
+        return {
+            'record': 'S01trainEEG.mat',
+            'eeg': eeg,
+            'y': y
+        }
+
+    @staticmethod
+    def process_record(record: str,
+                       eeg: np.ndarray,
+                       y: np.ndarray,
+                       chunk_size: int = 256,
+                       offline_transform: Union[None, Callable] = None,
                        before_trial: Union[None, Callable] = None,
                        **kwargs):
-        
-        file_path = os.path.join(root_path,file)
-        subject_id = int( re.findall(r"S(\d+).*\.mat",file)[0] )
-        train = True if re.findall(r"S\d+(train)EEG\.mat",file) else False
-        
-        data= loadmat(file_path)
-        eeg = data['X'].transpose(-1,-2,-3)
-        y = data['y'][0]
+
+        subject_id = int(re.findall(r"S(\d+).*\.mat", record)[0])
+        train = True if re.findall(r"S\d+(train)EEG\.mat", record) else False
+
         record_global_info = {
-            'subject_id':subject_id,
-            'train':train,
+            'subject_id': subject_id,
+            'train': train,
         }
-        for trial_id,eeg_clip in enumerate(eeg):
+        for trial_id, eeg_clip in enumerate(eeg):
             if before_trial:
                 before_trial(eeg_clip)
-            eeg_clip = eeg_clip[:,:chunk_size]
+            eeg_clip = eeg_clip[:, :chunk_size]
             if not offline_transform is None:
-                eeg_clip = offline_transform(eeg= eeg_clip)['eeg']
+                eeg_clip = offline_transform(eeg=eeg_clip)['eeg']
             label = int(y[trial_id]-1)
             trial_id = f"train_{trial_id}" if train else f"test_{trial_id}"
             clip_id = f"S{subject_id}_{trial_id}"
-            record_info= {"clip_id":clip_id,'label':label,'trial_id':trial_id}
+            record_info = {"clip_id": clip_id,
+                           'label': label, 'trial_id': trial_id}
             record_info.update(record_global_info)
-            yield {'eeg':eeg_clip,'key':clip_id,"info":record_info}
-        
+            yield {'eeg': eeg_clip, 'key': clip_id, "info": record_info}
+
     def set_records(self,
                     root_path,
                     **kwargs):
@@ -157,18 +188,18 @@ class  SanDiegoSSVEPDataset(BaseDataset):
     def repr_body(self) -> Dict:
         return dict(
             super().repr_body, **{
-            'root_path': self.root_path,
-            'chunk_size':self.chunk_size,
-            'online_transform': self.online_transform,
-            'offline_transform': self.offline_transform,
-            'label_transform': self.label_transform,
-            'before_trial': self.before_trial,
-            'after_trial': self.after_trial,
-            'after_session':self.after_session,
-            'after_subject': self.after_subject,
-            'io_path': self.io_path,
-            'io_size': self.io_size,
-            'io_mode': self.io_mode,
-            'num_worker': self.num_worker,
-            'verbose':self.verbose
+                'root_path': self.root_path,
+                'chunk_size': self.chunk_size,
+                'online_transform': self.online_transform,
+                'offline_transform': self.offline_transform,
+                'label_transform': self.label_transform,
+                'before_trial': self.before_trial,
+                'after_trial': self.after_trial,
+                'after_session': self.after_session,
+                'after_subject': self.after_subject,
+                'io_path': self.io_path,
+                'io_size': self.io_size,
+                'io_mode': self.io_mode,
+                'num_worker': self.num_worker,
+                'verbose': self.verbose
             })

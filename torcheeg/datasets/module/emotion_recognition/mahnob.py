@@ -1,18 +1,20 @@
 import glob
 import json
 import os
-from typing import Any, Callable, Dict, Tuple, Union
+from typing import Callable, Dict, Tuple, Union
 
 import mne
+import numpy as np
 import xmltodict
-from ..base_dataset import BaseDataset
+
 from ....utils import get_random_dir_path
+from ..base_dataset import BaseDataset
 
 
 class MAHNOBDataset(BaseDataset):
     r'''
     MAHNOB-HCI is a multimodal database recorded in response to affective stimuli with the goal of emotion recognition and implicit tagging research. This class generates training samples and test samples according to the given parameters, and caches the generated results in a unified input and output format (IO). The relevant information of the dataset is as follows:
-    
+
     - Author: Soleymani et al.
     - Year: 2011
     - Download URL: https://mahnob-db.eu/hci-tagging/
@@ -20,9 +22,9 @@ class MAHNOBDataset(BaseDataset):
     - Stimulus: 20 videos from famous movies. Each video clip lasts 34-117 seconds (may not be an integer), in addition to 30 seconds before the beginning of the affective stimuli experience and another 30 seconds after the end.
     - Signals: Electroencephalogram (32 channels at 512Hz), peripheral physiological signals (ECG, GSR, Temp, Resp at 256 Hz), and eye movement signals (at 60Hz) of 30-5=25 subjects (3 subjects with missing data records and 2 subjects with incomplete data records).
     - Rating: Arousal, valence, control and predictability (all ona scale from 1 to 9).
-    
+
     In order to use this dataset, the download folder :obj:`Sessions` (Physiological files of emotion elicitation) is required, containing the following files:
-    
+
     .. code-block:: python
 
         Sessions/
@@ -37,7 +39,7 @@ class MAHNOBDataset(BaseDataset):
     An example dataset for CNN-based methods:
 
     .. code-block:: python
-    
+
         from torcheeg.datasets import MAHNOBDataset
         from torcheeg import transforms
         from torcheeg.datasets.constants import MAHNOB_CHANNEL_LOCATION_DICT
@@ -60,7 +62,7 @@ class MAHNOBDataset(BaseDataset):
     Another example dataset for CNN-based methods:
 
     .. code-block:: python
-    
+
         from torcheeg.datasets import MAHNOBDataset
         from torcheeg import transforms
 
@@ -174,142 +176,181 @@ class MAHNOBDataset(BaseDataset):
         self.__dict__.update(params)
 
     @staticmethod
-    def process_record(file: Any = None,
-                       root_path: str = './Sessions',
+    def read_record(record: str,
+                    root_path: str = './Sessions',
+                    sampling_rate: int = 128,
+                    num_channel: int = 32,
+                    num_baseline: int = 30,
+                    baseline_chunk_size: int = 128, **kwargs) -> Dict:
+        trial_dir = os.path.join(root_path, record)
+
+        # record the common meta info for the trial
+        label_file = os.path.join(trial_dir, 'session.xml')
+        with open(label_file) as f:
+            label_info = xmltodict.parse('\n'.join(f.readlines()))
+        label_info = json.loads(json.dumps(label_info))['session']
+
+        # extract signals
+        sample_file = glob.glob(str(os.path.join(trial_dir, '*.bdf')))[0]
+
+        raw = mne.io.read_raw_bdf(sample_file,
+                                  preload=True,
+                                  stim_channel='Status')
+        events = mne.find_events(raw, stim_channel='Status')
+
+        montage = mne.channels.make_standard_montage(kind='biosemi32')
+        raw.set_montage(montage, on_missing='ignore')
+
+        # pick channels
+        raw.pick_channels(raw.ch_names[:num_channel])
+
+        start_samp, end_samp = events[0][0] + 1, events[1][0] - 1
+
+        # extract baseline signals
+        trial_baseline_raw = raw.copy().crop(raw.times[0],
+                                             raw.times[end_samp])
+        trial_baseline_raw = trial_baseline_raw.resample(sampling_rate)
+
+        trial_baseline_sample = trial_baseline_raw.to_data_frame().to_numpy(
+        )[:, 1:].swapaxes(1, 0)  # channel(32), timestep(30 * 128)
+        trial_baseline_sample = trial_baseline_sample[:, :num_baseline *
+                                                      baseline_chunk_size]
+        trial_baseline_sample = trial_baseline_sample.reshape(
+            num_channel, num_baseline,
+            baseline_chunk_size).mean(axis=1)  # channel(32), timestep(128)
+
+        # extract experimental signals
+        trial_raw = raw.copy().crop(raw.times[start_samp],
+                                    raw.times[end_samp])
+        trial_raw = trial_raw.resample(sampling_rate)
+        trial_samples = trial_raw.to_data_frame().to_numpy()[:,
+                                                             1:].swapaxes(
+                                                                 1, 0)
+
+        return {
+            'trial_samples': trial_samples,
+            'label_info': label_info,
+            'trial_baseline_sample': trial_baseline_sample
+        }
+
+    @staticmethod
+    def fake_record(record: str, **kwargs) -> Dict:
+        num_channels = 32
+        sampling_rate = 128
+        duration = 30
+
+        trial_samples = np.random.randn(num_channels, sampling_rate * duration)
+        trial_baseline_sample = np.random.randn(num_channels, sampling_rate)
+
+        label_info = {
+            '@mediaFile': record,
+            '@cutLenSec': duration,
+            '@feltArsl': np.random.randint(1, 10),
+            '@feltCtrl': np.random.randint(1, 10),
+            '@feltEmo': np.random.randint(1, 10),
+            '@feltPred': np.random.randint(1, 10),
+            '@feltVlnc': np.random.randint(1, 10),
+            '@isStim': 1,
+            'subject': {
+                '@id': np.random.randint(1, 33)
+            }
+        }
+
+        return {
+            'trial_samples': trial_samples,
+            'label_info': label_info,
+            'trial_baseline_sample': trial_baseline_sample
+        }
+
+    @staticmethod
+    def process_record(record: str,
+                       trial_samples: np.ndarray,
+                       trial_baseline_sample: np.ndarray,
+                       label_info: Dict,
                        chunk_size: int = 128,
-                       sampling_rate: int = 128,
                        overlap: int = 0,
-                       num_channel: int = 32,
-                       num_baseline: int = 30,
-                       baseline_chunk_size: int = 128,
                        num_trial_sample: int = 30,
                        offline_transform: Union[None, Callable] = None,
                        before_trial: Union[None, Callable] = None,
                        **kwargs):
 
-        for file_name in file:
+        emodims = [
+            '@feltArsl', '@feltCtrl', '@feltEmo', '@feltPred', '@feltVlnc',
+            '@isStim'
+        ]
 
-            trial_dir = os.path.join(root_path, file_name)
+        if not '@feltArsl' in label_info:
+            # skip label_info['@isStim'] == '0' and other exception
+            yield None
 
-            # record the common meta info for the trial
-            label_file = os.path.join(trial_dir, 'session.xml')
-            emodims = [
-                '@feltArsl', '@feltCtrl', '@feltEmo', '@feltPred', '@feltVlnc',
-                '@isStim'
-            ]
-            with open(label_file) as f:
-                label_info = xmltodict.parse('\n'.join(f.readlines()))
-            label_info = json.loads(json.dumps(label_info))['session']
+        trial_meta_info = {
+            'subject_id': label_info['subject']['@id'],
+            'trial_id': label_info['@mediaFile'],
+            'duration': float(label_info['@cutLenSec'])
+        }
+        # feltArsl, feltCtrl, feltEmo, feltPred, feltVlnc, isStim
+        trial_meta_info.update({k[1:]: int(label_info[k]) for k in emodims})
 
-            if not '@feltArsl' in label_info:
-                # skip label_info['@isStim'] == '0' and other exception
-                continue
+        write_pointer = 0
 
-            trial_meta_info = {
-                'subject_id': label_info['subject']['@id'],
-                'trial_id': label_info['@mediaFile'],
-                'duration': float(label_info['@cutLenSec'])
-            }
-            # feltArsl, feltCtrl, feltEmo, feltPred, feltVlnc, isStim
-            trial_meta_info.update({k[1:]: int(label_info[k]) for k in emodims})
+        if before_trial:
+            trial_samples = before_trial(trial_samples)
 
-            write_pointer = 0
+        start_at = 0
+        if chunk_size <= 0:
+            dynamic_chunk_size = trial_samples.shape[1] - start_at
+        else:
+            dynamic_chunk_size = chunk_size
 
-            # extract signals
-            sample_file = glob.glob(str(os.path.join(trial_dir, '*.bdf')))[0]
+        # chunk with chunk size
+        end_at = dynamic_chunk_size
+        # calculate moving step
+        step = dynamic_chunk_size - overlap
 
-            raw = mne.io.read_raw_bdf(sample_file,
-                                      preload=True,
-                                      stim_channel='Status')
-            events = mne.find_events(raw, stim_channel='Status')
+        max_len = trial_samples.shape[1]
+        if not (num_trial_sample <= 0):
+            max_len = min(num_trial_sample * dynamic_chunk_size,
+                          trial_samples.shape[1])
 
-            montage = mne.channels.make_standard_montage(kind='biosemi32')
-            raw.set_montage(montage, on_missing='ignore')
+        while end_at <= max_len:
+            clip_sample = trial_samples[:, start_at:end_at]
 
-            # pick channels
-            raw.pick_channels(raw.ch_names[:num_channel])
+            t_eeg = clip_sample
+            t_baseline = trial_baseline_sample
+            if not offline_transform is None:
+                t = offline_transform(eeg=clip_sample,
+                                      baseline=trial_baseline_sample)
+                t_eeg = t['eeg']
+                t_baseline = t['baseline']
 
-            start_samp, end_samp = events[0][0] + 1, events[1][0] - 1
-
-            # extract baseline signals
-            trial_baseline_raw = raw.copy().crop(raw.times[0],
-                                                 raw.times[end_samp])
-            trial_baseline_raw = trial_baseline_raw.resample(sampling_rate)
-
-            trial_baseline_sample = trial_baseline_raw.to_data_frame().to_numpy(
-            )[:, 1:].swapaxes(1, 0)  # channel(32), timestep(30 * 128)
-            trial_baseline_sample = trial_baseline_sample[:, :num_baseline *
-                                                          baseline_chunk_size]
-            trial_baseline_sample = trial_baseline_sample.reshape(
-                num_channel, num_baseline,
-                baseline_chunk_size).mean(axis=1)  # channel(32), timestep(128)
-
-            # extract experimental signals
-            trial_raw = raw.copy().crop(raw.times[start_samp],
-                                        raw.times[end_samp])
-            trial_raw = trial_raw.resample(sampling_rate)
-            trial_samples = trial_raw.to_data_frame().to_numpy()[:,
-                                                                 1:].swapaxes(
-                                                                     1, 0)
-            if before_trial:
-                trial_samples = before_trial(trial_samples)
-
-            start_at = 0
-            if chunk_size <= 0:
-                dynamic_chunk_size = trial_samples.shape[1] - start_at
-            else:
-                dynamic_chunk_size = chunk_size
-
-            # chunk with chunk size
-            end_at = dynamic_chunk_size
-            # calculate moving step
-            step = dynamic_chunk_size - overlap
-
-            max_len = trial_samples.shape[1]
-            if not (num_trial_sample <= 0):
-                max_len = min(num_trial_sample * dynamic_chunk_size,
-                              trial_samples.shape[1])
-
-            while end_at <= max_len:
-                clip_sample = trial_samples[:, start_at:end_at]
-
-                t_eeg = clip_sample
-                t_baseline = trial_baseline_sample
-                if not offline_transform is None:
-                    t = offline_transform(eeg=clip_sample,
-                                          baseline=trial_baseline_sample)
-                    t_eeg = t['eeg']
-                    t_baseline = t['baseline']
-
-                # put baseline signal into IO
-                if not 'baseline_id' in trial_meta_info:
-                    trial_base_id = f'{file_name}_{write_pointer}'
-                    yield {'eeg': t_baseline, 'key': trial_base_id}
-                    write_pointer += 1
-                    trial_meta_info['baseline_id'] = trial_base_id
-
-                clip_id = f'{file_name}_{write_pointer}'
+            # put baseline signal into IO
+            if not 'baseline_id' in trial_meta_info:
+                trial_base_id = f'{record}_{write_pointer}'
+                yield {'eeg': t_baseline, 'key': trial_base_id}
                 write_pointer += 1
+                trial_meta_info['baseline_id'] = trial_base_id
 
-                # record meta info for each signal
-                record_info = {
-                    'start_at': start_at,
-                    'end_at': end_at,
-                    'clip_id': clip_id
-                }
-                record_info.update(trial_meta_info)
-                yield {'eeg': t_eeg, 'key': clip_id, 'info': record_info}
+            clip_id = f'{record}_{write_pointer}'
+            write_pointer += 1
 
-                start_at = start_at + step
-                end_at = start_at + dynamic_chunk_size
+            # record meta info for each signal
+            record_info = {
+                'start_at': start_at,
+                'end_at': end_at,
+                'clip_id': clip_id
+            }
+            record_info.update(trial_meta_info)
+            yield {'eeg': t_eeg, 'key': clip_id, 'info': record_info}
+
+            start_at = start_at + step
+            end_at = start_at + dynamic_chunk_size
 
     def set_records(self, root_path: str = './Sessions', **kwargs):
         assert os.path.exists(
             root_path
         ), f'root_path ({root_path}) does not exist. Please download the dataset and set the root_path to the downloaded path.'
         files = os.listdir(root_path)
-        file_lists = [files[i:i + 32] for i in range(0, len(files), 32)]
-        return file_lists
+        return files
 
     def __getitem__(self, index: int) -> Tuple:
         info = self.read_info(index)

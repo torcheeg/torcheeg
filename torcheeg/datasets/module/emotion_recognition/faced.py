@@ -2,6 +2,8 @@ import os
 import pickle as pkl
 from typing import Any, Callable, Dict, Tuple, Union
 
+import numpy as np
+
 from ....utils import get_random_dir_path
 from ..base_dataset import BaseDataset
 
@@ -37,7 +39,7 @@ VALENCE_DICT = {
 }
 
 EMOTION_DICT = {
-    1: 0,  # anger	
+    1: 0,  # anger
     2: 0,
     3: 0,
     4: 1,  # disgust
@@ -82,9 +84,9 @@ class FACEDDataset(BaseDataset):
     - Rating: 28 video clips are annotated in valence and discrete emotion dimensions. The valence is divided into positive (1), negative (-1), and neutral (0). Discrete emotions are divided into anger (0), disgust (1), fear (2), sadness (3), neutral (4), amusement (5), inspiration (6), joy (7), and tenderness (8).
 
     In order to use this dataset, the download folder :obj:`Processed_data` (download from this url: https://www.synapse.org/#!Synapse:syn50615881) is required, containing the following files:
-    
+
     .. code-block:: python
-    
+
         Processed_data/
         ├── sub000.pkl
         ├── sub001.pkl
@@ -215,8 +217,37 @@ class FACEDDataset(BaseDataset):
         self.__dict__.update(params)
 
     @staticmethod
-    def process_record(file: Any = None,
-                       root_path: str = './Processed_data',
+    def read_record(record: str,
+                    root_path: str = './Processed_data', **kwargs) -> Dict:
+        file_name = os.path.basename(
+            record)  # an element from file name list, such as 'sub087.pkl'
+        # derive the given arguments (kwargs)
+        with open(os.path.join(root_path, file_name), 'rb') as f:
+            samples = pkl.load(
+                f, encoding='iso-8859-1'
+            )  # 28(trials), 32(channels), 30s*250hz(time points)
+        return {
+            'samples': samples
+        }
+
+    @staticmethod
+    def fake_record(**kwargs) -> Dict:
+        num_trials = 28
+        num_channels = 32
+        sampling_rate = 250
+        duration = 30
+        time_points = duration * sampling_rate
+        
+        samples = np.random.randn(num_trials, num_channels, time_points)
+
+        return {
+            'samples': samples,
+            'record': 'sub087.pkl'
+        }
+
+    @staticmethod
+    def process_record(record: str,
+                       samples: np.ndarray,
                        chunk_size: int = 250,
                        overlap: int = 0,
                        num_channel: int = 30,
@@ -224,14 +255,9 @@ class FACEDDataset(BaseDataset):
                        offline_transform: Union[None, Callable] = None,
                        **kwargs):
         file_name = os.path.basename(
-            file)  # an element from file name list, such as 'sub087.pkl'
+            record)  # an element from file name list, such as 'sub087.pkl'
         subject_id = int(file_name.split('.')[0]
                          [3:])  # get subject_id from 'sub087.pkl', such as 87
-        # derive the given arguments (kwargs)
-        with open(os.path.join(root_path, file_name), 'rb') as f:
-            samples = pkl.load(
-                f, encoding='iso-8859-1'
-            )  # 28(trials), 32(channels), 30s*250hz(time points)
 
         write_pointer = 0
 

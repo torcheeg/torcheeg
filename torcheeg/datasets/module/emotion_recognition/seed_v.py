@@ -1,7 +1,8 @@
 import os
-from typing import Any, Callable, Dict, Tuple, Union
+from typing import Callable, Dict, Tuple, Union
 
 import mne
+import numpy as np
 
 from ....utils import get_random_dir_path
 from ..base_dataset import BaseDataset
@@ -22,9 +23,9 @@ class SEEDVDataset(BaseDataset):
     - Rating: disgust (0), fear (1), sad (2), neutral (3), happy (4).
 
     In order to use this dataset, the download folder :obj:`EEG_raw` is required, containing the following files:
-    
+
     .. code-block:: python
-    
+
         EEG_raw/
         ├── 10_1_20180507.cnt
         ├── 10_2_20180524.cnt
@@ -39,7 +40,7 @@ class SEEDVDataset(BaseDataset):
         from torcheeg.datasets import SEEDVDataset
         from torcheeg import transforms
         from torcheeg.datasets.constants import SEED_V_CHANNEL_LOCATION_DICT
-        
+
         dataset = SEEDVDataset(root_path='./EEG_raw',
                                 offline_transform=transforms.Compose([
                                     transforms.BandDifferentialEntropy(),
@@ -81,7 +82,7 @@ class SEEDVDataset(BaseDataset):
         from torcheeg import transforms
         from torcheeg.datasets.constants import SEED_V_ADJACENCY_MATRIX
         from torcheeg.transforms.pyg import ToG
-        
+
         dataset = SEEDVDataset(root_path='./EEG_raw',
                                 online_transform=transforms.Compose([
                                     ToG(SEED_V_ADJACENCY_MATRIX)
@@ -91,7 +92,7 @@ class SEEDVDataset(BaseDataset):
         # EEG signal (torch_geometric.data.Data),
         # coresponding baseline signal (torch_geometric.data.Data),
         # label (int)
-        
+
     Args:
         root_path (str): Downloaded data files in matlab (unzipped EEG_raw.zip) formats (default: :obj:`'./EEG_raw'`)
         chunk_size (int): Number of data points included in each EEG chunk as training or test samples. If set to -1, the EEG signal of a trial is used as a sample of a chunk. (default: :obj:`800`)
@@ -153,14 +154,42 @@ class SEEDVDataset(BaseDataset):
         self.__dict__.update(params)
 
     @staticmethod
-    def process_record(file: Any = None,
+    def read_record(record: str,
+                    **kwargs) -> Dict:
+
+        eeg_raw = mne.io.read_raw_cnt(record)
+
+        useless_ch = ['M1', 'M2', 'VEO', 'HEO']
+        eeg_raw.drop_channels(useless_ch)
+
+        data_matrix = eeg_raw.get_data()
+
+        return {
+            'data_matrix': data_matrix,
+        }
+
+    @staticmethod
+    def fake_record(record: str, **kwargs) -> Dict:
+        num_channels = 62
+        num_samples = 1000 * 60
+        
+        data_matrix = np.random.randn(num_channels, num_samples)
+        
+        return {
+            'record': '10_1_20180507.cnt',
+            'data_matrix': data_matrix
+        }
+
+    @staticmethod
+    def process_record(record: str,
+                       data_matrix: np.ndarray,
                        chunk_size: int = 800,
                        overlap: int = 0,
                        num_channel: int = 62,
                        before_trial: Union[None, Callable] = None,
                        offline_transform: Union[None, Callable] = None,
                        **kwargs):
-        file_name = os.path.basename(file)
+        file_name = os.path.basename(record)
         # split with _, the first part is the subject_id, the second part is the session_id, the third part is the date
         subject_id, session_id, date = file_name.split('_')[:3]
 
@@ -169,13 +198,6 @@ class SEEDVDataset(BaseDataset):
                   [2, 1, 3, 0, 4, 4, 0, 3, 2, 1, 3, 4, 1, 2, 0]]
 
         trial_labels = labels[int(session_id) - 1]
-
-        eeg_raw = mne.io.read_raw_cnt(file)
-
-        useless_ch = ['M1', 'M2', 'VEO', 'HEO']
-        eeg_raw.drop_channels(useless_ch)
-
-        data_matrix = eeg_raw.get_data()
 
         start_end_list = [
             {

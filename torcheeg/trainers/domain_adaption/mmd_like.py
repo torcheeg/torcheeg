@@ -53,6 +53,7 @@ class _MMDLikeTrainer(ClassifierTrainer):
                  warmup_epochs: int = 0,
                  devices: int = 1,
                  accelerator: str = "cpu",
+                 verbose: bool = False,
                  metrics: List[str] = ["accuracy"]):
         super(ClassifierTrainer, self).__init__()
 
@@ -70,6 +71,7 @@ class _MMDLikeTrainer(ClassifierTrainer):
         self.warmup_epochs = warmup_epochs
 
         self.devices = devices
+        self.verbose = verbose
         self.accelerator = accelerator
         self.metrics = metrics
 

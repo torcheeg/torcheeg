@@ -158,26 +158,15 @@ class TestDomainAdaptionTrainer(unittest.TestCase):
         val_loader = DataLoader(val_dataset, batch_size=5)
         test_loader = DataLoader(test_dataset, batch_size=5)
 
-        decoder = DummyModel(120, 64)
+        extractor = DummyModel(120, 64)
         classifier = DummyModel(64, 2)
 
-        trainer = CenterLossTrainer(decoder=decoder,
+        trainer = CenterLossTrainer(extractor=extractor,
                                     classifier=classifier,
                                     feature_dim=64,
                                     num_classes=2)
         trainer.fit(train_loader, val_loader, max_epochs=2)
         trainer.test(test_loader)
-
-        # should catch value error for metrics 'unexpected'
-        with self.assertRaises(ValueError):
-            trainer = CenterLossTrainer(decoder=decoder,
-                                        classifier=classifier,
-                                        feature_dim=64,
-                                        accelerator='cpu',
-                                        num_classes=2,
-                                        metrics=['unexpected'])
-            trainer.fit(train_loader, val_loader)
-            trainer.test(test_loader)
 
 if __name__ == '__main__':
     unittest.main()

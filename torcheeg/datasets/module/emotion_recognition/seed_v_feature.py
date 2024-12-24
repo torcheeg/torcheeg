@@ -1,6 +1,6 @@
 import os
 import pickle as pkl
-from typing import Any, Callable, Dict, Tuple, Union
+from typing import Callable, Dict, Tuple, Union
 
 import numpy as np
 
@@ -21,9 +21,9 @@ class SEEDVFeatureDataset(BaseDataset):
     - Rating: disgust (0), fear (1), sad (2), neutral (3), happy (4).
 
     In order to use this dataset, the download folder :obj:`EEG_DE_features` is required, containing the following folder:
-    
+
     .. code-block:: python
-    
+
         EEG_DE_features/
         ├── 1_123.npz
         ├── 2_123.npz
@@ -36,7 +36,7 @@ class SEEDVFeatureDataset(BaseDataset):
         from torcheeg.datasets import SEEDVFeatureDataset
         from torcheeg import transforms
         from torcheeg.datasets.constants_v import SEED_V_CHANNEL_LOCATION_DICT
-        
+
         dataset = SEEDVFeatureDataset(root_path='./EEG_DE_features',
                                        offline_transform=transforms.ToGrid         (SEED_V_CHANNEL_LOCATION_DICT),
                                        online_transform=transforms.ToTensor(),
@@ -54,7 +54,7 @@ class SEEDVFeatureDataset(BaseDataset):
         from torcheeg import transforms
         from torcheeg.datasets.constants import SEED_ADJACENCY_MATRIX
         from torcheeg.transforms.pyg import ToG
-        
+
         dataset = SEEDVFeatureDataset(root_path='./EEG_DE_features',
                                        online_transform=ToG(SEED_ADJACENCY_MATRIX),
                                        label_transform=transforms.Select('emotion'))
@@ -62,7 +62,7 @@ class SEEDVFeatureDataset(BaseDataset):
         # EEG signal (torch_geometric.data.Data),
         # coresponding baseline signal (torch_geometric.data.Data),
         # label (int)
-        
+
     Args:
         root_path (str): Downloaded data files in matlab (unzipped ExtractedFeatures.zip) formats (default: :obj:`'./ExtractedFeatures'`)
         num_channel (int): Number of channels used, of which the first 62 channels are EEG signals. (default: :obj:`62`)
@@ -118,21 +118,51 @@ class SEEDVFeatureDataset(BaseDataset):
         self.__dict__.update(params)
 
     @staticmethod
-    def process_record(num_channel: int = 62,
+    def read_record(record: str,
+                    **kwargs) -> Dict:
+
+        data_npz = np.load(record)
+        data = pkl.loads(data_npz['data'])
+        label = pkl.loads(data_npz['label'])
+
+        return {
+            'data': data,
+            'label': label
+        }
+
+    @staticmethod
+    def fake_record(record: str, **kwargs) -> Dict:
+        num_segments = 15
+        num_clips = 15
+        num_channels = 62
+        num_features = 5
+
+        data = {}
+        for segment in range(1, num_segments + 1):
+            data[str(segment)] = np.random.randn(
+                num_clips, num_channels, num_features)
+
+        label = np.random.randint(0, 5, (num_segments, num_clips))
+
+        return {
+            'record': '10_123.npz',
+            'data': data,
+            'label': label
+        }
+
+    @staticmethod
+    def process_record(record: str,
+                       data: Dict,
+                       label: np.ndarray,
+                       num_channel: int = 62,
                        offline_transform: Union[None, Callable] = None,
                        before_trial: Union[None, Callable] = None,
-                       file: Any = None,
                        **kwargs):
         # get file name from path
-        file_name = os.path.basename(file)
+        file_name = os.path.basename(record)
 
         # split with '_', the fist part is subject id
         subject_id = file_name.split('_')[0]
-
-        # load the file
-        data_npz = np.load(file)
-        data = pkl.loads(data_npz['data'])
-        label = pkl.loads(data_npz['label'])
 
         write_pointer = 0
 
@@ -165,7 +195,7 @@ class SEEDVFeatureDataset(BaseDataset):
                 record_info = {
                     'start_at': i * 800,
                     'end_at': (i + 1) *
-                    800,  # The size of the sliding time windows for feature 
+                    800,  # The size of the sliding time windows for feature
                     'clip_id': clip_id,
                     'emotion': int(clip_label)
                 }

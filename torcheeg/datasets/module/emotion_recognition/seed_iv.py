@@ -1,10 +1,12 @@
 import os
 import re
-from typing import Any, Callable, Dict, Tuple, Union
+from typing import Callable, Dict, Tuple, Union
 
+import numpy as np
 import scipy.io as scio
-from ..base_dataset import BaseDataset
+
 from ....utils import get_random_dir_path
+from ..base_dataset import BaseDataset
 
 
 class SEEDIVDataset(BaseDataset):
@@ -20,9 +22,9 @@ class SEEDIVDataset(BaseDataset):
     - Rating: neutral (0), sad (1), fear (2), and happy (3).
 
     In order to use this dataset, the download folder :obj:`eeg_raw_data` is required, containing the following files:
-    
+
     .. code-block:: python
-    
+
         eeg_raw_data/
         ├── label.mat
         ├── readme.txt
@@ -37,7 +39,7 @@ class SEEDIVDataset(BaseDataset):
         from torcheeg.datasets import SEEDIVDataset
         from torcheeg import transforms
         from torcheeg.datasets.constants import SEED_IV_CHANNEL_LOCATION_DICT
-        
+
         dataset = SEEDIVDataset(root_path='./eeg_raw_data',
                                 offline_transform=transforms.Compose([
                                     transforms.BandDifferentialEntropy(),
@@ -79,7 +81,7 @@ class SEEDIVDataset(BaseDataset):
         from torcheeg import transforms
         from torcheeg.datasets.constants import SEEDIV_ADJACENCY_MATRIX
         from torcheeg.transforms.pyg import ToG
-        
+
         dataset = SEEDIVDataset(root_path='./eeg_raw_data',
                                 online_transform=transforms.Compose([
                                     ToG(SEED_IV_ADJACENCY_MATRIX)
@@ -89,7 +91,7 @@ class SEEDIVDataset(BaseDataset):
         # EEG signal (torch_geometric.data.Data),
         # coresponding baseline signal (torch_geometric.data.Data),
         # label (int)
-        
+
     Args:
         root_path (str): Downloaded data files in matlab (unzipped eeg_raw_data.zip) formats (default: :obj:`'./eeg_raw_data'`)
         chunk_size (int): Number of data points included in each EEG chunk as training or test samples. If set to -1, the EEG signal of a trial is used as a sample of a chunk. (default: :obj:`800`)
@@ -151,26 +153,51 @@ class SEEDIVDataset(BaseDataset):
         self.__dict__.update(params)
 
     @staticmethod
-    def process_record(file: Any = None,
+    def read_record(record: str,
+                    **kwargs) -> Dict:
+
+        samples = scio.loadmat(record,
+                               verify_compressed_data_integrity=False
+                               )  # trial (15), channel(62), timestep(n*200)
+
+        return {
+            'samples': samples,
+        }
+
+    @staticmethod
+    def fake_record(record: str, **kwargs) -> Dict:
+        num_trials = 15
+        num_channels = 62
+        timesteps = 2000
+        
+        samples = {}
+        for trial in range(1, num_trials + 1):
+            key = f'ww_eeg{trial}'
+            samples[key] = np.random.randn(num_channels, timesteps)
+        
+        return {
+            'record': '1/10_20151014.mat',
+            'samples': samples
+        }
+
+    @staticmethod
+    def process_record(record: str,
+                       samples: Dict,
                        chunk_size: int = 800,
                        overlap: int = 0,
                        num_channel: int = 62,
                        before_trial: Union[None, Callable] = None,
                        offline_transform: Union[None, Callable] = None,
                        **kwargs):
-        file_path = file  # an element from file name list
 
-        session_id = os.path.basename(os.path.dirname(file_path))
-        _, file_name = os.path.split(file_path)
+        session_id = os.path.basename(os.path.dirname(record))
+        _, file_name = os.path.split(record)
 
         subject = int(os.path.basename(file_name).split('.')[0].split('_')
                       [0])  # subject (15)
         date = int(os.path.basename(file_name).split('.')[0].split('_')
                    [1])  # period (3)
 
-        samples = scio.loadmat(file_path,
-                               verify_compressed_data_integrity=False
-                               )  # trial (15), channel(62), timestep(n*200)
         # label file
         labels = [
             [

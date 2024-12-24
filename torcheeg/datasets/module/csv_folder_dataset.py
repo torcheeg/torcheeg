@@ -100,15 +100,22 @@ class CSVFolderDataset(BaseDataset):
         self.__dict__.update(params)
 
     @staticmethod
-    def process_record(file: Any = None,
+    def read_record(record: Dict, read_fn: Union[None, Callable] = None, **kwargs) -> Dict:
+        file_path = record['file_path']
+        trial_samples = read_fn(file_path, **kwargs)
+
+        return {
+            'trial_samples': trial_samples,
+        }
+    
+    @staticmethod
+    def process_record(record: Dict,
+                       trial_samples: mne.Epochs,
                        offline_transform: Union[None, Callable] = None,
-                       read_fn: Union[None, Callable] = None,
                        **kwargs):
 
-        trial_info = file
-        file_path = trial_info['file_path']
+        file_path = record['file_path']
 
-        trial_samples = read_fn(file_path, **kwargs)
         events = [i[0] for i in trial_samples.events]
         events.append(
             events[-1] +
@@ -125,7 +132,7 @@ class CSVFolderDataset(BaseDataset):
             write_pointer += 1
 
             record_info = {
-                **trial_info, 'start_at': events[i],
+                **record, 'start_at': events[i],
                 'end_at': events[i + 1],
                 'clip_id': clip_id
             }

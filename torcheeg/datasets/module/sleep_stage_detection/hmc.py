@@ -150,23 +150,18 @@ class HMCDataset(BaseDataset):
         self.__dict__.update(params)
 
     @staticmethod
-    def process_record(file: Any = None,
-                       root_path: str = './HMC/recordings',
-                       channels: List = ['EEG F4-M1',
-                                         'EEG C4-M1',
-                                         'EEG O2-M1',
-                                         'EEG C3-M2'],
-                       start_at: int = 15 * 60,
-                       end_at: int = 15 * 60 + 6 * 60 * 60,
-                       l_freq: float = 0.5,
-                       h_freq: float = 30,
-                       sfreq: int = 100,
-                       before_trial: Union[None, Callable] = None,
-                       offline_transform: Union[None, Callable] = None,
-                       **kwargs):
-
-        recording_file, scoring_file = file
-        subject_id = os.path.splitext(os.path.basename(recording_file))[0]
+    def read_record(record: Tuple,
+                    root_path: str = './HMC/recordings',
+                    channels: List = ['EEG F4-M1',
+                                      'EEG C4-M1',
+                                      'EEG O2-M1',
+                                      'EEG C3-M2'],
+                    start_at: int = 15 * 60,
+                    end_at: int = 15 * 60 + 6 * 60 * 60,
+                    l_freq: float = 0.5,
+                    h_freq: float = 30,
+                    sfreq: int = 100, **kwargs) -> Dict:
+        recording_file, scoring_file = record
 
         raw = read_raw_edf(os.path.join(
             root_path, recording_file), preload=True)
@@ -203,6 +198,38 @@ class HMCDataset(BaseDataset):
         epochs_label = []
         for epoch_annotation in epochs.get_annotations_per_epoch():
             epochs_label.append(epoch_annotation[0][2])
+
+        return {
+            'epochs_data': epochs_data,
+            'epochs_label': epochs_label,
+        }
+
+    @staticmethod
+    def fake_record(record: Tuple, **kwargs) -> Dict:
+        num_epochs = 4
+        num_channel = 4
+        num_timepoint = 3000
+
+        epochs_data = np.random.rand(num_epochs, num_channel, num_timepoint)
+        epochs_label = ['Sleep stage W', 'Sleep stage N1',
+                        'Sleep stage N2', 'Sleep stage N3']
+
+        return {
+            'record': ('fake_record', 'fake_record'),
+            'epochs_data': epochs_data,
+            'epochs_label': epochs_label,
+        }
+
+    @staticmethod
+    def process_record(record: Tuple,
+                       epochs_data: np.ndarray,
+                       epochs_label: List,
+                       before_trial: Union[None, Callable] = None,
+                       offline_transform: Union[None, Callable] = None,
+                       **kwargs):
+
+        recording_file, scoring_file = record
+        subject_id = os.path.splitext(os.path.basename(recording_file))[0]
 
         if before_trial:
             epochs_data = before_trial(epochs_data)

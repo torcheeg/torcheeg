@@ -160,19 +160,13 @@ class SleepEDFxDataset(BaseDataset):
         super().__init__(**params)
 
     @staticmethod
-    def process_record(file: Any = None,
-                       channels: List = ['EEG Fpz-Cz',
-                                         'EEG Pz-Oz'],
-                       l_freq: float = 0.5,
-                       h_freq: float = 30,
-                       sfreq: int = 100,
-                       before_trial: Union[None, Callable] = None,
-                       offline_transform: Union[None, Callable] = None,
-                       **kwargs):
-
-        recording_file, scoring_file = file
-
-        subject_id = recording_file.split('-')[0]
+    def read_record(record: Tuple,
+                    channels: List = ['EEG Fpz-Cz',
+                                      'EEG Pz-Oz'],
+                    l_freq: float = 0.5,
+                    h_freq: float = 30,
+                    sfreq: int = 100, **kwargs) -> Dict:
+        recording_file, scoring_file = record
 
         raw = read_raw_edf(recording_file, preload=True)
         montage = mne.channels.make_standard_montage('standard_1020')
@@ -200,6 +194,38 @@ class SleepEDFxDataset(BaseDataset):
         epochs_label = []
         for epoch_annotation in epochs.get_annotations_per_epoch():
             epochs_label.append(epoch_annotation[0][2])
+
+        return {
+            'epochs_data': epochs_data,
+            'epochs_label': epochs_label,
+        }
+
+    @staticmethod
+    def fake_record(record: Tuple, **kwargs) -> Dict:
+        num_epochs = 4
+        num_channel = 2
+        num_timepoint = 3000
+
+        epochs_data = np.random.rand(num_epochs, num_channel, num_timepoint)
+        epochs_label = ['Sleep stage W', 'Sleep stage N1', 'Sleep stage N2', 'Sleep stage N3']
+
+        return {
+            'record': ('fake_record', 'fake_record'),
+            'epochs_data': epochs_data,
+            'epochs_label': epochs_label,
+        }
+
+    @staticmethod
+    def process_record(record: Tuple,
+                       epochs_data: np.ndarray,
+                       epochs_label: List[str],
+                       before_trial: Union[None, Callable] = None,
+                       offline_transform: Union[None, Callable] = None,
+                       **kwargs):
+
+        recording_file, scoring_file = record
+
+        subject_id = recording_file.split('-')[0]
 
         if before_trial:
             epochs_data = before_trial(epochs_data)

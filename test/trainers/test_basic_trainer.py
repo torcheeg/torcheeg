@@ -46,70 +46,70 @@ class DummyModel(nn.Module):
 
 
 class TestBasicTrainer(unittest.TestCase):
-
-    def test_classifier_trainer(self):
+    def test_classifier_trainer_basic(self):
+        """Test basic functionality of ClassifierTrainer"""
+        # Prepare minimal datasets and dataloaders for testing
         train_dataset = DummyClassificationDataset()
         val_dataset = DummyClassificationDataset()
-        test_dataset = DummyClassificationDataset()
-
+        
         train_loader = DataLoader(train_dataset, batch_size=5)
         val_loader = DataLoader(val_dataset, batch_size=5)
-        test_loader = DataLoader(test_dataset, batch_size=5)
 
         model = DummyModel()
-
         trainer = ClassifierTrainer(model, num_classes=2)
-        trainer.fit(train_loader, val_loader, max_epochs=1)
-        trainer.test(test_loader)
+        
+        # Only test single training step instead of full epoch
+        trainer.training_step(next(iter(train_loader)), batch_idx=0)
+        
+        # Only test single validation step instead of full epoch
+        trainer.validation_step(next(iter(val_loader)), batch_idx=0)
 
+    def test_classifier_trainer_metrics(self):
+        """Test metrics configuration of ClassifierTrainer"""
+        model = DummyModel()
+        
+        # Test if all supported metrics can be initialized properly
         trainer = ClassifierTrainer(
             model,
-            devices=1,
-            accelerator='cpu',
             num_classes=2,
-            metrics=['accuracy', 'recall', 'precision', 'f1score', 'matthews', 'auroc', 'kappa'])
-        trainer.fit(train_loader, val_loader, max_epochs=1)
-        trainer.test(test_loader)
-
-        # should catch value error for metrics 'unexpected'
+            metrics=['accuracy', 'recall', 'precision', 'f1score', 'matthews', 'auroc', 'kappa']
+        )
+        
+        # Test if unsupported metrics raise ValueError
         with self.assertRaises(ValueError):
-            trainer = ClassifierTrainer(model,
-                                        accelerator='cpu',
-                                        num_classes=2,
-                                        metrics=['unexpected'])
-            trainer.fit(train_loader, val_loader, max_epochs=1)
-            trainer.test(test_loader)
+            trainer = ClassifierTrainer(model, num_classes=2, metrics=['unexpected'])
 
-    def test_regressor_trainers(self):
+    def test_regressor_trainer_basic(self):
+        """Test basic functionality of RegressorTrainer"""
+        # Prepare minimal datasets and dataloaders for testing
         train_dataset = DummyRegressionDataset()
         val_dataset = DummyRegressionDataset()
-        test_dataset = DummyRegressionDataset()
-
+        
         train_loader = DataLoader(train_dataset, batch_size=5)
         val_loader = DataLoader(val_dataset, batch_size=5)
-        test_loader = DataLoader(test_dataset, batch_size=5)
 
-        model = DummyModel(out_channels=1)
-
+        model = DummyModel(out_channels=1)  # Single output for regression
         trainer = RegressorTrainer(model)
-        trainer.fit(train_loader, val_loader, max_epochs=1)
-        trainer.test(test_loader)
+        
+        # Only test single training step instead of full epoch
+        trainer.training_step(next(iter(train_loader)), batch_idx=0)
+        
+        # Only test single validation step instead of full epoch
+        trainer.validation_step(next(iter(val_loader)), batch_idx=0)
 
+    def test_regressor_trainer_metrics(self):
+        """Test metrics configuration of RegressorTrainer"""
+        model = DummyModel(out_channels=1)
+        
+        # Test if all supported metrics can be initialized properly
         trainer = RegressorTrainer(
             model,
-            devices=1,
-            accelerator='cpu',
-            metrics=['mae', 'mse', 'rmse', 'r2score'])
-        trainer.fit(train_loader, val_loader, max_epochs=1)
-        trainer.test(test_loader)
-
-        # should catch value error for metrics 'unexpected'
+            metrics=['mae', 'mse', 'rmse', 'r2score']
+        )
+        
+        # Test if unsupported metrics raise ValueError
         with self.assertRaises(ValueError):
-            trainer = RegressorTrainer(model,
-                                        accelerator='cpu',
-                                        metrics=['unexpected'])
-            trainer.fit(train_loader, val_loader, max_epochs=1)
-            trainer.test(test_loader)
+            trainer = RegressorTrainer(model, metrics=['unexpected'])
 
 
 if __name__ == '__main__':

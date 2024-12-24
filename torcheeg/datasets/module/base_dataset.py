@@ -1,10 +1,12 @@
 import logging
 import os
 import shutil
+from copy import copy
 from typing import Any, Callable, Dict, Union
-import torch
+
 import numpy as np
 import pandas as pd
+import torch
 from joblib import Parallel, delayed
 from torch.utils.data import Dataset
 from tqdm import tqdm
@@ -20,6 +22,7 @@ class BaseDataset(Dataset):
                  io_path: Union[None, str] = None,
                  io_size: int = 1048576,
                  io_mode: str = 'lmdb',
+                 lazy_threshold: int = 128,
                  num_worker: int = 0,
                  verbose: bool = True,
                  after_trial: Callable = None,
@@ -29,6 +32,7 @@ class BaseDataset(Dataset):
         self.io_path = io_path
         self.io_size = io_size
         self.io_mode = io_mode
+        self.lazy_threshold = lazy_threshold
         self.num_worker = num_worker
         self.verbose = verbose
         self.after_trial = after_trial
@@ -50,21 +54,22 @@ class BaseDataset(Dataset):
             if self.num_worker == 0:
                 try:
                     worker_results = []
-                    for file_id, file in tqdm(enumerate(records),
-                                              disable=not self.verbose,
-                                              desc="[PROCESS]",
-                                              total=len(records),
-                                              position=0,
-                                              leave=None):
+                    for record_id, record in tqdm(enumerate(records),
+                                                  disable=not self.verbose,
+                                                  desc="[PROCESS]",
+                                                  total=len(records),
+                                                  position=0,
+                                                  leave=None):
                         worker_results.append(
-                            self.save_record(io_path=self.io_path,
-                                             io_size=self.io_size,
-                                             io_mode=self.io_mode,
-                                             file=file,
-                                             file_id=file_id,
-                                             process_record=self.process_record,
-                                             verbose=self.verbose,
-                                             **kwargs))
+                            self.handle_record(io_path=self.io_path,
+                                               io_size=self.io_size,
+                                               io_mode=self.io_mode,
+                                               record=record,
+                                               record_id=record_id,
+                                               read_record=self.read_record,
+                                               process_record=self.process_record,
+                                               verbose=self.verbose,
+                                               **kwargs))
                 except Exception as e:
                     # shutil to delete the database
                     shutil.rmtree(self.io_path)
@@ -73,21 +78,22 @@ class BaseDataset(Dataset):
                 # catch the exception
                 try:
                     worker_results = Parallel(n_jobs=self.num_worker)(
-                        delayed(self.save_record)(
+                        delayed(self.handle_record)(
                             io_path=io_path,
                             io_size=io_size,
                             io_mode=io_mode,
-                            file_id=file_id,
-                            file=file,
+                            record_id=record_id,
+                            record=record,
+                            read_record=self.read_record,
                             process_record=self.process_record,
                             verbose=self.verbose,
                             **kwargs)
-                        for file_id, file in tqdm(enumerate(records),
-                                                  disable=not self.verbose,
-                                                  desc="[PROCESS]",
-                                                  total=len(records),
-                                                  position=0,
-                                                  leave=None))
+                        for record_id, record in tqdm(enumerate(records),
+                                                      disable=not self.verbose,
+                                                      desc="[PROCESS]",
+                                                      total=len(records),
+                                                      position=0,
+                                                      leave=None))
                 except Exception as e:
                     # shutil to delete the database
                     shutil.rmtree(self.io_path)
@@ -101,32 +107,17 @@ class BaseDataset(Dataset):
                     f'😊 | Please set \033[92mio_path\033[0m to \033[92m{io_path}\033[0m for the next run, to directly read from the cache if you wish to skip the data processing step.'
                 )
 
-            eeg_io_router = {}
-            info_merged = []
-
-            for worker_result in worker_results:
-                worker_eeg_io = worker_result['eeg_io']
-                worker_info_io = worker_result['info_io']
-                worker_record = worker_result['record']
-
-                eeg_io_router[worker_record] = worker_eeg_io
-                worker_info = worker_info_io.read_all()
-
-                assert '_record_id' not in worker_info.columns, \
-                    "column '_record_id' is a forbidden reserved word and is used to index the corresponding IO. Please replace your '_record_id' with another name."
-                worker_info['_record_id'] = worker_record
-
-                info_merged.append(worker_info)
-
-            self.eeg_io_router = eeg_io_router
-            self.info = pd.concat(info_merged, ignore_index=True)
+            self.init_io(
+                io_path=self.io_path,
+                io_size=self.io_size,
+                io_mode=self.io_mode)
 
             if self.after_trial is not None or self.after_session is not None or self.after_subject is not None:
                 # catch the exception
                 try:
-                    self.post_process_record(after_trial=after_trial,
-                                             after_session=after_session,
-                                             after_subject=after_subject)
+                    self.update_record(after_trial=after_trial,
+                                       after_session=after_session,
+                                       after_subject=after_subject)
                 except Exception as e:
                     # shutil to delete the database
                     shutil.rmtree(self.io_path)
@@ -135,40 +126,173 @@ class BaseDataset(Dataset):
             log.info(
                 f'🔍 | Detected cached processing results, reading cache from {self.io_path}.'
             )
-            # get all records
-            records = os.listdir(io_path)
-            # filter the records with the prefix '_record_'
-            records = list(filter(lambda x: '_record_' in x, records))
-            # sort the records
-            records = sorted(records, key=lambda x: int(x.split('_')[2]))
+            self.init_io(
+                io_path=self.io_path,
+                io_size=self.io_size,
+                io_mode=self.io_mode)
 
-            # for every record, get the io_path, and init the info_io and eeg_io
-            eeg_io_router = {}
-            info_merged = []
+    def init_io(self, io_path: str, io_size: int, io_mode: str):
+        # get all records
+        records = os.listdir(io_path)
+        # filter the records with the prefix '_record_'
+        records = list(filter(lambda x: '_record_' in x, records))
+        # sort the records
+        records = sorted(records, key=lambda x: int(x.split('_')[2]))
 
-            assert len(
-                records
-            ) > 0, "The io_path, {}, is corrupted. Please delete this folder and try again.".format(
-                io_path)
+        assert len(records) > 0, \
+            f"The io_path, {io_path}, is corrupted. Please delete this folder and try again."
 
+        info_merged = []
+
+        if len(records) > self.lazy_threshold:
+            # Store paths instead of EEGSignalIO instances
+            self.eeg_signal_paths = {}
+            for record in records:
+                meta_info_io_path = os.path.join(io_path, record, 'info.csv')
+                eeg_signal_path = os.path.join(io_path, record, 'eeg')
+
+                info_io = MetaInfoIO(meta_info_io_path)
+                self.eeg_signal_paths[record] = eeg_signal_path
+
+                info_df = info_io.read_all()
+                assert '_record_id' not in info_df.columns, \
+                    "column '_record_id' is a forbidden reserved word."
+                info_df['_record_id'] = record
+                info_merged.append(info_df)
+
+            self.eeg_io_router = {}  # Not used in lazy mode
+        else:
+            self.eeg_io_router = {}
             for record in records:
                 meta_info_io_path = os.path.join(io_path, record, 'info.csv')
                 eeg_signal_io_path = os.path.join(io_path, record, 'eeg')
+
                 info_io = MetaInfoIO(meta_info_io_path)
                 eeg_io = EEGSignalIO(eeg_signal_io_path,
                                      io_size=io_size,
                                      io_mode=io_mode)
-                eeg_io_router[record] = eeg_io
+                self.eeg_io_router[record] = eeg_io
+
                 info_df = info_io.read_all()
-
                 assert '_record_id' not in info_df.columns, \
-                    "column '_record_id' is a forbidden reserved word and is used to index the corresponding IO. Please replace your '_record_id' with another name."
+                    "column '_record_id' is a forbidden reserved word."
                 info_df['_record_id'] = record
-
                 info_merged.append(info_df)
 
-            self.eeg_io_router = eeg_io_router
-            self.info = pd.concat(info_merged, ignore_index=True)
+            self.eeg_signal_paths = {}  # Not used in eager mode
+
+        self.info = pd.concat(info_merged, ignore_index=True)
+
+    def is_lazy(self):
+        assert hasattr(self, 'eeg_io_router') or hasattr(
+            self, 'eeg_signal_paths'), "The dataset should contain eeg_io_router or eeg_signal_paths."
+        if hasattr(self, 'eeg_io_router') and len(self.eeg_io_router) > 0:
+            return False
+        if hasattr(
+                self, 'eeg_signal_paths') and len(self.eeg_signal_paths) > 0:
+            return True
+        raise ValueError("Both eeg_io_router and eeg_signal_paths are empty.")
+
+    def read_eeg(self, record: str, key: str) -> Any:
+        if self.is_lazy():
+            # Create temporary EEGSignalIO instance
+            eeg_io = EEGSignalIO(
+                self.eeg_signal_paths[record],
+                io_size=self.io_size,
+                io_mode=self.io_mode
+            )
+            return eeg_io.read_eeg(key)
+        else:
+            eeg_io = self.eeg_io_router[record]
+            return eeg_io.read_eeg(key)
+
+    def write_eeg(self, record: str, key: str, eeg: Any):
+        if self.is_lazy():
+            # Create temporary EEGSignalIO instance
+            eeg_io = EEGSignalIO(
+                self.eeg_signal_paths[record],
+                io_size=self.io_size,
+                io_mode=self.io_mode
+            )
+            eeg_io.write_eeg(eeg=eeg, key=key)
+        else:
+            eeg_io = self.eeg_io_router[record]
+            eeg_io.write_eeg(eeg=eeg, key=key)
+
+    def read_info(self, index: int) -> Dict:
+        r'''
+        Query the corresponding meta information in the MetaInfoIO according to the the given :obj:`index`.
+
+        In meta infomation, clip_id is required. Specifies the corresponding key of EEG in EEGSginalIO, which can be used to index EEG samples based on :obj:`self.read_eeg(key)`.
+
+        Args:
+            index (int): The index of the meta information to be queried.
+
+        Returns:
+            dict: The meta information.
+        '''
+        return self.info.iloc[index].to_dict()
+
+    def exist(self, io_path: str) -> bool:
+        '''
+        Check if the database IO exists.
+
+        Args:
+            io_path (str): The path of the database IO.
+        Returns:
+            bool: True if the database IO exists, otherwise False.
+        '''
+
+        return os.path.exists(io_path)
+
+    def __getitem__(self, index: int) -> any:
+        info = self.read_info(index)
+
+        eeg_index = str(info['clip_id'])
+        eeg_record = str(info['_record_id'])
+        eeg = self.read_eeg(eeg_record, eeg_index)
+
+        return eeg, info
+
+    def get_labels(self) -> list:
+        '''
+        Get the labels of the dataset.
+
+        Returns:
+            list: The list of labels.
+        '''
+        labels = []
+        for i in range(len(self)):
+            _, label = self.__getitem__(i)
+            labels.append(label)
+        return labels
+
+    def __len__(self):
+        return len(self.info)
+
+    def __copy__(self) -> 'BaseDataset':
+        cls = self.__class__
+        result = cls.__new__(cls)
+        # Copy basic attributes
+        result.__dict__.update({
+            k: v
+            for k, v in self.__dict__.items()
+            if k not in ['eeg_io_router', 'info', 'eeg_signal_paths']
+        })
+
+        if self.is_lazy():
+            # Copy paths for lazy loading
+            result.eeg_signal_paths = self.eeg_signal_paths.copy()
+            result.eeg_io_router = None
+        else:
+            # Original eager loading copy
+            result.eeg_io_router = {}
+            for record, eeg_io in self.eeg_io_router.items():
+                result.eeg_io_router[record] = copy(eeg_io)
+
+        # Deep copy info
+        result.info = copy(self.info)
+        return result
 
     def set_records(self, **kwargs):
         '''
@@ -189,15 +313,16 @@ class BaseDataset(Dataset):
             "Method set_records is not implemented in class BaseDataset")
 
     @staticmethod
-    def save_record(io_path: Union[None, str] = None,
-                    io_size: int = 1048576,
-                    io_mode: str = 'lmdb',
-                    file: Any = None,
-                    file_id: int = None,
-                    process_record: Callable = None,
-                    verbose: bool = True,
-                    **kwargs):
-        _record_id = str(file_id)
+    def handle_record(io_path: Union[None, str] = None,
+                      io_size: int = 1048576,
+                      io_mode: str = 'lmdb',
+                      record: Any = None,
+                      record_id: int = None,
+                      read_record: Callable = None,
+                      process_record: Callable = None,
+                      verbose: bool = True,
+                      **kwargs):
+        _record_id = str(record_id)
         meta_info_io_path = os.path.join(io_path, f'_record_{_record_id}',
                                          'info.csv')
         eeg_signal_io_path = os.path.join(io_path, f'_record_{_record_id}',
@@ -208,11 +333,13 @@ class BaseDataset(Dataset):
                              io_size=io_size,
                              io_mode=io_mode)
 
-        gen = process_record(file=file, **kwargs)
+        kwargs['record'] = record
+        kwargs.update(read_record(**kwargs))
+        gen = process_record(**kwargs)
 
-        if file_id == 0:
+        if record_id == 0:
             pbar = tqdm(disable=not verbose,
-                        desc=f"[RECORD {file}]",
+                        desc=f"[RECORD {record}]",
                         position=1,
                         leave=None)
 
@@ -227,7 +354,7 @@ class BaseDataset(Dataset):
                 # get the current class name
                 obj = next(gen)
 
-                if file_id == 0:
+                if record_id == 0:
                     pbar.update(1)
 
             except StopIteration:
@@ -238,28 +365,49 @@ class BaseDataset(Dataset):
             if obj and 'info' in obj:
                 info_io.write_info(obj['info'])
 
-        if file_id == 0:
+        if record_id == 0:
             pbar.close()
 
         return {
-            'eeg_io': eeg_io,
-            'info_io': info_io,
             'record': f'_record_{_record_id}'
         }
 
     @staticmethod
-    def process_record(file: Any = None, **kwargs):
+    def read_record(record: Any, **kwargs) -> Dict:
         '''
-        The IO method for generating the database. It is used to describe how files are processed to generate the database. It is called in parallel by :obj:`joblib.Parallel` in :obj:`__init__` of the class.
+        The IO method for reading the database. It is used to describe how the files are read. It is called in parallel by :obj:`joblib.Parallel` in :obj:`__init__` of the class, the output of this method will be passed to :obj:`process_record`.
 
         Args:
-            file (Any): The file to be processed. It is an element in the list returned by set_records. (default: :obj:`Any`)
+            record (Any): The record to be processed. It is an element in the list returned by set_records. (default: :obj:`Any`)
             **kwargs: The arguments derived from :obj:`__init__` of the class.
 
         .. code-block:: python
 
-            def process_record(file: Any = None, chunk_size: int = 128, **kwargs):
-                # process file
+            def read_record(**kwargs):
+                return {
+                    'samples': ...
+                    'labels': ...
+                }
+
+        '''
+
+        raise NotImplementedError(
+            "Method read_record is not implemented in class BaseDataset"
+        )
+
+    @staticmethod
+    def process_record(record: Any, **kwargs) -> Dict:
+        '''
+        The IO method for generating the database. It is used to describe how files are processed to generate the database. It is called in parallel by :obj:`joblib.Parallel` in :obj:`__init__` of the class.
+
+        Args:
+            record (Any): The record to be processed. It is an element in the list returned by set_records. (default: :obj:`Any`)
+            **kwargs: The arguments derived from :obj:`__init__` of the class.
+
+        .. code-block:: python
+
+            def process_record(record: Any = None, chunk_size: int = 128, **kwargs):
+                # process record
                 eeg = np.ndarray((chunk_size, 64, 128), dtype=np.float32)
                 key = '1'
                 info = {
@@ -279,10 +427,10 @@ class BaseDataset(Dataset):
         raise NotImplementedError(
             "Method process_record is not implemented in class BaseDataset")
 
-    def post_process_record(self,
-                            after_trial: Callable = None,
-                            after_session: Callable = None,
-                            after_subject: Callable = None):
+    def update_record(self,
+                      after_trial: Callable = None,
+                      after_session: Callable = None,
+                      after_subject: Callable = None):
         '''
         The hook method for post-processing the data. It is used to describe how to post-process the data.
         '''
@@ -303,7 +451,7 @@ class BaseDataset(Dataset):
             #         "No subject_id column found in info, after_subject hook is ignored."
             #     )
         if after_subject is None:
-            after_subject = lambda x: x
+            def after_subject(x): return x
 
         for _, subject_info in subject_df:
 
@@ -321,7 +469,7 @@ class BaseDataset(Dataset):
                 #         "No session_id column found in info, after_session hook is ignored."
                 #     )
             if after_session is None:
-                after_session = lambda x: x
+                def after_session(x): return x
 
             for _, session_info in session_df:
 
@@ -335,7 +483,7 @@ class BaseDataset(Dataset):
                             "No trial_id column found in info, after_trial hook is ignored."
                         )
                 if after_trial is None:
-                    after_trial = lambda x: x
+                    def after_trial(x): return x
 
                 session_samples = []
                 for _, trial_info in trial_df:
@@ -393,101 +541,6 @@ class BaseDataset(Dataset):
             data = [torch.squeeze(d, axis=0) for d in data]
         # else list
         return data
-
-    def read_eeg(self, record: str, key: str) -> Any:
-        r'''
-        Query the corresponding EEG signal in the EEGSignalIO according to the the given :obj:`key`.
-
-        Args:
-            record (str): The record id of the EEG signal to be queried.
-            key (str): The index of the EEG signal to be queried.
-            
-        Returns:
-            any: The EEG signal sample.
-        '''
-        eeg_io = self.eeg_io_router[record]
-        return eeg_io.read_eeg(key)
-
-    def write_eeg(self, record: str, key: str, eeg: Any):
-        r'''
-        Update the corresponding EEG signal in the EEGSignalIO according to the the given :obj:`key`.
-
-        Args:
-            record (str): The record id of the EEG signal to be queried.
-            key (str): The index of the EEG signal to be queried.
-            eeg (any): The EEG signal sample to be updated.
-        '''
-        eeg_io = self.eeg_io_router[record]
-        eeg_io.write_eeg(eeg=eeg, key=key)
-
-    def read_info(self, index: int) -> Dict:
-        r'''
-        Query the corresponding meta information in the MetaInfoIO according to the the given :obj:`index`.
-
-        In meta infomation, clip_id is required. Specifies the corresponding key of EEG in EEGSginalIO, which can be used to index EEG samples based on :obj:`self.read_eeg(key)`.
-
-        Args:
-            index (int): The index of the meta information to be queried.
-            
-        Returns:
-            dict: The meta information.
-        '''
-        return self.info.iloc[index].to_dict()
-
-    def exist(self, io_path: str) -> bool:
-        '''
-        Check if the database IO exists.
-
-        Args:
-            io_path (str): The path of the database IO.
-        Returns:
-            bool: True if the database IO exists, otherwise False.
-        '''
-
-        return os.path.exists(io_path)
-
-    def __getitem__(self, index: int) -> any:
-        info = self.read_info(index)
-
-        eeg_index = str(info['clip_id'])
-        eeg_record = str(info['_record_id'])
-        eeg = self.read_eeg(eeg_record, eeg_index)
-
-        return eeg, info
-
-    def get_labels(self) -> list:
-        '''
-        Get the labels of the dataset.
-
-        Returns:
-            list: The list of labels.
-        '''
-        labels = []
-        for i in range(len(self)):
-            _, label = self.__getitem__(i)
-            labels.append(label)
-        return labels
-
-    def __len__(self):
-        return len(self.info)
-
-    def __copy__(self) -> 'BaseDataset':
-        cls = self.__class__
-        result = cls.__new__(cls)
-        result.__dict__.update({
-            k: v
-            for k, v in self.__dict__.items()
-            if k not in ['eeg_io_router', 'info']
-        })
-
-        # shallow copy data
-        result.eeg_io_router = {}
-        for record, eeg_io in self.eeg_io_router.items():
-            result.eeg_io_router[record] = eeg_io.__copy__()
-        # deep copy info (for further modification)
-        result.info = self.info.__copy__()
-
-        return result
 
     @property
     def repr_body(self) -> Dict:

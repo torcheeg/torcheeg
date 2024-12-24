@@ -1,9 +1,11 @@
 import os
-from typing import Any, Callable, Dict, Tuple, Union
+from typing import Callable, Dict, Tuple, Union
 
+import numpy as np
 import scipy.io as scio
-from ..base_dataset import BaseDataset
+
 from ....utils import get_random_dir_path
+from ..base_dataset import BaseDataset
 
 
 class SEEDDataset(BaseDataset):
@@ -19,9 +21,9 @@ class SEEDDataset(BaseDataset):
     - Rating: positive (1), negative (-1), and neutral (0).
 
     In order to use this dataset, the download folder :obj:`Preprocessed_EEG` is required, containing the following files:
-    
+
     .. code-block:: python
-    
+
         Preprocessed_EEG/
         ├── label.mat
         ├── readme.txt
@@ -81,7 +83,7 @@ class SEEDDataset(BaseDataset):
         from torcheeg import transforms
         from torcheeg.datasets.constants import SEED_ADJACENCY_MATRIX
         from torcheeg.transforms.pyg import ToG
-        
+
         dataset = SEEDDataset(root_path='./Preprocessed_EEG',
                               online_transform=transforms.Compose([
                                   ToG(SEED_ADJACENCY_MATRIX)
@@ -156,22 +158,11 @@ class SEEDDataset(BaseDataset):
         self.__dict__.update(params)
 
     @staticmethod
-    def process_record(file: Any = None,
-                       root_path: str = './Preprocessed_EEG',
-                       chunk_size: int = 200,
-                       overlap: int = 0,
-                       num_channel: int = 62,
-                       before_trial: Union[None, Callable] = None,
-                       offline_transform: Union[None, Callable] = None,
-                       **kwargs):
-        file_name = file
+    def read_record(record: str,
+                    root_path: str = './Preprocessed_EEG',
+                    **kwargs) -> Dict:
 
-        subject = int(os.path.basename(file_name).split('.')[0].split('_')
-                      [0])  # subject (15)
-        date = int(os.path.basename(file_name).split('.')[0].split('_')
-                   [1])  # period (3)
-
-        samples = scio.loadmat(os.path.join(root_path, file_name),
+        samples = scio.loadmat(os.path.join(root_path, record),
                                verify_compressed_data_integrity=False
                                )  # trial (15), channel(62), timestep(n*200)
         # label file
@@ -179,13 +170,54 @@ class SEEDDataset(BaseDataset):
             os.path.join(root_path, 'label.mat'),
             verify_compressed_data_integrity=False)['label'][0]
 
+        return {
+            'samples': samples,
+            'labels': labels
+        }
+
+    @staticmethod
+    def fake_record(record: str, **kwargs) -> Dict:
+        num_trials = 15
+        num_eeg_channels = 62
+        timesteps = 2000
+
+        samples = {}
+        for trial in range(1, num_trials + 1):
+            key = f'ww_eeg{trial}'
+            samples[key] = np.random.randn(num_eeg_channels, timesteps)
+
+        labels = np.random.randint(0, 3, num_trials)
+
+        return {
+            'samples': samples,
+            'labels': labels,
+            'record': '15_3.pkl'
+        }
+
+    @staticmethod
+    def process_record(record: str,
+                       samples: Dict,
+                       labels: np.ndarray,
+                       chunk_size: int = 200,
+                       overlap: int = 0,
+                       num_channel: int = 62,
+                       before_trial: Union[None, Callable] = None,
+                       offline_transform: Union[None, Callable] = None,
+                       **kwargs):
+
+        subject = int(os.path.basename(record).split('.')[0].split('_')
+                      [0])  # subject (15)
+        date = int(os.path.basename(record).split('.')[0].split('_')
+                   [1])  # period (3)
+
         trial_ids = [key for key in samples.keys() if 'eeg' in key]
 
         write_pointer = 0
         # loop for each trial
         for trial_id in trial_ids:
 
-            trial_samples = samples[trial_id]  # channel(62), timestep(n*200)
+            # channel(62), timestep(n*200)
+            trial_samples = samples[trial_id]
             if before_trial:
                 trial_samples = before_trial(trial_samples)
 
@@ -216,7 +248,7 @@ class SEEDDataset(BaseDataset):
                 if not offline_transform is None:
                     t_eeg = offline_transform(eeg=clip_sample)['eeg']
 
-                clip_id = f'{file_name}_{write_pointer}'
+                clip_id = f'{record}_{write_pointer}'
                 write_pointer += 1
 
                 # record meta info for each signal

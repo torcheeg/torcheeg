@@ -1,6 +1,7 @@
 import os
 from typing import Any, Callable, Dict, List, Tuple, Union
 
+import numpy as np
 import wfdb
 from scipy import signal
 from wfdb.processing import resample_multichan
@@ -71,6 +72,7 @@ class P2018Dataset(BaseDataset):
         num_worker (int): Number of subprocesses to use for data loading. 0 means that the data will be loaded in the main process. (default: :obj:`0`)
         verbose (bool): Whether to display logs during processing, such as progress bars, etc. (default: :obj:`True`)
     '''
+
     def __init__(self,
                  root_path: str = './P2018/training/',
                  channels: List = ['F3-M2',
@@ -114,23 +116,33 @@ class P2018Dataset(BaseDataset):
         self.__dict__.update(params)
 
     @staticmethod
-    def process_record(file: Any = None,
-                       channels: List = ['F3-M2',
-                                         'F4-M1',
-                                         'C3-M2',
-                                         'C4-M1',
-                                         'O1-M2',
-                                         'O2-M1'],
-                       l_freq: float = 0.5,
-                       h_freq: float = 30,
-                       sfreq: int = 100,
-                       before_trial: Union[None, Callable] = None,
-                       offline_transform: Union[None, Callable] = None,
-                       **kwargs):
+    def fake_record(record: Tuple, **kwargs) -> Dict:
+        num_epochs = 4
+        num_channel = 6
+        num_timepoint = 3000
 
-        recording_file, scoring_file = file
+        epochs_data = np.random.rand(num_epochs, num_channel, num_timepoint)
+        epochs_label = ['Sleep stage W', 'Sleep stage N1',
+                        'Sleep stage N2', 'Sleep stage N3']
 
-        subject_id = os.path.basename(os.path.dirname(recording_file))
+        return {
+            'record': ('fake_record', 'fake_record'),
+            'epochs_data': epochs_data,
+            'epochs_label': epochs_label,
+        }
+
+    @staticmethod
+    def read_record(record: Tuple,
+                    channels: List = ['F3-M2',
+                                      'F4-M1',
+                                      'C3-M2',
+                                      'C4-M1',
+                                      'O1-M2',
+                                      'O2-M1'],
+                    l_freq: float = 0.5,
+                    h_freq: float = 30,
+                    sfreq: int = 100, **kwargs) -> Dict:
+        recording_file, scoring_file = record
 
         epochs_data, _ = wfdb.rdsamp(
             recording_file[:-4], channel_names=channels)
@@ -179,6 +191,23 @@ class P2018Dataset(BaseDataset):
 
         for i in range(end, epochs_num):
             epochs_label.append(label2id[ann_labels[-1][1]])
+
+        return {
+            'epochs_data': epochs_data,
+            'epochs_label': epochs_label,
+        }
+
+    @staticmethod
+    def process_record(record: Tuple,
+                       epochs_data: np.ndarray,
+                       epochs_label: List,
+                       before_trial: Union[None, Callable] = None,
+                       offline_transform: Union[None, Callable] = None,
+                       **kwargs):
+
+        recording_file, scoring_file = record
+
+        subject_id = os.path.basename(os.path.dirname(recording_file))
 
         if before_trial:
             epochs_data = before_trial(epochs_data)

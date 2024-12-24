@@ -3,10 +3,11 @@ import os
 import re
 from typing import Any, Callable, Dict, List, Tuple, Union
 
+import numpy as np
 import scipy.io as scio
 
-from ..base_dataset import BaseDataset
 from ....utils import get_random_dir_path
+from ..base_dataset import BaseDataset
 
 log = logging.getLogger('torcheeg')
 
@@ -24,7 +25,7 @@ class AMIGOSDataset(BaseDataset):
     - Rating: arousal (1-9), valence (1-9), dominance (1-9), liking (1-9), familiarity (1-9), neutral (0, 1), disgust (0, 1),happiness (0, 1), surprise (0, 1), anger (0, 1), fear (0, 1), and sadness (0, 1).
 
     In order to use this dataset, the download folder :obj:`data_preprocessed` is required, containing the following files:
-    
+
     - Data_Preprocessed_P01.mat
     - Data_Preprocessed_P02.mat
     - Data_Preprocessed_P03.mat
@@ -78,7 +79,7 @@ class AMIGOSDataset(BaseDataset):
     An example dataset for GNN-based methods:
 
     .. code-block:: python
-    
+
         from torcheeg.datasets import AMIGOSDataset
         from torcheeg import transforms
         from torcheeg.transforms.pyg import ToG
@@ -170,35 +171,65 @@ class AMIGOSDataset(BaseDataset):
         self.__dict__.update(params)
 
     @staticmethod
-    def process_record(
-            file: Any = None,
-            root_path: str = './data_preprocessed',
-            chunk_size: int = 128,
-            overlap: int = 0,
-            num_channel: int = 14,
-            num_trial: int = 16,
-            skipped_subjects: List[int] = [9, 12, 21, 22, 23, 24, 33],
-            num_baseline: int = 5,
-            baseline_chunk_size: int = 128,
-            before_trial: Union[None, Callable] = None,
-            offline_transform: Union[None, Callable] = None,
-            **kwargs):
-        file_name = file  # an element from file name list
-
-        subject = int(
-            re.findall(r'Data_Preprocessed_P(\d*).mat',
-                       file_name)[0])  # subject (40)
-
-        if subject in skipped_subjects:
-            return
-
-        data = scio.loadmat(os.path.join(root_path, file_name),
+    def read_record(record: str,
+                    root_path: str = './data_preprocessed', **kwargs) -> Dict:
+        data = scio.loadmat(os.path.join(root_path, record),
                             verify_compressed_data_integrity=False)
         samples = data['joined_data'][
             0]  # trial (20), timestep(n*128), channel(17) (14 channels are EEGs)
         # label file
         labels = data['labels_selfassessment'][
             0]  # trial (20), label of different dimensions ((1, 12))
+        return {
+            'samples': samples,
+            'labels': labels
+        }
+    
+    @staticmethod
+    def fake_record(record: str, **kwargs) -> Dict:
+        num_trials = 20
+        trial_length = 10 * 128
+        num_channels = 17
+        num_labels = 12
+        
+        samples = []
+        labels = []
+        
+        for _ in range(num_trials):
+            trial_sample = np.random.rand(trial_length, num_channels)
+            trial_label = np.random.uniform(1, 9, (1, num_labels))
+            
+            samples.append(trial_sample)
+            labels.append(trial_label)
+        
+        return {
+            'record': 'Data_Preprocessed_P1.mat',
+            'samples': np.array(samples),
+            'labels': np.array(labels)
+        }
+
+    @staticmethod
+    def process_record(
+        record: str,
+        samples: np.ndarray,
+        labels: np.ndarray,
+        chunk_size: int = 128,
+        overlap: int = 0,
+        num_channel: int = 14,
+        num_trial: int = 16,
+        skipped_subjects: List[int] = [9, 12, 21, 22, 23, 24, 33],
+        num_baseline: int = 5,
+        baseline_chunk_size: int = 128,
+        before_trial: Union[None, Callable] = None,
+        offline_transform: Union[None, Callable] = None,
+        **kwargs):
+
+        subject = int(
+            re.findall(r'Data_Preprocessed_P(\d*).mat',
+                       record)[0])  # subject (40)
+
+        if subject in skipped_subjects:
+            return
 
         write_pointer = 0
 
@@ -222,7 +253,7 @@ class AMIGOSDataset(BaseDataset):
                 # 3 of the participants (08,24,28<->32) of the previous experiment did not watch a set of 4 long affective
                 if sum(trial_samples.shape) != sum(trial_rating.shape):
                     log.info(
-                        f'Find EEG signals without labels, or labels without EEG signals. Please check the {trial_id + 1}-th experiment of the {subject}-th subject in the file {file_name}. TorchEEG currently skipped the mismatched data.'
+                        f'Find EEG signals without labels, or labels without EEG signals. Please check the {trial_id + 1}-th experiment of the {subject}-th subject in the file {record}. TorchEEG currently skipped the mismatched data.'
                     )
                 continue
 
@@ -270,12 +301,12 @@ class AMIGOSDataset(BaseDataset):
 
                 # put baseline signal into IO
                 if not 'baseline_id' in trial_meta_info:
-                    trial_base_id = f'{file_name}_{write_pointer}'
+                    trial_base_id = f'{record}_{write_pointer}'
                     yield {'eeg': t_baseline, 'key': trial_base_id}
                     write_pointer += 1
                     trial_meta_info['baseline_id'] = trial_base_id
 
-                clip_id = f'{file_name}_{write_pointer}'
+                clip_id = f'{record}_{write_pointer}'
                 write_pointer += 1
 
                 # record meta info for each signal

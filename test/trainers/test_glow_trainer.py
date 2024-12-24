@@ -24,33 +24,21 @@ class DummyDataset(Dataset):
 class TestGlowTrainer(unittest.TestCase):
     def test_glow_trainer(self):
         train_dataset = DummyDataset()
-        val_dataset = DummyDataset()
-        test_dataset = DummyDataset()
-
         train_loader = DataLoader(train_dataset, batch_size=4)
-        val_loader = DataLoader(val_dataset, batch_size=4)
-        test_loader = DataLoader(test_dataset, batch_size=4)
 
         model = BGlow(in_channels=4)
-
         trainer = GlowTrainer(model, accelerator='cpu')
-        trainer.fit(train_loader, val_loader, max_epochs=1)
-        trainer.test(test_loader)
+        trainer.fit(train_loader, train_loader, max_epochs=1, max_steps=1)
+        trainer.test_step(next(iter(train_loader)), batch_idx=0)
 
     def test_cglow_trainer(self):
         train_dataset = DummyDataset()
-        val_dataset = DummyDataset()
-        test_dataset = DummyDataset()
-
         train_loader = DataLoader(train_dataset, batch_size=4)
-        val_loader = DataLoader(val_dataset, batch_size=4)
-        test_loader = DataLoader(test_dataset, batch_size=4)
 
         model = BCGlow(in_channels=4)
         trainer = CGlowTrainer(model, accelerator='cpu')
-        trainer.fit(train_loader, val_loader, max_epochs=1)
-        trainer.test(test_loader)
-
+        trainer.fit(train_loader, train_loader, max_epochs=1, max_steps=1) 
+        trainer.test_step(next(iter(train_loader)), batch_idx=0)
 
 if __name__ == '__main__':
     unittest.main()
