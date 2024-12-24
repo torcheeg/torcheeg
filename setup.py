@@ -13,9 +13,7 @@ install_requires = [
 
 test_requires = ['pytest>=7.1.2']
 
-example_requires = []
-
-pyg_requires = [
+model_plugin_requires = [
     'torch-scatter',
     'torch-sparse',
     'torch-cluster',
@@ -23,7 +21,20 @@ pyg_requires = [
     'torch_geometric>=2.0.3',
 ]
 
-moabb_requires = ['moabb>=0.5.0']
+trainer_plugin_requires = [
+    'torch-fidelity>=0.3.0',
+    'torchmetrics[image]>=0.10.0',
+]
+
+transforms_plugin_requires = [
+    'soxr>=0.3.5',
+]
+
+dataset_plugin_requires = [
+    'moabb>=0.5.0',
+]
+
+dataset_plugin_requires = ['moabb>=0.5.0']
 
 readme = open('README.rst').read()
 
@@ -41,9 +52,10 @@ setup(
     long_description=readme,
     python_requires='>=3.7',
     extras_require={
-        'example': example_requires,
         'test': test_requires,
-        'pyg': pyg_requires,
-        'moabb': moabb_requires
+        'model': model_plugin_requires,
+        'dataset': dataset_plugin_requires,
+        'trainer': trainer_plugin_requires,
+        'transforms': transforms_plugin_requires
     },
     install_requires=install_requires)
