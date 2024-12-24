@@ -21,10 +21,23 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
         
-    - name: Install dependencies
+    - name: Install PyTorch
       run: |
         python -m pip install --upgrade pip
-        pip install -e .[all]
+        pip install https://download.pytorch.org/whl/cpu/torch-2.4.1%2Bcpu-cp38-cp38-linux_x86_64.whl
+        pip install https://download.pytorch.org/whl/cpu/torchvision-0.19.1%2Bcpu-cp38-cp38-linux_x86_64.whl#sha256=5c6b24563116f016a0a1e6c315c77958b6556b9c91bac37ae2558e73a79cd3b0
+        pip install https://data.pyg.org/whl/torch-2.4.0%2Bcpu/torch_scatter-2.1.2%2Bpt24cpu-cp38-cp38-linux_x86_64.whl
+        pip install https://data.pyg.org/whl/torch-2.4.0%2Bcpu/torch_sparse-0.6.18%2Bpt24cpu-cp38-cp38-linux_x86_64.whl
+        
+    - name: Create constraints file
+      run: |
+        echo "torch==2.4.1" > constraints.txt
+        echo "torch_scatter==2.1.2" >> constraints.txt
+        echo "torch_sparse==0.6.18" >> constraints.txt
+        
+    - name: Install package and dependencies
+      run: |
+        pip install -e .[test,model,trainer,transforms,dataset] -c constraints.txt
         
     - name: Run tests
       run: |
