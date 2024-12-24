@@ -28,7 +28,7 @@ jobs:
         
     - name: Install package and dependencies
       run: |
-        pip install -e .[test,trainer,transforms,dataset]
+        pip install -e .[test,model,trainer,transforms,dataset]
         
     - name: Run tests
       run: |
