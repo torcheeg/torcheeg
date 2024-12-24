@@ -28,9 +28,15 @@ jobs:
         pip install https://data.pyg.org/whl/torch-1.9.0%2Bcpu/torch_scatter-2.0.7-cp38-cp38-linux_x86_64.whl
         pip install https://data.pyg.org/whl/torch-1.9.0%2Bcpu/torch_sparse-0.6.10-cp38-cp38-linux_x86_64.whl
         
+    - name: Create constraints file
+      run: |
+        echo "torch==1.9.0" > constraints.txt
+        echo "torch_scatter==2.0.7" >> constraints.txt
+        echo "torch_sparse==0.6.10" >> constraints.txt
+        
     - name: Install package and dependencies
       run: |
-        pip install -e .[test,model,trainer,transforms,dataset]
+        pip install -e .[test,model,trainer,transforms,dataset] -c constraints.txt
         
     - name: Run tests
       run: |
