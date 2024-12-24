@@ -12,7 +12,6 @@ install_requires = [
 ]
 
 test_requires = [
-    'torch>=1.10.1',
     'pytest>=7.1.2'
 ]
 
