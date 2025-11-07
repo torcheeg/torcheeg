@@ -23,7 +23,7 @@ class P2018Dataset(BaseDataset):
 
     In order to use this dataset, the following file structure is required:
 
-    .. code-block:: python
+    .. code-block:: text
 
         P2018/
         └── training/

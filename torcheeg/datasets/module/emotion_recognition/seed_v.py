@@ -24,7 +24,7 @@ class SEEDVDataset(BaseDataset):
 
     In order to use this dataset, the download folder :obj:`EEG_raw` is required, containing the following files:
 
-    .. code-block:: python
+    .. code-block:: text
 
         EEG_raw/
         ├── 10_1_20180507.cnt

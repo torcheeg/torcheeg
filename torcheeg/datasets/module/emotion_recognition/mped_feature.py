@@ -22,7 +22,7 @@ class MPEDFeatureDataset(BaseDataset):
 
     In order to use this dataset, the download folder :obj:`EEG_feature` is required, containing the following files:
 
-    .. code-block:: python
+    .. code-block:: text
 
         EEG_feature/
         ├── HHS/

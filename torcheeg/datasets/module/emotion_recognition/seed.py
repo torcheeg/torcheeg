@@ -22,7 +22,7 @@ class SEEDDataset(BaseDataset):
 
     In order to use this dataset, the download folder :obj:`Preprocessed_EEG` is required, containing the following files:
 
-    .. code-block:: python
+    .. code-block:: text
 
         Preprocessed_EEG/
         ├── label.mat

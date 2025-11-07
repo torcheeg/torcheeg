@@ -20,7 +20,7 @@ class M3CVDataset(BaseDataset):
 
     In order to use this dataset, the download dataset folder :obj:`aistudio` is required, containing the following files:
 
-    .. code-block:: python
+    .. code-block:: text
 
         aistudio/
         ├── Calibration_Info.csv

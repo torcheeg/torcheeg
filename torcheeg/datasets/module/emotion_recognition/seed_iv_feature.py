@@ -23,7 +23,7 @@ class SEEDIVFeatureDataset(BaseDataset):
 
     In order to use this dataset, the download folder :obj:`eeg_feature_smooth` is required, containing the following folder:
 
-    .. code-block:: python
+    .. code-block:: text
 
         eeg_feature_smooth/
         ├── 1/

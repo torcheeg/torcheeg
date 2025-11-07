@@ -23,7 +23,7 @@ class SEEDIVDataset(BaseDataset):
 
     In order to use this dataset, the download folder :obj:`eeg_raw_data` is required, containing the following files:
 
-    .. code-block:: python
+    .. code-block:: text
 
         eeg_raw_data/
         ├── label.mat

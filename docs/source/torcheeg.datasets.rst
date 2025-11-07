@@ -85,6 +85,21 @@ Sleep Stage Detection Datasets
     P2018Dataset
     SleepEDFxDataset
 
+Auditory Attention Datasets
+---------------------------------------------------------
+
+.. autosummary::
+    :toctree: generated
+    :nosignatures:
+    :template: datasettemplate.rst
+
+    DTUDataset
+    DTUProcessedDataset
+    KULDataset
+    KULProcessedDataset
+    AVEDDataset
+    AVEDProcessedDataset
+
 Customized Datasets
 ---------------------------------------------------------
 

@@ -8,4 +8,5 @@ from .motor_imagery import *
 from .pair_dataset import PairDataset
 from .personal_identification import *
 from .sleep_stage_detection import *
+from .auditory_attention import *
 from .ssvep import *
