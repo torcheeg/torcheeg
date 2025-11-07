@@ -23,7 +23,7 @@ class TSUBenckmarkDataset(BaseDataset):
 
     In order to use this dataset, the download folder :obj:`data_preprocessed_python` is required, containing the following files:
 
-    .. code-block:: python
+    .. code-block:: text
 
         data_preprocessed_python/
         ├── Readme.txt

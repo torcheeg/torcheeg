@@ -3,7 +3,7 @@ import unittest
 import torch
 
 from torcheeg.models import (ArjunViT, ATCNet, Conformer, SimpleViT, TCNet,
-                             VanillaTransformer, ViT, LaBraM)
+                             VanillaTransformer, ViT, LaBraM, DARNet, MHANet)
 
 
 class TestTransformer(unittest.TestCase):
@@ -11,13 +11,13 @@ class TestTransformer(unittest.TestCase):
         eeg = torch.randn(2, 6, 8, 200)
         model = LaBraM.base_patch200_200(num_classes=4)
         pred = model(eeg, electrodes=['FP1', 'FPZ', 'FP2',
-    'AF9', 'AF7', 'AF5'])
+                                      'AF9', 'AF7', 'AF5'])
         model = LaBraM.large_patch200_200(num_classes=4)
         pred = model(eeg, electrodes=['FP1', 'FPZ', 'FP2',
-    'AF9', 'AF7', 'AF5'])
+                                      'AF9', 'AF7', 'AF5'])
         model = LaBraM.huge_patch200_200(num_classes=4)
         pred = model(eeg, electrodes=['FP1', 'FPZ', 'FP2',
-    'AF9', 'AF7', 'AF5'])
+                                      'AF9', 'AF7', 'AF5'])
         self.assertEqual(tuple(pred.shape), (2, 4))
 
     def test_tcnet(self):
@@ -83,6 +83,42 @@ class TestTransformer(unittest.TestCase):
         # other shape
         eeg = torch.rand(2, 1, 96, 256)
         model = ATCNet(num_classes=4, num_electrodes=96, chunk_size=256)
+        pred = model(eeg)
+        self.assertEqual(tuple(pred.shape), (2, 4))
+
+    def test_darnet(self):
+        eeg = torch.randn(2, 64, 64)
+        model = DARNet(num_classes=2, num_electrodes=64, chunk_size=64)
+        pred = model(eeg)
+        self.assertEqual(tuple(pred.shape), (2, 2))
+
+        # other shape
+        eeg = torch.randn(2, 32, 128)
+        model = DARNet(num_classes=4, num_electrodes=32, chunk_size=128)
+        pred = model(eeg)
+        self.assertEqual(tuple(pred.shape), (2, 4))
+
+        # other shape
+        eeg = torch.randn(2, 32, 1000)
+        model = DARNet(num_classes=4, num_electrodes=32, chunk_size=1000)
+        pred = model(eeg)
+        self.assertEqual(tuple(pred.shape), (2, 4))
+
+    def test_mhanet(self):
+        eeg = torch.randn(2, 64, 64)
+        model = MHANet(num_classes=2, num_electrodes=64, chunk_size=64)
+        pred = model(eeg)
+        self.assertEqual(tuple(pred.shape), (2, 2))
+
+        # other shape
+        eeg = torch.randn(2, 32, 128)
+        model = MHANet(num_classes=4, num_electrodes=32, chunk_size=128)
+        pred = model(eeg)
+        self.assertEqual(tuple(pred.shape), (2, 4))
+
+        # other shape
+        eeg = torch.randn(2, 32, 1000)
+        model = MHANet(num_classes=4, num_electrodes=32, chunk_size=1000)
         pred = model(eeg)
         self.assertEqual(tuple(pred.shape), (2, 4))
 

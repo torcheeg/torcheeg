@@ -23,7 +23,7 @@ class BCICIV2aDataset(BaseDataset):
 
     In order to use this dataset, the download folder :obj:`BCICIV_2a_mat` is required, containing the following files:
 
-    .. code-block:: python
+    .. code-block:: text
 
         BCICIV_2a_mat/
         ├── A01T.mat

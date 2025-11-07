@@ -74,7 +74,7 @@ for i, (train_dataset, val_dataset) in enumerate(k_fold.split(dataset)):
     model = CCNN(num_classes=3, in_channels=4, grid_size=(9, 9))
 
     trainer = ClassifierTrainer(model=model,
-                                num_classes=3,
+                                num_classes=2,
                                 lr=1e-4,
                                 weight_decay=1e-4,
                                 accelerator="gpu")

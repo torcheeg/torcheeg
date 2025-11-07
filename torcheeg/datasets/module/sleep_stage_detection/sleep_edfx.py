@@ -67,7 +67,7 @@ class SleepEDFxDataset(BaseDataset):
 
     In order to use this dataset, the following file structure is required:
 
-    .. code-block:: python
+    .. code-block:: text
 
         sleep-edf-database-expanded-1.0.0/
         ├── sleep-telemetry/

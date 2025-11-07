@@ -71,6 +71,8 @@ Transformer
    Conformer
    LaBraM
    TCNet
+   MHANet
+   DARNet
 
 Generative Adversarial Network
 ----------------------------------

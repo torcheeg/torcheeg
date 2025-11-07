@@ -6,3 +6,5 @@ from .conformer import Conformer
 from .atcnet import ATCNet
 from .tcnet import TCNet
 from .labram import LaBraM
+from .darnet import DARNet
+from .mhanet import MHANet
