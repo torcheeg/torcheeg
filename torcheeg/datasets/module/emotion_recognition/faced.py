@@ -107,10 +107,7 @@ class FACEDDataset(BaseDataset):
                                    transforms.ToGrid(FACED_CHANNEL_LOCATION_DICT)
                                ]),
                                online_transform=transforms.ToTensor(),
-                               label_transform=transforms.Compose([
-                                   transforms.Select('emotion'),
-                                   transforms.Lambda(lambda x: x + 1)
-                               ]))
+                               label_transform=transforms.Select('emotion'))
 
         print(dataset[0])
         # EEG signal (torch.Tensor[4, 8, 9]),
