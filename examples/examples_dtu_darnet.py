@@ -21,10 +21,10 @@ from torcheeg.trainers import ClassifierTrainer
 from torcheeg.models import DARNet
 from torch.utils.data import DataLoader
 from torcheeg.model_selection import KFoldPerSubjectGroupbyTrial
-from torcheeg.datasets import DTUMatlabDataset
+from torcheeg.datasets import DTUProcessedDataset
 from torcheeg import transforms
 
-dataset = DTUMatlabDataset(io_path=f'./.torcheeg/dtu',
+dataset = DTUProcessedDataset(io_path=f'./.torcheeg/dtu',
                            root_path='./DATA_preproc',
                            label_transform=transforms.Compose([
                                transforms.Select('attended_speaker'),
