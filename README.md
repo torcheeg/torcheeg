@@ -318,6 +318,14 @@ If you would like to contribute new datasets, deep learning methods, and extensi
             <sub><b>The Gitter Badger</b></sub>
         </a>
     </td></tr>
+<tr>
+    <td align="center">
+        <a href="https://github.com/jewelrana77">
+            <img src="https://avatars.githubusercontent.com/u/61107733?v=4" width="100;" alt="jewelrana77"/>
+            <br />
+            <sub><b>MD JEWEL RANA</b></sub>
+        </a>
+    </td></tr>
 </table>
 <!-- readme: collaborators,contributors -end -->
 
