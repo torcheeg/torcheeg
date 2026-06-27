@@ -190,8 +190,10 @@ class SEEDVDataset(BaseDataset):
                        offline_transform: Union[None, Callable] = None,
                        **kwargs):
         file_name = os.path.basename(record)
+        file_stem = os.path.splitext(file_name)[0]
         # split with _, the first part is the subject_id, the second part is the session_id, the third part is the date
-        subject_id, session_id, date = file_name.split('_')[:3]
+        subject_id, session_id, date = file_stem.split('_')[:3]
+        date = int(date)
 
         labels = [[4, 1, 3, 2, 0, 4, 1, 3, 2, 0, 4, 1, 3, 2, 0],
                   [2, 1, 3, 0, 4, 4, 0, 3, 2, 1, 3, 4, 1, 2, 0],
