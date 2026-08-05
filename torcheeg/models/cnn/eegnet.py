@@ -1,5 +1,32 @@
+from typing import Tuple
+
 import torch
 import torch.nn as nn
+
+
+def _temporal_same_padding(kernel_size: int) -> Tuple[int, int, int, int]:
+    r'''
+    Zero padding along the time axis that keeps the output length equal to the
+    input length for a stride-1 convolution, i.e. the :obj:`padding='SAME'`
+    behavior of the reference TensorFlow implementation of EEGNet.
+
+    :obj:`nn.Conv2d` can only pad symmetrically, so :obj:`padding=kernel_size // 2`
+    adds :obj:`kernel_size` instead of :obj:`kernel_size - 1` samples whenever the
+    kernel is even, which lengthens the time dimension by one. Splitting the
+    padding by hand avoids that. For odd kernels the result is symmetric and
+    matches the previous behavior, for even kernels the extra sample goes to the
+    right, as TensorFlow does.
+
+    Args:
+        kernel_size (int): The kernel size along the time axis.
+
+    Returns:
+        Tuple[int, int, int, int]: The left, right, top and bottom padding to be
+        passed to :obj:`nn.ZeroPad2d`.
+    '''
+    total_padding = kernel_size - 1
+    left_padding = total_padding // 2
+    return (left_padding, total_padding - left_padding, 0, 0)
 
 
 class Conv2dWithConstraint(nn.Conv2d):
@@ -85,7 +112,8 @@ class EEGNet(nn.Module):
         self.dropout = dropout
 
         self.block1 = nn.Sequential(
-            nn.Conv2d(1, self.F1, (1, self.kernel_1), stride=1, padding=(0, self.kernel_1 // 2), bias=False),
+            nn.ZeroPad2d(_temporal_same_padding(self.kernel_1)),
+            nn.Conv2d(1, self.F1, (1, self.kernel_1), stride=1, padding=(0, 0), bias=False),
             nn.BatchNorm2d(self.F1, momentum=0.01, affine=True, eps=1e-3),
             Conv2dWithConstraint(self.F1,
                                  self.F1 * self.D, (self.num_electrodes, 1),
@@ -97,10 +125,11 @@ class EEGNet(nn.Module):
             nn.ELU(), nn.AvgPool2d((1, 4), stride=4), nn.Dropout(p=dropout))
 
         self.block2 = nn.Sequential(
+            nn.ZeroPad2d(_temporal_same_padding(self.kernel_2)),
             nn.Conv2d(self.F1 * self.D,
                       self.F1 * self.D, (1, self.kernel_2),
                       stride=1,
-                      padding=(0, self.kernel_2 // 2),
+                      padding=(0, 0),
                       bias=False,
                       groups=self.F1 * self.D),
             nn.Conv2d(self.F1 * self.D, self.F2, 1, padding=(0, 0), groups=1, bias=False, stride=1),

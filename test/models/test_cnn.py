@@ -88,6 +88,28 @@ class TestCNN(unittest.TestCase):
         pred = model(eeg)
         self.assertEqual(tuple(pred.shape), (1, 2))
 
+    def test_eegnet_same_padding(self):
+        # block1 downsamples the time axis by 4 and block2 by a further 8, so
+        # both convolutions must leave the time axis untouched.
+        for kernel_1, kernel_2 in [(64, 16), (63, 15)]:
+            for chunk_size in [127, 128, 151]:
+                eeg = torch.randn(1, 1, 32, chunk_size)
+                model = EEGNet(chunk_size=chunk_size,
+                               num_electrodes=32,
+                               dropout=0.5,
+                               kernel_1=kernel_1,
+                               kernel_2=kernel_2,
+                               F1=8,
+                               D=2,
+                               F2=16,
+                               num_classes=2)
+                with torch.no_grad():
+                    block1_out = model.block1(eeg)
+                    block2_out = model.block2(block1_out)
+                self.assertEqual(block1_out.shape[3], chunk_size // 4)
+                self.assertEqual(block2_out.shape[3], chunk_size // 4 // 8)
+                self.assertEqual(tuple(model(eeg).shape), (1, 2))
+
     def test_stnet(self):
         eeg = torch.randn(1, 128, 9, 9)
         model = STNet(num_classes=2,
