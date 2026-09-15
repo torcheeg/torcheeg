@@ -33,7 +33,7 @@ jobs:
       run: |
         echo "torch==2.4.1" > constraints.txt
         echo "torch_scatter==2.1.2" >> constraints.txt
-        echo "torch_sparse==0.6.18" >> constraints.txt
+        echo "lmdb==1.4.1" >> constraints.txt
         
     - name: Install package and dependencies
       run: |
