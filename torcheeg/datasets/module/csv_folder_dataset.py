@@ -2,6 +2,7 @@ from typing import Any, Callable, Dict, Tuple, Union
 import pandas as pd
 import mne
 import numpy as np
+import os
 
 from .base_dataset import BaseDataset
 from ...utils import get_random_dir_path
@@ -128,7 +129,8 @@ class CSVFolderDataset(BaseDataset):
                 t = offline_transform(eeg=trial_signal)
                 t_eeg = t['eeg']
 
-            clip_id = f'{file_path}_{write_pointer}'
+            file_name = os.path.basename(file_path)
+            clip_id = f'{file_name}_{write_pointer}'
             write_pointer += 1
 
             record_info = {
