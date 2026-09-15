@@ -221,11 +221,13 @@ class SEEDDataset(BaseDataset):
             if before_trial:
                 trial_samples = before_trial(trial_samples)
 
+            int_trial_id = int(trial_id.split('_')[-1][3:])
+            
             # record the common meta info
             trial_meta_info = {
                 'subject_id': subject,
-                'trial_id': trial_id,
-                'emotion': int(labels[int(trial_id.split('_')[-1][3:]) - 1]),
+                'trial_id': int_trial_id,
+                'emotion': int(labels[int_trial_id - 1]),
                 'date': date
             }
 
