@@ -6,6 +6,7 @@ import unittest
 import pandas as pd
 
 from torcheeg.datasets import BaseDataset
+from torcheeg.io import EEGSignalIO
 from torcheeg.model_selection import (KFold, KFoldCrossSubject,
                                       KFoldCrossTrial, KFoldGroupbyTrial, Subcategory)
 
@@ -116,6 +117,36 @@ class TestKFoldCrossSubject(unittest.TestCase):
         for _ in cv.split(dataset):
             split_num += 1
         self.assertEqual(split_num, 5)
+
+    def test_subcategory_lmdb_eager_dataset(self):
+        record = '_record_0'
+        io_path = f'./tmp_out/lmdb_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
+        eeg_io = EEGSignalIO(os.path.join(io_path, record, 'eeg'),
+                             io_mode='lmdb')
+        eeg_io.write_eeg([1, 2, 3], key='clip_0')
+        eeg_io.write_eeg([4, 5, 6], key='clip_1')
+
+        dataset = BaseDataset.__new__(BaseDataset)
+        dataset.info = pd.DataFrame({
+            'clip_id': ['clip_0', 'clip_1'],
+            '_record_id': [record, record],
+            'date': [20130709, 20130712]
+        })
+        dataset.eeg_io_router = {record: eeg_io}
+        dataset.eeg_signal_paths = {}
+        dataset.io_size = 1048576
+        dataset.io_mode = 'lmdb'
+        dataset.lazy_threshold = 128
+
+        split_path = f'./tmp_out/split_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
+        cv = Subcategory(split_path=split_path, criteria='date')
+
+        subsets = list(cv.split(dataset))
+
+        self.assertEqual(len(subsets), 2)
+        self.assertEqual([len(subset) for subset in subsets], [1, 1])
+        self.assertEqual(subsets[0][0][0], [1, 2, 3])
+        self.assertEqual(subsets[1][0][0], [4, 5, 6])
 
 if __name__ == '__main__':
     unittest.main()

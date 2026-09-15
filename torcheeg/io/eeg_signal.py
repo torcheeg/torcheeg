@@ -102,7 +102,8 @@ class LMDBEEGSignalIO(_EEGSignalIO):
                               lock=False)
 
     def __del__(self):
-        self._env.close()
+        if hasattr(self, '_env'):
+            self._env.close()
 
     def __len__(self):
         with self._env.begin(write=False) as transaction:
@@ -196,16 +197,8 @@ class LMDBEEGSignalIO(_EEGSignalIO):
                               lock=False)
 
     def __copy__(self):
-        cls = self.__class__
-        result = cls.__new__(cls)
-        result.__dict__.update({
-            k: v
-            for k, v in self.__dict__.items() if k != '_env'
-        })
-        result._env = lmdb.open(path=self.io_path,
-                                map_size=self.io_size,
-                                lock=False)
-        return result
+        # LMDB does not allow reopening the same environment in one process.
+        return self
 
 
 class PickleEEGSignalIO(_EEGSignalIO):
@@ -322,7 +315,8 @@ class EEGSignalIO:
             )
 
     def __del__(self):
-        del self._io
+        if hasattr(self, '_io'):
+            del self._io
 
     def __copy__(self):
         cls = self.__class__
