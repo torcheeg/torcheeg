@@ -40,12 +40,12 @@ class TSUBenckmarkDataset(BaseDataset):
 
         from torcheeg.datasets import TSUBenckmarkDataset
         from torcheeg import transforms
-        from torcheeg.datasets.constants.ssvep.tsubenchmark import TSUBenckmark_CHANNEL_LOCATION_DICT
+        from torcheeg.datasets.constants import TSUBENCHMARK_CHANNEL_LOCATION_DICT
 
         dataset = TSUBenckmarkDataset(root_path='./TSUBenchmark',
                                       offline_transform=transforms.Compose([
                                           transforms.BandDifferentialEntropy(),
-                                          transforms.ToGrid(TSUBenckmark_CHANNEL_LOCATION_DICT)
+                                          transforms.ToGrid(TSUBENCHMARK_CHANNEL_LOCATION_DICT)
                                       ]),
                                       online_transform=transforms.ToTensor(),
                                       label_transform=transforms.Select(['trial_id']))
@@ -73,9 +73,11 @@ class TSUBenckmarkDataset(BaseDataset):
 
     .. code-block:: python
 
+        from torcheeg.datasets.constants import TSUBENCHMARK_ADJACENCY_MATRIX
+
         dataset = TSUBenckmarkDataset(root_path='./TSUBenchmark',
                                       online_transform=transforms.Compose([
-                                          ToG(TSUBenckmark_ADJACENCY_MATRIX)
+                                          ToG(TSUBENCHMARK_ADJACENCY_MATRIX)
                                       ]),
                                       label_transform=transforms.Select(['trial_id']))
         print(dataset[0])
