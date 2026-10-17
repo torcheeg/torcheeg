@@ -1,6 +1,6 @@
 """
 Train a DARNet Model on the DTU Dataset
-=============================
+=======================================
 
 In this tutorial, we'll walk through how to leverage TorchEEG for training a DARNet Model to classify auditory attention using the DTU dataset. Let's walk through the essential steps—from dataset preparation to model evaluation.
 
@@ -36,7 +36,7 @@ dataset = DTUProcessedDataset(io_path=f'./.torcheeg/dtu',
 
 ######################################################################
 # Step 2: Divide the Training and Test samples in the Dataset
-# ----------------------------------------------
+# -----------------------------------------------------------
 #
 # Now, let's partition the dataset into training and test sets. We will employ 5-fold cross-validation for this purpose. During this phase, samples are grouped based on their trial index for each subject. Four folds are designated for training, and one fold serves as the test set.
 #
