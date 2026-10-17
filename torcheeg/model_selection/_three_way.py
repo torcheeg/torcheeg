@@ -57,8 +57,9 @@ def _file_digest(path):
 def _fingerprint(info, column):
     # Index labels do not affect iloc positions. Include sample identities when
     # available so reordered datasets cannot silently reuse old positions.
-    columns = [column] + [name for name in ('_record_id', 'clip_id')
-                          if name in info and name != column]
+    columns = [column] if isinstance(column, str) else list(column)
+    columns += [name for name in ('_record_id', 'clip_id')
+                if name in info and name not in columns]
     header = [(name, str(info[name].dtype)) for name in columns]
     typed_values = pd.DataFrame({
         name: [(type(value).__name__, value) for value in info[name].tolist()]
@@ -91,8 +92,10 @@ def ensure_split_cache(info, column, split_path, configuration, files, writer):
     Existing caches are read-only. A failed writer removes only its own staging
     directory, allowing a later call to retry without reusing partial CSVs.
     '''
-    if column not in info or info[column].isna().any():
-        raise ValueError(f'The dataset must contain nonmissing {column} values.')
+    columns = [column] if isinstance(column, str) else list(column)
+    for name in columns:
+        if name not in info or info[name].isna().any():
+            raise ValueError(f'The dataset must contain nonmissing {name} values.')
     split_path = os.path.abspath(os.fspath(split_path))
     expected = {'version': 1, 'dataset': _fingerprint(info, column),
                 'configuration': _digest(json.dumps(configuration, sort_keys=True,
