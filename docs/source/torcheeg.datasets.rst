@@ -113,3 +113,14 @@ Customized Datasets
     MNERawDataset
     ConcatDataset
     PairDataset
+
+
+Mental Workload Datasets
+----------------------------------------
+
+.. autosummary::
+    :toctree: generated
+    :nosignatures:
+    :template: datasettemplate.rst
+
+    MentalArithmeticDataset

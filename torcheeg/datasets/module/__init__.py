@@ -10,3 +10,4 @@ from .personal_identification import *
 from .sleep_stage_detection import *
 from .auditory_attention import *
 from .ssvep import *
+from .mental_workload import *
