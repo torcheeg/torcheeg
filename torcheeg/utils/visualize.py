@@ -12,7 +12,6 @@ import torch
 from matplotlib import colors
 from mne.viz import circular_layout
 from mne_connectivity.viz import plot_connectivity_circle
-from pylab import cm
 
 mne.set_log_level('CRITICAL')
 
@@ -280,7 +279,7 @@ def plot_3d_tensor(tensor: torch.Tensor,
     ndarray = tensor.detach().cpu().numpy()
 
     filled = np.ones_like(ndarray, dtype=bool)
-    colormap = cm.get_cmap(color)
+    colormap = plt.get_cmap(color)
 
     ndarray = (ndarray - ndarray.min()) / (ndarray.max() - ndarray.min())
 
@@ -331,7 +330,7 @@ def plot_2d_tensor(tensor: torch.Tensor,
     fig = plt.figure()
     ax = plt.axes()
 
-    colormap = cm.get_cmap(color)
+    colormap = plt.get_cmap(color)
     ax.imshow(ndarray, cmap=colormap, interpolation='nearest')
 
     img = plot2image(fig)
@@ -384,7 +383,7 @@ def plot_adj_connectivity(adj: torch.Tensor,
     node_colors = None
     if region_list:
         num_region = len(region_list)
-        colormap = matplotlib.cm.get_cmap('rainbow')
+        colormap = plt.get_cmap('rainbow')
         region_colors = list(colormap(np.linspace(0, 1, num_region)))
         # random.shuffle(region_colors)
         # # circle two colors is better
@@ -487,7 +486,7 @@ def plot_graph(data: 'pyg.data.Data',
     edge_weights = [
         edgedata["edge_weight"] for _, _, edgedata in g.edges(data=True)
     ]
-    colormap = cm.get_cmap(color)
+    colormap = plt.get_cmap(color)
     edge_colors = colormap(edge_weights)
 
     # get posistion of nodes
