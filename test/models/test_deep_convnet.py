@@ -67,6 +67,15 @@ class TestDeepConvNet(unittest.TestCase):
                                        rtol=1e-7, atol=1e-9)
 
     def check_reference(self, filename, constrained=False):
+        # Match the reference generator's reduction order and restore caller state.
+        threads = torch.get_num_threads()
+        try:
+            torch.set_num_threads(2)
+            self._check_reference(filename, constrained)
+        finally:
+            torch.set_num_threads(threads)
+
+    def _check_reference(self, filename, constrained=False):
         fixture = json.loads((Path(__file__).parent / 'fixtures' / filename).read_text())
         if constrained:
             self.assertEqual(fixture['commit'], 'c1aa1292aed21c0e170dd0da3cd0a4a60581f6ad')
