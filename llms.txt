@@ -17,6 +17,8 @@ repository features are not part of a released package.
 - [Examples](https://torcheeg.readthedocs.io/en/latest/auto_examples/index.html): Runnable workflows and data requirements.
 - [Agent guide](https://torcheeg.readthedocs.io/en/latest/agent_guide.html): Using the repository guide and library skill.
 
+- [Leaderboard](https://torcheeg.readthedocs.io/en/latest/leaderboard.html): Protocol-specific results, evidence and reproducible examples.
+
 ## Source
 
 - [Repository](https://github.com/torcheeg/torcheeg): Source code, tests and releases.

@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - 'docs/**'
+      - 'test/utils/test_leaderboard.*'
       - 'examples/**'
       - 'torcheeg/**'
       - 'setup.py'
@@ -34,6 +35,13 @@ jobs:
           cache-dependency-path: |
             docs/requirements.txt
             setup.py
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Validate leaderboard data and filtering
+        run: |
+          python docs/validate_leaderboard.py
+          node --test test/utils/test_leaderboard.js
       - name: Install documentation dependencies
         run: |
           python -m pip install --upgrade pip

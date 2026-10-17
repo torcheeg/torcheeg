@@ -1,0 +1,264 @@
+{
+  "schema_version": 1,
+  "protocols": {
+    "eegmat-two-subject-classification-1epoch": {
+      "dataset": "EEGMat",
+      "scope": "Two-subject validation run; one training epoch",
+      "source_url": "https://physionet.org/content/eegmat/1.0.0/",
+      "sampling_rate": 200,
+      "native_sampling_rate": 500,
+      "channels": 19,
+      "signal_units": "microvolts",
+      "window_samples": 800,
+      "train_windows": 60,
+      "test_windows": 60,
+      "epochs": 1,
+      "seed": 42,
+      "split": {
+        "type": "fixed_subject_holdout",
+        "train_subjects": [
+          "Subject00"
+        ],
+        "test_subjects": [
+          "Subject01"
+        ]
+      },
+      "data_files": [
+        {
+          "name": "Subject00_1.edf",
+          "sha256": "8b23c443f2f5f733f8ccc31a54377898009c28c7563d1107692a8735212d2f15",
+          "bytes": 3848636,
+          "native_sampling_rate": 500.0
+        },
+        {
+          "name": "Subject00_2.edf",
+          "sha256": "635bbf035777008ff6c23d9c7bfc497d584fc71c56217022946d1fd056527e43",
+          "bytes": 1314956,
+          "native_sampling_rate": 500.0
+        },
+        {
+          "name": "Subject01_1.edf",
+          "sha256": "9ece09029ed7d6911d96a776eb86905dd00a53c065c8eb9e0fd3c7aefd0f7ac4",
+          "bytes": 3848636,
+          "native_sampling_rate": 500.0
+        },
+        {
+          "name": "Subject01_2.edf",
+          "sha256": "cbc4a053c2c8ce0e77ff62b4608a2cc2fe584886a6cd2fa0b343cfce3212376f",
+          "bytes": 1314956,
+          "native_sampling_rate": 500.0
+        }
+      ],
+      "name": "Background versus mental arithmetic",
+      "task": "Classification",
+      "preprocessing": "Per-window, per-channel z-score",
+      "train_class_counts": {
+        "background": 45,
+        "arithmetic": 15
+      },
+      "test_class_counts": {
+        "background": 45,
+        "arithmetic": 15
+      },
+      "majority_accuracy": 0.75
+    },
+    "eegmat-two-subject-vae-1epoch": {
+      "dataset": "EEGMat",
+      "scope": "Two-subject validation run; one training epoch",
+      "source_url": "https://physionet.org/content/eegmat/1.0.0/",
+      "sampling_rate": 200,
+      "native_sampling_rate": 500,
+      "channels": 19,
+      "signal_units": "microvolts",
+      "window_samples": 800,
+      "train_windows": 60,
+      "test_windows": 60,
+      "epochs": 1,
+      "seed": 42,
+      "split": {
+        "type": "fixed_subject_holdout",
+        "train_subjects": [
+          "Subject00"
+        ],
+        "test_subjects": [
+          "Subject01"
+        ]
+      },
+      "data_files": [
+        {
+          "name": "Subject00_1.edf",
+          "sha256": "8b23c443f2f5f733f8ccc31a54377898009c28c7563d1107692a8735212d2f15",
+          "bytes": 3848636,
+          "native_sampling_rate": 500.0
+        },
+        {
+          "name": "Subject00_2.edf",
+          "sha256": "635bbf035777008ff6c23d9c7bfc497d584fc71c56217022946d1fd056527e43",
+          "bytes": 1314956,
+          "native_sampling_rate": 500.0
+        },
+        {
+          "name": "Subject01_1.edf",
+          "sha256": "9ece09029ed7d6911d96a776eb86905dd00a53c065c8eb9e0fd3c7aefd0f7ac4",
+          "bytes": 3848636,
+          "native_sampling_rate": 500.0
+        },
+        {
+          "name": "Subject01_2.edf",
+          "sha256": "cbc4a053c2c8ce0e77ff62b4608a2cc2fe584886a6cd2fa0b343cfce3212376f",
+          "bytes": 1314956,
+          "native_sampling_rate": 500.0
+        }
+      ],
+      "name": "Unconditional feature-grid generation",
+      "task": "Feature-grid generation",
+      "preprocessing": "Four-band differential entropy; within-window band normalization across electrodes; 5x5 grid"
+    }
+  },
+  "results": [
+    {
+      "id": "eegmat-eegnet-validation-cf04150",
+      "model": "EEGNet",
+      "protocol": "eegmat-two-subject-classification-1epoch",
+      "metric": {
+        "name": "accuracy",
+        "value": 0.550000011920929,
+        "unit": "fraction",
+        "direction": "higher"
+      },
+      "evidence": {
+        "kind": "validation",
+        "recorded_at": "2026-10-17T18:10:52.049204+00:00",
+        "command": "python examples/examples_eegmat_eegnet.py --root-path ./eegmat --epochs 1 --batch-size 16"
+      },
+      "implementation": {
+        "repository": "torcheeg/torcheeg",
+        "commit": "cf04150c086f13a165b895c63f779002207b3dca",
+        "example": "examples/examples_eegmat_eegnet.py",
+        "sha256": "2969f2b143b9638e3dfa7a25279d632a947ef2aff3db016d7f76e548c6e3be8e"
+      },
+      "environment": {
+        "python": "3.10.20",
+        "torch": "2.6.0+cu124",
+        "numpy": "2.2.6",
+        "scipy": "1.15.3",
+        "mne": "1.12.1",
+        "lightning": "2.6.1",
+        "torchmetrics": "1.9.0",
+        "torcheeg": "1.1.3",
+        "execution_device": "cpu",
+        "threads": 2
+      },
+      "notes": "Fixed two-subject workflow validation. No test-based model selection.",
+      "configuration": {
+        "batch_size": 16,
+        "learning_rate": 0.001,
+        "model_parameters": {
+          "num_electrodes": 19,
+          "chunk_size": 800,
+          "num_classes": 2
+        }
+      }
+    },
+    {
+      "id": "eegmat-ctnet-validation-cf04150",
+      "model": "CTNet",
+      "protocol": "eegmat-two-subject-classification-1epoch",
+      "metric": {
+        "name": "accuracy",
+        "value": 0.7166666388511658,
+        "unit": "fraction",
+        "direction": "higher"
+      },
+      "evidence": {
+        "kind": "validation",
+        "recorded_at": "2026-10-17T18:10:52.305202+00:00",
+        "command": "python examples/examples_eegmat_ctnet.py --root-path ./eegmat --epochs 1 --batch-size 16"
+      },
+      "implementation": {
+        "repository": "torcheeg/torcheeg",
+        "commit": "cf04150c086f13a165b895c63f779002207b3dca",
+        "example": "examples/examples_eegmat_ctnet.py",
+        "sha256": "82ac1a499164d2017d6ab79bc17cac198717486ac2677e565d2dbdbcd26627c2"
+      },
+      "environment": {
+        "python": "3.10.20",
+        "torch": "2.6.0+cu124",
+        "numpy": "2.2.6",
+        "scipy": "1.15.3",
+        "mne": "1.12.1",
+        "lightning": "2.6.1",
+        "torchmetrics": "1.9.0",
+        "torcheeg": "1.1.3",
+        "execution_device": "cpu",
+        "threads": 2
+      },
+      "notes": "Fixed two-subject workflow validation. No test-based model selection.",
+      "configuration": {
+        "batch_size": 16,
+        "learning_rate": 0.001,
+        "model_parameters": {
+          "num_electrodes": 19,
+          "chunk_size": 800,
+          "num_classes": 2
+        }
+      }
+    },
+    {
+      "id": "eegmat-bvae-validation-cf04150",
+      "model": "BetaVAE (BEncoder/BDecoder)",
+      "protocol": "eegmat-two-subject-vae-1epoch",
+      "metric": {
+        "name": "reconstruction_mse",
+        "value": 0.7472997903823853,
+        "unit": "normalized feature squared",
+        "direction": "lower"
+      },
+      "evidence": {
+        "kind": "validation",
+        "recorded_at": "2026-10-17T18:10:54.751175+00:00",
+        "command": "python examples/examples_eegmat_bvae.py --root-path ./eegmat --epochs 1 --batch-size 16"
+      },
+      "implementation": {
+        "repository": "torcheeg/torcheeg",
+        "commit": "cf04150c086f13a165b895c63f779002207b3dca",
+        "example": "examples/examples_eegmat_bvae.py",
+        "sha256": "cf86e186c854556b4ab5183e0cafb49e633198c204831457dde6c9561b1e8b4d"
+      },
+      "environment": {
+        "python": "3.10.20",
+        "torch": "2.6.0+cu124",
+        "numpy": "2.2.6",
+        "scipy": "1.15.3",
+        "mne": "1.12.1",
+        "lightning": "2.6.1",
+        "torchmetrics": "1.9.0",
+        "torcheeg": "1.1.3",
+        "execution_device": "cpu",
+        "threads": 2
+      },
+      "notes": "Mean of per-batch reconstruction MSE, batch size 16, including empty grid cells; feature grids, not waveforms.",
+      "configuration": {
+        "batch_size": 16,
+        "learning_rate": 0.001,
+        "beta": 0.001,
+        "encoder": {
+          "in_channels": 4,
+          "grid_size": [
+            5,
+            5
+          ],
+          "hid_channels": 32
+        },
+        "decoder": {
+          "in_channels": 32,
+          "out_channels": 4,
+          "grid_size": [
+            5,
+            5
+          ]
+        }
+      }
+    }
+  ]
+}

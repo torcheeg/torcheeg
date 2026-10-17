@@ -154,8 +154,9 @@ sphinx_gallery_conf = {
 
 html_logo = '_static/torcheeg_logo_light.svg'
 
-html_css_files = ['custom.css']
-html_js_files = [('js/theme.js', {'defer': 'defer'})]
+html_css_files = ['custom.css', 'leaderboard/leaderboard.css']
+html_js_files = [('js/theme.js', {'defer': 'defer'}),
+                 ('leaderboard/leaderboard.js', {'defer': 'defer'})]
 html_title = f'TorchEEG {version} documentation'
 html_baseurl = os.environ.get(
     'READTHEDOCS_CANONICAL_URL', 'https://torcheeg.readthedocs.io/en/latest/')

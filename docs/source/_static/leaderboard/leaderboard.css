@@ -1,0 +1,22 @@
+#torcheeg-leaderboard [data-controls] {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: end;
+  margin: 1.5rem 0;
+}
+#torcheeg-leaderboard label { display: flex; flex-direction: column; gap: .3rem; max-width: 100%; }
+#torcheeg-leaderboard select, #torcheeg-leaderboard input { padding: .4rem; max-width: 100%; }
+#torcheeg-leaderboard button { padding: .4rem .8rem; }
+.leaderboard-group { margin: 2rem 0; }
+.leaderboard-scope { font-weight: 600; }
+.leaderboard-table { overflow-x: auto; }
+.leaderboard-table table { width: 100%; }
+.leaderboard-table caption { text-align: left; padding: .5rem 0; }
+.leaderboard-table th, .leaderboard-table td { padding: .6rem; vertical-align: top; }
+.leaderboard-table details { margin-top: .5rem; }
+.leaderboard-table pre { max-height: 24rem; max-width: 36rem; overflow: auto; white-space: pre-wrap; }
+@media (max-width: 600px) {
+  #torcheeg-leaderboard [data-controls] > label { width: 100%; }
+  .leaderboard-table pre { max-width: 20rem; }
+}
