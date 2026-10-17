@@ -118,7 +118,7 @@ class KFoldCrossSubjectIndex:
             )
 
         fold_ids = self.fold_ids
-        if not fold_ids or any(
+        if fold_ids != list(range(self.n_splits)) or any(
                 not os.path.isfile(os.path.join(
                     self.split_path, f'{split}_fold_{fold_id}.csv'))
                 for fold_id in fold_ids for split in ('train', 'test')):

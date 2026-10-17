@@ -100,6 +100,15 @@ class TestKFoldCrossSubjectIndex(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'Incomplete split cache'):
             next(cv.split(dataset))
 
+    def test_missing_entire_fold_is_rejected(self):
+        cv = KFoldCrossSubjectIndex(split_path=self.split_path)
+        dataset = make_index_dataset()
+        list(cv.split(dataset))
+        for split in ('train', 'test'):
+            os.remove(os.path.join(self.split_path, f'{split}_fold_4.csv'))
+        with self.assertRaisesRegex(ValueError, 'Incomplete split cache'):
+            next(cv.split(dataset))
+
     def test_empty_existing_directory_is_initialized(self):
         os.makedirs(self.split_path)
         folds = list(KFoldCrossSubjectIndex(split_path=self.split_path).split(make_index_dataset()))
