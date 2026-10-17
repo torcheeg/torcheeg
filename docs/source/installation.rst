@@ -108,3 +108,12 @@ SciPy versions
 The development version requires SciPy 1.7.3 or later. The previous upper
 limit of 1.10.1 is removed. Select a SciPy version that supports your Python
 version. This change does not add new APIs to older TorchEEG releases.
+
+Use examples from a source archive
+----------------------------------
+
+Source archives built from this checkout include standalone Python scripts
+in ``examples/``. Unpack the source archive, install the library and the
+dependency groups required by the script, and run it from the source root.
+Check the script for dataset download requirements and cache paths first.
+The :doc:`tutorials/index` page links the documented workflows.
