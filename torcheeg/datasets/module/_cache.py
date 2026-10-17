@@ -120,7 +120,7 @@ def source_state(kwargs, excluded):
         return [str(path), files]
 
     sources = {}
-    for name in ('root_path', 'mat_path', 'file_path', 'csv_path'):
+    for name in ('root_path', 'mat_path', 'file_path', 'csv_path', 'download_path'):
         value = kwargs.get(name)
         if isinstance(value, (str, os.PathLike)):
             sources[name] = describe(value)

@@ -1,12 +1,15 @@
 import os
 import mne
+import moabb
+from copy import copy
+from numbers import Integral
+from pathlib import Path
 import logging
 import numpy as np
-import itertools
 from typing import Any, Callable, Dict, Tuple, Union
-import pandas as pd
 
 from ..module.base_dataset import BaseDataset
+from ...utils import get_random_dir_path
 
 from moabb.datasets.base import BaseDataset as _MOABBDataset
 from moabb.paradigms.base import BaseParadigm as _MOABBParadigm
@@ -53,7 +56,7 @@ class MOABBDataset(BaseDataset):
         io_path (str): The path to generated unified data IO, cached as an intermediate result. If set to None, a random path will be generated. (default: :obj:`./io/moabb`)
         io_size (int): Maximum size database may grow to; used to size the memory mapping. If database grows larger than ``map_size``, an exception will be raised and the user must close and reopen. (default: :obj:`1048576`)
         io_mode (str): Storage mode of EEG signal. When io_mode is set to :obj:`lmdb`, TorchEEG provides an efficient database (LMDB) for storing EEG signals. LMDB may not perform well on limited operating systems, where a file system based EEG signal storage is also provided. When io_mode is set to :obj:`pickle`, pickle-based persistence files are used. When io_mode is set to :obj:`memory`, memory are used. (default: :obj:`lmdb`)
-        download_path (str): The path to download raw data. If set to :obj:`None`, the raw data will be downloaded to :obj:`f'{self.io_path}/raw'`. If the path already exists, the download will be skipped. (default: :obj:`None`)
+        download_path (str): The path for MOABB raw downloads. It must be outside the processed cache. If None, MOABB uses its configured data location. An explicit path is registered through MOABB's download API; existing source files are reused rather than removed. (default: :obj:`None`)
         num_worker (int): Number of subprocesses to use for data loading. 0 means that the data will be loaded in the main process. (default: :obj:`0`)
     '''
     def __init__(self,
@@ -75,7 +78,21 @@ class MOABBDataset(BaseDataset):
                  num_worker: int = 0,
                  verbose: bool = True,
                                   **kwargs):
-        # pass all arguments to super class
+        if (not isinstance(chunk_size, Integral) or isinstance(chunk_size, bool)
+                or chunk_size == 0 or chunk_size < -1):
+            raise ValueError('chunk_size must be a positive integer or -1.')
+        if (not isinstance(overlap, Integral) or isinstance(overlap, bool)
+                or overlap < 0 or (chunk_size > 0 and overlap >= chunk_size)
+                or (chunk_size == -1 and overlap != 0)):
+            raise ValueError('overlap must be nonnegative and smaller than chunk_size; use 0 for full epochs.')
+        if io_path is None:
+            io_path = get_random_dir_path(dir_prefix='datasets')
+        if download_path is not None:
+            cache_path = Path(io_path).resolve()
+            raw_path = Path(download_path).resolve()
+            if raw_path == cache_path or cache_path in raw_path.parents:
+                raise ValueError('download_path must be separate from io_path.')
+        # Keep downloads outside the cache generation and preserve existing files.
         params = {
             'dataset': dataset,
             'paradigm': paradigm,
@@ -96,111 +113,102 @@ class MOABBDataset(BaseDataset):
             'verbose': verbose
         }
         params.update(kwargs)
+        params['_backend_versions'] = {'moabb': moabb.__version__, 'mne': mne.__version__}
 
         if not paradigm.is_valid(dataset):
             message = f"Dataset {dataset.code} is not valid for paradigm"
             raise AssertionError(message)
         
+        if download_path is not None and not os.path.exists(io_path):
+            dataset.download(subject_list=list(dataset.subject_list),
+                             path=download_path, update_path=True, verbose=False)
         super().__init__(**params)
+        if 'run_id' not in self.info:
+            # Legacy caches used trial_id for the run identifier.
+            self.info['run_id'] = self.info['trial_id']
+        for column in ('session_id', 'run_id'):
+            self.info[column] = self.info[column].map(str)
         # save all arguments to __dict__
         self.__dict__.update(params)
 
     @staticmethod
-    def process_record(file: Any = None,
-                       chunk_size: int = -1,
-                       overlap: int = 0,
+    def read_record(record: Any, dataset: _MOABBDataset,
+                    paradigm: _MOABBParadigm,
+                    before_trial: Union[None, Callable] = None,
+                    **kwargs) -> Dict:
+        source = dataset
+        if before_trial is not None:
+            # Preserve the source object and use MOABB's raw-dataset extension point.
+            source = copy(dataset)
+
+            def read_subject(subject):
+                sessions = dataset.get_data(subjects=[subject])[subject]
+                result = {}
+                for session, runs in sessions.items():
+                    result[session] = {}
+                    for run, raw in runs.items():
+                        transformed = before_trial(raw.copy())
+                        if not isinstance(transformed, mne.io.BaseRaw):
+                            raise TypeError('before_trial must return an MNE Raw object.')
+                        result[session][run] = transformed
+                return result
+
+            source._get_single_subject_data = read_subject
+        samples, labels, metadata = paradigm.get_data(
+            source, subjects=[record], return_epochs=False)
+        if not isinstance(samples, np.ndarray) or samples.ndim not in (3, 4):
+            raise ValueError('MOABB must return epochs shaped (epochs, channels, samples[, filters]).')
+        if len(samples) != len(labels) or len(samples) != len(metadata):
+            raise ValueError('MOABB epochs, labels and metadata must have matching lengths.')
+        if not {'subject', 'session', 'run'}.issubset(metadata.columns):
+            raise ValueError('MOABB metadata must contain subject, session and run.')
+        if metadata[['subject', 'session', 'run']].isna().any().any():
+            raise ValueError('MOABB subject, session and run must not be missing.')
+        if any(str(subject) != str(record) for subject in metadata['subject']):
+            raise ValueError('MOABB returned metadata from an unexpected subject.')
+        return {'samples': samples, 'labels': labels,
+                'metadata': metadata.reset_index(drop=True)}
+
+    @staticmethod
+    def process_record(record: Any, samples: np.ndarray,
+                       labels: np.ndarray, metadata: Any,
+                       chunk_size: int = -1, overlap: int = 0,
                        offline_transform: Union[None, Callable] = None,
-                       dataset: _MOABBDataset = None,
-                       paradigm: _MOABBParadigm = None,
-                       before_trial: Union[None, Callable] = None,
-                       after_trial: Union[None, Callable] = None,
                        **kwargs):
+        for roi_id, (signal, label) in enumerate(zip(samples, labels)):
+            row = metadata.iloc[roi_id]
+            size = signal.shape[1] if chunk_size == -1 else chunk_size
+            step = size - overlap
+            if size <= 0 or step <= 0:
+                raise ValueError('An epoch must contain samples and a positive window step.')
+            for start_at in range(0, signal.shape[1] - size + 1, step):
+                end_at = start_at + size
+                eeg = signal[:, start_at:end_at, ...]
+                if offline_transform is not None:
+                    eeg = offline_transform(eeg=eeg)['eeg']
+                clip_id = f'{record}_{roi_id}_{start_at}'
+                info = {
+                    'subject_id': record,
+                    'session_id': str(row['session']),
+                    'run_id': str(row['run']),
+                    'trial_id': f'{record}_{roi_id}',
+                    'roi_id': roi_id,
+                    'clip_id': clip_id,
+                    'label': label,
+                    'start_at': start_at,
+                    'end_at': end_at,
+                    'metadata': row.to_dict()
+                }
+                yield {'eeg': eeg, 'key': clip_id, 'info': info}
 
-        subject_id, session_id = file
+    def set_records(self, dataset: _MOABBDataset, **kwargs):
+        # Public paradigm.get_data supplies each subject's actual sessions and runs.
+        subjects = list(dataset.subject_list)
+        if not subjects or len(set(subjects)) != len(subjects):
+            raise ValueError('Select a nonempty list of distinct MOABB subjects.')
+        return subjects
 
-        write_pointer = 0
-        session_signal = dataset.get_data(
-            subjects=[subject_id])[subject_id][session_id]
-
-        for run_id, run_signal in session_signal.items():
-            if before_trial is not None:
-                run_signal = before_trial(run_signal)
-
-            proc = paradigm.process_raw(run_signal,
-                                        dataset,
-                                        return_epochs=False)
-            if proc is None:
-                # this mean the run did not contain any selected event
-                # go to next
-                continue
-
-            trial_queue = []
-            roi_signals, labels, metadatas = proc
-            for roi_id, (roi_signal, label, metadata) in enumerate(
-                    zip(roi_signals, labels, metadatas.iterrows())):
-
-                start_at = 0
-                if chunk_size <= 0:
-                    chunk_size = roi_signal.shape[1] - start_at
-                end_at = start_at + chunk_size
-
-                step = chunk_size - overlap
-
-                while end_at <= roi_signal.shape[1]:
-                    clip_sample = roi_signal[:, start_at:end_at]
-
-                    t_eeg = clip_sample
-                    if not offline_transform is None:
-                        t = offline_transform(eeg=t_eeg)
-                        t_eeg = t['eeg']
-
-                    clip_id = f'{subject_id}_{session_id}_{write_pointer}'
-                    write_pointer += 1
-
-                    record_info = {
-                        'subject_id': subject_id,
-                        'session_id': session_id,
-                        'trial_id': run_id,
-                        'roi_id': roi_id,
-                        'clip_id': clip_id,
-                        'label': label,
-                        'start_at': start_at,
-                        'end_at': end_at,
-                        'metadata': metadata[1].to_dict()
-                    }
-                    write_pointer += 1
-                    start_at = start_at + step
-                    end_at = start_at + chunk_size
-
-                    yield {
-                            'eeg': t_eeg,
-                            'key': clip_id,
-                            'info': record_info
-                        }
-
-    def set_records(self,
-                    dataset: _MOABBDataset,
-                    io_path: str = '.torcheeg/io/moabb',
-                    download_path: str = None,
-                    **kwargs):
-        subject_id_list = dataset.subject_list
-        if download_path is None:
-            download_path = os.path.join(io_path, 'raw')
-        if not os.path.exists(download_path):
-            dataset.download(subject_list=subject_id_list,
-                             path=download_path,
-                             verbose=False)
-
-        subject_id = subject_id_list[0]
-        session_id_list = list(
-            dataset.get_data(subjects=[subject_id])[subject_id].keys())
-
-        # prod of subject_list and session_id_list
-        subject_id_session_id_list = list(
-            itertools.product(subject_id_list, session_id_list))
-        return subject_id_session_id_list
-
-    def __getitem__(self, index: int) -> Tuple[any, any, int, int, int]:
+    def __getitem__(self, index: int) -> Tuple[Any, Any]:
         info = self.read_info(index)
 
         eeg_index = str(info['clip_id'])
