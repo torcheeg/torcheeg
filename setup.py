@@ -44,11 +44,13 @@ setup(
     description=
     'TorchEEG is a library built on PyTorch for EEG signal analysis. TorchEEG aims to provide a plug-and-play EEG analysis tool, so that researchers can quickly reproduce EEG analysis work and start new EEG analysis research without paying attention to technical details unrelated to the research focus.',
     license='MIT',
+    license_files=['LICENSE', 'LICENSES/*'],
     author='TorchEEG Team',
     author_email='tczhangzhi@gmail.com',
     keywords=['PyTorch', 'EEG'],
     url=URL,
     packages=find_packages(),
+    package_data={"test.models": ["fixtures/ctnet_reference.json"]},
     long_description=readme,
     python_requires='>=3.7',
     extras_require={
