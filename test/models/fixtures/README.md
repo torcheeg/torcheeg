@@ -34,3 +34,27 @@ the first eight entries, sum, and L2 norm of the input gradient and every
 parameter gradient. Functional tests compare those independent values and
 also check optimization, zero windows, state restoration, constraint bounds,
 parameter ownership, accumulated backward, and frozen inference behavior.
+
+## DeepConvNet references
+
+`deep_convnet_reference.json` uses the same verified Braindecode 0.8.1 wheel
+and records the `Deep4Net` source hash. Three classic configurations use
+batch normalization, ELU, max pooling, a shared temporal kernel and automatic
+final convolution size. `deep_convnet_arena_reference.json` records three
+independent pinned EEG-Arena cases, including a 128-sample input that adapts
+the shared kernel from ten to two samples. The numeric state/input algorithms
+and gradient summaries follow the ShallowConvNet specification above, with
+normalization settings applied to all four blocks.
+
+The source Deep4Net version has a constructor bug in its optional no-BatchNorm
+branch. That branch is not patched or represented as independently verified
+here; TorchEEG tests its own no-BatchNorm shape, optimization and gradient
+behavior separately. DeepConvNet starts in training mode for consistency
+with other TorchEEG modules; numerical reference comparisons use explicit
+evaluation mode. Both source implementations are used only as numerical
+oracles, without importing them during the shipped tests.
+
+DeepConvNet reference generators use two CPU threads. Reference comparisons
+set the same thread count and restore the previous count after each case
+group. Parallel reductions can change gradient sums for the deliberately
+oversized constrained state; production modules do not change thread settings.
