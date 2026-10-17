@@ -1,10 +1,14 @@
+import ast
+import inspect
 import os
 import tempfile
+import textwrap
 import unittest
 
 import numpy as np
 import pandas as pd
 
+from torcheeg import transforms
 from torcheeg.datasets import BaseDataset
 from torcheeg.io import EEGSignalIO
 from torcheeg.model_selection import KFoldCrossTrial
@@ -26,6 +30,38 @@ class TestEmotionRecognitionDataset(unittest.TestCase):
         item = next(FACEDDataset.process_record(**kwargs))
 
         self.assertEqual(item['eeg'].shape, (30, 250))
+
+    def test_faced_documented_emotion_labels(self):
+        # Exercise each documented label transform against all nine classes.
+        docstring = inspect.getdoc(FACEDDataset)
+        examples = []
+        lines = docstring.splitlines()
+        for index, line in enumerate(lines):
+            if line.strip() != '.. code-block:: python':
+                continue
+            block = []
+            for code_line in lines[index + 1:]:
+                if code_line and not code_line.startswith('    '):
+                    break
+                block.append(code_line)
+            examples.append(ast.parse(textwrap.dedent('\n'.join(block))))
+
+        label_transforms = []
+        for example in examples:
+            for node in ast.walk(example):
+                if not isinstance(node, ast.keyword) or node.arg != 'label_transform':
+                    continue
+                expression = ast.Expression(body=node.value)
+                label_transforms.append(eval(
+                    compile(expression, '<FACEDDataset example>', 'eval'),
+                    {'transforms': transforms}))
+
+        self.assertEqual(len(label_transforms), 3)
+        for label_transform in label_transforms:
+            for emotion in range(9):
+                with self.subTest(emotion=emotion, transform=label_transform):
+                    self.assertEqual(label_transform(y={'emotion': emotion})['y'],
+                                     emotion)
 
     def test_seed_dataset(self):
         kwargs = {
