@@ -1,9 +1,49 @@
 import pickle
 import os
+import threading
+import weakref
 from typing import Union
 
 import torch
 import lmdb
+
+
+# Weak values let the last owner release the native environment.
+_LMDB_ENV_CACHE = weakref.WeakValueDictionary()
+_LMDB_ENV_LOCK = threading.Lock()
+_LMDB_ENV_PID = os.getpid()
+
+
+def _reset_lmdb_after_fork() -> None:
+    global _LMDB_ENV_CACHE, _LMDB_ENV_LOCK, _LMDB_ENV_PID
+    inherited = list(_LMDB_ENV_CACHE.values())
+    _LMDB_ENV_CACHE = weakref.WeakValueDictionary()
+    # An inherited lock may have been held by a thread absent in the child.
+    _LMDB_ENV_LOCK = threading.Lock()
+    _LMDB_ENV_PID = os.getpid()
+    for environment in inherited:
+        environment.close()
+
+
+if hasattr(os, 'register_at_fork'):
+    os.register_at_fork(after_in_child=_reset_lmdb_after_fork)
+
+
+def _get_lmdb_environment(path: str, io_size: int) -> lmdb.Environment:
+    if _LMDB_ENV_PID != os.getpid():
+        _reset_lmdb_after_fork()
+    with _LMDB_ENV_LOCK:
+        environment = _LMDB_ENV_CACHE.get(path)
+        if environment is not None:
+            try:
+                environment.info()
+            except lmdb.Error:
+                environment = None
+        if environment is None:
+            environment = lmdb.open(path=path, map_size=io_size, lock=False,
+                                    max_spare_txns=0)
+            _LMDB_ENV_CACHE[path] = environment
+        return environment
 
 
 class _EEGSignalIO:
@@ -108,13 +148,16 @@ class LMDBEEGSignalIO(_EEGSignalIO):
         self.io_size = io_size
 
         os.makedirs(self.io_path, exist_ok=True)
-        self._env = lmdb.open(path=self.io_path,
-                              map_size=self.io_size,
-                              lock=False)
+        self._env_path = os.path.realpath(self.io_path)
+        self._environment = _get_lmdb_environment(self._env_path, self.io_size)
+        self._env_pid = os.getpid()
 
-    def __del__(self):
-        if hasattr(self, '_env'):
-            self._env.close()
+    @property
+    def _env(self) -> lmdb.Environment:
+        if self._environment is None or self._env_pid != os.getpid():
+            self._environment = _get_lmdb_environment(self._env_path, self.io_size)
+            self._env_pid = os.getpid()
+        return self._environment
 
     def __len__(self):
         with self._env.begin(write=False) as transaction:
@@ -160,7 +203,7 @@ class LMDBEEGSignalIO(_EEGSignalIO):
                     key = str(self._next_write_pointer(transaction))
                 transaction.put(key.encode(), pickle.dumps(eeg))
         except lmdb.MapFullError:
-            self.io_size = self.io_size * 2
+            self.io_size = max(self.io_size, self._env.info()['map_size']) * 2
             self._env.set_mapsize(self.io_size)
             try_again = True
         if try_again:
@@ -210,17 +253,17 @@ class LMDBEEGSignalIO(_EEGSignalIO):
         return [self.read_eeg(key) for key in self.keys()]
 
     def __getstate__(self):
-        # pickle for Pallarel
+        # Each process must acquire its own environment.
         state = self.__dict__.copy()
-        del state['_env']
+        state.pop('_environment', None)
+        state.pop('_env_pid', None)
         return state
 
     def __setstate__(self, state):
-        # pickle for Pallarel
         self.__dict__.update(state)
-        self._env = lmdb.open(path=self.io_path,
-                              map_size=self.io_size,
-                              lock=False)
+        self._env_path = state.get('_env_path', os.path.realpath(self.io_path))
+        self._environment = _get_lmdb_environment(self._env_path, self.io_size)
+        self._env_pid = os.getpid()
 
     def __copy__(self):
         # LMDB does not allow reopening the same environment in one process.
@@ -327,6 +370,14 @@ class EEGSignalIO:
     be deleted without closing the backend while the other still uses it.
     Copying does not create an independent database. Convert a copy to memory
     or use a separate path when independent storage is required.
+
+    Independent LMDB wrappers for the same canonical path share one environment
+    per process. The environment stays alive while a wrapper or another caller
+    holds it; the cache does not retain it after the last reference is released.
+    Spawned workers acquire their own environment, and forked workers reopen
+    inherited environments before use. Finish preprocessing writes before
+    starting reader workers. LMDB still uses :obj:`lock=False`; callers must
+    coordinate writes, map resizing and readers as required by py-lmdb.
 
     Omitting :obj:`key` generates an unused integer-string key and preserves
     existing samples. Supplying an explicit key replaces the sample stored
