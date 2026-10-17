@@ -8,6 +8,8 @@ import torch
 from torch import nn
 from torch.nn import functional as F
 
+from ._utils import _positive_int, _probability
+
 
 _CHANNEL_NAMES = (
     'FP1', 'FPZ', 'FP2', 'AF7', 'AF3', 'AF4', 'AF8',
@@ -19,16 +21,6 @@ _CHANNEL_NAMES = (
     'PO7', 'PO5', 'PO3', 'POZ', 'PO4', 'PO6', 'PO8', 'O1', 'OZ', 'O2',
 )
 _CHANNEL_IDS = {name: index for index, name in enumerate(_CHANNEL_NAMES)}
-
-
-def _positive_int(name, value):
-    if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
-        raise ValueError(f'{name} must be a positive integer.')
-
-
-def _probability(name, value):
-    if isinstance(value, bool) or not isinstance(value, (int, float)) or not 0 <= value < 1:
-        raise ValueError(f'{name} must be in [0, 1).')
 
 
 def _indices(value, name, ndim, upper, device):

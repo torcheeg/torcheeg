@@ -55,3 +55,4 @@ the same library workflow as a reusable assistant skill.
    eegpt_decoders
    eegpt_finetuning
    pytorch
+   cbramod
