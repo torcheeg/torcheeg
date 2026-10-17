@@ -85,6 +85,7 @@ Transformer
    EEGPTResample
    EEGPTInputAdapter
    EEGPTAdaptedModel
+   CBraMod
 
 
 EEGPT parameter-efficient tuning

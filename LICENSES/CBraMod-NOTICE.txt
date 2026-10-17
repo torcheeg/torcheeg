@@ -1,0 +1,18 @@
+CBraMod architecture adaptation
+
+Upstream: https://github.com/wjq-learning/CBraMod
+Revision: b9e961003214326972c567eff390e75b0287e32a
+Sources: models/cbramod.py and models/criss_cross_transformer.py
+Copyright (c) 2025 Jiquan Wang
+License: MIT, retained in LICENSES/CBraMod.txt
+
+TorchEEG retains native component tensor names, convolution/group-normalization
+shapes and criss-cross attention semantics. Constructor names follow TorchEEG.
+Geometry and masks are validated; reconstruction and feature extraction are
+explicit interfaces. Attention uses native scaled-dot-product operations with
+packed MultiheadAttention state names. Complex magnitude retains the official
+finite zero-input gradient. Low-precision FFT is computed in float32.
+
+No pretrained weights are included. The author's linked weight repository is
+https://huggingface.co/weighting666/CBraMod; its model card declares Apache-2.0.
+Code and weight provenance are recorded separately.
