@@ -20,6 +20,12 @@ class DEAPDataset(BaseDataset):
     - Signals: Electroencephalogram (32 channels at 512Hz, downsampled to 128Hz), skinconductance level (SCL), respiration amplitude, skin temperature,electrocardiogram, blood volume by plethysmograph, electromyograms ofZygomaticus and Trapezius muscles (EMGs), electrooculogram (EOG), face video (for 22 participants).
     - Rating: Arousal, valence, like/dislike, dominance (all ona scale from 1 to 9), familiarity (on a scale from 1 to 5).
 
+    Hidden files (including macOS .DS_Store and AppleDouble sidecars),
+    unrelated extensions and directories are ignored during record discovery.
+    Only visible .dat files are read, in deterministic filename order. If an
+    older preprocessing attempt failed on a sidecar, use a new :obj:`io_path`
+    to avoid reusing an incomplete cache.
+
     In order to use this dataset, the download folder :obj:`data_preprocessed_python` is required, containing the following files:
 
     .. code-block:: text
@@ -281,7 +287,13 @@ class DEAPDataset(BaseDataset):
         assert os.path.exists(
             root_path
         ), f'root_path ({root_path}) does not exist. Please download the dataset and set the root_path to the downloaded path.'
-        return os.listdir(root_path)
+        records = sorted(filename for filename in os.listdir(root_path)
+                         if not filename.startswith('.')
+                         and filename.lower().endswith('.dat')
+                         and os.path.isfile(os.path.join(root_path, filename)))
+        if not records:
+            raise ValueError(f'No DEAP .dat files were found in {root_path}.')
+        return records
 
     def __getitem__(self, index: int) -> Tuple:
         info = self.read_info(index)
