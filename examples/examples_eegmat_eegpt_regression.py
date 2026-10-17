@@ -52,7 +52,7 @@ from torcheeg.trainers import RegressorTrainer
 def read_scores(path):
     table = pd.read_csv(path)
     required = ['Subject', 'Number of subtractions']
-    if any(name not in table.columns for name in required):
+    if table.empty or any(name not in table.columns for name in required):
         raise ValueError('Metadata must contain Subject and Number of subtractions columns.')
     subjects = table['Subject'].astype(str).str.strip().str.lower()
     values = pd.to_numeric(table['Number of subtractions'], errors='raise')

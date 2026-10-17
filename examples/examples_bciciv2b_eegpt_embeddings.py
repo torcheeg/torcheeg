@@ -18,6 +18,7 @@ weight download or unsafe deserialization is performed.
 
 EEGPTEmbedding keeps the encoder frozen and in evaluation mode. Save
 flattened features with one metadata row per window in the same order.
+Retain the encoder tensor state and constructor settings to reproduce them.
 No labels, population statistics, classifier or test-set tuning are used.
 Downstream evaluation must create its own subject-separated training split
 before fitting a feature scaler or a task head.
@@ -93,7 +94,12 @@ def main():
     output = Path(args.output_path)
     output.parent.mkdir(parents=True, exist_ok=True)
     metadata = json.loads(dataset.info.to_json(orient='records'))
+    encoder_config = dict(parameters, hid_channels=encoder.hid_channels, depth=encoder.depth,
+        num_heads=encoder.num_heads, embed_num=encoder.embed_num, patch_size=encoder.patch_size,
+        patch_stride=encoder.patch_stride, norm_eps=encoder.norm.eps)
     torch.save({'embeddings': features, 'metadata': metadata,
+                'encoder_state': encoder.cpu().state_dict(), 'encoder_config': encoder_config,
+                'seed': 42, 'torch_version': str(torch.__version__),
                 'checkpoint_loaded': bool(args.checkpoint), 'channels': ['C3', 'CZ', 'C4'],
                 'sampling_rate': 256, 'chunk_size': 1024}, output)
     print({'windows': len(dataset), 'feature_shape': list(features.shape),
