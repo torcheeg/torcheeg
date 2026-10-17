@@ -1,7 +1,19 @@
+from numbers import Integral
 from typing import Tuple
 
 import torch
 import torch.nn as nn
+
+
+def _validate_grid_size(grid_size):
+    try:
+        valid = len(grid_size) == 2 and all(
+            isinstance(size, Integral) and not isinstance(size, bool) and size > 0
+            for size in grid_size)
+    except TypeError:
+        valid = False
+    if not valid:
+        raise ValueError('grid_size must contain two positive integers.')
 
 
 class BEncoder(nn.Module):
@@ -21,13 +33,14 @@ class BEncoder(nn.Module):
     Args:
         in_channels (int): The feature dimension of each electrode. (default: :obj:`4`)
         grid_size (tuple): Spatial dimensions of grid-like EEG representation. (default: :obj:`(9, 9)`)
-        hid_channels (int): The number of hidden nodes in the first convolutional layer, which is also used as the dimension of output mu and var. (default: :obj:`32`)
+        hid_channels (int): The number of hidden nodes in the first convolutional layer, which is also used as the dimension of output mu and log-variance. (default: :obj:`64`)
     '''
     def __init__(self,
                  in_channels: int = 4,
                  grid_size: Tuple[int, int] = (9, 9),
                  hid_channels: int = 64):
         super(BEncoder, self).__init__()
+        _validate_grid_size(grid_size)
 
         self.in_channels = in_channels
         self.grid_size = grid_size
@@ -71,15 +84,9 @@ class BEncoder(nn.Module):
 
     @property
     def feature_dim(self):
-        with torch.no_grad():
-            mock_eeg = torch.zeros(1, self.in_channels, *self.grid_size)
-
-            mock_eeg = self.conv1(mock_eeg)
-            mock_eeg = self.conv2(mock_eeg)
-            mock_eeg = self.conv3(mock_eeg)
-            mock_eeg = self.conv4(mock_eeg)
-
-        return mock_eeg.flatten(start_dim=1).shape[-1]
+        # Each stride-two convolution rounds the spatial dimension upward.
+        height, width = ((size + 3) // 4 for size in self.grid_size)
+        return self.hid_channels * 4 * height * width
 
     def forward(self, x: torch.Tensor):
         r'''
@@ -87,7 +94,7 @@ class BEncoder(nn.Module):
             x (torch.Tensor): EEG signal representation, the ideal input shape is :obj:`[n, 4, 9, 9]`. Here, :obj:`n` corresponds to the batch size, :obj:`4` corresponds to :obj:`in_channels`, and :obj:`(9, 9)` corresponds to :obj:`grid_size`.
 
         Returns:
-            tuple[2,]: The mean and standard deviation vectors obtained by encoder. The shapes of the feature vectors are all :obj:`[n, 64]`. Here, :obj:`n` corresponds to the batch size, and :obj:`64` corresponds to :obj:`hid_channels`.
+            tuple[2,]: The mean and log-variance vectors obtained by encoder. Both have shape :obj:`[n, hid_channels]`.
         '''
         x = self.conv1(x)
         x = self.conv2(x)
@@ -114,6 +121,13 @@ class BDecoder(nn.Module):
         z = eps * std + mu
         fake_X = decoder(z)
 
+    The output spatial shape equals :obj:`grid_size`, including odd and even
+    rectangular grids. Set the same grid size on the encoder and decoder.
+    Existing default :obj:`(9, 9)` checkpoint parameter shapes are unchanged.
+    Older decoders ignored :obj:`grid_size` and always returned a 9 by 9 grid.
+    Load those decoder checkpoints with :obj:`grid_size=(9, 9)` to preserve
+    their original architecture and output.
+
     Args:
         in_channels (int): The input feature dimension (of noise vectors). (default: :obj:`64`)
         out_channels (int): The generated feature dimension of each electrode. (default: :obj:`4`)
@@ -124,13 +138,18 @@ class BDecoder(nn.Module):
                  out_channels: int = 4,
                  grid_size: Tuple[int, int] = (9, 9)):
         super(BDecoder, self).__init__()
+        _validate_grid_size(grid_size)
 
         self.in_channels = in_channels
         self.out_channels = out_channels
         self.grid_size = grid_size
 
+        height, width = grid_size
+        self._projection_size = ((height + 3) // 4, (width + 3) // 4)
+        intermediate_size = ((height + 1) // 2, (width + 1) // 2)
+
         self.deproj = nn.Sequential(
-            nn.Linear(in_channels, in_channels * 4 * 3 * 3), nn.LeakyReLU())
+            nn.Linear(in_channels, in_channels * 4 * self._projection_size[0] * self._projection_size[1]), nn.LeakyReLU())
 
         self.deconv1 = nn.Sequential(
             nn.ConvTranspose2d(in_channels * 4,
@@ -138,6 +157,7 @@ class BDecoder(nn.Module):
                                kernel_size=3,
                                stride=2,
                                padding=1,
+                               output_padding=tuple((size - 1) % 2 for size in intermediate_size),
                                bias=True), nn.BatchNorm2d(in_channels * 2),
             nn.LeakyReLU())
         self.deconv2 = nn.Sequential(
@@ -154,6 +174,7 @@ class BDecoder(nn.Module):
                                kernel_size=3,
                                stride=2,
                                padding=1,
+                               output_padding=tuple((size - 1) % 2 for size in grid_size),
                                bias=True), nn.BatchNorm2d(in_channels),
             nn.LeakyReLU())
         self.deconv4 = nn.ConvTranspose2d(in_channels,
@@ -166,13 +187,13 @@ class BDecoder(nn.Module):
     def forward(self, x: torch.Tensor):
         r'''
         Args:
-            x (torch.Tensor): Given the mean and standard deviation vectors, the feature vector :obj:`z` obtained using the reparameterization technique. The shapes of the feature vector should be :obj:`[n, 64]`. Here, :obj:`n` corresponds to the batch size, and :obj:`64` corresponds to :obj:`in_channels`.
+            x (torch.Tensor): The latent vector obtained from the mean and log-variance using reparameterization. Its shape is :obj:`[n, in_channels]`.
 
         Returns:
-            torch.Tensor[n, 4, 9, 9]: the decoded results, which should have the same shape as the input noise, i.e., :obj:`[n, 4, 9, 9]`. Here, :obj:`n` corresponds to the batch size, :obj:`4` corresponds to :obj:`in_channels`, and :obj:`(9, 9)` corresponds to :obj:`grid_size`.
+            torch.Tensor: The reconstruction with shape :obj:`[n, out_channels, grid_size[0], grid_size[1]]`.
         '''
         x = self.deproj(x)
-        x = x.view(-1, self.in_channels * 4, 3, 3)
+        x = x.view(-1, self.in_channels * 4, *self._projection_size)
         x = self.deconv1(x)
         x = self.deconv2(x)
         x = self.deconv3(x)
