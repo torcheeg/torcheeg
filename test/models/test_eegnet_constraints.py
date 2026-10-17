@@ -82,7 +82,8 @@ class TestEEGNetConstraints(unittest.TestCase):
     @unittest.skipUnless(hasattr(torch, 'export') and hasattr(torch.export, 'export'),
                          'torch.export is unavailable in this runtime.')
     def test_strict_inference_export_save_and_load(self):
-        model = self.model().eval()
+        training_model = self.model()
+        model = copy.deepcopy(training_model).eval().requires_grad_(False)
         x = torch.randn(2, 1, 4, 128)
         # Inference export uses no-grad, including on older exporters.
         with torch.no_grad():
@@ -96,6 +97,7 @@ class TestEEGNetConstraints(unittest.TestCase):
                 torch.testing.assert_close(restored.module()(x), expected)
             # Export must not replace live model weights with tracing tensors.
             torch.testing.assert_close(model(x), expected)
+        self.assertTrue(all(parameter.requires_grad for parameter in training_model.parameters()))
 
     def test_state_dict_and_optimizer_parameter_identity(self):
         model = self.model()

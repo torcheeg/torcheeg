@@ -56,16 +56,19 @@ class EEGNet(nn.Module):
         model(x)
 
     Maximum-norm constraints keep parameter storage and checkpoint names
-    unchanged. For inference export, set the model to evaluation mode and
-    perform :obj:`torch.export.export` within :obj:`torch.no_grad`. Validate
+    unchanged. For inference export, freeze parameter gradients on an
+    evaluation-mode copy of the model, then perform :obj:`torch.export.export` within :obj:`torch.no_grad`. Validate
     the exported program on the target PyTorch version before deployment.
 
     .. code-block:: python
 
-        model = EEGNet(num_electrodes=32, chunk_size=128).eval()
+        from copy import deepcopy
+
+        model = EEGNet(num_electrodes=32, chunk_size=128)
+        export_model = deepcopy(model).eval().requires_grad_(False)
         example = torch.randn(2, 1, 32, 128)
         with torch.no_grad():
-            program = torch.export.export(model, (example,), strict=True)
+            program = torch.export.export(export_model, (example,), strict=True)
         torch.export.save(program, 'eegnet.pt2')
 
     Args:
