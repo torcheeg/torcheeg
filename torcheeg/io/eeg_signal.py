@@ -6,25 +6,8 @@ import torch
 import lmdb
 
 
-class _EEGSignalIO:
-
-    @property
-    def write_pointer(self):
-        return len(self)
-
-    def keys(self):
-        raise NotImplementedError
-
-    def eegs(self):
-        raise NotImplementedError
-
-    def read_eeg(self, key: str) -> any:
-        raise NotImplementedError
-
-    def write_eeg(self,
-                  eeg: Union[any, torch.Tensor],
-                  key: Union[str, None] = None) -> str:
-        raise NotImplementedError
+from .base import _EEGSignalIO
+from .memmap_eeg_signal import MemmapEEGSignalIO
 
 
 class MemoryEEGSignalIO(_EEGSignalIO):
@@ -288,6 +271,11 @@ class EEGSignalIO:
         eeg.shape
         >>> (32, 128)
     
+    Set :obj:`io_mode='memmap'` for per-sample NumPy files loaded as
+    read-only memory maps. Arrays may have different shapes and dtypes.
+    Object arrays are unsupported. See :class:`MemmapEEGSignalIO` for key
+    encoding, map lifetime and writer-concurrency behavior.
+
     Shallow copies made with :obj:`copy.copy` share the LMDB backend in the
     same process. Writes are visible through both copies. Either wrapper can
     be deleted without closing the backend while the other still uses it.
@@ -311,13 +299,15 @@ class EEGSignalIO:
         if self.io_mode == 'lmdb':
             self._io = LMDBEEGSignalIO(io_path=self.io_path,
                                        io_size=self.io_size)
+        elif self.io_mode == 'memmap':
+            self._io = MemmapEEGSignalIO(io_path=self.io_path)
         elif self.io_mode == 'pickle':
             self._io = PickleEEGSignalIO(io_path=self.io_path)
         elif self.io_mode == 'memory':
             self._io = MemoryEEGSignalIO()
         else:
             raise RuntimeError(
-                f'Unsupported io_mode {self.io_mode}, please choose from lmdb, pickle and memory.'
+                f'Unsupported io_mode {self.io_mode}, please choose from lmdb, pickle, memory and memmap.'
             )
 
     def __del__(self):
@@ -411,6 +401,22 @@ class EEGSignalIO:
             _io.write_eeg(self.read_eeg(key=key), key=key)
 
         self._io = _io
+
+    def to_memmap(self, io_path: str):
+        r'''
+        Copy signals to NumPy files and use read-only memory maps for reading.
+        Use a fresh target directory when retrying a failed conversion. The
+        wrapper changes backend only after all samples have been written.
+        Python-object arrays cannot be converted to this backend.
+        '''
+        target = MemmapEEGSignalIO(io_path)
+        if isinstance(self._io, MemmapEEGSignalIO) and target.io_path == self._io.io_path:
+            return
+        for key in self.keys():
+            target.write_eeg(self.read_eeg(key), key=key)
+        self._io = target
+        self.io_path = io_path
+        self.io_mode = 'memmap'
 
     def to_memory(self):
         r'''
