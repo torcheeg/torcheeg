@@ -14,6 +14,7 @@ and model parameters before running it.
    Partition <../auto_examples/examples_model_selection>
    Model <../auto_examples/examples_models>
    Trainer <../auto_examples/examples_trainers>
+   EEGPT input adapters <eegpt_input>
    All examples <../auto_examples/index>
 
 For a workflow built directly with PyTorch, see
