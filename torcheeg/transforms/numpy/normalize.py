@@ -23,9 +23,18 @@ class MeanStdNormalize(EEGTransform):
         t(eeg=np.random.randn(32, 128))['eeg'].shape
         >>> (32, 128)
 
+    Zero standard deviations use a divisor of one. Statistics supplied by the
+    caller are not modified. For a constant sample whose statistics are computed
+    by this transform, the output is zero.
+
+    To reuse training statistics on held-out samples, compute one mean and
+    standard deviation per channel from the training set and pass
+    :obj:`axis=0` for an input with shape ``[electrodes, time]``. Do not fit
+    these statistics on validation or test data.
+
     Args:
         mean (np.array, optional): The mean used in the normalization process, allowing the user to provide mean statistics in :obj:`np.ndarray` format. When statistics are not provided, use the statistics of the current sample for normalization.
-        std (np.array, optional): The standard deviation used in the normalization process, allowing the user to provide tandard deviation statistics in :obj:`np.ndarray` format. When statistics are not provided, use the statistics of the current sample for normalization.
+        std (np.array, optional): The standard deviation used in the normalization process, allowing the user to provide standard deviation statistics in :obj:`np.ndarray` format. When statistics are not provided, use the statistics of the current sample for normalization.
         axis (int, optional): The dimension to normalize, when no dimension is specified, the entire data is normalized.
         apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (default: :obj:`False`)
     
@@ -79,9 +88,8 @@ class MeanStdNormalize(EEGTransform):
             mean = self.mean.reshape(*shape)
             std = self.std.reshape(*shape)
 
-        if np.any(std == 0):
-            std[std == 0] = 1
-            
+        std = np.where(std == 0, 1, std)
+
         return (eeg - mean) / std
 
     @property
