@@ -13,3 +13,4 @@ from .ctnet import CTNet
 from .eegpt import EEGPT
 from .eegpt_heads import EEGPTClassifier, EEGPTRegression, EEGPTEmbedding
 from .eegpt_decoder import EEGPTReconstructor, EEGPTPredictor
+from .eegpt_finetune import EEGPTFinetuneClassifier
