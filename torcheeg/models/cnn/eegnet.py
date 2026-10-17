@@ -105,7 +105,7 @@ class EEGNet(nn.Module):
 
     .. code-block:: python
 
-        model = EEGNet().eval()
+        model = EEGNet(num_electrodes=32, chunk_size=128).eval()
         example = torch.randn(2, 1, 32, 128)
         with torch.no_grad():
             program = torch.export.export(model, (example,), strict=True)
