@@ -15,3 +15,10 @@ from .split_per_subject_groupby_trial import *
 from .subcategory import *
 from .k_fold_cross_subject_index import KFoldCrossSubjectIndex
 from .leave_one_subject_out_index import LeaveOneSubjectOutIndex
+
+from .train_val_test_split_cross_subject import TrainValTestSplitCrossSubject
+from .train_val_test_split_cross_trial import TrainValTestSplitCrossTrial
+from .train_val_test_split_groupby_folder import TrainValTestSplitGroupbyFolder
+from .k_fold_cross_subject_train_val_test import KFoldCrossSubjectTrainValTest
+
+from .split_per_subject_groupby_trial_class import TrainTestSplitPerSubjectGroupbyTrial
