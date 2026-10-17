@@ -111,3 +111,9 @@ KFoldCrossSubjectTrainValTest
 -----------------------------
 
 .. autoclass:: torcheeg.model_selection.KFoldCrossSubjectTrainValTest
+
+
+TrainTestSplitPerSubjectGroupbyTrial
+------------------------------------
+
+.. autoclass:: torcheeg.model_selection.TrainTestSplitPerSubjectGroupbyTrial
