@@ -1,82 +1,110 @@
-Installation
-====================================
+Install TorchEEG
+================
 
-TorchEEG depends on PyTorch, please complete the installation of PyTorch (>=1.8.1)
-according to the system, CUDA version and other information:
+Install TorchEEG in an isolated Python environment. Select a Python version
+supported by the PyTorch build that you need.
 
-.. code:: shell
+Install PyTorch
+---------------
 
-   # Conda
-   # please refer to https://pytorch.org/get-started/locally/
-   # e.g. CPU version
-   conda install pytorch==1.11.0 torchvision torchaudio cpuonly -c pytorch
-   # e.g. GPU version
-   conda install pytorch==1.11.0 torchvision torchaudio cudatoolkit=11.3 -c pytorch
+Use the `official PyTorch installation selector
+<https://pytorch.org/get-started/locally/>`_ to select your operating system,
+package manager, and CPU or accelerator build. For a specific older build,
+use the `previous-version instructions
+<https://pytorch.org/get-started/previous-versions/>`_.
 
-   # Pip
-   # please refer to https://pytorch.org/get-started/previous-versions/
-   # e.g. CPU version
-   pip install torch==1.11.0+cpu torchvision==0.12.0+cpu torchaudio==0.11.0 --extra-index-url https://download.pytorch.org/whl/cpu
-   # e.g. GPU version
-   pip install torch==1.11.0+cu113 torchvision==0.12.0+cu113 torchaudio==0.11.0 --extra-index-url https://download.pytorch.org/whl/cu113
+Install a PyTorch build that matches your Python version and hardware before
+installing TorchEEG. Graph extensions also need to match that build.
+
+Install a release
+-----------------
+
+Use pip to install the published package:
+
+.. code-block:: shell
+
+   python -m pip install torcheeg
+
+The installed release and the development branch can expose different APIs.
+Use the documentation for the version that you installed.
+
+Conda packages
+--------------
+
+TorchEEG also has a package in the ``tczhangzhi`` conda channel:
+
+.. code-block:: shell
+
+   conda install -c tczhangzhi -c conda-forge torcheeg
+
+Check the package version in the channel before selecting an API. A conda
+package and the PyPI package can be published at different times.
+
+Install from source
+-------------------
+
+Use a source checkout to work with changes that are not in a published release:
+
+.. code-block:: shell
+
+   git clone https://github.com/torcheeg/torcheeg.git
+   cd torcheeg
+   python -m pip install -e .
+
+Use a separate checkout when you need to keep an existing working directory.
+A source installation uses the code in that checkout.
+
+Optional components
+-------------------
+
+Install the dependency group needed for your workflow:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 20 50
+
+   * - Group
+     - Purpose
+   * - ``transforms``
+     - Optional signal resampling dependencies.
+   * - ``dataset``
+     - MOABB integration.
+   * - ``trainer``
+     - Optional metric dependencies used by generative trainers.
+   * - ``model``
+     - PyTorch Geometric and graph extensions.
+   * - ``test``
+     - Development test dependencies.
+
+For example:
+
+.. code-block:: shell
+
+   python -m pip install "torcheeg[transforms]"
+
+For a source checkout, use ``python -m pip install -e '.[transforms]'``.
+You can combine groups, for example ``torcheeg[dataset,transforms]``.
+
+Before installing the graph group, follow the `PyTorch Geometric installation
+guide <https://pytorch-geometric.readthedocs.io/en/latest/install/installation.html>`_
+to select extension wheels for your PyTorch version and CPU or accelerator
+build. Reusing extension wheels from another PyTorch build can fail at import.
+
+Check the installation
+----------------------
+
+Check the installed versions and dependency requirements:
+
+.. code-block:: shell
+
+   python -c "import torch, torcheeg; print(torch.__version__, torcheeg.__version__)"
+   python -m pip check
+
+Continue with the :doc:`user_guide/index` and :doc:`tutorials/index`.
 
 SciPy versions
-~~~~~~~~~~~~~~
+--------------
 
 The development version requires SciPy 1.7.3 or later. The previous upper
 limit of 1.10.1 is removed. Select a SciPy version that supports your Python
 version. This change does not add new APIs to older TorchEEG releases.
-
-Anaconda
-~~~~~~~~
-
-TorchEEG supports installing with conda! You can
-simply install TorchEEG using Anaconda, just run the following command:
-
-.. code:: shell
-
-   conda install -c tczhangzhi -c conda-forge torcheeg
-
-Pip
-~~~
-
-TorchEEG allows pip-based installation, please use the following
-command:
-
-.. code:: shell
-
-   pip install torcheeg
-
-Nightly
-~~~~~~~
-
-In case you want to experiment with the latest TorchEEG features which
-are not fully released yet, please run the following command to install
-from the main branch on github:
-
-.. code:: shell
-
-   pip install git+https://github.com/tczhangzhi/torcheeg.git
-
-Plugin
-~~~~~~
-
-TorchEEG provides plugins related to graph algorithms for converting EEG
-in datasets into graph structures and analyzing them using graph neural
-networks. This part of the implementation relies on PyG.
-
-If you do not use graph-related algorithms, you can skip this part of
-the installation.
-
-.. code:: shell
-
-   # Conda
-   # please refer to https://pytorch-geometric.readthedocs.io/en/latest/notes/installation.html
-   conda install pyg -c pyg
-
-   # Pip
-   # please refer to https://pytorch-geometric.readthedocs.io/en/latest/notes/installation.html
-   # e.g. CPU version
-   pip install torch-scatter torch-sparse torch-cluster torch-spline-conv torch-geometric -f https://data.pyg.org/whl/torch-1.11.0+cpu.html
-   # e.g. GPU version
-   pip install torch-scatter torch-sparse torch-cluster torch-spline-conv torch-geometric -f https://data.pyg.org/whl/torch-1.11.0+cu113.html

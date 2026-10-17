@@ -1,29 +1,22 @@
-https://download.pytorch.org/whl/cpu/torch-1.9.0%2Bcpu-cp38-cp38-linux_x86_64.whl
-https://data.pyg.org/whl/torch-1.9.0%2Bcpu/torch_scatter-2.0.7-cp38-cp38-linux_x86_64.whl
-https://data.pyg.org/whl/torch-1.9.0%2Bcpu/torch_sparse-0.6.10-cp38-cp38-linux_x86_64.whl
-mne
-mne_connectivity
-sphinx==6.2.1
-sphinx_gallery
-docutils
-pylons-sphinx-themes
-pylons_sphinx_latesturl
-repoze.sphinx.autointerface
-sphinxcontrib-autoprogram
-torchmetrics
-tqdm
-numpy
-pandas
-scipy
-scikit-learn
-lmdb
-einops
-torch_geometric
-xmltodict
-networkx
-PyWavelets
-spectrum
-moabb
-wfdb
-pytorch-lightning
--e git+https://github.com/pytorch/pytorch_sphinx_theme.git#egg=pytorch_sphinx_theme
+# Documentation builds use Python 3.10; see .readthedocs.yaml.
+# Match the CPU PyTorch and PyG binary extensions.
+--extra-index-url https://download.pytorch.org/whl/cpu
+--find-links https://data.pyg.org/whl/torch-2.6.0+cpu.html
+torch==2.6.0+cpu
+torch-scatter==2.1.2+pt26cpu
+torch-sparse==0.6.18+pt26cpu
+torch-geometric==2.8.1
+
+# Use the same theme and Sphinx versions as the PyTorch documentation.
+sphinx==7.2.6
+pytorch-sphinx-theme2==0.4.13
+sphinx-gallery==0.22.1
+sphinxcontrib-jquery==4.1
+docutils==0.20.1
+
+# Dataset examples and API imports need these optional dependencies.
+moabb==1.5.0
+soxr==1.1.0
+numpy==2.2.6
+scipy==1.15.3
+mne==1.12.1
