@@ -2,14 +2,14 @@ import math
 
 import torch
 from torch import nn
-from torch.nn import functional as F
 
+from ..layers import FourierResample
 from ..cnn.eegnet import Conv2dWithConstraint
 from .eegpt import _positive_int, _probability
 from .eegpt_heads import _EEGPTDownstream
 
 
-class EEGPTResample(nn.Module):
+class EEGPTResample(FourierResample):
     r'''Differentiable Fourier resampling along the final sample axis.
 
     Resize the one-sided spectrum and correct the unpaired Nyquist bin when
@@ -38,33 +38,9 @@ class EEGPTResample(nn.Module):
     Args:
         num_samples (int): Output samples per window. (default: :obj:`1024`)
     '''
-    def __init__(self, num_samples=1024):
-        super().__init__()
-        _positive_int('num_samples', num_samples)
-        self.num_samples = num_samples
 
-    def forward(self, x):
-        r'''Resample real floating input shaped [..., samples].'''
-        if not isinstance(x, torch.Tensor) or x.ndim < 1 or any(size == 0 for size in x.shape):
-            raise ValueError('Input must be a nonempty tensor with a final sample axis.')
-        if not x.is_floating_point():
-            raise ValueError('Input must use a real floating dtype.')
-        source_samples = x.shape[-1]
-        if source_samples == self.num_samples:
-            return x
-        work = x.float() if x.dtype in (torch.float16, torch.bfloat16) else x
-        spectrum = torch.fft.rfft(work, dim=-1)
-        shorter = min(source_samples, self.num_samples)
-        bins = shorter // 2 + 1
-        spectrum = spectrum[..., :bins]
-        if shorter % 2 == 0:
-            # Split an input Nyquist bin when upsampling; combine its pair
-            # when downsampling. irfft discards the target Nyquist imaginary part.
-            scale = 0.5 if source_samples < self.num_samples else 2.0
-            spectrum = torch.cat((spectrum[..., :-1], spectrum[..., -1:] * scale), dim=-1)
-        spectrum = F.pad(spectrum, (0, self.num_samples // 2 + 1 - bins))
-        result = torch.fft.irfft(spectrum, n=self.num_samples, dim=-1)
-        return (result * (self.num_samples / source_samples)).to(dtype=x.dtype)
+    def __init__(self, num_samples=1024):
+        super().__init__(num_samples)
 
 
 class EEGPTInputAdapter(nn.Module):
@@ -113,6 +89,7 @@ class EEGPTInputAdapter(nn.Module):
         dropout (float): Output dropout probability. (default: :obj:`0.25`)
         max_norm (float, optional): Per-output channel-projection norm limit; None disables projection. (default: :obj:`1.0`)
     '''
+
     def __init__(self, in_channels, out_channels, num_samples=1024,
                  temporal_kernel=15, dropout=0.25, max_norm=1.0):
         super().__init__()
@@ -181,6 +158,7 @@ class EEGPTAdaptedModel(nn.Module):
 
     .. automethod:: feature
     '''
+
     def __init__(self, adapter, model):
         super().__init__()
         if not isinstance(adapter, EEGPTInputAdapter) or not isinstance(model, _EEGPTDownstream):
