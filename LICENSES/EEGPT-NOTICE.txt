@@ -12,3 +12,9 @@ selection geometry, and validates complete local tensor checkpoint states.
 The original workspace's normalized-patch option is preserved separately.
 The task predictor/reconstructor and downstream heads are separate scope;
 this encoder does not claim to implement their pretraining objectives.
+
+The temporal reconstructor and predictor are adapted separately in
+eegpt_decoder.py. Native component tensor names, partial-head rotary
+attention, class tokens and optional projection are retained. TorchEEG
+validates geometry and removes the mutable frequency cache. These
+full-token downstream modules do not implement a masked pretraining loss.
