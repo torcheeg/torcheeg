@@ -74,6 +74,36 @@ Motor Imagery Datasets
     BCICIV2aDataset
     PhysioNetMIDataset
 
+PhysioNet motor imagery tasks
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+``PhysioNetMIDataset`` supports the three label mappings in the
+`EEG-Arena task registry <https://github.com/OrangeP0P/eeg-arena/blob/c1aa1292aed21c0e170dd0da3cd0a4a60581f6ad/datasets/__init__.py>`_.
+These task mappings do not establish an identical preprocessing or evaluation protocol.
+
+.. list-table::
+    :header-rows: 1
+    :widths: 20 25 55
+
+    * - ``task``
+      - Runs
+      - Labels
+    * - ``four_class``
+      - R04/R06/R08/R10/R12/R14
+      - Left fist (0), right fist (1), both fists (2), feet (3).
+    * - ``left_right``
+      - R04/R08/R12
+      - Left fist (0), right fist (1).
+    * - ``hands_feet``
+      - R04/R06/R08/R10/R12/R14
+      - Left, right or both fists (0); feet (1).
+
+Each task has a separate EEGNet training example in the gallery.
+All windows from a trial must stay together when partitioning the data.
+Use separate cache paths for different tasks. A mismatched task cache raises
+an error without replacing its contents. Legacy caches without task metadata
+can be read with ``four_class`` only.
+
 Mother of all BCI Benchmarks
 ---------------------------------------------------------
 
