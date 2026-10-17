@@ -361,12 +361,16 @@ class InvertibleConv1x1(nn.Module):
     def __init__(self, num_channels, LU_decomposed):
         super().__init__()
         w_shape = [num_channels, num_channels]
-        w_init = torch.qr(torch.randn(*w_shape))[0]
+        w_init = torch.linalg.qr(torch.randn(*w_shape), mode='reduced')[0]
 
         if not LU_decomposed:
             self.weight = nn.Parameter(torch.Tensor(w_init))
         else:
-            p, lower, upper = torch.lu_unpack(*torch.lu(w_init))
+            if hasattr(torch.linalg, 'lu'):
+                p, lower, upper = torch.linalg.lu(w_init)
+            else:
+                # torch.linalg.lu is unavailable in older PyTorch versions.
+                p, lower, upper = torch.lu_unpack(*torch.lu(w_init))
             s = torch.diag(upper)
             sign_s = torch.sign(s)
             log_s = torch.log(torch.abs(s))
@@ -636,17 +640,21 @@ class BGlow(nn.Module):
         nll_loss = model(eeg)
         fake_X = model(num=1, temperature=1.0)
 
+    Invertible convolution initialization uses :mod:`torch.linalg`. Checkpoint
+    parameter and buffer names are unchanged. Older PyTorch versions without
+    :obj:`torch.linalg.lu` use the legacy LU interface.
+
     Args:
         in_channels (int): The feature dimension of each electrode. (default: :obj:`4`)
         grid_size (tuple): Spatial dimensions of grid-like EEG representation. (default: :obj:`(32, 32)`)
-        hid_channels (int): The basic hidden channels in the network blocks. (default: :obj:`64`)
+        hidden_channels (int): The basic hidden channels in the network blocks. (default: :obj:`64`)
         num_steps (int): The number of steps in the flow, each step contains an affine coupling layer, an invertible 1x1 conv and an actnorm layer. (default: :obj:`32`)
         num_blocks (int): Number of blocks, each block includes split, step of flow and squeeze. (default: :obj:`3`)
         actnorm_scale (float): The pre-defined scale factor in the actnorm layer. (default: :obj:`1.0`)
         flow_permutation (str): The used flow permutation method, options include :obj:`invconv`, :obj:`shuffle` and :obj:`reverse`. (default: :obj:`invconv`)
         flow_coupling (str): The used flow coupling method, options include :obj:`additive` and  :obj:`affine`. (default: :obj:`affine`)
         LU_decomposed (bool): Whether to use LU decomposed 1x1 convs. (default: :obj:`True`)
-        learnable_prior (bool): Whether to train top layer (prior). (default: :obj:`True`)
+        learn_top (bool): Whether to train top layer (prior). (default: :obj:`True`)
 
     ... automethod:: log_probs
     ... automethod:: sample
