@@ -1,6 +1,6 @@
 """
 Compile CCNN training with PyTorch
-=================================
+==================================
 
 This CPU example compares a compiled CCNN training step with eager execution.
 Install a PyTorch version with ``torch.compile`` and a working CPU Inductor

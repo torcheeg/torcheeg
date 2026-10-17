@@ -1,6 +1,6 @@
 """
 Export EEGNet inference with PyTorch
-===================================
+====================================
 
 Export a frozen evaluation copy, save it, and check the loaded predictions.
 The original model remains available for gradient-based training. Use a

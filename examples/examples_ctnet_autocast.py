@@ -1,6 +1,6 @@
 """
 Train CTNet with CPU bfloat16 autocast
-====================================
+======================================
 
 This example uses a standard PyTorch optimizer and CPU bfloat16 autocast.
 Keep parameters in float32 and put the forward pass and loss inside autocast.
