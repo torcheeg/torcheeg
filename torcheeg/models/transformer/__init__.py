@@ -12,3 +12,4 @@ from .ctnet import CTNet
 
 from .eegpt import EEGPT
 from .eegpt_heads import EEGPTClassifier, EEGPTRegression, EEGPTEmbedding
+from .eegpt_input import EEGPTResample, EEGPTInputAdapter, EEGPTAdaptedModel

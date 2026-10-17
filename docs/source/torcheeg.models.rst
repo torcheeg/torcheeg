@@ -80,6 +80,9 @@ Transformer
    EEGPTClassifier
    EEGPTRegression
    EEGPTEmbedding
+   EEGPTResample
+   EEGPTInputAdapter
+   EEGPTAdaptedModel
 
 Generative Adversarial Network
 ----------------------------------
