@@ -15,3 +15,4 @@ from .eegpt_heads import EEGPTClassifier, EEGPTRegression, EEGPTEmbedding
 from .eegpt_decoder import EEGPTReconstructor, EEGPTPredictor
 from .eegpt_finetune import EEGPTFinetuneClassifier
 from .eegpt_tuning import add_eegpt_adapters, add_eegpt_prefix, add_eegpt_lora
+from .eegpt_input import EEGPTResample, EEGPTInputAdapter, EEGPTAdaptedModel

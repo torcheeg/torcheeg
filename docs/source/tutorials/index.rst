@@ -1,5 +1,4 @@
 Tutorials
-=========
 
 Follow the components in order for an introduction to TorchEEG.
 Some examples need separately obtained data. Check a script's data paths
@@ -15,6 +14,7 @@ and model parameters before running it.
    Model <../auto_examples/examples_models>
    Trainer <../auto_examples/examples_trainers>
    EEGPT parameter-efficient tuning <eegpt_tuning>
+   EEGPT input adapters <eegpt_input>
    All examples <../auto_examples/index>
 
 For a workflow built directly with PyTorch, see

@@ -1,5 +1,4 @@
 torcheeg.models
-=======================
 
 .. contents:: Extensive baseline method reproduction.
    :depth: 2
@@ -83,6 +82,9 @@ Transformer
    EEGPTReconstructor
    EEGPTPredictor
    EEGPTFinetuneClassifier
+   EEGPTResample
+   EEGPTInputAdapter
+   EEGPTAdaptedModel
 
 
 EEGPT parameter-efficient tuning
