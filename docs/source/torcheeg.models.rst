@@ -76,6 +76,7 @@ Transformer
    MHANet
    DARNet
    CTNet
+   EEGPT
 
 Generative Adversarial Network
 ----------------------------------

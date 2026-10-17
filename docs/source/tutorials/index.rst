@@ -49,3 +49,13 @@ Motor imagery with a four-block CNN
 It states the constrained architecture settings and enables kernel adaptation
 explicitly. The model reference documents the fixed-kernel classic configuration
 and the effective kernel used for shorter windows.
+
+EEGPT encoder features and a linear task head
+---------------------------------------------
+
+:doc:`../auto_examples/examples_bciciv2b_eegpt` states channel IDs,
+sampling rate, tensor shapes and the subject holdout. Its default small
+encoder starts from random weights. Optional complete local encoder states
+are loaded with strict key/shape checks and safe tensor deserialization.
+An executed random-initialization example is not pretrained validation.
+The encoder API also supports electrode/time masks and attention inspection.
