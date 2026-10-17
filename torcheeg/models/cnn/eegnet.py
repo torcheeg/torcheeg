@@ -1,5 +1,41 @@
+from typing import Tuple
+
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
+
+
+def _temporal_same_padding(kernel_size: int) -> Tuple[int, int, int, int]:
+    r'''
+    Zero padding along the time axis that keeps the output length equal to the
+    input length for a stride-1 convolution, i.e. the :obj:`padding='SAME'`
+    behavior of the reference TensorFlow implementation of EEGNet.
+
+    :obj:`nn.Conv2d` can only pad symmetrically, so :obj:`padding=kernel_size // 2`
+    adds :obj:`kernel_size` instead of :obj:`kernel_size - 1` samples whenever the
+    kernel is even, which lengthens the time dimension by one. Splitting the
+    padding by hand avoids that. For odd kernels the result is symmetric and
+    matches the previous behavior, for even kernels the extra sample goes to the
+    right, as TensorFlow does.
+
+    Args:
+        kernel_size (int): The kernel size along the time axis.
+
+    Returns:
+        Tuple[int, int, int, int]: The left, right, top and bottom padding to be
+        passed to :obj:`nn.ZeroPad2d`.
+    '''
+    total_padding = kernel_size - 1
+    left_padding = total_padding // 2
+    return (left_padding, total_padding - left_padding, 0, 0)
+
+
+class _Conv2dWithSamePadding(nn.Conv2d):
+    r'''Preserve time length without adding a module to the checkpoint layout.'''
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        x = F.pad(x, _temporal_same_padding(self.kernel_size[1]))
+        return super().forward(x)
 
 
 class Conv2dWithConstraint(nn.Conv2d):
@@ -52,6 +88,13 @@ class EEGNet(nn.Module):
         x, y = next(iter(DataLoader(dataset, batch_size=64)))
         model(x)
 
+    Temporal convolutions preserve the input time length, including for even
+    kernels. Checkpoint parameter names remain compatible with earlier releases.
+    Correcting the padding can change the final feature size for some chunk
+    sizes (for example, 127 samples with the default kernels); such checkpoints
+    require a new classification head. Even when tensor shapes match, even-kernel
+    padding changes the model's numerical output.
+
     Args:
         chunk_size (int): Number of data points included in each EEG chunk, i.e., :math:`T` in the paper. (default: :obj:`151`)
         num_electrodes (int): The number of electrodes, i.e., :math:`C` in the paper. (default: :obj:`60`)
@@ -60,7 +103,7 @@ class EEGNet(nn.Module):
         D (int): The depth multiplier (number of spatial filters), i.e., :math:`D` in the paper. (default: :obj:`2`)
         num_classes (int): The number of classes to predict, i.e., :math:`N` in the paper. (default: :obj:`2`)
         kernel_1 (int): The filter size of block 1. (default: :obj:`64`)
-        kernel_2 (int): The filter size of block 2. (default: :obj:`64`)
+        kernel_2 (int): The filter size of block 2. (default: :obj:`16`)
         dropout (float): Probability of an element to be zeroed in the dropout layers. (default: :obj:`0.25`)
     '''
     def __init__(self,
@@ -85,7 +128,7 @@ class EEGNet(nn.Module):
         self.dropout = dropout
 
         self.block1 = nn.Sequential(
-            nn.Conv2d(1, self.F1, (1, self.kernel_1), stride=1, padding=(0, self.kernel_1 // 2), bias=False),
+            _Conv2dWithSamePadding(1, self.F1, (1, self.kernel_1), stride=1, padding=(0, 0), bias=False),
             nn.BatchNorm2d(self.F1, momentum=0.01, affine=True, eps=1e-3),
             Conv2dWithConstraint(self.F1,
                                  self.F1 * self.D, (self.num_electrodes, 1),
@@ -97,10 +140,10 @@ class EEGNet(nn.Module):
             nn.ELU(), nn.AvgPool2d((1, 4), stride=4), nn.Dropout(p=dropout))
 
         self.block2 = nn.Sequential(
-            nn.Conv2d(self.F1 * self.D,
+            _Conv2dWithSamePadding(self.F1 * self.D,
                       self.F1 * self.D, (1, self.kernel_2),
                       stride=1,
-                      padding=(0, self.kernel_2 // 2),
+                      padding=(0, 0),
                       bias=False,
                       groups=self.F1 * self.D),
             nn.Conv2d(self.F1 * self.D, self.F2, 1, padding=(0, 0), groups=1, bias=False, stride=1),
@@ -121,10 +164,12 @@ class EEGNet(nn.Module):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         r'''
         Args:
-            x (torch.Tensor): EEG signal representation, the ideal input shape is :obj:`[n, 60, 151]`. Here, :obj:`n` corresponds to the batch size, :obj:`60` corresponds to :obj:`num_electrodes`, and :obj:`151` corresponds to :obj:`chunk_size`.
+            x (torch.Tensor): EEG signal representation with shape
+                :obj:`[batch_size, 1, num_electrodes, chunk_size]`.
 
         Returns:
-            torch.Tensor[number of sample, number of classes]: the predicted probability that the samples belong to the classes.
+            torch.Tensor: Classification logits with shape
+                :obj:`[batch_size, num_classes]`.
         '''
         x = self.block1(x)
         x = self.block2(x)
