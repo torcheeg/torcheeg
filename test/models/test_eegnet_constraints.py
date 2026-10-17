@@ -35,6 +35,24 @@ class TestEEGNetConstraints(unittest.TestCase):
         torch.testing.assert_close(view, expected)
         self.assertTrue((layer.weight.flatten(1).norm(dim=1) <= 1).all())
 
+    def test_frozen_weight_projection_and_input_gradients(self):
+        layer = Conv2dWithConstraint(4, 3, 1, bias=False)
+        layer.weight.requires_grad_(False)
+        with torch.no_grad():
+            layer.weight.fill_(4)
+        original = layer.weight.clone()
+        projected = torch.renorm(original, p=2, dim=0, maxnorm=1)
+        x = torch.randn(2, 4, 3, 5, requires_grad=True)
+        reference = x.detach().clone().requires_grad_()
+        actual = layer(x)
+        expected = F.conv2d(reference, projected)
+        torch.testing.assert_close(actual, expected, rtol=0, atol=0)
+        actual.square().mean().backward()
+        expected.square().mean().backward()
+        torch.testing.assert_close(x.grad, reference.grad, rtol=0, atol=0)
+        torch.testing.assert_close(layer.weight, original, rtol=0, atol=0)
+        self.assertIsNone(layer.weight.grad)
+
     def test_optimizer_steps_match_legacy_projection(self):
         layer = Conv2dWithConstraint(4, 3, 1, bias=False)
         with torch.no_grad():
