@@ -8,6 +8,8 @@ torcheeg.datasets
 
 .. currentmodule:: torcheeg.datasets
 
+Disk cache recovery is described in :doc:`user_guide/cache`.
+
 Cached dataset views
 --------------------
 

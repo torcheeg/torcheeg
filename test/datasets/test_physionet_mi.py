@@ -20,8 +20,11 @@ from torcheeg.datasets.constants import (PHYSIONET_MI_CHANNEL_LIST,
 
 
 class SyntheticPhysioNetMI(PhysioNetMIDataset):
+    read_calls = []
+
     @staticmethod
     def read_record(record, **kwargs):
+        SyntheticPhysioNetMI.read_calls.append(record)
         task = os.path.basename(record)[-6:-4]
         return dict(epochs_data=np.ones((2, 64, 800)),
                     events=np.array([2, 3]), task_id=task)
@@ -162,11 +165,11 @@ class TestPhysioNetMI(unittest.TestCase):
                 self.assertEqual(label, 3)
                 np.testing.assert_array_equal(eeg.numpy(), np.ones((64, 800)))
                 if mode == 'pickle':
-                    with patch.object(SyntheticPhysioNetMI, 'read_record',
-                                      side_effect=AssertionError('cache not reused')):
-                        cached = SyntheticPhysioNetMI(root_path=source,
-                            io_path=os.path.join(root, 'cache'), io_mode=mode,
-                            verbose=False)
+                    before = list(SyntheticPhysioNetMI.read_calls)
+                    cached = SyntheticPhysioNetMI(root_path=source,
+                        chunk_size=800, io_path=os.path.join(root, 'cache'),
+                        io_mode=mode, verbose=False)
+                    self.assertEqual(before, SyntheticPhysioNetMI.read_calls)
                     np.testing.assert_array_equal(cached[7][0], np.ones((64, 800)))
 
     def test_standalone_example_trains_and_holds_out_subject(self):

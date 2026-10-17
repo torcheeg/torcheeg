@@ -15,6 +15,7 @@ Offline transforms run before samples enter the cache. Online transforms run
 when samples are read. Label transforms select or map metadata into a target.
 See :doc:`../torcheeg.transforms` and :doc:`../torcheeg.io`.
 Use a new cache path when source files or offline preprocessing change.
+See :doc:`cache` for validation, interruption recovery, and legacy-cache limits.
 
 Evaluation partitions
 ---------------------
@@ -43,3 +44,8 @@ Record package versions, preprocessing, partition IDs, seeds, and metrics.
 
 Continue with :doc:`../tutorials/index`. The :doc:`../agent_guide` provides
 the same library workflow as a reusable assistant skill.
+
+.. toctree::
+   :hidden:
+
+   cache
