@@ -57,6 +57,10 @@ class ClassifierTrainer(pl.LightningModule):
     r'''
         A generic trainer class for EEG classification.
 
+        Reported epoch losses weight each batch mean by its target sample
+        count. A smaller final batch therefore contributes only its samples,
+        while the per-batch loss used for optimization stays unchanged.
+
         .. code-block:: python
 
             trainer = ClassifierTrainer(model)
@@ -163,7 +167,7 @@ class ClassifierTrainer(pl.LightningModule):
         if self.verbose:
 
             self.log("train_loss",
-                     self.train_loss(loss),
+                     self.train_loss(loss, weight=y.shape[0]),
                      prog_bar=True,
                      on_epoch=False,
                      logger=False,
@@ -213,7 +217,7 @@ class ClassifierTrainer(pl.LightningModule):
         y_hat = self(x)
         loss = self.ce_fn(y_hat, y)
 
-        self.val_loss.update(loss)
+        self.val_loss.update(loss, weight=y.shape[0])
         self.val_metrics.update(y_hat, y)
         return loss
 
@@ -250,7 +254,7 @@ class ClassifierTrainer(pl.LightningModule):
         y_hat = self(x)
         loss = self.ce_fn(y_hat, y)
 
-        self.test_loss.update(loss)
+        self.test_loss.update(loss, weight=y.shape[0])
         self.test_metrics.update(y_hat, y)
         return loss
 
