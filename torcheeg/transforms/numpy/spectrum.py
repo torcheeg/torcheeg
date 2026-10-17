@@ -1,9 +1,9 @@
 from typing import Dict, Union
 
-import io
 import pywt
 import numpy as np
-import matplotlib.pyplot as plt
+from matplotlib.figure import Figure
+from matplotlib.backends.backend_agg import FigureCanvasAgg
 
 from ..base_transform import EEGTransform
 
@@ -44,8 +44,13 @@ class CWTSpectrum(EEGTransform):
             t(eeg=np.random.randn(32, 1000))['eeg'].shape
             >>> (32, 480, 640, 4)
 
+        The contour image is an RGBA uint8 array. Its dimensions use Matplotlib's
+        ``figure.figsize`` and ``figure.dpi`` settings. ``savefig.dpi`` and
+        ``savefig.bbox`` do not change its size or channel count. Rendering uses
+        a private Agg canvas and does not create pyplot-managed figures.
+
         Args:
-            sampling_rate (int): The sampling period for the frequencies output in Hz. (default: :obj:`128`)
+            sampling_rate (int): Sampling rate in Hz, used to compute the output frequencies. (default: :obj:`250`)
             wavelet (str): Wavelet to use. Options include: cgau1, cgau2, cgau3, cgau4, cgau5, cgau6, cgau7, cgau8, cmor, fbsp, gaus1, gaus2 , gaus3, gaus4, gaus5, gaus6, gaus7, gaus8, mexh, morl, shan. (default: :obj:`'morl'`)
             total_scale: (int): The total wavelet scales to use. (default: :obj:`128`)
             contourf: (bool): Whether to output the np.ndarray corresponding to the image with content of filled contours. (default: :obj:`False`)
@@ -97,32 +102,23 @@ class CWTSpectrum(EEGTransform):
                                           1.0 / self.sampling_rate)
 
         if self.contourf:
-            fig = plt.figure()
-
-            plt.xticks([])
-            plt.yticks([])
-            plt.axis('off')
-
-            plt.gca().xaxis.set_major_locator(plt.NullLocator())
-            plt.gca().yaxis.set_major_locator(plt.NullLocator())
-            plt.subplots_adjust(top=1,
-                                bottom=0,
-                                left=0,
-                                right=1,
-                                hspace=0,
-                                wspace=0)
-            plt.margins(0, 0)
-
-            plt.contourf(t, frequencies, abs(cwtmatr))
-
-            with io.BytesIO() as buf:
-                fig.savefig(buf, format='raw')
-                buf.seek(0)
-                img_cwtmatr = np.frombuffer(buf.getvalue(), dtype=np.uint8)
-                w, h = fig.canvas.get_width_height()
-                img_cwtmatr = img_cwtmatr.reshape((int(h), int(w), -1))
-
-            return img_cwtmatr
+            # Render at the figure DPI, independently of savefig defaults.
+            fig = Figure()
+            try:
+                canvas = FigureCanvasAgg(fig)
+                axes = fig.add_subplot(111)
+                axes.set_xticks([])
+                axes.set_yticks([])
+                axes.axis('off')
+                fig.subplots_adjust(top=1, bottom=0, left=0, right=1,
+                                    hspace=0, wspace=0)
+                axes.margins(0, 0)
+                axes.contourf(t, frequencies, abs(cwtmatr))
+                canvas.draw()
+                return np.asarray(canvas.buffer_rgba()).copy()
+            finally:
+                # The temporary figure is never registered with pyplot.
+                fig.clear()
 
         return cwtmatr
 
