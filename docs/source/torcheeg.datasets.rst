@@ -72,6 +72,7 @@ Motor Imagery Datasets
     :template: datasettemplate.rst
 
     BCICIV2aDataset
+    PhysioNetMIDataset
 
 Mother of all BCI Benchmarks
 ---------------------------------------------------------
