@@ -116,6 +116,9 @@ Mother of all BCI Benchmarks
 
     moabb.MOABBDataset
 
+For source selection, epoch windows and safe raw-data storage, see
+:doc:`user_guide/moabb`.
+
 Steady-state Visual Evoked Potential Datasets
 ---------------------------------------------------------
 

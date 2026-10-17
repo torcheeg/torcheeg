@@ -15,6 +15,7 @@ Offline transforms run before samples enter the cache. Online transforms run
 when samples are read. Label transforms select or map metadata into a target.
 See :doc:`../torcheeg.transforms` and :doc:`../torcheeg.io`.
 Use a new cache path when source files or offline preprocessing change.
+See :doc:`moabb` for sources read through a MOABB paradigm.
 See :doc:`cache` for validation, interruption recovery, and legacy-cache limits.
 
 Evaluation partitions
@@ -49,3 +50,4 @@ the same library workflow as a reusable assistant skill.
    :hidden:
 
    cache
+   moabb
