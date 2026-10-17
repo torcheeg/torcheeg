@@ -1,6 +1,6 @@
 """
 Train a VAE on EEGMat feature grids
-==================================
+===================================
 
 Train BEncoder and BDecoder with BetaVAETrainer, using the public EEG During
 Mental Arithmetic Tasks data: https://physionet.org/content/eegmat/1.0.0/.
