@@ -13,3 +13,5 @@ from .split_groupby_trial import *
 from .split_per_subject_cross_trial import *
 from .split_per_subject_groupby_trial import *
 from .subcategory import *
+from .k_fold_cross_subject_index import KFoldCrossSubjectIndex
+from .leave_one_subject_out_index import LeaveOneSubjectOutIndex

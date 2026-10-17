@@ -88,3 +88,14 @@ train_test_split
 -----------------------------------------------
 
 .. autofunction:: torcheeg.model_selection.train_test_split
+
+KFoldCrossSubjectIndex
+-------------------------------------------------
+
+.. autoclass:: torcheeg.model_selection.KFoldCrossSubjectIndex
+
+
+LeaveOneSubjectOutIndex
+-------------------------------------------------
+
+.. autoclass:: torcheeg.model_selection.LeaveOneSubjectOutIndex
