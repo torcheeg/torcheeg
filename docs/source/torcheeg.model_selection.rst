@@ -88,3 +88,32 @@ train_test_split
 -----------------------------------------------
 
 .. autofunction:: torcheeg.model_selection.train_test_split
+
+TrainValTestSplitCrossSubject
+-----------------------------
+
+.. autoclass:: torcheeg.model_selection.TrainValTestSplitCrossSubject
+
+
+TrainValTestSplitCrossTrial
+---------------------------
+
+.. autoclass:: torcheeg.model_selection.TrainValTestSplitCrossTrial
+
+
+TrainValTestSplitGroupbyFolder
+------------------------------
+
+.. autoclass:: torcheeg.model_selection.TrainValTestSplitGroupbyFolder
+
+
+KFoldCrossSubjectTrainValTest
+-----------------------------
+
+.. autoclass:: torcheeg.model_selection.KFoldCrossSubjectTrainValTest
+
+
+TrainTestSplitPerSubjectGroupbyTrial
+------------------------------------
+
+.. autoclass:: torcheeg.model_selection.TrainTestSplitPerSubjectGroupbyTrial
