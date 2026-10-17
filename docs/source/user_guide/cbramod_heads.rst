@@ -1,5 +1,5 @@
 CBraMod downstream tasks
-=======================
+========================
 
 Use :class:`torcheeg.models.CBraModClassifier` for class logits,
 :class:`torcheeg.models.CBraModRegression` for continuous predictions and
