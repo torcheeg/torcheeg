@@ -8,8 +8,16 @@ class Conv2dWithConstraint(nn.Conv2d):
         super(Conv2dWithConstraint, self).__init__(*args, **kwargs)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        self.weight.data = torch.renorm(self.weight.data, p=2, dim=0, maxnorm=self.max_norm)
-        return super(Conv2dWithConstraint, self).forward(x)
+        if self.weight.requires_grad:
+            with torch.no_grad():
+                self.weight.copy_(torch.renorm(self.weight, p=2, dim=0,
+                                               maxnorm=self.max_norm))
+            # Keep saved weights valid when several forwards share one backward.
+            weight = self.weight.clone()
+        else:
+            # Frozen inference weights are projected without mutating parameters.
+            weight = torch.renorm(self.weight, p=2, dim=0, maxnorm=self.max_norm)
+        return self._conv_forward(x, weight, self.bias)
 
 
 class EEGNet(nn.Module):
@@ -51,6 +59,23 @@ class EEGNet(nn.Module):
 
         x, y = next(iter(DataLoader(dataset, batch_size=64)))
         model(x)
+
+    Maximum-norm constraints keep parameter storage and checkpoint names
+    unchanged. Trainable weights are projected in place; frozen weights use
+    an equivalent functional projection without changing their stored values. For inference export, freeze parameter gradients on an
+    evaluation-mode copy of the model, then perform :obj:`torch.export.export` within :obj:`torch.no_grad`. Validate
+    the exported program on the target PyTorch version before deployment.
+
+    .. code-block:: python
+
+        from copy import deepcopy
+
+        model = EEGNet(num_electrodes=32, chunk_size=128)
+        export_model = deepcopy(model).eval().requires_grad_(False)
+        example = torch.randn(2, 1, 32, 128)
+        with torch.no_grad():
+            program = torch.export.export(export_model, (example,), strict=True)
+        torch.export.save(program, 'eegnet.pt2')
 
     Args:
         chunk_size (int): Number of data points included in each EEG chunk, i.e., :math:`T` in the paper. (default: :obj:`151`)
