@@ -1,6 +1,6 @@
 """
 Train a CCNN Model on the SEED Dataset
-==========================
+======================================
 
 In this tutorial, we'll demonstrate how you can leverage TorchEEG to train a Continuous Convolutional Neural Network (CCNN) on the SEED dataset for emotion classification. Let's navigate through this process step-by-step, covering everything from dataset initialization to model evaluation.
 
@@ -39,7 +39,7 @@ dataset = SEEDDataset(io_path=f'./examples_seed_ccnn/seed',
 
 ######################################################################
 # Step 2: Divide the Training and Test Samples in the Dataset
-# ----------------------------------------------
+# -----------------------------------------------------------
 #
 # Next, let's partition our dataset into training and test sets using 5-fold cross-validation. We group the data based on their trial index, where each trial contributes 4 folds to the training set and 1 fold to the test set. These grouped samples are then combined to form the final training and test sets.
 #
