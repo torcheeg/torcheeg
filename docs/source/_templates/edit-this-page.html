@@ -1,0 +1,19 @@
+{# Generated API pages have source links in their class/function signatures. #}
+{% if sourcename is defined and theme_use_edit_page_button
+      and not pagename.startswith('generated/')
+      and not pagename.endswith('sg_execution_times') %}
+  {% if pagename.startswith('auto_examples/') %}
+    {% set source = pagename|replace('auto_examples/', 'examples/', 1) %}
+    {% if source.endswith('/index') %}
+      {% set source = source[:-5] ~ 'README.rst' %}
+    {% else %}
+      {% set source = source ~ '.py' %}
+    {% endif %}
+    {% set edit_url = github_url ~ '/' ~ github_user ~ '/' ~ github_repo ~ '/edit/' ~ github_version ~ '/' ~ source %}
+  {% else %}
+    {% set edit_url = get_edit_provider_and_url()[1] %}
+  {% endif %}
+  <div class="tocsection editthispage">
+    <a href="{{ edit_url }}"><i class="fa-solid fa-pencil"></i> Edit on GitHub</a>
+  </div>
+{% endif %}
