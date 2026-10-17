@@ -1,0 +1,70 @@
+name: PyTorch compatibility
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  cpu:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - torch: '2.6.0'
+            pyg: '2.6.0'
+          - torch: '2.14.1'
+            pyg: 'source'
+    env:
+      MAX_JOBS: '2'
+      OMP_NUM_THREADS: '2'
+      OPENBLAS_NUM_THREADS: '1'
+      MPLBACKEND: Agg
+      TORCHINDUCTOR_COMPILE_THREADS: '2'
+      PYTHONPATH: .
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+          cache: pip
+      - name: Install CPU PyTorch
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install torch==${{ matrix.torch }} --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install numpy==2.2.6 scipy==1.15.3 'setuptools<81' wheel
+          echo 'torch==${{ matrix.torch }}' > constraints.txt
+      - name: Install matching graph wheels
+        if: matrix.pyg != 'source'
+        run: |
+          python -m pip install torch-scatter==2.1.2 torch-sparse==0.6.18 --only-binary=:all: --find-links https://data.pyg.org/whl/torch-${{ matrix.pyg }}+cpu.html
+      - name: Cache graph builds for this runtime
+        if: matrix.pyg == 'source'
+        uses: actions/cache@v4
+        with:
+          path: graph-wheels
+          key: graph-linux-cp310-torch${{ matrix.torch }}-scatter2.1.2-sparse0.6.18-v1
+      - name: Build graph extensions for this runtime
+        if: matrix.pyg == 'source'
+        run: |
+          mkdir -p graph-wheels
+          if ! ls graph-wheels/torch_scatter-*.whl >/dev/null 2>&1; then
+            python -m pip wheel --no-build-isolation --no-deps --no-cache-dir --no-binary=torch-scatter --wheel-dir graph-wheels torch-scatter==2.1.2
+          fi
+          if ! ls graph-wheels/torch_sparse-*.whl >/dev/null 2>&1; then
+            python -m pip wheel --no-build-isolation --no-deps --no-cache-dir --no-binary=torch-sparse --wheel-dir graph-wheels torch-sparse==0.6.18
+          fi
+          python -m pip install --no-index --no-deps --find-links graph-wheels torch-scatter==2.1.2 torch-sparse==0.6.18
+      - name: Install library and test dependencies
+        run: |
+          python -m pip install -e '.[test,model,transforms,dataset]' -c constraints.txt
+          python -m pip check
+      - name: Run repository tests
+        run: python -m unittest discover -s test -t .
+      - name: Run modern PyTorch examples
+        run: |
+          python examples/examples_ccnn_compile.py
+          python examples/examples_eegnet_export.py --output "$RUNNER_TEMP/eegnet.pt2"
+          python examples/examples_ctnet_autocast.py

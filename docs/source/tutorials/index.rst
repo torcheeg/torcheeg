@@ -30,3 +30,10 @@ and generated differential-entropy feature grids. It uses the current
 :class:`torcheeg.trainers.BetaVAETrainer` API without a search service or
 a pretrained image metric. The example explains its signal units,
 preprocessing, split and diagnostic metrics.
+
+Modern PyTorch workflows
+-------------------------
+
+See :doc:`../user_guide/pytorch` for checked runtime versions, compilation,
+inference export, and CPU bfloat16 training. Each workflow has a separate
+standalone example with numerical checks.
