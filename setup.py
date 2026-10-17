@@ -50,7 +50,7 @@ setup(
     keywords=['PyTorch', 'EEG'],
     url=URL,
     packages=find_packages(),
-    package_data={"test.models": ["fixtures/ctnet_reference.json"]},
+    package_data={"test.models": ["fixtures/*.json", "fixtures/README.md"]},
     long_description=readme,
     python_requires='>=3.7',
     extras_require={

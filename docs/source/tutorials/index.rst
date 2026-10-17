@@ -30,3 +30,13 @@ and generated differential-entropy feature grids. It uses the current
 :class:`torcheeg.trainers.BetaVAETrainer` API without a search service or
 a pretrained image metric. The example explains its signal units,
 preprocessing, split and diagnostic metrics.
+
+Motor imagery with a shallow CNN
+--------------------------------
+
+:doc:`../auto_examples/examples_bciciv2b_shallowconvnet` trains
+:class:`torcheeg.models.ShallowConvNet` with a held-out BCI Competition IV 2b
+subject. It uses explicit EEG-Arena architecture settings and a fixed local
+training workflow. The preprocessing and one-epoch validation run do not
+reproduce the complete EEG-Arena benchmark protocol. The model reference
+also documents the classic unconstrained paper configuration.
