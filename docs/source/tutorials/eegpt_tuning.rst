@@ -32,8 +32,7 @@ The prefix method uses direct per-layer key/value parameters, following the
 idea of `Li and Liang (2021) <https://aclanthology.org/2021.acl-long.353/>`_.
 It has no additional prefix reparameterization network. LoRA applies input
 dropout and low-rank updates, as in
-`Hu et al. (2022) <https://github.com/microsoft/LoRA>`_. These are EEGPT
-adaptations; they do not reproduce language-model benchmark results.
+`Hu et al. (2022) <https://github.com/microsoft/LoRA>`_. These helpers adapt the methods to EEGPT.
 
 Install modules before the optimizer
 -------------------------------------
@@ -73,8 +72,7 @@ task model created with ``freeze_encoder=False``, use
 
 Adapters and LoRA start with zero up/B projections. Their down/A factors can
 have zero gradient on the first step; the up/B factors receive the initial
-update. Check gradients over subsequent optimization steps. Unlike the
-original workspace's closure-based helpers, these modules participate in
+update. Check gradients over subsequent optimization steps. These registered modules participate in
 ``train()``, ``eval()``, dtype/device changes, copying and state dictionaries.
 LoRA does not merge weights when entering evaluation mode.
 
