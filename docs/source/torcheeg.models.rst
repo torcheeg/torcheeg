@@ -86,6 +86,9 @@ Transformer
    EEGPTInputAdapter
    EEGPTAdaptedModel
    CBraMod
+   CBraModClassifier
+   CBraModRegression
+   CBraModEmbedding
 
 
 EEGPT parameter-efficient tuning

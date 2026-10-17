@@ -17,3 +17,5 @@ from .eegpt_finetune import EEGPTFinetuneClassifier
 from .eegpt_tuning import add_eegpt_adapters, add_eegpt_prefix, add_eegpt_lora
 from .eegpt_input import EEGPTResample, EEGPTInputAdapter, EEGPTAdaptedModel
 from .cbramod import CBraMod
+
+from .cbramod_heads import CBraModClassifier, CBraModRegression, CBraModEmbedding

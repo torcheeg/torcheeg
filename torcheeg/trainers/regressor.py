@@ -40,6 +40,12 @@ class RegressorTrainer(pl.LightningModule):
     r'''
         A generic trainer class for EEG regression.
 
+        Use one scalar target per sample; this trainer reads model output[:, 0].
+        The default batch loss is mean absolute error. Training, validation and
+        test epoch losses are weighted by sample count, so an incomplete final
+        batch does not receive the same weight as a full batch. Batch loss and
+        its optimization gradients are unchanged.
+
         .. code-block:: python
 
             trainer = RegressorTrainer(model)
@@ -126,7 +132,7 @@ class RegressorTrainer(pl.LightningModule):
         loss = self.mae_fn(y_hat[:, 0], y)
 
         self.log("train_loss",
-                 self.train_loss(loss),
+                 self.train_loss(loss, weight=y.shape[0]),
                  prog_bar=True,
                  on_epoch=False,
                  logger=False,
@@ -175,7 +181,7 @@ class RegressorTrainer(pl.LightningModule):
         # print("y_hat", y_hat.shape, y_hat.min(), y_hat.max())
         # print("y", y.shape, y.min(), y.max())
 
-        self.val_loss.update(loss)
+        self.val_loss.update(loss, weight=y.shape[0])
         self.val_metrics.update(y_hat[:, 0], y)
         return loss
 
@@ -210,7 +216,7 @@ class RegressorTrainer(pl.LightningModule):
         y_hat = self(x)
         loss = self.mae_fn(y_hat[:, 0], y)
 
-        self.test_loss.update(loss)
+        self.test_loss.update(loss, weight=y.shape[0])
         self.test_metrics.update(y_hat[:, 0], y)
         return loss
 

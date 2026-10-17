@@ -2,7 +2,8 @@ CBraMod architecture adaptation
 
 Upstream: https://github.com/wjq-learning/CBraMod
 Revision: b9e961003214326972c567eff390e75b0287e32a
-Sources: models/cbramod.py and models/criss_cross_transformer.py
+Sources: models/cbramod.py, models/criss_cross_transformer.py and
+models/model_for_bciciv2a.py
 Copyright (c) 2025 Jiquan Wang
 License: MIT, retained in LICENSES/CBraMod.txt
 
@@ -17,3 +18,8 @@ Inductor convolution/FFT graphs. Low-precision FFT is computed in float32.
 No pretrained weights are included. The author's linked weight repository is
 https://huggingface.co/weighting666/CBraMod; its model card declares Apache-2.0.
 Code and weight provenance are recorded separately.
+
+Downstream wrappers retain native feature and four task-head computations.
+Raw windows are segmented and resampled independently; hidden widths,
+pooling, dropout, freezing and complete tensor restoration are explicit.
+The native reconstruction projection remains in downstream tensor states.

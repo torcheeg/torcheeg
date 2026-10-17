@@ -80,3 +80,24 @@ the intended result independently; it does not claim the broken branch ran.
 Normalized-patch projection is an original-workspace option, tested against
 unfold/normalization/linear arithmetic and optimization separately.
 No fixture result establishes pretrained performance or task accuracy.
+
+
+## CBraMod task heads
+
+`cbramod_head_reference.json` was generated independently from the unmodified
+MIT `models/model_for_bciciv2a.py` at b9e961003214326972c567eff390e75b0287e32a.
+The file's SHA256 is recorded in the fixture and asserted before generation.
+Its four native head modules were evaluated in float64 on deterministic
+[1, 22, 4, 200] features. Only the backbone was replaced with Identity to
+isolate the task heads; no head computation was changed. Native backbone
+numerics are independently covered by `cbramod_reference.json`.
+
+For linear-layer index i, weights are
+`((row * 7 + column * 3 + i) % 19 - 9) / (19 * sqrt(in_features))`, and
+biases are `(row % 7 - 3) / 20`. Input features are
+`(arange(17600).reshape(1,22,4,200) % 71 - 35) / 35`.
+The scalar objective is the dot product of output and [0.2, -0.3, 0.7].
+Fixture output, selected feature gradients and per-linear-layer weight-gradient
+sum/norm/first entries and complete bias gradients are checked. Pooling,
+flattening order, nonlinearities and all four head topologies are covered.
+No upstream checkpoint or patient signal is stored in the fixture.
