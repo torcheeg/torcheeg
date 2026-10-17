@@ -288,6 +288,12 @@ class EEGSignalIO:
         eeg.shape
         >>> (32, 128)
     
+    Shallow copies made with :obj:`copy.copy` share the LMDB backend in the
+    same process. Writes are visible through both copies. Either wrapper can
+    be deleted without closing the backend while the other still uses it.
+    Copying does not create an independent database. Convert a copy to memory
+    or use a separate path when independent storage is required.
+
     Args:
         io_path (str): Where the database is stored.
         io_size (int, optional): The maximum capacity of the database. It will increase according to the size of the dataset. (default: :obj:`1024`)
