@@ -60,7 +60,8 @@
         "background": 45,
         "arithmetic": 15
       },
-      "majority_accuracy": 0.75
+      "majority_accuracy": 0.75,
+      "majority_label": "background"
     },
     "eegmat-two-subject-vae-1epoch": {
       "dataset": "EEGMat",

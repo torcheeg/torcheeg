@@ -68,7 +68,8 @@
     section.append(element('p', protocol.preprocessing));
     if (protocol.majority_accuracy !== undefined) {
       section.append(element('p', 'Majority-class accuracy on this test subset: ' +
-        (protocol.majority_accuracy * 100).toFixed(2) + '% (always predict background).'));
+        (protocol.majority_accuracy * 100).toFixed(2) + '% (always predict ' +
+        (protocol.majority_label || 'the majority class') + ').'));
     }
     const wrap = element('div', undefined, 'leaderboard-table');
     const table = element('table', undefined, 'docutils align-default');

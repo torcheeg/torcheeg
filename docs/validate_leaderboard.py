@@ -41,7 +41,8 @@ def https_url(value):
 
 
 def validate(data):
-    require(isinstance(data, dict) and data.get('schema_version') == 1, 'Unsupported schema version.')
+    """Check protocol isolation, metric domains and evidence requirements."""
+    require(isinstance(data, dict) and type(data.get('schema_version')) is int and data['schema_version'] == 1, 'Unsupported schema version.')
     protocols = data.get('protocols')
     require(isinstance(protocols, dict) and bool(protocols), 'Protocols must be a nonempty object.')
     for key, protocol in protocols.items():
@@ -71,7 +72,7 @@ def validate(data):
             if protocol.get(field) is not None:
                 counts = protocol[field]
                 require(isinstance(counts, dict) and bool(counts)
-                        and all(positive_integer(x) for x in counts.values()), f'{key}: invalid class counts.')
+                        and all(type(x) is int and x >= 0 for x in counts.values()), f'{key}: invalid class counts.')
                 require(sum(counts.values()) == protocol[total], f'{key}: class counts do not match windows.')
         for item in protocol.get('data_files') or []:
             require(isinstance(item, dict) and text(item.get('name')) and hex_digest(item.get('sha256'), 64),
@@ -135,11 +136,13 @@ def validate(data):
 
 
 def load(path):
+    """Read UTF-8 JSON, rejecting duplicate fields before validation."""
     with Path(path).open(encoding='utf-8') as file:
         return validate(json.load(file, object_pairs_hook=unique_object))
 
 
 def verify_sources(data):
+    """Fetch immutable examples and compare their SHA256 digests."""
     checked = set()
     for result in data['results']:
         source = result['implementation']

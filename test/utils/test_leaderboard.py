@@ -100,6 +100,11 @@ class TestLeaderboardData(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'class counts do not match'):
             VALIDATOR.validate(self.data)
 
+    def test_zero_count_classes_remain_explicit(self):
+        protocol = self.data['protocols'][self.data['results'][0]['protocol']]
+        protocol['test_class_counts'] = {'background': 60, 'arithmetic': 0}
+        VALIDATOR.validate(self.data)
+
     def test_duplicate_json_fields_are_rejected(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / 'invalid.json'

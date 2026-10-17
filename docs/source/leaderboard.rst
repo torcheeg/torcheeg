@@ -28,10 +28,10 @@ Download the :download:`result records <_static/leaderboard/results.json>`.
 The records contain source-file hashes, signal units, sample rates, window
 sizes, subject IDs, class counts, training settings, source commits, example
 checksums and runtime versions. The data come from
-`EEG During Mental Arithmetic Tasks <https://physionet.org/content/eegmat/1.0.0/>`_
+`EEG During Mental Arithmetic Tasks <https://physionet.org/content/eegmat/1.0.0/>`_.
 Cite Zyma et al. (2019) and PhysioNet. The data use the Open Data Commons
-Attribution License v1.0. The immutable source commit identifies the implementation and its unreleased
-features. Install that checked-out source with the required optional components
+Attribution License v1.0. The immutable source commit identifies the
+implementation and its unreleased features. Install that checked-out source with the required optional components
 following :doc:`installation`, then use the recorded runtime versions and example
 command after downloading the subject pairs.
 
