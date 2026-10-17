@@ -28,6 +28,8 @@ For standard holdout evaluation, fit learned preprocessing on training data.
 Use validation data to select settings, and reserve test labels for the final
 evaluation. State explicitly when a protocol uses unlabeled target data.
 
+For verified runtime combinations and modern API examples, see :doc:`pytorch`.
+
 Models and training
 -------------------
 
@@ -43,3 +45,8 @@ Record package versions, preprocessing, partition IDs, seeds, and metrics.
 
 Continue with :doc:`../tutorials/index`. The :doc:`../agent_guide` provides
 the same library workflow as a reusable assistant skill.
+
+.. toctree::
+   :hidden:
+
+   pytorch
