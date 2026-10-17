@@ -58,3 +58,25 @@ DeepConvNet reference generators use two CPU threads. Reference comparisons
 set the same thread count and restore the previous count after each case
 group. Parallel reductions can change gradient sums for the deliberately
 oversized constrained state; production modules do not change thread settings.
+
+## EEGPT encoder references
+
+`eegpt_reference.json` uses the unmodified official encoder from
+BINE022/EEGPT at ea7282f698c406cd423ccbedbe9960853761144c,
+`downstream/Modules/models/EEGPT_mcae_finetune.py`. Its SHA256 is stored in
+the fixture. Apache-2.0 license and adaptation provenance are retained in
+LICENSES/EEGPT.txt and LICENSES/EEGPT-NOTICE.txt. No checkpoint is included.
+Four float64 cases use two CPU threads, deterministic linspace weights,
+and sin/arange + cos/arange windows. They cover ordinary and overlapping
+patches, flattened patch/electrode selection, and temporal selection.
+The loss is mean squared (output * sin(arange / 13)); outputs, first eight
+entries, sum and L2 norm of every input/parameter gradient are recorded.
+Comparisons restore the caller's thread count after reference evaluation.
+
+The official mask_t branch reshapes with the pre-selection patch count.
+For this case the reference script selects the requested time positions
+from the official full output, without editing upstream code. It defines
+the intended result independently; it does not claim the broken branch ran.
+Normalized-patch projection is an original-workspace option, tested against
+unfold/normalization/linear arithmetic and optimization separately.
+No fixture result establishes pretrained performance or task accuracy.

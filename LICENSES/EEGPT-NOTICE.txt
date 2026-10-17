@@ -1,0 +1,14 @@
+EEGPT architecture adaptation
+
+Upstream: https://github.com/BINE022/EEGPT
+Revision: ea7282f698c406cd423ccbedbe9960853761144c
+Source: downstream/Modules/models/EEGPT_mcae_finetune.py
+License: Apache License 2.0 (LICENSES/EEGPT.txt)
+
+TorchEEG adapts the spatial encoder and summary-token architecture, retains
+encoder tensor names, uses TorchEEG constructor naming and documentation,
+adds explicit electrode IDs and validated mask selection, repairs temporal
+selection geometry, and validates complete local tensor checkpoint states.
+The original workspace's normalized-patch option is preserved separately.
+The task predictor/reconstructor and downstream heads are separate scope;
+this encoder does not claim to implement their pretraining objectives.
