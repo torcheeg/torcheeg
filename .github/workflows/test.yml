@@ -41,7 +41,7 @@ jobs:
         
     - name: Run tests
       run: |
-        python -m unittest discover test/
+        python -m unittest discover -s test -t .
         
     - name: Test build
       run: |
