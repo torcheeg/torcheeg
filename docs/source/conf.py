@@ -153,3 +153,5 @@ html_context = {
 }
 
 html_favicon = '_static/favicon.ico'
+# Publish the documentation index at the site root.
+html_extra_path = ["../../llms.txt"]
