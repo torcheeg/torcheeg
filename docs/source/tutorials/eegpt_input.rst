@@ -88,3 +88,28 @@ training path; the result is not pretrained EEGPT validation.
 The checkpoint contains model tensors and configuration. It does not contain
 source EDF recordings. Use the recorded source channel order, preprocessing,
 window duration and rate when applying the restored model.
+
+Compose a complete task
+------------------------
+
+:class:`torcheeg.models.EEGPTFinetuneClassifier` can include its own explicit
+pointwise channel mapping before the spatial encoder. In that case,
+``EEGPTAdaptedModel`` checks the external adapter against the task model's
+``input_channels``, rather than the encoder's internal channel count. For
+example, an adapter can map 19 source channels to five features, and the
+complete task can map those five features into three encoder slots. An
+adapter that produces three slots for that five-input task is rejected
+before forward. Direct summary heads still require the encoder channel count.
+
+The adapter's configured sample count must match ``encoder.chunk_size``.
+This keeps temporal geometry explicit even when the complete task offers
+its own optional nearest-neighbor normalization. Learned intermediate
+features and token IDs do not establish physical electrode recovery.
+
+See :doc:`../auto_examples/examples_eegmat_eegpt_composition` for one fixed
+EEGMat pipeline with an input adapter, full reconstructor task and registered
+LoRA updates. Install tuning modules before creating the optimizer, and
+recreate the same components before restoring the complete tensor state.
+The script uses random small components and a subject holdout. It does not
+claim pretrained performance or a full benchmark protocol. See
+:doc:`../user_guide/eegpt_finetuning` for the full task architecture.

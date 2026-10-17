@@ -153,8 +153,8 @@ class EEGPTAdaptedModel(nn.Module):
     r'''Compose an input adapter with a dimension-checked EEGPT task model.
 
     Input has the adapter's declared source channel order and sample count.
-    The adapter produces learned feature slots with the task encoder's input
-    geometry. The task model retains its classification, regression or
+    The adapter produces learned feature slots for the task model input.
+    A task may explicitly map these slots into its internal encoder geometry. The task model retains its classification, regression or
     embedding output. Named child modules provide stable state paths, and
     the constructor does not run data or update normalization statistics.
 
@@ -177,7 +177,7 @@ class EEGPTAdaptedModel(nn.Module):
 
     Args:
         adapter (EEGPTInputAdapter): Configured source-to-slot input adapter.
-        model (nn.Module): EEGPTClassifier, EEGPTRegression or EEGPTEmbedding.
+        model (nn.Module): EEGPTClassifier, EEGPTRegression, EEGPTEmbedding or EEGPTFinetuneClassifier.
 
     .. automethod:: feature
     '''
@@ -185,8 +185,9 @@ class EEGPTAdaptedModel(nn.Module):
         super().__init__()
         if not isinstance(adapter, EEGPTInputAdapter) or not isinstance(model, _EEGPTDownstream):
             raise ValueError('Use an EEGPTInputAdapter and an EEGPT task model.')
-        if adapter.out_channels != model.encoder.num_electrodes or adapter.num_samples != model.encoder.chunk_size:
-            raise ValueError('Adapter output slots/samples must match the task encoder input geometry.')
+        input_channels = getattr(model, 'input_channels', model.encoder.num_electrodes)
+        if adapter.out_channels != input_channels or adapter.num_samples != model.encoder.chunk_size:
+            raise ValueError('Adapter output slots must match task input channels, and samples must match the configured encoder window.')
         self.adapter = adapter
         self.model = model
         self.feature_dim = model.feature_dim
