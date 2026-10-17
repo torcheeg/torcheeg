@@ -44,8 +44,11 @@ class Conv2dWithConstraint(nn.Conv2d):
         super(Conv2dWithConstraint, self).__init__(*args, **kwargs)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        self.weight.data = torch.renorm(self.weight.data, p=2, dim=0, maxnorm=self.max_norm)
-        return super(Conv2dWithConstraint, self).forward(x)
+        with torch.no_grad():
+            self.weight.copy_(torch.renorm(self.weight, p=2, dim=0,
+                                           maxnorm=self.max_norm))
+        # Keep saved weights valid when several forwards share one backward.
+        return self._conv_forward(x, self.weight.clone(), self.bias)
 
 
 class EEGNet(nn.Module):
@@ -94,6 +97,19 @@ class EEGNet(nn.Module):
     sizes (for example, 127 samples with the default kernels); such checkpoints
     require a new classification head. Even when tensor shapes match, even-kernel
     padding changes the model's numerical output.
+
+    Maximum-norm constraints keep parameter storage and checkpoint names
+    unchanged. For inference export, set the model to evaluation mode and
+    perform :obj:`torch.export.export` within :obj:`torch.no_grad`. Validate
+    the exported program on the target PyTorch version before deployment.
+
+    .. code-block:: python
+
+        model = EEGNet().eval()
+        example = torch.randn(2, 1, 32, 128)
+        with torch.no_grad():
+            program = torch.export.export(model, (example,), strict=True)
+        torch.export.save(program, 'eegnet.pt2')
 
     Args:
         chunk_size (int): Number of data points included in each EEG chunk, i.e., :math:`T` in the paper. (default: :obj:`151`)
