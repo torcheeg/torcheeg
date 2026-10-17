@@ -1,6 +1,6 @@
 """
 Train a complete EEGPT task with input adaptation and LoRA
-=========================================================
+==========================================================
 
 Use the public EEG During Mental Arithmetic Tasks database:
 https://physionet.org/content/eegmat/1.0.0/. Cite Zyma et al. (2019),
@@ -84,7 +84,7 @@ def main():
             raise ValueError(f'Subject {subject} needs background and arithmetic recordings.')
     splitter = LeaveOneSubjectOut(split_path=args.cache_path + '-subject-split')
     train, test = next(splitter.split(dataset, subject=subjects[-1]))
-    encoder_config = dict(num_electrodes=3, chunk_size=1024, channel_names=['C3','CZ','C4'],
+    encoder_config = dict(num_electrodes=3, chunk_size=1024, channel_names=['C3', 'CZ', 'C4'],
                           hid_channels=32, depth=2, num_heads=4, embed_num=2)
     decoder_config = dict(num_patches=16, in_features=32, hid_channels=32,
                           depth=2, num_heads=4, embed_num=2)
@@ -95,7 +95,7 @@ def main():
     task = EEGPTFinetuneClassifier(EEGPT(**encoder_config),
         EEGPTReconstructor(**decoder_config), **task_config)
     add_eegpt_lora(task, **tuning_config)
-    model = EEGPTAdaptedModel(EEGPTInputAdapter(**adapter_config),task)
+    model = EEGPTAdaptedModel(EEGPTInputAdapter(**adapter_config), task)
     trainer = ClassifierTrainer(model, num_classes=2, accelerator='cpu', devices=1, metrics=['accuracy'])
     trainer.fit(DataLoader(train, batch_size=args.batch_size, shuffle=True), None,
         max_epochs=args.epochs, logger=False, enable_checkpointing=False, num_sanity_val_steps=0,
@@ -105,7 +105,7 @@ def main():
     model.eval()
     logits, targets = [], []
     with torch.no_grad():
-        for eeg, target in DataLoader(test,batch_size=args.batch_size):
+        for eeg, target in DataLoader(test, batch_size=args.batch_size):
             logits.append(model(eeg).cpu())
             targets.append(target.cpu())
     output = Path(args.output_path)
