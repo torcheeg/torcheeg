@@ -283,7 +283,7 @@ class BaseDataset(Dataset):
         if self.is_lazy():
             # Copy paths for lazy loading
             result.eeg_signal_paths = self.eeg_signal_paths.copy()
-            result.eeg_io_router = None
+            result.eeg_io_router = {}
         else:
             # Original eager loading copy
             result.eeg_io_router = {}
