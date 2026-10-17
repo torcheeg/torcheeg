@@ -10,6 +10,7 @@ import torch
 from torch import nn
 
 from torcheeg.models import CBraMod
+from torcheeg.models.transformer.cbramod import _magnitude_spectrum
 from test.models.test_eegpt import reference_state
 
 
@@ -98,6 +99,22 @@ class TestCBraMod(unittest.TestCase):
                     x = torch.randn(2, channels, patches, patch_size)
                     self.assertEqual(model(x).shape, (2, channels, patches, 13))
                     self.assertEqual(model.forward_features(x).shape, (2, channels, patches, width))
+
+    def test_magnitude_matches_complex_abs_at_zero_and_large_amplitudes(self):
+        for dtype in (torch.float32, torch.float64):
+            for scale in (0., 1., 1e20):
+                with self.subTest(dtype=dtype, scale=scale):
+                    values = torch.randn(2, 3, 2, 200, dtype=dtype) * scale
+                    x = values.clone().requires_grad_()
+                    y = values.clone().requires_grad_()
+                    actual = _magnitude_spectrum(x)
+                    expected = torch.fft.rfft(y, dim=-1, norm='forward').abs()
+                    self.assertTrue(torch.isfinite(actual).all())
+                    torch.testing.assert_close(actual, expected)
+                    actual.sum().backward()
+                    expected.sum().backward()
+                    self.assertTrue(torch.isfinite(x.grad).all())
+                    torch.testing.assert_close(x.grad, y.grad)
 
     def test_zero_input_has_finite_input_and_parameter_gradients(self):
         model = self.model().eval()

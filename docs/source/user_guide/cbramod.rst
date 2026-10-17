@@ -34,8 +34,9 @@ Optional masks have shape ``[batch, electrodes, patches]``. True/1 replaces
 that complete patch with the native fixed mask encoding before temporal
 and spectral embedding. Boolean masks support graph capture without
 value-dependent binary validation; binary integer and floating masks are
-also validated for eager execution. Complex magnitude uses ``abs`` so zero
-signals have finite gradients. Low-precision FFT input is promoted to
+also validated for eager execution. Magnitude matches complex absolute value using a real ``hypot`` form
+with an explicit zero branch. This preserves finite zero-signal gradients
+and supports older Inductor convolution/FFT training graphs. Low-precision FFT input is promoted to
 float32; float64 inputs retain their precision.
 
 Canonical configuration

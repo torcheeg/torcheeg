@@ -70,6 +70,20 @@ class _Encoder(nn.Module):
         return x
 
 
+def _magnitude_spectrum(x):
+    # Use a real view for the magnitude's backward path. This avoids complex
+    # pointwise code generation in older Inductor convolution/FFT graphs.
+    fft_input = x.float() if x.dtype in (torch.float16, torch.bfloat16) else x
+    components = torch.view_as_real(torch.fft.rfft(fft_input, dim=-1, norm='forward'))
+    real, imag = components.unbind(dim=-1)
+    nonzero = (real != 0) | (imag != 0)
+    # Protect hypot's derivative at (0, 0) without changing nonzero magnitudes
+    # or introducing the overflow of sqrt(real.square() + imag.square()).
+    safe_real = torch.where(nonzero, real, torch.ones_like(real))
+    safe_imag = torch.where(nonzero, imag, torch.zeros_like(imag))
+    return torch.where(nonzero, torch.hypot(safe_real, safe_imag), torch.zeros_like(real))
+
+
 class _PatchEmbedding(nn.Module):
     def __init__(self, patch_size, width, dropout, position_kernel):
         super().__init__()
@@ -96,11 +110,7 @@ class _PatchEmbedding(nn.Module):
             x = torch.where(mask.unsqueeze(-1), self.mask_encoding.to(dtype=x.dtype), x)
         flat = x.reshape(batch, 1, channels * patches, samples)
         temporal = self.proj_in(flat).permute(0, 2, 1, 3).reshape(batch, channels, patches, self.width)
-        # FFT lengths such as the canonical 200 samples are not supported by
-        # half-precision CUDA FFT. Keep float64 inputs; promote only low precision.
-        fft_input = x.float() if x.dtype in (torch.float16, torch.bfloat16) else x
-        magnitude = torch.fft.rfft(fft_input, dim=-1, norm='forward').abs()
-        # Complex abs has a finite zero-input gradient, unlike sqrt(re² + im²).
+        magnitude = _magnitude_spectrum(x)
         spectral = self.spectral_proj(magnitude.to(dtype=self.spectral_proj[0].weight.dtype))
         embedded = temporal + spectral
         positional = self.positional_encoding(embedded.permute(0, 3, 1, 2)).permute(0, 2, 3, 1)

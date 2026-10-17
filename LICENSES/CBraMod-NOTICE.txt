@@ -10,8 +10,9 @@ TorchEEG retains native component tensor names, convolution/group-normalization
 shapes and criss-cross attention semantics. Constructor names follow TorchEEG.
 Geometry and masks are validated; reconstruction and feature extraction are
 explicit interfaces. Attention uses native scaled-dot-product operations with
-packed MultiheadAttention state names. Complex magnitude retains the official
-finite zero-input gradient. Low-precision FFT is computed in float32.
+packed MultiheadAttention state names. Magnitude uses a real hypot expression with an explicit zero branch,
+retaining the official finite zero-input gradient while supporting older
+Inductor convolution/FFT graphs. Low-precision FFT is computed in float32.
 
 No pretrained weights are included. The author's linked weight repository is
 https://huggingface.co/weighting666/CBraMod; its model card declares Apache-2.0.
