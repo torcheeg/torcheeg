@@ -1,4 +1,7 @@
 import unittest
+from unittest.mock import patch
+
+import matplotlib.pyplot as plt
 
 import numpy as np
 import torch
@@ -61,6 +64,18 @@ class TestVisualize(unittest.TestCase):
         img = plot_graph(mock_g, DEAP_CHANNEL_LOCATION_DICT)
 
         self.assertFalse(np.all(img == 0))
+
+    def test_plot_graph_colorbar_uses_the_graph_axes(self):
+        graph = ToG(DEAP_ADJACENCY_MATRIX)(eeg=np.zeros((32, 128)))["eeg"]
+        with patch("torcheeg.utils.visualize.plt.colorbar", wraps=plt.colorbar) as colorbar:
+            image = plot_graph(graph, DEAP_CHANNEL_LOCATION_DICT)
+        axes = colorbar.call_args.kwargs["ax"]
+        self.assertIs(axes, axes.figure.axes[0])
+        self.assertEqual(len(axes.figure.axes), 2)
+        self.assertFalse(axes.axison)
+        self.assertEqual(image.ndim, 3)
+        self.assertGreater(np.ptp(image[..., :3]), 0)
+        plt.close(axes.figure)
 
     def test_plot_adj_connectivity(self):
         mock_adj = torch.randn(62, 62)
