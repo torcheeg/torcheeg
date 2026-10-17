@@ -59,3 +59,26 @@ encoder starts from random weights. Optional complete local encoder states
 are loaded with strict key/shape checks and safe tensor deserialization.
 An executed random-initialization example is not pretrained validation.
 The encoder API also supports electrode/time masks and attention inspection.
+
+EEGPT classification, regression and feature extraction
+-------------------------------------------------------
+
+The direct summary-token wrappers take a configured encoder. They do not
+resample signals or replace electrode identities with a learned channel mix.
+The task heads start from random weights even when an encoder checkpoint
+is loaded. Freezing an encoder keeps it in evaluation mode during head
+training. Save a full task state to restore trained task-head weights.
+
+* :doc:`../auto_examples/examples_bciciv2b_eegpt_classifier` trains
+  :class:`torcheeg.models.EEGPTClassifier` with a subject holdout.
+* :doc:`../auto_examples/examples_eegmat_eegpt_regression` uses
+  :class:`torcheeg.models.EEGPTRegression` to predict the public EEGMat
+  subtraction-score metadata, with all windows of each subject kept together.
+* :doc:`../auto_examples/examples_bciciv2b_eegpt_embeddings` saves
+  :class:`torcheeg.models.EEGPTEmbedding` features and aligned metadata.
+  Fit any later feature scaler or task model on a training-subject split.
+
+Each example states its actual source, preprocessing and weight status. The
+small random-encoder defaults are functional demonstrations. They do not
+establish pretrained EEGPT accuracy or reproduce the full published
+predictor/reconstructor evaluation architecture.
