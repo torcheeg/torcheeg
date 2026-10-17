@@ -84,6 +84,16 @@ Transformer
    EEGPTPredictor
    EEGPTFinetuneClassifier
 
+
+EEGPT parameter-efficient tuning
+--------------------------------
+
+.. autofunction:: add_eegpt_adapters
+
+.. autofunction:: add_eegpt_prefix
+
+.. autofunction:: add_eegpt_lora
+
 Generative Adversarial Network
 ----------------------------------
 .. autosummary::
