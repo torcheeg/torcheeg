@@ -26,4 +26,5 @@ reporting a result.
    User Guide <user_guide/index>
    Reference API <reference/index>
    Tutorials <tutorials/index>
+   Leaderboard <leaderboard>
    Community <community/index>
