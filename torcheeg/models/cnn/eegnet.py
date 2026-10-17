@@ -8,11 +8,16 @@ class Conv2dWithConstraint(nn.Conv2d):
         super(Conv2dWithConstraint, self).__init__(*args, **kwargs)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        with torch.no_grad():
-            self.weight.copy_(torch.renorm(self.weight, p=2, dim=0,
-                                           maxnorm=self.max_norm))
-        # Keep saved weights valid when several forwards share one backward.
-        return self._conv_forward(x, self.weight.clone(), self.bias)
+        if self.weight.requires_grad:
+            with torch.no_grad():
+                self.weight.copy_(torch.renorm(self.weight, p=2, dim=0,
+                                               maxnorm=self.max_norm))
+            # Keep saved weights valid when several forwards share one backward.
+            weight = self.weight.clone()
+        else:
+            # Frozen inference weights are projected without mutating parameters.
+            weight = torch.renorm(self.weight, p=2, dim=0, maxnorm=self.max_norm)
+        return self._conv_forward(x, weight, self.bias)
 
 
 class EEGNet(nn.Module):
@@ -56,7 +61,8 @@ class EEGNet(nn.Module):
         model(x)
 
     Maximum-norm constraints keep parameter storage and checkpoint names
-    unchanged. For inference export, freeze parameter gradients on an
+    unchanged. Trainable weights are projected in place; frozen weights use
+    an equivalent functional projection without changing their stored values. For inference export, freeze parameter gradients on an
     evaluation-mode copy of the model, then perform :obj:`torch.export.export` within :obj:`torch.no_grad`. Validate
     the exported program on the target PyTorch version before deployment.
 
