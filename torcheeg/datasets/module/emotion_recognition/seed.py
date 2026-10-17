@@ -97,6 +97,12 @@ class SEEDDataset(BaseDataset):
         # coresponding baseline signal (torch_geometric.data.Data),
         # label (int)
 
+    The :obj:`trial_id` metadata contains an integer from 1 to 15, shared by
+    all subjects for the same trial. Subject-specific MATLAB key prefixes are
+    not part of the trial ID. Regenerate datasets cached by older versions
+    before using cross-trial splits; loading an existing cache does not rewrite
+    its metadata.
+
     Args:
         root_path (str): Downloaded data files in matlab (unzipped Preprocessed_EEG.zip) formats (default: :obj:`'./Preprocessed_EEG'`)
         chunk_size (int): Number of data points included in each EEG chunk as training or test samples. If set to -1, the EEG signal of a trial is used as a sample of a chunk. (default: :obj:`200`)
@@ -222,7 +228,7 @@ class SEEDDataset(BaseDataset):
                 trial_samples = before_trial(trial_samples)
 
             int_trial_id = int(trial_id.split('_')[-1][3:])
-            
+
             # record the common meta info
             trial_meta_info = {
                 'subject_id': subject,

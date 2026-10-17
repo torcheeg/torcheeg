@@ -1,4 +1,13 @@
+import os
+import tempfile
 import unittest
+
+import numpy as np
+import pandas as pd
+
+from torcheeg.datasets import BaseDataset
+from torcheeg.io import EEGSignalIO
+from torcheeg.model_selection import KFoldCrossTrial
 
 from torcheeg.datasets import (
     AMIGOSDataset, BCI2022Dataset, DEAPDataset, DREAMERDataset, FACEDDataset,
@@ -26,6 +35,45 @@ class TestEmotionRecognitionDataset(unittest.TestCase):
         item = next(SEEDDataset.process_record(**kwargs))
 
         self.assertEqual(item['eeg'].shape, (62, 200))
+
+    def test_seed_trial_ids_are_shared_across_subjects(self):
+        labels = np.array([-1, 0, 1] * 5)
+        records = []
+        for subject_id, prefix in ((1, 'jl'), (2, 'phl')):
+            samples = {f'{prefix}_eeg{trial_id}': np.full((62, 400), trial_id)
+                       for trial_id in range(1, 16)}
+            samples['__header__'] = 'metadata'
+            items = list(SEEDDataset.process_record(
+                record=f'{subject_id}_20130703.mat', samples=samples,
+                labels=labels))
+            self.assertEqual(len(items), 30)
+            for item in items:
+                info = item['info']
+                self.assertIsInstance(info['trial_id'], int)
+                self.assertEqual(info['subject_id'], subject_id)
+                self.assertEqual(info['emotion'], labels[info['trial_id'] - 1])
+                np.testing.assert_array_equal(item['eeg'],
+                    np.full((62, 200), info['trial_id']))
+                records.append(info)
+            self.assertEqual({item['info']['trial_id'] for item in items},
+                             set(range(1, 16)))
+
+        dataset = BaseDataset.__new__(BaseDataset)
+        dataset.info = pd.DataFrame(records)
+        dataset.eeg_io_router = {'_record_0': EEGSignalIO(
+            io_path='unused', io_mode='memory')}
+        dataset.eeg_signal_paths = {}
+        with tempfile.TemporaryDirectory() as directory:
+            cv = KFoldCrossTrial(n_splits=5,
+                                split_path=os.path.join(directory, 'split'))
+            folds = list(cv.split(dataset))
+        self.assertEqual(len(folds), 5)
+        for train, test in folds:
+            self.assertEqual(len(train), 48)
+            self.assertEqual(len(test), 12)
+            self.assertFalse(set(train.info['trial_id']) & set(test.info['trial_id']))
+            self.assertEqual(set(train.info['subject_id']), {1, 2})
+            self.assertEqual(set(test.info['subject_id']), {1, 2})
 
     def test_faced_feature_dataset(self):
         kwargs = {
