@@ -77,6 +77,9 @@ Transformer
    DARNet
    CTNet
    EEGPT
+   EEGPTClassifier
+   EEGPTRegression
+   EEGPTEmbedding
 
 Generative Adversarial Network
 ----------------------------------

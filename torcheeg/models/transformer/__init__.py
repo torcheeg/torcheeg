@@ -11,3 +11,4 @@ from .mhanet import MHANet
 from .ctnet import CTNet
 
 from .eegpt import EEGPT
+from .eegpt_heads import EEGPTClassifier, EEGPTRegression, EEGPTEmbedding
