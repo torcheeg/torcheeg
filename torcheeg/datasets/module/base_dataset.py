@@ -537,7 +537,7 @@ class BaseDataset(Dataset):
             data = np.split(data, data.shape[0], axis=0)
             data = [np.squeeze(d, axis=0) for d in data]
         elif isinstance(data, torch.Tensor):
-            data = torch.split(data, data.shape[0], dim=0)
+            data = torch.split(data, 1, dim=0)
             data = [torch.squeeze(d, axis=0) for d in data]
         # else list
         return data

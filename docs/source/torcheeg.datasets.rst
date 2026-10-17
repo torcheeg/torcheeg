@@ -113,3 +113,24 @@ Customized Datasets
     MNERawDataset
     ConcatDataset
     PairDataset
+
+Postprocessing hooks
+--------------------
+
+``after_trial``, ``after_session`` and ``after_subject`` receive a batch of
+windows from the selected group. Its first dimension is the number of windows;
+the remaining dimensions are those of one sample. Return the same number and
+order of windows so that the signals still match their metadata.
+
+Both NumPy arrays and Torch tensors are split back into individual windows
+after the hook. The splitting operation preserves a tensor result's dtype,
+device and gradient connections.
+For example, this Torch callback centers each electrode's time series within
+each window::
+
+    def center_trial(batch):
+        return batch - batch.mean(dim=-1, keepdim=True)
+
+Pass it as ``after_trial=center_trial`` when the offline transform returns
+tensors, for example with :class:`torcheeg.transforms.ToTensor`. The callback
+receives the complete trial batch; the dataset stores its individual windows.
