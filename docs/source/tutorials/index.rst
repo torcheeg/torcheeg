@@ -20,3 +20,13 @@ For a workflow built directly with PyTorch, see
 :doc:`../auto_examples/examples_vanilla_torch`.
 A documentation build does not execute these training scripts. A successful
 build therefore does not establish that an experiment has run.
+
+Generative modeling
+-------------------
+
+:doc:`../auto_examples/examples_eegmat_bvae` trains an unconditional VAE
+with the public EEGMat dataset, holds out a subject, and saves the model
+and generated differential-entropy feature grids. It uses the current
+:class:`torcheeg.trainers.BetaVAETrainer` API without a search service or
+a pretrained image metric. The example explains its signal units,
+preprocessing, split and diagnostic metrics.
