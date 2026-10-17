@@ -21,3 +21,12 @@ MetaInfoIO
    :members:
    :undoc-members:
    :show-inheritance:
+
+
+MemmapEEGSignalIO
+-----------------------------
+
+.. autoclass:: torcheeg.io.MemmapEEGSignalIO
+   :members:
+   :undoc-members:
+   :show-inheritance:
