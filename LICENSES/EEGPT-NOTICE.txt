@@ -18,3 +18,9 @@ eegpt_decoder.py. Native component tensor names, partial-head rotary
 attention, class tokens and optional projection are retained. TorchEEG
 validates geometry and removes the mutable frequency cache. These
 full-token downstream modules do not implement a masked pretraining loss.
+
+The full-token downstream task path is adapted in eegpt_finetune.py.
+TorchEEG makes pooling, freezing, channel mixing and nearest-neighbor
+length normalization explicit. Constrained weights retain optimizer
+ownership; joint component loading validates complete states with safe
+weights-only deserialization. No benchmark training schedule is implied.

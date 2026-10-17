@@ -82,6 +82,7 @@ Transformer
    EEGPTEmbedding
    EEGPTReconstructor
    EEGPTPredictor
+   EEGPTFinetuneClassifier
 
 Generative Adversarial Network
 ----------------------------------
