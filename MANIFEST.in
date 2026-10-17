@@ -10,3 +10,5 @@ include docs/validate_leaderboard.py
 include docs/source/leaderboard.rst
 recursive-include docs/source/_static/leaderboard *.json *.js *.css
 include test/utils/test_leaderboard.js
+
+include test/models/fixtures/README.md

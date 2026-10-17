@@ -17,6 +17,7 @@ Convolutional Neural Networks
    :template: modeltemplate.rst
 
    EEGNet
+   ShallowConvNet
    FBCCNN
    FBCNet
    FBMSNet

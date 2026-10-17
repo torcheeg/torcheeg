@@ -13,3 +13,4 @@ from .tiny_sleepnet import TinySleepNet
 from .usleep import USleep
 from .tslanet import TSLANet
 from .lmda import LMDA
+from .shallow_convnet import ShallowConvNet
