@@ -164,10 +164,12 @@ class EEGNet(nn.Module):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         r'''
         Args:
-            x (torch.Tensor): EEG signal representation, the ideal input shape is :obj:`[n, 60, 151]`. Here, :obj:`n` corresponds to the batch size, :obj:`60` corresponds to :obj:`num_electrodes`, and :obj:`151` corresponds to :obj:`chunk_size`.
+            x (torch.Tensor): EEG signal representation with shape
+                :obj:`[batch_size, 1, num_electrodes, chunk_size]`.
 
         Returns:
-            torch.Tensor[number of sample, number of classes]: the predicted probability that the samples belong to the classes.
+            torch.Tensor: Classification logits with shape
+                :obj:`[batch_size, num_classes]`.
         '''
         x = self.block1(x)
         x = self.block2(x)
