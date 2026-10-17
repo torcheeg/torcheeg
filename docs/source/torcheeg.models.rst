@@ -97,6 +97,16 @@ EEGPT parameter-efficient tuning
 
 .. autofunction:: add_eegpt_lora
 
+Signal processing layers
+-------------------------
+
+.. autosummary::
+   :toctree: generated
+   :nosignatures:
+   :template: modeltemplate.rst
+
+   FourierResample
+
 Generative Adversarial Network
 ----------------------------------
 .. autosummary::

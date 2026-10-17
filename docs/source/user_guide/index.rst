@@ -56,3 +56,4 @@ the same library workflow as a reusable assistant skill.
    eegpt_finetuning
    pytorch
    cbramod
+   fourier_resampling
