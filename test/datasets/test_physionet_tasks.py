@@ -73,7 +73,7 @@ class TestPhysioNetTasks(unittest.TestCase):
             dataset = SyntheticPhysioNetMI(root_path=source, task='left_right',
                 chunk_size=800, io_path=cache, io_mode='pickle', verbose=False)
             before = self.fingerprints(cache)
-            with self.assertRaisesRegex(ValueError, 'cached imagery task'):
+            with self.assertRaisesRegex(ValueError, 'cached imagery task|cache configuration'):
                 SyntheticPhysioNetMI(root_path=source, task='hands_feet',
                     io_path=cache, io_mode='pickle', verbose=False)
             self.assertEqual(before, self.fingerprints(cache))
@@ -85,6 +85,8 @@ class TestPhysioNetTasks(unittest.TestCase):
             cache = str(Path(root) / 'cache')
             SyntheticPhysioNetMI(root_path=source, task='four_class',
                 chunk_size=800, io_path=cache, io_mode='pickle', verbose=False)
+            for marker in Path(cache).rglob('.torcheeg-*.json'):
+                marker.unlink()
             for path in Path(cache).glob('_record_*/info.csv'):
                 pd.read_csv(path).drop(columns=['task']).to_csv(path, index=False)
             before = self.fingerprints(cache)

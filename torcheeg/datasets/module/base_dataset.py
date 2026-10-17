@@ -1,6 +1,7 @@
 import logging
+import gc
+import traceback
 import os
-import shutil
 from copy import copy
 from typing import Any, Callable, Dict, Union
 
@@ -12,6 +13,7 @@ from torch.utils.data import Dataset
 from tqdm import tqdm
 
 from torcheeg.io import EEGSignalIO, MetaInfoIO
+from ._cache import DatasetCache, configuration_signature, process_cached_record
 
 log = logging.getLogger('torcheeg')
 
@@ -39,107 +41,72 @@ class BaseDataset(Dataset):
         self.after_session = after_session
         self.after_subject = after_subject
 
-        # new IO
-        if self.io_mode == 'memory' or not self.exist(self.io_path):
-            if self.io_mode == 'memory':
-                log.info('🔍 | Processing EEG data in memory.')
-            else:
-                log.info(
-                    f'🔍 | Processing EEG data. Processed EEG data has been cached to \033[92m{io_path}\033[0m.'
-                )
-            log.info(
-                f'⏳ | Monitoring the detailed processing of a record for debugging. The processing of other records will only be reported in percentage to keep it clean.'
-            )
-            # make the root dictionary
-            if self.io_mode != 'memory':
-                os.makedirs(self.io_path, exist_ok=True)
-
-            records = self.set_records(**kwargs)
-            if self.num_worker == 0:
-                try:
-                    worker_results = []
-                    for record_id, record in tqdm(enumerate(records),
-                                                  disable=not self.verbose,
-                                                  desc="[PROCESS]",
-                                                  total=len(records),
-                                                  position=0,
-                                                  leave=None):
-                        worker_results.append(
-                            self.handle_record(io_path=self.io_path,
-                                               io_size=self.io_size,
-                                               io_mode=self.io_mode,
-                                               record=record,
-                                               record_id=record_id,
-                                               read_record=self.read_record,
-                                               process_record=self.process_record,
-                                               verbose=self.verbose,
-                                               **kwargs))
-                except Exception as e:
-                    # shutil to delete the database
-                    if self.io_mode != 'memory':
-                        shutil.rmtree(self.io_path)
-                    raise e
-            else:
-                # catch the exception
-                try:
-                    worker_results = Parallel(n_jobs=self.num_worker)(
-                        delayed(self.handle_record)(
-                            io_path=io_path,
-                            io_size=io_size,
-                            io_mode=io_mode,
-                            record_id=record_id,
-                            record=record,
-                            read_record=self.read_record,
-                            process_record=self.process_record,
-                            verbose=self.verbose,
-                            **kwargs)
-                        for record_id, record in tqdm(enumerate(records),
-                                                      disable=not self.verbose,
-                                                      desc="[PROCESS]",
-                                                      total=len(records),
-                                                      position=0,
-                                                      leave=None))
-                except Exception as e:
-                    # shutil to delete the database
-                    if self.io_mode != 'memory':
-                        shutil.rmtree(self.io_path)
-                    raise e
-
-            if not self.io_mode == 'memory':
-                log.info(
-                    f'✅ | All processed EEG data has been cached to {io_path}.'
-                )
-                log.info(
-                    f'😊 | Please set \033[92mio_path\033[0m to \033[92m{io_path}\033[0m for the next run, to directly read from the cache if you wish to skip the data processing step.'
-                )
-
-            if self.io_mode == 'memory':
-                self._init_memory_io(worker_results)
-            else:
-                self.init_io(
-                    io_path=self.io_path,
-                    io_size=self.io_size,
-                    io_mode=self.io_mode)
-
-            if self.after_trial is not None or self.after_session is not None or self.after_subject is not None:
-                # catch the exception
-                try:
-                    self.update_record(after_trial=after_trial,
-                                       after_session=after_session,
-                                       after_subject=after_subject)
-                except Exception as e:
-                    # shutil to delete the database
-                    if self.io_mode != 'memory':
-                        shutil.rmtree(self.io_path)
-                    raise e
+        if self.io_mode == 'memory':
+            log.info('🔍 | Processing EEG data in memory.')
+            records = list(self.set_records(**kwargs))
+            results = self._process_records(records, self.io_path, self.handle_record, kwargs)
+            self._init_memory_io(results)
+            if any(hook is not None for hook in (after_trial, after_session, after_subject)):
+                self.update_record(after_trial, after_session, after_subject)
         else:
-            log.info(
-                f'🔍 | Detected cached processing results, reading cache from {self.io_path}.'
-            )
-            self.init_io(
-                io_path=self.io_path,
-                io_size=self.io_size,
-                io_mode=self.io_mode)
+            self._prepare_disk_cache(kwargs)
+
+    def _process_records(self, records, io_path, worker, kwargs, signature=None):
+        arguments = dict(kwargs, io_path=io_path, io_size=self.io_size,
+                         io_mode=self.io_mode, read_record=self.read_record,
+                         process_record=self.process_record, verbose=self.verbose)
+        if signature is not None:
+            arguments.update(handle_record=self.handle_record, signature=signature)
+        iterator = tqdm(enumerate(records), total=len(records),
+                        disable=not self.verbose, desc='[PROCESS]', leave=None)
+        if self.num_worker == 0:
+            return [worker(record=record, record_id=index, **arguments)
+                    for index, record in iterator]
+        return Parallel(n_jobs=self.num_worker)(
+            delayed(worker)(record=record, record_id=index, **arguments)
+            for index, record in iterator)
+
+    def _release_staging_io(self):
+        # Staging handles must be released before rename, including on Windows.
+        self.eeg_io_router = {}
+        self.eeg_signal_paths = {}
+        gc.collect()
+
+    def _prepare_disk_cache(self, kwargs):
+        if self.io_path is None:
+            raise ValueError('Disk caching requires an io_path.')
+        cache = DatasetCache(self.io_path, self.io_mode, self.io_size)
+        with cache.lock():
+            signature = configuration_signature(self, kwargs)
+            sources = cache.sources(kwargs)
+            if cache.validate_existing(signature, sources):
+                log.info(f'🔍 | Reading cached processing results from {self.io_path}.')
+                self.init_io(self.io_path, self.io_size, self.io_mode)
+                cache.cleanup_published()
+                return
+            records = list(self.set_records(**kwargs))
+            cache.begin(signature, sources, records)
+            log.info(f'🔍 | Preparing resumable EEG records for {self.io_path}.')
+            self._process_records(records, str(cache.clean), process_cached_record,
+                                  kwargs, signature=signature)
+            has_hooks = any(hook is not None for hook in
+                            (self.after_trial, self.after_session, self.after_subject))
+            output = cache.hook_work() if has_hooks else cache.clean
+            if has_hooks:
+                try:
+                    self.init_io(str(output), self.io_size, self.io_mode)
+                    self.update_record(self.after_trial, self.after_session,
+                                       self.after_subject)
+                except BaseException as error:
+                    # Unwound hook frames may still retain mapped staging arrays.
+                    traceback.clear_frames(error.__traceback__)
+                    raise
+                finally:
+                    self._release_staging_io()
+            cache.publish(output, cache.sources(kwargs))
+            self.init_io(self.io_path, self.io_size, self.io_mode)
+            cache.cleanup()
+            log.info(f'✅ | Completed EEG cache published to {self.io_path}.')
 
     def _init_memory_io(self, worker_results: list):
         if not worker_results:
@@ -349,62 +316,46 @@ class BaseDataset(Dataset):
                       verbose: bool = True,
                       **kwargs):
         _record_id = str(record_id)
-        if io_mode == 'memory':
+        info_io = None
+        eeg_io = None
+        generator = None
+        progress = None
+        try:
+            if io_mode == 'memory':
+                memory_info = []
+                signal_path = io_path
+            else:
+                record_path = os.path.join(io_path, f'_record_{_record_id}')
+                info_io = MetaInfoIO(os.path.join(record_path, 'info.csv'))
+                signal_path = os.path.join(record_path, 'eeg')
+            eeg_io = EEGSignalIO(signal_path, io_size=io_size, io_mode=io_mode)
+            kwargs['record'] = record
+            kwargs.update(read_record(**kwargs))
+            generator = process_record(**kwargs)
+            if record_id == 0:
+                progress = tqdm(disable=not verbose, desc=f'[RECORD {record}]',
+                                position=1, leave=None)
+            for obj in generator:
+                if progress is not None:
+                    progress.update(1)
+                if obj and 'eeg' in obj and 'key' in obj:
+                    eeg_io.write_eeg(obj['eeg'], obj['key'])
+                if obj and 'info' in obj:
+                    if io_mode == 'memory':
+                        memory_info.append(obj['info'].copy())
+                    else:
+                        info_io.write_info(obj['info'])
+            result = {'record': f'_record_{_record_id}'}
+            if io_mode == 'memory':
+                result.update(eeg_io=eeg_io, info=pd.DataFrame(memory_info))
+            return result
+        finally:
+            if progress is not None:
+                progress.close()
+            # Exceptions retain tracebacks; clear local owners of native stores.
+            generator = None
+            eeg_io = None
             info_io = None
-            memory_info = []
-            eeg_signal_io_path = io_path
-        else:
-            meta_info_io_path = os.path.join(io_path, f'_record_{_record_id}',
-                                             'info.csv')
-            eeg_signal_io_path = os.path.join(io_path, f'_record_{_record_id}',
-                                              'eeg')
-            info_io = MetaInfoIO(meta_info_io_path)
-        eeg_io = EEGSignalIO(eeg_signal_io_path,
-                             io_size=io_size,
-                             io_mode=io_mode)
-
-        kwargs['record'] = record
-        kwargs.update(read_record(**kwargs))
-        gen = process_record(**kwargs)
-
-        if record_id == 0:
-            pbar = tqdm(disable=not verbose,
-                        desc=f"[RECORD {record}]",
-                        position=1,
-                        leave=None)
-
-            # pbar.write(
-            #     "Monitoring the detailed processing of a record. The detailed processing of other records will not be reported to keep it clean."
-            # )
-
-        # loop for data yield by process_record, until to the end of the data
-        while True:
-            try:
-                # call process_record of the class
-                # get the current class name
-                obj = next(gen)
-
-                if record_id == 0:
-                    pbar.update(1)
-
-            except StopIteration:
-                break
-
-            if obj and 'eeg' in obj and 'key' in obj:
-                eeg_io.write_eeg(obj['eeg'], obj['key'])
-            if obj and 'info' in obj:
-                if io_mode == 'memory':
-                    memory_info.append(obj['info'].copy())
-                else:
-                    info_io.write_info(obj['info'])
-
-        if record_id == 0:
-            pbar.close()
-
-        result = {'record': f'_record_{_record_id}'}
-        if io_mode == 'memory':
-            result.update(eeg_io=eeg_io, info=pd.DataFrame(memory_info))
-        return result
 
     @staticmethod
     def read_record(record: Any, **kwargs) -> Dict:
