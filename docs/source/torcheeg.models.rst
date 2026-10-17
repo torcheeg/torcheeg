@@ -73,6 +73,7 @@ Transformer
    TCNet
    MHANet
    DARNet
+   CTNet
 
 Generative Adversarial Network
 ----------------------------------

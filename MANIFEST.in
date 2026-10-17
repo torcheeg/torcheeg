@@ -1,2 +1,4 @@
 include LICENSE
 include README.md
+recursive-include LICENSES *
+recursive-include test/models/fixtures *.json

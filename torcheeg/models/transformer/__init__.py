@@ -8,3 +8,4 @@ from .tcnet import TCNet
 from .labram import LaBraM
 from .darnet import DARNet
 from .mhanet import MHANet
+from .ctnet import CTNet
