@@ -4,7 +4,7 @@ Train the full EEGPT task path with its reconstructor
 
 Train EEGPTFinetuneClassifier: spatial encoder, temporal reconstructor,
 patch-token mean pooling, LayerNorm and a constrained linear classifier.
-The default run uses small random components (width32, two blocks each,
+The default run uses small random components (width 32, two blocks each,
 two summaries). This checks training, not pretrained or benchmark scores.
 Provide --checkpoint only for a complete local canonical-large encoder and
 reconstructor checkpoint. The joint loader safely reads both complete tensor
@@ -14,8 +14,8 @@ head. It never downloads weights or falls back to unsafe pickle loading.
 BCIC-IV-2B uses bipolar C3, Cz, C4 in order. Cite Leeb et al. (2007),
 Tangermann et al. (2012), MOABB and Wang et al. (2024), EEGPT. Obtain data
 under their terms at https://bnci-horizon-2020.eu/database/data-sets.
-MOABB supplies microvolts; use a 4--38Hz bandpass, resample to256Hz, and
-keep the first1024samples of the 0--4second imagery interval (3--7seconds
+MOABB supplies microvolts; use a 4--38 Hz bandpass, resample to 256 Hz, and
+keep the first 1024 samples of the 0--4 second imagery interval (3--7 seconds
 from the cue). Standardize each channel within its own window. Labels are
 left_hand=0, right_hand=1. Hold out the last subject; never tune settings or
 epochs on its labels. This is an explicit teaching protocol; it does not
