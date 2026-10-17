@@ -1,5 +1,4 @@
 User Guide
-==========
 
 A TorchEEG workflow starts with a dataset and ends with an evaluation result.
 The library components make each intermediate step explicit.
@@ -30,6 +29,8 @@ For standard holdout evaluation, fit learned preprocessing on training data.
 Use validation data to select settings, and reserve test labels for the final
 evaluation. State explicitly when a protocol uses unlabeled target data.
 
+For verified runtime combinations and modern API examples, see :doc:`pytorch`.
+
 Models and training
 -------------------
 
@@ -53,3 +54,4 @@ the same library workflow as a reusable assistant skill.
    moabb
    eegpt_decoders
    eegpt_finetuning
+   pytorch

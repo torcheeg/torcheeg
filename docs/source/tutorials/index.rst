@@ -83,3 +83,10 @@ Each example states its actual source, preprocessing and weight status. The
 small random-encoder defaults are functional demonstrations. They do not
 establish pretrained EEGPT accuracy or reproduce the full published
 predictor/reconstructor evaluation architecture.
+
+Modern PyTorch workflows
+-------------------------
+
+See :doc:`../user_guide/pytorch` for checked runtime versions, compilation,
+inference export, and CPU bfloat16 training. Each workflow has a separate
+standalone example with numerical checks.
