@@ -5,3 +5,8 @@ recursive-include test/models/fixtures *.json
 include AGENTS.md
 include llms.txt
 recursive-include .agents/skills *.md
+
+include docs/validate_leaderboard.py
+include docs/source/leaderboard.rst
+recursive-include docs/source/_static/leaderboard *.json *.js *.css
+include test/utils/test_leaderboard.js
