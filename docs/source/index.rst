@@ -32,6 +32,7 @@ Transformers.
 
    installation
    contributing
+   agent_guide
    about_us
 
 .. toctree::
