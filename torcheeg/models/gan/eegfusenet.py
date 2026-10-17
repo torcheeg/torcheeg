@@ -24,6 +24,10 @@ class EEGfuseNet(nn.Module):
         input = torch.rand(2, 1, 20, 128)
         output, features = model(input)
 
+    Batch normalization uses :obj:`eps=1e-5` and retains affine parameters
+    and running-statistic checkpoint keys. Older versions used zero epsilon;
+    outputs may therefore differ for features with very small variance.
+
     Args:
         in_channels (int): The number of channels of the signal corresponding to each electrode. If the original signal is used as input, in_channels is set to 1; if the original signal is split into multiple sub-bands, in_channels is set to the number of bands. (default: :obj:`1`)
         num_electrodes (int): The number of electordes in input data. (default: :obj:`32`)
@@ -52,13 +56,13 @@ class EEGfuseNet(nn.Module):
                                (1, int(chunk_size / 2 + 1)),
                                stride=1,
                                padding=(0, int(chunk_size / 4)))
-        self.batchNorm1 = nn.BatchNorm2d(16 * hid_channels_cnn, False)
+        self.batchNorm1 = nn.BatchNorm2d(16 * hid_channels_cnn, eps=1e-5)
 
         self.depthwiseconv2 = nn.Conv2d(16 * hid_channels_cnn,
                                         32 * hid_channels_cnn,
                                         (num_electrodes, 1),
                                         padding=0)
-        self.batchNorm2 = nn.BatchNorm2d(32 * hid_channels_cnn, False)
+        self.batchNorm2 = nn.BatchNorm2d(32 * hid_channels_cnn, eps=1e-5)
         self.pooling1 = nn.MaxPool2d((1, 4),
                                      return_indices=True,
                                      ceil_mode=True)
@@ -71,7 +75,7 @@ class EEGfuseNet(nn.Module):
                                       groups=int(32 * hid_channels_cnn))
         self.separa2conv4 = nn.Conv2d(32 * hid_channels_cnn,
                                       16 * hid_channels_cnn, 1)
-        self.batchNorm3 = nn.BatchNorm2d(16 * hid_channels_cnn, False)
+        self.batchNorm3 = nn.BatchNorm2d(16 * hid_channels_cnn, eps=1e-5)
         self.pooling2 = nn.MaxPool2d((1, 8),
                                      return_indices=True,
                                      ceil_mode=True)
@@ -108,7 +112,7 @@ class EEGfuseNet(nn.Module):
                             bidirectional=True)
 
         self.unpooling2 = nn.MaxUnpool2d((1, 8))
-        self.batchnorm4 = nn.BatchNorm2d(32 * hid_channels_cnn, False)
+        self.batchnorm4 = nn.BatchNorm2d(32 * hid_channels_cnn, eps=1e-5)
         self.desepara2conv4 = nn.ConvTranspose2d(16 * hid_channels_cnn,
                                                  32 * hid_channels_cnn, 1)
         self.desepara1conv3 = nn.ConvTranspose2d(32 * hid_channels_cnn,
@@ -120,7 +124,7 @@ class EEGfuseNet(nn.Module):
                                                  groups=32 * hid_channels_cnn)
 
         self.unpooling1 = nn.MaxUnpool2d((1, 4))
-        self.batchnorm5 = nn.BatchNorm2d(16 * hid_channels_cnn, False)  #
+        self.batchnorm5 = nn.BatchNorm2d(16 * hid_channels_cnn, eps=1e-5)  #
         self.dedepthsepara1conv3 = nn.ConvTranspose2d(32 * hid_channels_cnn,
                                                       16 * hid_channels_cnn,
                                                       (num_electrodes, 1),
@@ -211,6 +215,10 @@ class EFDiscriminator(nn.Module):
         fake_X,deep_feature=g_model(X)
         p_real,p_fake = d_model(X),d_model(fake_X)
 
+    Batch normalization uses :obj:`eps=1e-5` and retains affine parameters
+    and running-statistic checkpoint keys. Older versions used zero epsilon;
+    outputs may therefore differ for features with very small variance.
+
     Args:
         in_channels (int): The number of channels of the signal corresponding to each electrode. If the original signal is used as input, in_channels is set to 1; if the original signal is split into multiple sub-bands, in_channels is set to the number of bands. (default: :obj:`1`)
         num_electrodes (int): The number of electrodes. (default: :obj:`32`)
@@ -229,14 +237,14 @@ class EFDiscriminator(nn.Module):
                                (1, int(chunk_size / 2 + 1)),
                                stride=1,
                                padding='same')
-        self.batchNorm1 = nn.BatchNorm2d(8 * hid_channels_cnn, False)
+        self.batchNorm1 = nn.BatchNorm2d(8 * hid_channels_cnn, eps=1e-5)
         self.length = chunk_size / 32
 
         self.depthwiseconv2 = nn.Conv2d(8 * hid_channels_cnn,
                                         16 * hid_channels_cnn,
                                         (num_electrodes, 1),
                                         padding=0)
-        self.batchNorm2 = nn.BatchNorm2d(16 * hid_channels_cnn, False)
+        self.batchNorm2 = nn.BatchNorm2d(16 * hid_channels_cnn, eps=1e-5)
         self.pooling1 = nn.MaxPool2d((1, 4),
                                      return_indices=False,
                                      ceil_mode=True)
@@ -250,7 +258,7 @@ class EFDiscriminator(nn.Module):
 
         self.separa2conv4 = nn.Conv2d(16 * hid_channels_cnn,
                                       8 * hid_channels_cnn, 1)
-        self.batchNorm3 = nn.BatchNorm2d(8 * hid_channels_cnn, False)
+        self.batchNorm3 = nn.BatchNorm2d(8 * hid_channels_cnn, eps=1e-5)
         self.pooling2 = nn.MaxPool2d((1, 8), return_indices=False)
         self.fc1 = nn.Linear(int(self.length) * 8 * hid_channels_cnn, 1)
 

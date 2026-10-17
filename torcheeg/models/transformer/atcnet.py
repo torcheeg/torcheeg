@@ -27,6 +27,10 @@ class ATCNet(nn.Module):
         input = torch.rand(2, 1, 22, 1125)
         output = model(input)
 
+    Batch normalization uses :obj:`eps=1e-5` and retains affine parameters
+    and running-statistic checkpoint keys. Older versions used zero epsilon;
+    outputs may therefore differ for features with very small variance.
+
     Args:
         in_channels (int): The number of input channels per electrode. Use 1 for raw EEG signals, or set to the number of 
             frequency bands if the signal is decomposed into multiple sub-bands. (default: :obj:`1`)
@@ -73,14 +77,14 @@ class ATCNet(nn.Module):
         self.conv_block = nn.Sequential(
             nn.Conv2d(in_channels, F1, (1, int(chunk_size/2+1)),
                       stride=1, padding='same', bias=False),
-            nn.BatchNorm2d(F1, False),
+            nn.BatchNorm2d(F1, eps=1e-5),
             nn.Conv2d(F1, F2, (num_electrodes, 1), padding=0, groups=F1),
-            nn.BatchNorm2d(F2, False),
+            nn.BatchNorm2d(F2, eps=1e-5),
             nn.ELU(),
             nn.AvgPool2d((1, 8)),
             nn.Dropout2d(0.1),
             nn.Conv2d(F2, F2, (1, 16), bias=False, padding='same'),
-            nn.BatchNorm2d(F2, False),
+            nn.BatchNorm2d(F2, eps=1e-5),
             nn.ELU(),
             nn.AvgPool2d((1, self.pool_size)),
             nn.Dropout2d(0.1)
