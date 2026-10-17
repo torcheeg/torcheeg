@@ -2,6 +2,7 @@ import os
 import random
 import shutil
 import unittest
+from copy import copy
 
 import numpy as np
 import torch
@@ -23,6 +24,7 @@ class TestEEGSignalIO(unittest.TestCase):
             self.assertEqual(len(io), 0)
 
             self.assertTrue(os.path.exists(io_io_path))
+            del io
             io = EEGSignalIO(io_path=io_io_path, io_mode=io_mode)
             self.assertEqual(len(io), 0)
 
@@ -38,6 +40,18 @@ class TestEEGSignalIO(unittest.TestCase):
 
             eeg = np.random.randn(32, 128)
             io.write_eeg(eeg)
+
+    def test_copy_lmdb_eeg_signal_io(self):
+        io_io_path = f'./tmp_out/{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
+        io = EEGSignalIO(io_path=io_io_path, io_mode='lmdb')
+        eeg = np.random.randn(32, 128)
+        io_eeg_index = io.write_eeg(eeg)
+
+        copied_io = copy(io)
+
+        self.assertTrue(np.array_equal(eeg, copied_io.read_eeg(io_eeg_index)))
+        del copied_io
+        self.assertTrue(np.array_equal(eeg, io.read_eeg(io_eeg_index)))
 
     def test_len(self):
         io_io_path = f'./tmp_out/{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
