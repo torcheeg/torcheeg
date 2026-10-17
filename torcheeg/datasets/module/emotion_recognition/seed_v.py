@@ -190,14 +190,18 @@ class SEEDVDataset(BaseDataset):
                        offline_transform: Union[None, Callable] = None,
                        **kwargs):
         file_name = os.path.basename(record)
+        file_name_without_ext = os.path.splitext(file_name)[0]
         # split with _, the first part is the subject_id, the second part is the session_id, the third part is the date
-        subject_id, session_id, date = file_name.split('_')[:3]
+        subject_id, session_id, date = file_name_without_ext.split('_')[:3]
+        subject_id = int(subject_id)
+        session_id = int(session_id)
+        date = int(date)
 
         labels = [[4, 1, 3, 2, 0, 4, 1, 3, 2, 0, 4, 1, 3, 2, 0],
                   [2, 1, 3, 0, 4, 4, 0, 3, 2, 1, 3, 4, 1, 2, 0],
                   [2, 1, 3, 0, 4, 4, 0, 3, 2, 1, 3, 4, 1, 2, 0]]
 
-        trial_labels = labels[int(session_id) - 1]
+        trial_labels = labels[session_id - 1]
 
         start_end_list = [
             {
@@ -231,8 +235,8 @@ class SEEDVDataset(BaseDataset):
                 ]
             },
         ]
-        start_seconds = start_end_list[int(session_id) - 1]['start_seconds']
-        end_seconds = start_end_list[int(session_id) - 1]['end_seconds']
+        start_seconds = start_end_list[session_id - 1]['start_seconds']
+        end_seconds = start_end_list[session_id - 1]['end_seconds']
 
         write_pointer = 0
 

@@ -136,7 +136,7 @@ class SleepEDFxDataset(BaseDataset):
         if io_path is None:
             io_path = get_random_dir_path(dir_prefix='datasets')
 
-        assert 'casstte' in studies or 'telemetry' in studies, 'studies must contain either "cassette" or "telemetry"'
+        assert 'cassette' in studies or 'telemetry' in studies, 'studies must contain either "cassette" or "telemetry"'
 
         params = {
             'root_path': root_path,
