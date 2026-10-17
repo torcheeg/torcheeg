@@ -57,3 +57,4 @@ the same library workflow as a reusable assistant skill.
    pytorch
    cbramod
    fourier_resampling
+   cbramod_heads
