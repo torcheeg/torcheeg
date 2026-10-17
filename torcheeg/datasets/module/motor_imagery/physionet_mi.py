@@ -16,6 +16,12 @@ MI_TASKS = ['04', '06', '08', '10', '12', '14']
 LEFT_RIGHT_TASKS = {'04', '08', '12'}
 BOTH_TASKS = {'06', '10', '14'}
 
+TASK_LABEL_MAP = {
+    'four_class': {0: 0, 1: 1, 2: 2, 3: 3},
+    'left_right': {0: 0, 1: 1},
+    'hands_feet': {0: 0, 1: 0, 2: 0, 3: 1},
+}
+
 
 class PhysioNetMIDataset(BaseDataset):
     r'''
@@ -66,6 +72,9 @@ class PhysioNetMIDataset(BaseDataset):
     :obj:`PHYSIONET_MI_ADJACENCY_MATRIX`. The first :obj:`num_channel` channels
     are retained in that order. ``trial_id`` includes the run ID so windows
     from different runs cannot share a trial identifier within one subject.
+    Select a new :obj:`io_path` when changing :obj:`task`; a cache from another
+    task is rejected. Legacy caches without a task column are accepted only
+    for :obj:`four_class`.
     Keep all windows of a trial together when partitioning; use subject-wise
     partitions for cross-subject evaluation.
 
@@ -90,6 +99,7 @@ class PhysioNetMIDataset(BaseDataset):
         # label (int)
 
     Args:
+        task (str): Task label mapping. Use :obj:`four_class` for left fist (0), right fist (1), both fists (2) and feet (3); :obj:`left_right` for left fist (0) and right fist (1), excluding other runs; or :obj:`hands_feet` for any fist imagery (0) versus feet (1). The instance's :obj:`num_classes` is 4 or 2 accordingly. (default: :obj:`four_class`)
         root_path (str): Downloaded data directory containing subject folders (e.g., S001, S002, ...). (default: :obj:`'./PhysioNet-MI'`)
         chunk_size (int): Number of data points included in each EEG chunk as training or test samples. (default: :obj:`200`, i.e. 1s at 200Hz)
         overlap (int): The number of overlapping data points between different chunks when dividing EEG chunks. (default: :obj:`0`)
@@ -133,7 +143,10 @@ class PhysioNetMIDataset(BaseDataset):
                  io_size: int = 10485760,
                  io_mode: str = 'lmdb',
                  num_worker: int = 0,
-                 verbose: bool = True):
+                 verbose: bool = True,
+                 task: str = 'four_class'):
+        self._validate_task(task)
+        self.num_classes = len(set(TASK_LABEL_MAP[task].values()))
         self._validate_parameters(chunk_size, overlap, num_channel, sfreq)
         if not np.isfinite(l_freq) or not 0 < l_freq < 80:
             raise ValueError('l_freq must be between 0 and 80 Hz.')
@@ -144,6 +157,7 @@ class PhysioNetMIDataset(BaseDataset):
 
         params = {
             'root_path': root_path,
+            'task': task,
             'chunk_size': chunk_size,
             'overlap': overlap,
             'num_channel': num_channel,
@@ -165,6 +179,16 @@ class PhysioNetMIDataset(BaseDataset):
         }
         super().__init__(**params)
         self.__dict__.update(params)
+        if 'task' not in self.info:
+            if task != 'four_class':
+                raise ValueError('This legacy cache uses four_class; select a new io_path for another task.')
+        elif set(self.info['task']) != {task}:
+            raise ValueError('The cached imagery task differs; select a new io_path.')
+
+    @staticmethod
+    def _validate_task(task):
+        if not isinstance(task, str) or task not in TASK_LABEL_MAP:
+            raise ValueError('task must be four_class, left_right or hands_feet.')
 
     @staticmethod
     def _validate_parameters(chunk_size, overlap, num_channel, sfreq):
@@ -278,12 +302,18 @@ class PhysioNetMIDataset(BaseDataset):
                        sfreq: int = 200,
                        before_trial: Union[None, Callable] = None,
                        offline_transform: Union[None, Callable] = None,
+                       task: str = 'four_class',
                        **kwargs):
         r'''
         Process a run's epoch data into chunks and yield sample dictionaries.
         Rest epochs (T0, event=1) are excluded. For left/right fist runs
         (R04, R08, R12), labels are T1→0, T2→1. For both fists/feet runs
         (R06, R10, R14), labels are T1→2, T2→3.
+
+        :obj:`left_right` excludes both-fists/feet runs. :obj:`hands_feet`
+        merges left, right and both-fists labels into 0 and maps feet to 1.
+        These mappings match the corresponding EEG-Arena registry tasks;
+        preprocessing and evaluation protocols must still be specified.
 
         Only the last ``4 * sfreq`` samples of each
         epoch are used, then segmented into non-overlapping chunks.
@@ -300,10 +330,12 @@ class PhysioNetMIDataset(BaseDataset):
             sfreq (int): Sampling rate (used for trimming).
             before_trial (Callable, optional): Pre-processing hook per trial.
             offline_transform (Callable, optional): Offline transform per chunk.
+            task (str): One of :obj:`four_class`, :obj:`left_right` or :obj:`hands_feet`.
 
         Yields:
             dict: ``{'eeg': np.ndarray, 'key': str, 'info': dict}``
         '''
+        PhysioNetMIDataset._validate_task(task)
         PhysioNetMIDataset._validate_parameters(
             chunk_size, overlap, num_channel, sfreq)
         if task_id not in MI_TASKS:
@@ -336,6 +368,10 @@ class PhysioNetMIDataset(BaseDataset):
             else:
                 label = event
 
+            if label not in TASK_LABEL_MAP[task]:
+                continue
+            label = TASK_LABEL_MAP[task][label]
+
             trial_samples = epochs_data[
                 epoch_idx, :num_channel, -epoch_len:
             ]
@@ -348,6 +384,7 @@ class PhysioNetMIDataset(BaseDataset):
 
             trial_meta_info = {
                 'subject_id': subject_id,
+                'task': task,
                 'task_id': task_id,
                 'session_id': task_id,
                 'trial_id': f'{task_id}_{epoch_idx}',
@@ -387,13 +424,16 @@ class PhysioNetMIDataset(BaseDataset):
 
     def set_records(self,
                     root_path: str = './PhysioNet-MI',
+                    task: str = 'four_class',
                     **kwargs) -> List[str]:
         r'''
         Collect all motor imagery EDF files from :obj:`root_path`. Only the
         6 motor imagery runs (R04, R06, R08, R10, R12, R14) are included.
+        For :obj:`left_right`, only R04, R08 and R12 are selected.
 
         Args:
             root_path (str): Root directory of the dataset.
+            task (str): The imagery task to include.
 
         Returns:
             list: Sorted list of relative paths to ``.edf`` files,
@@ -404,14 +444,16 @@ class PhysioNetMIDataset(BaseDataset):
              f'Please download the dataset and set the root_path to the '
              f'downloaded path.')
 
+        self._validate_task(task)
+        runs = sorted(LEFT_RIGHT_TASKS) if task == 'left_right' else MI_TASKS
         file_list = []
         for subject_dir in sorted(os.listdir(root_path)):
             subject_path = os.path.join(root_path, subject_dir)
             if (re.fullmatch(r'S[0-9]{3}', subject_dir) is None or
                     not os.path.isdir(subject_path)):
                 continue
-            for task in MI_TASKS:
-                edf_name = f'{subject_dir}R{task}.edf'
+            for run in runs:
+                edf_name = f'{subject_dir}R{run}.edf'
                 edf_path = os.path.join(subject_path, edf_name)
                 if os.path.exists(edf_path):
                     file_list.append(os.path.join(subject_dir, edf_name))
@@ -444,6 +486,7 @@ class PhysioNetMIDataset(BaseDataset):
         return dict(
             super().repr_body, **{
                 'root_path': self.root_path,
+                'task': self.task,
                 'chunk_size': self.chunk_size,
                 'overlap': self.overlap,
                 'num_channel': self.num_channel,
