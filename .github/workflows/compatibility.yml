@@ -36,6 +36,8 @@ jobs:
           python -m pip install torch==${{ matrix.torch }} --index-url https://download.pytorch.org/whl/cpu
           python -m pip install numpy==2.2.6 scipy==1.15.3 'setuptools<81' wheel
           echo 'torch==${{ matrix.torch }}' > constraints.txt
+          echo 'numpy==2.2.6' >> constraints.txt
+          echo 'scipy==1.15.3' >> constraints.txt
       - name: Install matching graph wheels
         if: matrix.pyg != 'source'
         run: |
