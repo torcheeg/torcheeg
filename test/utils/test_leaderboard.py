@@ -75,8 +75,9 @@ class TestLeaderboardData(unittest.TestCase):
         protocol = self.data['protocols'][result['protocol']]
         for field in ('epochs', 'seed', 'train_windows', 'test_windows', 'sampling_rate'):
             protocol[field] = None
-        protocol.pop('train_class_counts', None)
-        protocol.pop('test_class_counts', None)
+        protocol['train_class_counts'] = None
+        protocol['test_class_counts'] = None
+        protocol['data_files'] = None
         protocol['split'] = {'type': 'fixed_subject_holdout', 'train_subjects': None, 'test_subjects': None}
         self.assertIs(VALIDATOR.validate(self.data), self.data)
 

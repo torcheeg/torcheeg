@@ -68,12 +68,12 @@ def validate(data):
                     f'{key}: invalid test subjects.')
             require(not (set(train) & set(test)), f'{key}: training and test subjects overlap.')
         for field, total in (('train_class_counts', 'train_windows'), ('test_class_counts', 'test_windows')):
-            if field in protocol:
+            if protocol.get(field) is not None:
                 counts = protocol[field]
                 require(isinstance(counts, dict) and bool(counts)
                         and all(positive_integer(x) for x in counts.values()), f'{key}: invalid class counts.')
                 require(sum(counts.values()) == protocol[total], f'{key}: class counts do not match windows.')
-        for item in protocol.get('data_files', []):
+        for item in protocol.get('data_files') or []:
             require(isinstance(item, dict) and text(item.get('name')) and hex_digest(item.get('sha256'), 64),
                     f'{key}: invalid source-file manifest.')
 
