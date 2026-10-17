@@ -510,7 +510,7 @@ def plot_graph(data: 'pyg.data.Data',
                      with_labels=True,
                      edge_color=edge_colors)
 
-    plt.colorbar(matplotlib.cm.ScalarMappable(cmap=colormap))
+    plt.colorbar(matplotlib.cm.ScalarMappable(cmap=colormap), ax=plt.gca())
 
     # remove margin
     plt.gca().set_axis_off()
