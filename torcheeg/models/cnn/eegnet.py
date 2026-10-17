@@ -2,6 +2,7 @@ from typing import Tuple
 
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 
 def _temporal_same_padding(kernel_size: int) -> Tuple[int, int, int, int]:
@@ -27,6 +28,14 @@ def _temporal_same_padding(kernel_size: int) -> Tuple[int, int, int, int]:
     total_padding = kernel_size - 1
     left_padding = total_padding // 2
     return (left_padding, total_padding - left_padding, 0, 0)
+
+
+class _Conv2dWithSamePadding(nn.Conv2d):
+    r'''Preserve time length without adding a module to the checkpoint layout.'''
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        x = F.pad(x, _temporal_same_padding(self.kernel_size[1]))
+        return super().forward(x)
 
 
 class Conv2dWithConstraint(nn.Conv2d):
@@ -79,6 +88,13 @@ class EEGNet(nn.Module):
         x, y = next(iter(DataLoader(dataset, batch_size=64)))
         model(x)
 
+    Temporal convolutions preserve the input time length, including for even
+    kernels. Checkpoint parameter names remain compatible with earlier releases.
+    Correcting the padding can change the final feature size for some chunk
+    sizes (for example, 127 samples with the default kernels); such checkpoints
+    require a new classification head. Even when tensor shapes match, even-kernel
+    padding changes the model's numerical output.
+
     Args:
         chunk_size (int): Number of data points included in each EEG chunk, i.e., :math:`T` in the paper. (default: :obj:`151`)
         num_electrodes (int): The number of electrodes, i.e., :math:`C` in the paper. (default: :obj:`60`)
@@ -87,7 +103,7 @@ class EEGNet(nn.Module):
         D (int): The depth multiplier (number of spatial filters), i.e., :math:`D` in the paper. (default: :obj:`2`)
         num_classes (int): The number of classes to predict, i.e., :math:`N` in the paper. (default: :obj:`2`)
         kernel_1 (int): The filter size of block 1. (default: :obj:`64`)
-        kernel_2 (int): The filter size of block 2. (default: :obj:`64`)
+        kernel_2 (int): The filter size of block 2. (default: :obj:`16`)
         dropout (float): Probability of an element to be zeroed in the dropout layers. (default: :obj:`0.25`)
     '''
     def __init__(self,
@@ -112,8 +128,7 @@ class EEGNet(nn.Module):
         self.dropout = dropout
 
         self.block1 = nn.Sequential(
-            nn.ZeroPad2d(_temporal_same_padding(self.kernel_1)),
-            nn.Conv2d(1, self.F1, (1, self.kernel_1), stride=1, padding=(0, 0), bias=False),
+            _Conv2dWithSamePadding(1, self.F1, (1, self.kernel_1), stride=1, padding=(0, 0), bias=False),
             nn.BatchNorm2d(self.F1, momentum=0.01, affine=True, eps=1e-3),
             Conv2dWithConstraint(self.F1,
                                  self.F1 * self.D, (self.num_electrodes, 1),
@@ -125,8 +140,7 @@ class EEGNet(nn.Module):
             nn.ELU(), nn.AvgPool2d((1, 4), stride=4), nn.Dropout(p=dropout))
 
         self.block2 = nn.Sequential(
-            nn.ZeroPad2d(_temporal_same_padding(self.kernel_2)),
-            nn.Conv2d(self.F1 * self.D,
+            _Conv2dWithSamePadding(self.F1 * self.D,
                       self.F1 * self.D, (1, self.kernel_2),
                       stride=1,
                       padding=(0, 0),

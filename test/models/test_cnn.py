@@ -110,6 +110,33 @@ class TestCNN(unittest.TestCase):
                 self.assertEqual(block2_out.shape[3], chunk_size // 4 // 8)
                 self.assertEqual(tuple(model(eeg).shape), (1, 2))
 
+    def test_eegnet_checkpoint_parameter_names(self):
+        batch_norm_fields = ['weight', 'bias', 'running_mean',
+                             'running_var', 'num_batches_tracked']
+        expected_keys = ['block1.0.weight']
+        expected_keys.extend('block1.1.' + field for field in batch_norm_fields)
+        expected_keys.append('block1.2.weight')
+        expected_keys.extend('block1.3.' + field for field in batch_norm_fields)
+        expected_keys.extend(['block2.0.weight', 'block2.1.weight'])
+        expected_keys.extend('block2.2.' + field for field in batch_norm_fields)
+        expected_keys.append('lin.weight')
+        for chunk_size in (128, 151):
+            with self.subTest(chunk_size=chunk_size):
+                model = EEGNet(chunk_size=chunk_size, num_electrodes=32)
+                self.assertEqual(list(model.state_dict()), expected_keys)
+                self.assertEqual(tuple(model.lin.weight.shape), (2, 64))
+
+    def test_eegnet_odd_kernel_padding_matches_symmetric_convolution(self):
+        model = EEGNet(chunk_size=128, num_electrodes=32,
+                       kernel_1=63, kernel_2=15)
+        for conv in (model.block1[0], model.block2[0]):
+            reference = torch.nn.Conv2d(conv.in_channels, conv.out_channels,
+                conv.kernel_size, groups=conv.groups,
+                padding=(0, conv.kernel_size[1] // 2), bias=False)
+            reference.load_state_dict(conv.state_dict())
+            eeg = torch.randn(2, conv.in_channels, 32, 128)
+            torch.testing.assert_close(conv(eeg), reference(eeg))
+
     def test_stnet(self):
         eeg = torch.randn(1, 128, 9, 9)
         model = STNet(num_classes=2,
