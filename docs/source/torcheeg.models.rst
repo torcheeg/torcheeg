@@ -80,6 +80,8 @@ Transformer
    EEGPTClassifier
    EEGPTRegression
    EEGPTEmbedding
+   EEGPTReconstructor
+   EEGPTPredictor
 
 Generative Adversarial Network
 ----------------------------------

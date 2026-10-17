@@ -51,3 +51,4 @@ the same library workflow as a reusable assistant skill.
 
    cache
    moabb
+   eegpt_decoders
