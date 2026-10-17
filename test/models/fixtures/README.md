@@ -53,3 +53,8 @@ behavior separately. DeepConvNet starts in training mode for consistency
 with other TorchEEG modules; numerical reference comparisons use explicit
 evaluation mode. Both source implementations are used only as numerical
 oracles, without importing them during the shipped tests.
+
+DeepConvNet reference generators use two CPU threads. Reference comparisons
+set the same thread count and restore the previous count after each case
+group. Parallel reductions can change gradient sums for the deliberately
+oversized constrained state; production modules do not change thread settings.
