@@ -40,3 +40,12 @@ subject. It uses explicit EEG-Arena architecture settings and a fixed local
 training workflow. The preprocessing and one-epoch validation run do not
 reproduce the complete EEG-Arena benchmark protocol. The model reference
 also documents the classic unconstrained paper configuration.
+
+Motor imagery with a four-block CNN
+-----------------------------------
+
+:doc:`../auto_examples/examples_bciciv2b_deepconvnet` trains
+:class:`torcheeg.models.DeepConvNet` with the same held-out subject workflow.
+It states the constrained architecture settings and enables kernel adaptation
+explicitly. The model reference documents the fixed-kernel classic configuration
+and the effective kernel used for shorter windows.

@@ -14,3 +14,4 @@ from .usleep import USleep
 from .tslanet import TSLANet
 from .lmda import LMDA
 from .shallow_convnet import ShallowConvNet
+from .deep_convnet import DeepConvNet

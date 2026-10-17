@@ -18,6 +18,7 @@ Convolutional Neural Networks
 
    EEGNet
    ShallowConvNet
+   DeepConvNet
    FBCCNN
    FBCNet
    FBMSNet
