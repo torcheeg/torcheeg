@@ -19,6 +19,10 @@ class ToTensor(EEGTransform):
         t(eeg=np.random.randn(32, 128))['eeg'].shape
         >>> (32, 128)
 
+    The output dtype is float32. Writable float32 inputs share storage with
+    the returned tensor. Read-only arrays, including read-only memory maps,
+    are copied before conversion so tensor writes cannot change their storage.
+
     Args:
         apply_to_baseline (bool): Whether to apply the transform to the baseline signal. (default: :obj:`False`)
 
@@ -44,4 +48,6 @@ class ToTensor(EEGTransform):
         return super().__call__(*args, eeg=eeg, baseline=baseline, **kwargs)
 
     def apply(self, eeg: np.ndarray, **kwargs) -> torch.Tensor:
+        if not eeg.flags.writeable:
+            eeg = eeg.copy()
         return torch.from_numpy(eeg).float()
