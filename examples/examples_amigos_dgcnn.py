@@ -1,6 +1,6 @@
 """
 Train a DGCNN Model on the AMIGOS Dataset
-=============================
+=========================================
 
 In this tutorial, we'll walk through how to leverage TorchEEG for training a Dynamical Graph Convolutional Neural Network (DGCNN) to classify emotions using the AMIGOS dataset. Let's walk through the essential steps—from dataset preparation to model evaluation.
 
@@ -41,7 +41,7 @@ dataset = AMIGOSDataset(io_path=f'./examples_amigos_dgcnn/amigos',
 
 ######################################################################
 # Step 2: Divide the Training and Test samples in the Dataset
-# ----------------------------------------------
+# -----------------------------------------------------------
 #
 # Now, let's partition the dataset into training and test sets. We will employ 5-fold cross-validation for this purpose. During this phase, samples are grouped based on their trial index. Four folds are designated for training, and one fold serves as the test set. Subsequently, we combine these samples across all trials to finalize the training and test sets.
 #
