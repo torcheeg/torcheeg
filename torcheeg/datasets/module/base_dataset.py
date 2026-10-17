@@ -40,15 +40,19 @@ class BaseDataset(Dataset):
         self.after_subject = after_subject
 
         # new IO
-        if not self.exist(self.io_path) or self.io_mode == 'memory':
-            log.info(
-                f'🔍 | Processing EEG data. Processed EEG data has been cached to \033[92m{io_path}\033[0m.'
-            )
+        if self.io_mode == 'memory' or not self.exist(self.io_path):
+            if self.io_mode == 'memory':
+                log.info('🔍 | Processing EEG data in memory.')
+            else:
+                log.info(
+                    f'🔍 | Processing EEG data. Processed EEG data has been cached to \033[92m{io_path}\033[0m.'
+                )
             log.info(
                 f'⏳ | Monitoring the detailed processing of a record for debugging. The processing of other records will only be reported in percentage to keep it clean.'
             )
             # make the root dictionary
-            os.makedirs(self.io_path, exist_ok=True)
+            if self.io_mode != 'memory':
+                os.makedirs(self.io_path, exist_ok=True)
 
             records = self.set_records(**kwargs)
             if self.num_worker == 0:
@@ -72,7 +76,8 @@ class BaseDataset(Dataset):
                                                **kwargs))
                 except Exception as e:
                     # shutil to delete the database
-                    shutil.rmtree(self.io_path)
+                    if self.io_mode != 'memory':
+                        shutil.rmtree(self.io_path)
                     raise e
             else:
                 # catch the exception
@@ -96,7 +101,8 @@ class BaseDataset(Dataset):
                                                       leave=None))
                 except Exception as e:
                     # shutil to delete the database
-                    shutil.rmtree(self.io_path)
+                    if self.io_mode != 'memory':
+                        shutil.rmtree(self.io_path)
                     raise e
 
             if not self.io_mode == 'memory':
@@ -107,10 +113,13 @@ class BaseDataset(Dataset):
                     f'😊 | Please set \033[92mio_path\033[0m to \033[92m{io_path}\033[0m for the next run, to directly read from the cache if you wish to skip the data processing step.'
                 )
 
-            self.init_io(
-                io_path=self.io_path,
-                io_size=self.io_size,
-                io_mode=self.io_mode)
+            if self.io_mode == 'memory':
+                self._init_memory_io(worker_results)
+            else:
+                self.init_io(
+                    io_path=self.io_path,
+                    io_size=self.io_size,
+                    io_mode=self.io_mode)
 
             if self.after_trial is not None or self.after_session is not None or self.after_subject is not None:
                 # catch the exception
@@ -120,7 +129,8 @@ class BaseDataset(Dataset):
                                        after_subject=after_subject)
                 except Exception as e:
                     # shutil to delete the database
-                    shutil.rmtree(self.io_path)
+                    if self.io_mode != 'memory':
+                        shutil.rmtree(self.io_path)
                     raise e
         else:
             log.info(
@@ -130,6 +140,22 @@ class BaseDataset(Dataset):
                 io_path=self.io_path,
                 io_size=self.io_size,
                 io_mode=self.io_mode)
+
+    def _init_memory_io(self, worker_results: list):
+        if not worker_results:
+            raise ValueError('No records were processed for the memory dataset.')
+        self.eeg_io_router = {}
+        self.eeg_signal_paths = {}
+        info_merged = []
+        for result in worker_results:
+            record = result['record']
+            self.eeg_io_router[record] = result['eeg_io']
+            info_df = result['info']
+            assert '_record_id' not in info_df.columns, \
+                "column '_record_id' is a forbidden reserved word."
+            info_df['_record_id'] = record
+            info_merged.append(info_df)
+        self.info = pd.concat(info_merged, ignore_index=True)
 
     def init_io(self, io_path: str, io_size: int, io_mode: str):
         # get all records
@@ -323,12 +349,16 @@ class BaseDataset(Dataset):
                       verbose: bool = True,
                       **kwargs):
         _record_id = str(record_id)
-        meta_info_io_path = os.path.join(io_path, f'_record_{_record_id}',
-                                         'info.csv')
-        eeg_signal_io_path = os.path.join(io_path, f'_record_{_record_id}',
-                                          'eeg')
-
-        info_io = MetaInfoIO(meta_info_io_path)
+        if io_mode == 'memory':
+            info_io = None
+            memory_info = []
+            eeg_signal_io_path = io_path
+        else:
+            meta_info_io_path = os.path.join(io_path, f'_record_{_record_id}',
+                                             'info.csv')
+            eeg_signal_io_path = os.path.join(io_path, f'_record_{_record_id}',
+                                              'eeg')
+            info_io = MetaInfoIO(meta_info_io_path)
         eeg_io = EEGSignalIO(eeg_signal_io_path,
                              io_size=io_size,
                              io_mode=io_mode)
@@ -363,14 +393,18 @@ class BaseDataset(Dataset):
             if obj and 'eeg' in obj and 'key' in obj:
                 eeg_io.write_eeg(obj['eeg'], obj['key'])
             if obj and 'info' in obj:
-                info_io.write_info(obj['info'])
+                if io_mode == 'memory':
+                    memory_info.append(obj['info'].copy())
+                else:
+                    info_io.write_info(obj['info'])
 
         if record_id == 0:
             pbar.close()
 
-        return {
-            'record': f'_record_{_record_id}'
-        }
+        result = {'record': f'_record_{_record_id}'}
+        if io_mode == 'memory':
+            result.update(eeg_io=eeg_io, info=pd.DataFrame(memory_info))
+        return result
 
     @staticmethod
     def read_record(record: Any, **kwargs) -> Dict:
