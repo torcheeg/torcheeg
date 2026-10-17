@@ -214,6 +214,17 @@ class TestEEGPT(unittest.TestCase):
             with self.assertRaises(pickle.UnpicklingError):
                 EEGPT.from_pretrained(checkpoint, prefix='', **self.config())
 
+    def test_export_save_load_with_configured_channel_names(self):
+        model = self.model().eval().requires_grad_(False)
+        eeg = torch.randn(2, 3, 128)
+        exported = torch.export.export(model, (eeg,), strict=True)
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'eegpt.pt2'
+            torch.export.save(exported, path)
+            restored = torch.export.load(path).module()
+            torch.testing.assert_close(restored(eeg), model(eeg))
+        self.assertTrue(torch.equal(model.channel_ids, model.prepare_chan_ids(['C3', 'CZ', 'C4'])))
+
     def test_constructor_rejects_invalid_parameters(self):
         cases = [dict(num_electrodes=63), dict(chunk_size=0), dict(chunk_size=16),
                  dict(patch_stride=0), dict(hid_channels=15), dict(embed_num=True),

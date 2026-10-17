@@ -266,12 +266,17 @@ class EEGPT(nn.Module):
         if x.ndim != 3 or x.shape[1:] != (self.num_electrodes, self.chunk_size):
             raise ValueError('EEG input must have shape [batch, num_electrodes, chunk_size].')
         if chan_ids is None:
-            chan_ids = self.channel_ids
-        if not isinstance(chan_ids, torch.Tensor) or chan_ids.shape not in [(self.num_electrodes,), (1, self.num_electrodes)]:
-            raise ValueError('Provide channel_names or chan_ids with one ID per electrode.')
-        chan_ids = _indices(chan_ids.reshape(-1), 'chan_ids', 1, len(_CHANNEL_NAMES), x.device)
-        if chan_ids.unique().numel() != self.num_electrodes:
-            raise ValueError('chan_ids must identify unique electrodes.')
+            # Constructor-provided names are validated once; no tensor-dependent
+            # branches are needed when exporting this common inference path.
+            if not self.channel_ids.numel():
+                raise ValueError('Provide channel_names or chan_ids with one ID per electrode.')
+            chan_ids = self.channel_ids.reshape(-1)
+        else:
+            if not isinstance(chan_ids, torch.Tensor) or chan_ids.shape not in [(self.num_electrodes,), (1, self.num_electrodes)]:
+                raise ValueError('Provide channel_names or chan_ids with one ID per electrode.')
+            chan_ids = _indices(chan_ids.reshape(-1), 'chan_ids', 1, len(_CHANNEL_NAMES), x.device)
+            if chan_ids.unique().numel() != self.num_electrodes:
+                raise ValueError('chan_ids must identify unique electrodes.')
         x = self.patch_embed(x)
         batch, patches, electrodes, width = x.shape
         x = x + self.chan_embed(chan_ids).reshape(1, 1, electrodes, width)

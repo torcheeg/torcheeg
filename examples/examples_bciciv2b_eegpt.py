@@ -1,6 +1,6 @@
 """
 Train an EEGPT encoder and linear head on BCIC-IV-2B
-===================================================
+====================================================
 
 Read BCI Competition IV 2b with MOABB. Cite Leeb et al. (2007), Tangermann
 et al. (2012), MOABB, and Wang et al. (2024), EEGPT. Obtain source recordings
