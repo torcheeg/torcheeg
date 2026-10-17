@@ -1,7 +1,7 @@
 import os
-import random
-import shutil
+import tempfile
 import unittest
+from copy import copy
 
 import numpy as np
 import torch
@@ -11,40 +11,54 @@ from torcheeg.io import EEGSignalIO
 
 class TestEEGSignalIO(unittest.TestCase):
     def setUp(self):
-        shutil.rmtree('./tmp_out/')
-        os.mkdir('./tmp_out/')
+        self.directory = tempfile.TemporaryDirectory()
+        self.addCleanup(self.directory.cleanup)
+        self.io_path = self.directory.name
 
     def test_init(self):
-        io_io_path = f'./tmp_out/{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
+        io_io_path = os.path.join(self.io_path, 'signals')
 
         io_mode_space = ['pickle', 'lmdb']
         for io_mode in io_mode_space:
-            io = EEGSignalIO(io_path=io_io_path, io_mode=io_mode)
+            io = EEGSignalIO(io_path=os.path.join(io_io_path, io_mode), io_mode=io_mode)
             self.assertEqual(len(io), 0)
 
             self.assertTrue(os.path.exists(io_io_path))
-            io = EEGSignalIO(io_path=io_io_path, io_mode=io_mode)
+            del io
+            io = EEGSignalIO(io_path=os.path.join(io_io_path, io_mode), io_mode=io_mode)
             self.assertEqual(len(io), 0)
 
     def test_write_eeg(self):
-        io_io_path = f'./tmp_out/{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
+        io_io_path = os.path.join(self.io_path, 'signals')
 
         io_mode_space = ['pickle', 'lmdb']
         for io_mode in io_mode_space:
-            io = EEGSignalIO(io_path=io_io_path, io_mode=io_mode)
+            io = EEGSignalIO(io_path=os.path.join(io_io_path, io_mode), io_mode=io_mode)
 
             eeg = np.random.randn(32, 128)
             io.write_eeg(eeg)
 
             eeg = np.random.randn(32, 128)
             io.write_eeg(eeg)
+
+    def test_copy_lmdb_eeg_signal_io(self):
+        io_io_path = os.path.join(self.io_path, 'signals')
+        io = EEGSignalIO(io_path=io_io_path, io_mode='lmdb')
+        eeg = np.random.randn(32, 128)
+        io_eeg_index = io.write_eeg(eeg)
+
+        copied_io = copy(io)
+
+        self.assertTrue(np.array_equal(eeg, copied_io.read_eeg(io_eeg_index)))
+        del copied_io
+        self.assertTrue(np.array_equal(eeg, io.read_eeg(io_eeg_index)))
 
     def test_len(self):
-        io_io_path = f'./tmp_out/{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
+        io_io_path = os.path.join(self.io_path, 'signals')
 
         io_mode_space = ['pickle', 'lmdb']
         for io_mode in io_mode_space:
-            io = EEGSignalIO(io_path=io_io_path, io_mode=io_mode)
+            io = EEGSignalIO(io_path=os.path.join(io_io_path, io_mode), io_mode=io_mode)
 
             eeg = np.random.randn(32, 128)
             io.write_eeg(eeg)
@@ -55,11 +69,11 @@ class TestEEGSignalIO(unittest.TestCase):
             self.assertEqual(len(io), 2)
 
     def test_read_eeg(self):
-        io_io_path = f'./tmp_out/{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
+        io_io_path = os.path.join(self.io_path, 'signals')
 
         io_mode_space = ['pickle', 'lmdb']
         for io_mode in io_mode_space:
-            io = EEGSignalIO(io_path=io_io_path, io_mode=io_mode)
+            io = EEGSignalIO(io_path=os.path.join(io_io_path, io_mode), io_mode=io_mode)
 
             eeg = np.random.randn(32, 128)
             io_eeg_index = io.write_eeg(eeg)
@@ -68,11 +82,11 @@ class TestEEGSignalIO(unittest.TestCase):
             self.assertTrue(np.array_equal(eeg, io_eeg))
 
     def test_write_eeg_of_different_types(self):
-        io_io_path = f'./tmp_out/{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
+        io_io_path = os.path.join(self.io_path, 'signals')
 
         io_mode_space = ['pickle', 'lmdb']
         for io_mode in io_mode_space:
-            io = EEGSignalIO(io_path=io_io_path, io_mode=io_mode)
+            io = EEGSignalIO(io_path=os.path.join(io_io_path, io_mode), io_mode=io_mode)
 
             eeg = torch.randn(32, 128)
             io_eeg_index = io.write_eeg(eeg)
@@ -84,11 +98,11 @@ class TestEEGSignalIO(unittest.TestCase):
             self.assertTrue(np.array_equal(eeg, io_eeg))
 
     def test_write_eeg_of_different_shapes(self):
-        io_io_path = f'./tmp_out/{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
+        io_io_path = os.path.join(self.io_path, 'signals')
 
         io_mode_space = ['pickle', 'lmdb']
         for io_mode in io_mode_space:
-            io = EEGSignalIO(io_path=io_io_path, io_mode=io_mode)
+            io = EEGSignalIO(io_path=os.path.join(io_io_path, io_mode), io_mode=io_mode)
 
             eeg = np.random.randn(32, 128)
             io_eeg_index = io.write_eeg(eeg)
