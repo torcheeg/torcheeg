@@ -20,3 +20,11 @@ No pretrained weights are redistributed. The small native release artifact
 is linked from the author's repository. Its SHA256 and release provenance
 are recorded in the model guide; checkpoint deserialization remains safe and
 explicit about argparse.Namespace metadata and discarded decoder components.
+
+
+Downstream mean pooling and linear-head semantics follow
+easy_start/models_vit_eeg.py at the same revision. TorchEEG wrappers expose
+explicit whole-window resampling, optional signal normalization, task-head
+dropout, channel-major features and freeze/evaluation control. They initialize
+fresh task heads and do not claim to restore native trained task weights.
+Independent fixtures use deterministic synthetic weights and signals.

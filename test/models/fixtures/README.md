@@ -123,3 +123,20 @@ Both full token outputs are weighted by linspace(-.7,1.1,numel).reshape_as
 output. Complete input and encoder-parameter gradients are stored, including
 None for unused final-norm parameters in raw mode. No author weights,
 optimizer objects or EEG recordings are included. Tests do not need timm.
+
+
+## ST-EEGFormer downstream head
+
+`steegformer_head_reference.json` uses unmodified MIT
+`easy_start/models_vit_eeg.py` at the encoder's author revision above with
+timm 1.0.10, global_pool=True, width16/MLP32/depth2/four heads. It loads the
+encoder fixture tensors, excluding unused final norm. Linear weights are
+arange(48).reshape(3,16)/71 - .3; biases are linspace(-.2,.1,3).
+Source input is linspace(-1.2,.8,400).reshape(2,2,100) plus
+.2*sin(arange(400)*.21). Population z-scoring precedes whole-window
+200-to-128 Hz resampling to64. An independent SciPy
+resample(identity100,64,axis0) linear operator also supplies the reference
+input gradient without TorchEEG FFT code. Outputs are weighted by
+[[.2,-.3,.7],[-.4,.8,-.1]]. Complete output/input/encoder/head gradients,
+preprocessed signals and pooled/grid features are stored. No patient data
+or author checkpoint is included. Tests do not require timm.

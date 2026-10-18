@@ -20,3 +20,4 @@ from .cbramod import CBraMod
 
 from .cbramod_heads import CBraModClassifier, CBraModRegression, CBraModEmbedding
 from .steegformer import STEEGFormer
+from .steegformer_heads import STEEGFormerClassifier, STEEGFormerRegression, STEEGFormerEmbedding
