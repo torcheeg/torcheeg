@@ -1,5 +1,6 @@
 import copy
 import json
+import shutil
 from pathlib import Path
 import tempfile
 import unittest
@@ -11,6 +12,7 @@ import numpy as np
 
 from torcheeg import transforms
 from torcheeg.datasets import SHHSDataset, SequenceDataset
+from torcheeg.model_selection import LeaveOneSubjectOut
 from torcheeg.datasets.module.sleep_stage_detection.shhs import _scored_epochs
 
 
@@ -266,6 +268,29 @@ class TestSHHSDataset(unittest.TestCase):
                         dict(epochs_units=[]), dict(before_trial=lambda x: x[:1])]:
             with self.subTest(changes=list(changes)), self.assertRaises(ValueError):
                 next(SHHSDataset.process_record(self.record, **dict(original, **changes)))
+
+    def test_two_cached_visits_stay_with_one_person_in_subject_split(self):
+        for visit, subject in [(2, '200001'), (1, '200002')]:
+            name = f'shhs{visit}-{subject}'
+            edf = self.edf.parent.parent / f'shhs{visit}/{name}.edf'
+            xml = self.xml.parent.parent / f'shhs{visit}/{name}-nsrr.xml'
+            edf.parent.mkdir(exist_ok=True); xml.parent.mkdir(exist_ok=True)
+            shutil.copyfile(self.edf, edf)
+            shutil.copyfile(self.xml, xml)
+        dataset = SHHSDataset(root_path=str(self.root), io_path=str(self.root / 'two-visits'),
+                              io_mode='pickle', l_freq=None, h_freq=None, verbose=False,
+                              label_transform=transforms.Select('label'))
+        self.assertEqual(len(dataset), 9)
+        splitter = LeaveOneSubjectOut(split_path=str(self.root / 'split'))
+        train, test = next(splitter.split(dataset, subject=200001))
+        self.assertEqual(len(train), 3)
+        self.assertEqual(len(test), 6)
+        self.assertEqual(set(test.info['session_id']), {1, 2})
+        self.assertFalse(set(train.info['subject_id']) & set(test.info['subject_id']))
+        sequences = SequenceDataset(test, sequence_length=2, stride=1)
+        self.assertEqual(len(sequences), 4)
+        for _, labels in sequences:
+            self.assertEqual(len(labels), 2)
 
     def test_real_cache_transforms_sequences_and_reload(self):
         write_edf(self.edf, seconds=180)
