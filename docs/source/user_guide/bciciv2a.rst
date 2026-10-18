@@ -101,3 +101,63 @@ fits after an offset or resampling raises an error; use ``chunk_size=-1``
 or an explicit output size. These correctness fixes change cached values
 and trial metadata. Use a **new cache path** when adopting this reader.
 Do not delete an earlier experiment's cache to migrate.
+
+Grid, graph and region constants
+--------------------------------
+
+The legacy ``BCICIV2A_CHANNEL_LIST``, ``BCICIV2A_LOCATION_LIST`` and
+``BCICIV2A_LOCATION_DICT`` retain their original aliases and grid. For example,
+``'0'`` labels the second signal column. It is not a standard electrode name.
+``BCICIV2A_STANDARD_CHANNEL_LIST`` gives the physical EEG names in the same
+22-column order. Position zero is FZ, alias 0 maps to FC3, alias 2 maps to FCZ,
+and alias 16 maps to POZ. Names use uppercase as in the other library constants.
+The order agrees with the BNCI loader in
+`MOABB <https://github.com/NeuroTechX/moabb/blob/0d173bf5a745cc9e861f48c3ee41f1e9d336eb6a/moabb/datasets/bnci/bnci_2014.py>`_.
+EOG channels are not included in these 22-node EEG constants.
+
+``BCICIV2A_ADJACENCY_LIST`` and ``BCICIV2A_ADJACENCY_MATRIX`` connect occupied
+horizontal, vertical and diagonal neighboring grid cells. The matrix is binary,
+symmetric and has no self-loops. Gaps are not bridged and grid boundaries do
+not wrap. The reusable
+:func:`~torcheeg.datasets.constants.utils.format_adj_list_from_location_list`
+constructs this eight-neighbor list from rectangular grids, with ``'-'`` as
+the empty-cell marker. It rejects repeated names, ragged grids and invalid cells.
+
+``BCICIV2A_STANDARD_ADJACENCY_MATRIX`` uses the physical names with the library's
+standard 10--20 coordinate template and ``delta=0.00035``. It retains the
+existing inverse-distance weighting and directed global-link correction:
+C5 to C6 subtracts one from that weight; C6 to C5 retains the distance weight.
+The matrix therefore has a negative directed edge and diagonal values of one.
+This is a model prior, not measured subject coordinates or functional connectivity.
+Do not assume that this matrix is binary, symmetric or free of self-loops.
+
+``BCICIV2A_GENERAL_REGION_LIST``, ``BCICIV2A_FRONTAL_REGION_LIST`` and
+``BCICIV2A_HEMISPHERE_REGION_LIST`` group physical names and return indices
+into the original signal-column order. Each grouping covers all 22 EEG channels.
+Passing the numeric aliases directly to standard-name coordinate or region
+lookups would leave most channels unassigned.
+
+With the graph dependencies installed, the following constructs both
+representations without changing channel order. The array is synthetic usage
+input and does not measure a training score:
+
+.. code-block:: python
+
+   import numpy as np
+   from torcheeg import transforms
+   from torcheeg.datasets.constants import (
+       BCICIV2A_LOCATION_DICT, BCICIV2A_STANDARD_ADJACENCY_MATRIX)
+
+   eeg = np.arange(22 * 128, dtype=float).reshape(22, 128)
+   to_grid = transforms.ToGrid(BCICIV2A_LOCATION_DICT)
+   grid = to_grid(eeg=eeg)['eeg']
+   recovered = to_grid.reverse(eeg=grid)['eeg']
+   graph = transforms.ToG(
+       BCICIV2A_STANDARD_ADJACENCY_MATRIX,
+       add_self_loop=False)(eeg=eeg)['eeg']
+
+``grid`` has shape ``[128, 6, 7]`` and ``recovered`` retains the original EEG
+values. ``graph.x`` has shape ``[22, 128]``; its node order matches the source
+columns. ``add_self_loop=False`` keeps the standard matrix's existing diagonal
+weights rather than adding another identity matrix. Keep the graph and region
+constants aligned with the selected EEG columns if you select fewer channels.

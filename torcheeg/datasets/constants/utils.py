@@ -50,6 +50,55 @@ def format_adj_matrix_from_adj_list(channel_list: List,
     return adj_matrix.tolist()
 
 
+def format_adj_list_from_location_list(location_list: List[List[str]]) -> Dict[str, List[str]]:
+    r'''
+    Create an adjacency list from a rectangular electrode grid. Each electrode
+    connects to occupied horizontal, vertical and diagonal neighboring cells.
+    Empty cells contain ``'-'``. The result has no self-loops or wraparound edges.
+
+    Args:
+        location_list (list): Rows of unique, nonempty electrode names. A
+            two-dimensional NumPy array is also accepted. Empty grids return
+            an empty dictionary. Ragged grids and duplicate names raise
+            :class:`ValueError`.
+
+    Returns:
+        dict: Electrode names mapped to neighbor-name lists, in grid order.
+    '''
+    try:
+        locations = np.asarray(location_list, dtype=object)
+    except (TypeError, ValueError) as error:
+        raise ValueError('location_list must be a rectangular electrode grid.') from error
+    if locations.size == 0 and locations.ndim in (1, 2):
+        return {}
+    if locations.ndim != 2:
+        raise ValueError('location_list must be a rectangular electrode grid.')
+    positions = {}
+    for (row, column), electrode in np.ndenumerate(locations):
+        if not isinstance(electrode, str) or not electrode:
+            raise ValueError('Grid cells must contain nonempty electrode names or a dash.')
+        if electrode == '-':
+            continue
+        if electrode in positions:
+            raise ValueError('Each electrode name must occupy one grid cell.')
+        positions[electrode] = (row, column)
+    adjacency_list = {}
+    rows, columns = locations.shape
+    for electrode, (row, column) in positions.items():
+        neighbors = []
+        for row_offset in (-1, 0, 1):
+            for column_offset in (-1, 0, 1):
+                if row_offset == column_offset == 0:
+                    continue
+                neighbor_row, neighbor_column = row + row_offset, column + column_offset
+                if 0 <= neighbor_row < rows and 0 <= neighbor_column < columns:
+                    neighbor = locations[neighbor_row, neighbor_column]
+                    if neighbor != '-':
+                        neighbors.append(neighbor)
+        adjacency_list[electrode] = neighbors
+    return adjacency_list
+
+
 DEFAULT_GLOBAL_CHANNEL_LIST = [('FP1', 'FP2'), ('AF3', 'AF4'), ('F5', 'F6'),
                                ('FC5', 'FC6'), ('C5', 'C6'), ('CP5', 'CP6'),
                                ('P5', 'P6'), ('PO5', 'PO6'), ('O1', 'O2')]
