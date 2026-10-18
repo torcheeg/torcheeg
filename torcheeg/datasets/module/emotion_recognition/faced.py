@@ -107,14 +107,10 @@ class FACEDDataset(BaseDataset):
                                    transforms.ToGrid(FACED_CHANNEL_LOCATION_DICT)
                                ]),
                                online_transform=transforms.ToTensor(),
-                               label_transform=transforms.Compose([
-                                   transforms.Select('emotion'),
-                                   transforms.Lambda(lambda x: x + 1)
-                               ]))
+                               label_transform=transforms.Select('emotion'))
 
         print(dataset[0])
         # EEG signal (torch.Tensor[4, 8, 9]),
-        # coresponding baseline signal (torch.Tensor[4, 8, 9]),
         # label (int)
 
     Another example dataset for CNN-based methods:
@@ -128,14 +124,10 @@ class FACEDDataset(BaseDataset):
                                online_transform=transforms.Compose(
                                    [transforms.ToTensor(),
                                     transforms.To2d()]),
-                               label_transform=transforms.Compose([
-                                   transforms.Select('emotion'),
-                                   transforms.Lambda(lambda x: x + 1)
-                               ]))
+                               label_transform=transforms.Select('emotion'))
 
         print(dataset[0])
         # EEG signal (torch.Tensor[1, 30, 250]),
-        # coresponding baseline signal (torch.Tensor[1, 30, 250]),
         # label (int)
 
     An example dataset for GNN-based methods:
@@ -145,17 +137,14 @@ class FACEDDataset(BaseDataset):
         from torcheeg.datasets import FACEDDataset
         from torcheeg import transforms
         from torcheeg.datasets.constants import FACED_ADJACENCY_MATRIX
-        from torcheeg.transforms.pyg import ToG
+        from torcheeg.transforms import ToG
 
         dataset = FACEDDataset(root_path='./Processed_data',
                                online_transform=transforms.Compose([ToG(FACED_ADJACENCY_MATRIX)]),
-                               label_transform=transforms.Compose(
-                                    [transforms.Select('emotion'),
-                                    transforms.Lambda(lambda x: x + 1)]))
+                               label_transform=transforms.Select('emotion'))
 
         print(dataset[0])
         # EEG signal (torch_geometric.data.Data),
-        # coresponding baseline signal (torch_geometric.data.Data),
         # label (int)
 
     Args:
