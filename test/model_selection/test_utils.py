@@ -196,7 +196,7 @@ class TestModelSelectionUtils(unittest.TestCase):
     def test_corrupt_manifest_is_rejected(self):
         dataset = _make_dataset()
         list(self._make_splitter().split(dataset))
-        Path(self._split_path, '_split_manifest.json').write_text('[]')
+        Path(self._split_path, 'manifest.json').write_text('[]')
         with self.assertRaisesRegex(ValueError, 'cache'):
             next(self._make_splitter().split(dataset))
 
@@ -278,13 +278,51 @@ class TestModelSelectionUtils(unittest.TestCase):
             queue.close()
             queue.join_thread()
 
-    def test_active_creation_lock_times_out_without_deleting_it(self):
-        lock = Path(self._split_path + '.lock')
-        with FileLock(str(lock)):
-            with patch('torcheeg.model_selection.utils._CACHE_TIMEOUT', 0.0):
-                with self.assertRaisesRegex(RuntimeError, 'Timeout'):
-                    list(self._make_splitter().split(_make_dataset()))
-            self.assertTrue(lock.exists())
+    def test_public_timeout_is_used_by_every_split_interface(self):
+        dataset = _make_dataset()
+        for name in model_selection.__all__:
+            if name == 'BaseModelSelection':
+                continue
+            with self.subTest(splitter=name), tempfile.TemporaryDirectory() as path:
+                arguments = dict(split_path=os.path.join(path, 'split'), timeout=0)
+                if name == 'TrainValTestSplitCrossSubject':
+                    arguments.update(train_subjects=[0, 1, 2],
+                                     val_subjects=[3],
+                                     test_subjects=[4])
+                elif name == 'TrainValTestSplitCrossTrial':
+                    arguments.update(train_trials=[0, 1, 2],
+                                     val_trials=[3],
+                                     test_trials=[4])
+                elif name == 'Subcategory':
+                    arguments.update(criteria='subject_id')
+                elif name == 'KFoldCrossSubjectTrainValTest':
+                    arguments.update(all_subjects=list(range(5)))
+                elif name in ('train_test_split_per_subject_cross_trial',
+                              'train_test_split_per_subject_groupby_trial'):
+                    arguments.update(subject=0)
+                lock = Path(arguments['split_path'] + '.lock')
+                with FileLock(str(lock)):
+                    with self.assertRaisesRegex(RuntimeError, 'Timeout'):
+                        target = getattr(model_selection, name)
+                        if name[0].isupper():
+                            list(target(**arguments).split(dataset))
+                        else:
+                            target(dataset, **arguments)
+                    self.assertTrue(lock.exists())
+
+    def test_timeout_does_not_change_cache_identity(self):
+        dataset = _make_dataset()
+        first = list(self._make_splitter(timeout=0).split(dataset))
+        repeated = list(self._make_splitter(timeout=1).split(dataset))
+        self.assertTrue(Path(self._split_path, 'manifest.json').is_file())
+        for a, b in zip(first[0], repeated[0]):
+            pd.testing.assert_frame_equal(a.info, b.info)
+
+    def test_invalid_timeouts_are_rejected(self):
+        for value, error in ((True, TypeError), ('1', TypeError), (-2, ValueError),
+                             (float('nan'), ValueError), (float('inf'), ValueError)):
+            with self.subTest(timeout=value), self.assertRaises(error):
+                self._make_splitter(timeout=value)
 
     def test_unrecognized_old_cache_is_preserved_and_rejected(self):
         os.makedirs(self._split_path)

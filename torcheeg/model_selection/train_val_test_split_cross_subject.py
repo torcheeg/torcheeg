@@ -37,19 +37,22 @@ class TrainValTestSplitCrossSubject(BaseModelSelection):
         test_subjects (list): List of subject IDs for the test set.
         split_path (str, optional): Directory for saved splits.
             If None, generate a random path. (default: :obj:`None`)
+        timeout (float): Lock wait in seconds; -1 waits indefinitely.
+            (default: :obj:`300.0`)
     '''
 
     def __init__(self,
                  train_subjects: List,
                  val_subjects: List,
                  test_subjects: List,
-                 split_path: Union[None, str] = None) -> None:
+                 split_path: Union[None, str] = None,
+                 timeout: float = 300.0) -> None:
         self.train_subjects = list(train_subjects)
         self.val_subjects = list(val_subjects)
         self.test_subjects = list(test_subjects)
         validate_partition_ids(
             [self.train_subjects, self.val_subjects, self.test_subjects])
-        super().__init__(split_path=split_path)
+        super().__init__(split_path=split_path, timeout=timeout)
 
     def build(self, info: pd.DataFrame, split_path: Union[None, str] = None) -> None:
         write_partition_indices(
@@ -70,5 +73,6 @@ class TrainValTestSplitCrossSubject(BaseModelSelection):
             'train_subjects': self.train_subjects,
             'val_subjects': self.val_subjects,
             'test_subjects': self.test_subjects,
-            'split_path': self.split_path
+            'split_path': self.split_path,
+            'timeout': self.timeout
         }

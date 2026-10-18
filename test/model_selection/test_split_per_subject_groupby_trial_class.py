@@ -42,9 +42,9 @@ class TestTrainTestSplitPerSubjectGroupbyTrial(unittest.TestCase):
             self.assertFalse(process.is_alive())
             self.assertFalse(Path(self._split_path).exists())
             # The abandoned private staging directory cannot be read as a cache.
-            with patch('torcheeg.model_selection.utils._CACHE_TIMEOUT', 1.0):
-                self._assert_folds(self._dataset,
-                                   list(self._make_splitter().split(self._dataset)))
+            self._assert_folds(
+                self._dataset,
+                list(self._make_splitter(timeout=1.0).split(self._dataset)))
         finally:
             ready.close()
             child_ready.close()
@@ -219,7 +219,7 @@ class TestTrainTestSplitPerSubjectGroupbyTrial(unittest.TestCase):
                 self.assertFalse(os.path.exists(os.path.join(path, 'split')))
 
     def test_corrupted_cache_files_are_rejected(self):
-        for name in ('train_subject_0.csv', '_split_manifest.json'):
+        for name in ('train_subject_0.csv', 'manifest.json'):
             with self.subTest(name=name), tempfile.TemporaryDirectory() as path:
                 splitter = self._make_splitter(split_path=os.path.join(path, 'split'))
                 list(splitter.split(self._dataset))

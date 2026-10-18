@@ -37,6 +37,8 @@ class KFoldCrossSubjectTrainValTest(BaseModelSelection):
         n_folds (int): The number of folds. (default: :obj:`5`)
         split_path (str, optional): Directory for saved splits.
             If None, generate a random path. (default: :obj:`None`)
+        timeout (float): Lock wait in seconds; -1 waits indefinitely.
+            (default: :obj:`300.0`)
         shuffle (bool): Whether to shuffle the subjects before splitting them into folds. (default: :obj:`True`)
         random_state (int): The random seed used to shuffle the subjects when :obj:`shuffle` is :obj:`True`. (default: :obj:`42`)
     '''
@@ -46,7 +48,8 @@ class KFoldCrossSubjectTrainValTest(BaseModelSelection):
                  n_folds: int = 5,
                  split_path: Union[None, str] = None,
                  shuffle: bool = True,
-                 random_state: int = 42) -> None:
+                 random_state: int = 42,
+                 timeout: float = 300.0) -> None:
         self.all_subjects = list(all_subjects)
         validate_partition_ids([self.all_subjects])
         if isinstance(n_folds, (bool, np.bool_)) or not isinstance(n_folds, Integral):
@@ -62,7 +65,7 @@ class KFoldCrossSubjectTrainValTest(BaseModelSelection):
             if not 0 <= random_state <= 2**32 - 1:
                 raise ValueError('random_state must be in [0, 2**32 - 1].')
         self.n_folds = int(n_folds)
-        super().__init__(split_path=split_path)
+        super().__init__(split_path=split_path, timeout=timeout)
         self.shuffle = shuffle
         self.random_state = random_state
 

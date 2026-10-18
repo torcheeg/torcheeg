@@ -1,5 +1,7 @@
 import hashlib
 import json
+import math
+from numbers import Real
 import os
 import shutil
 import tempfile
@@ -11,8 +13,15 @@ import pandas as pd
 from filelock import FileLock, Timeout
 
 _CACHE_VERSION = 2
-_CACHE_TIMEOUT = 300.0
-_MANIFEST = '_split_manifest.json'
+_MANIFEST = 'manifest.json'
+
+
+def validate_timeout(timeout):
+    if isinstance(timeout, (bool, np.bool_)) or not isinstance(timeout, Real):
+        raise TypeError('timeout must be a number of seconds.')
+    if not math.isfinite(timeout) or (timeout < 0 and timeout != -1):
+        raise ValueError('timeout must be nonnegative or -1.')
+    return float(timeout)
 
 
 def validate_metadata(info, columns=()):
@@ -130,8 +139,15 @@ def _serialize_configuration(value):
     raise TypeError(f'Unsupported split configuration value: {type(value).__name__}')
 
 
-def ensure_split_cache(info, columns, split_path, configuration, files, writer):
+def ensure_split_cache(info,
+                       columns,
+                       split_path,
+                       configuration,
+                       files,
+                       writer,
+                       timeout=300.0):
     r'''Create or reuse a complete split cache under a process-safe lock.'''
+    timeout = validate_timeout(timeout)
     validate_metadata(info, columns)
     split_path = os.path.abspath(os.fspath(split_path))
     configuration_hash = _hash_bytes(
@@ -145,7 +161,7 @@ def ensure_split_cache(info, columns, split_path, configuration, files, writer):
     }
     os.makedirs(os.path.dirname(split_path), exist_ok=True)
     try:
-        with FileLock(split_path + '.lock', timeout=_CACHE_TIMEOUT):
+        with FileLock(split_path + '.lock', timeout=timeout):
             if os.path.isfile(os.path.join(split_path, _MANIFEST)):
                 _validate_split_cache(split_path, expected, files)
                 return

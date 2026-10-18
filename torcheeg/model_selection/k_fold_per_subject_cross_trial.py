@@ -82,18 +82,21 @@ class KFoldPerSubjectCrossTrial(BaseModelSelection):
         random_state (int, optional): When shuffle is :obj:`True`, :obj:`random_state` affects the ordering of the indices, which controls the randomness of each fold. Otherwise, this parameter has no effect. (default: :obj:`None`)
         split_path (str, optional): Directory for saved splits.
             If None, generate a random path. (default: :obj:`None`)
+        timeout (float): Lock wait in seconds; -1 waits indefinitely.
+            (default: :obj:`300.0`)
     '''
 
     def __init__(self,
                  n_splits: int = 5,
                  shuffle: bool = False,
                  random_state: Union[int, None] = None,
-                 split_path: Union[None, str] = None) -> None:
+                 split_path: Union[None, str] = None,
+                 timeout: float = 300.0) -> None:
 
         self.n_splits = n_splits
         self.shuffle = shuffle
         self.random_state = random_state
-        super().__init__(split_path=split_path)
+        super().__init__(split_path=split_path, timeout=timeout)
 
         self._k_fold = model_selection.KFold(n_splits=n_splits,
                                              shuffle=shuffle,
@@ -203,5 +206,6 @@ class KFoldPerSubjectCrossTrial(BaseModelSelection):
             'n_splits': self.n_splits,
             'shuffle': self.shuffle,
             'random_state': self.random_state,
-            'split_path': self.split_path
+            'split_path': self.split_path,
+            'timeout': self.timeout
         }
