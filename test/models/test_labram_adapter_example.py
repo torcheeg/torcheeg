@@ -1,5 +1,5 @@
 import ast
-from contextlib import redirect_stdout
+from contextlib import ExitStack, redirect_stdout
 import io
 from pathlib import Path
 import runpy
@@ -70,12 +70,17 @@ class TestLaBraMAdapterExample(unittest.TestCase):
                 '4',
             ]
             text = io.StringIO()
-            with (
-                patch.object(MentalArithmeticDataset, 'read_record', side_effect=synthetic_record),
-                patch('torcheeg.trainers.ClassifierTrainer', side_effect=observe),
-                patch('sys.argv', arguments),
-                redirect_stdout(text),
-            ):
+            with ExitStack() as stack:
+                stack.enter_context(
+                    patch.object(
+                        MentalArithmeticDataset, 'read_record', side_effect=synthetic_record
+                    )
+                )
+                stack.enter_context(
+                    patch('torcheeg.trainers.ClassifierTrainer', side_effect=observe)
+                )
+                stack.enter_context(patch('sys.argv', arguments))
+                stack.enter_context(redirect_stdout(text))
                 runpy.run_path(str(example), run_name='__main__')
             payload = torch.load(path, weights_only=True)
             result = ast.literal_eval(text.getvalue().strip().splitlines()[-1])
