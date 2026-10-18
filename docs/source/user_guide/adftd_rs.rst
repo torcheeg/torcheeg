@@ -127,3 +127,14 @@ order and are templates, not measured patient connectivity.
 Signal-loading checks do not establish classification performance. Keep test
 labels out of preprocessing/model/epoch selection. A standalone training
 workflow and any verified performance report require separate execution.
+
+
+Regional electrode groups
+--------------------------
+
+The general, frontal and hemisphere region lists contain indices into the
+unchanged 19-channel source order. For matching the shared regional templates,
+``T3/T4/T5/T6`` use the equivalent modern names ``T7/T8/P7/P8``. Each family
+includes all 19 source columns once. Signal labels, grid locations and both
+adjacency matrices retain their original values. These regional templates
+are anatomical priors, not measured patient connectivity.
