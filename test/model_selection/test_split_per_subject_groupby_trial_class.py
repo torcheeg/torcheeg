@@ -13,7 +13,41 @@ from torcheeg.model_selection import TrainTestSplitPerSubjectGroupbyTrial
 from ._three_way_cases import make_three_way_dataset, split_worker
 
 
+def interrupted_split_writer(split_path, ready):
+    splitter = TrainTestSplitPerSubjectGroupbyTrial(split_path=split_path)
+    def write_partial(info, path):
+        Path(path, 'train_subject_0.csv').write_text('index\n0\n')
+        import time
+        ready.send(True)
+        time.sleep(30)
+    splitter.split_info_constructor = write_partial
+    list(splitter.split(make_three_way_dataset()))
+
+
 class TestTrainTestSplitPerSubjectGroupbyTrial(unittest.TestCase):
+    def test_retry_after_writer_process_is_terminated(self):
+        context = mp.get_context('spawn')
+        ready, child_ready = context.Pipe(duplex=False)
+        process = context.Process(target=interrupted_split_writer,
+                                  args=(self.split_path, child_ready))
+        try:
+            process.start()
+            self.assertTrue(ready.poll(20))
+            self.assertTrue(ready.recv())
+            process.terminate()
+            process.join(timeout=10)
+            self.assertFalse(process.is_alive())
+            self.assertFalse(Path(self.split_path).exists())
+            # The abandoned private staging directory cannot be read as a cache.
+            with patch(TrainTestSplitPerSubjectGroupbyTrial.__module__ + '._CACHE_TIMEOUT', 1.0):
+                self.assert_folds(self.dataset, list(self.make_splitter().split(self.dataset)))
+        finally:
+            ready.close()
+            child_ready.close()
+            if process.is_alive():
+                process.terminate()
+                process.join(timeout=10)
+
     def setUp(self):
         self.directory = tempfile.TemporaryDirectory()
         self.addCleanup(self.directory.cleanup)
@@ -206,7 +240,8 @@ class TestTrainTestSplitPerSubjectGroupbyTrial(unittest.TestCase):
         with patch.object(splitter, 'split_info_constructor', side_effect=fail):
             with self.assertRaisesRegex(RuntimeError, 'intentional'):
                 list(splitter.split(self.dataset))
-        self.assertEqual(list(Path(self.directory.name).iterdir()), [])
+        self.assertFalse(Path(self.split_path).exists())
+        self.assertFalse(list(Path(self.directory.name).glob('.torcheeg-split-*')))
         self.assert_folds(self.dataset, list(splitter.split(self.dataset)))
 
     def test_independent_processes_share_a_complete_cache(self):

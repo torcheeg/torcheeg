@@ -4,6 +4,7 @@ import os
 import tempfile
 import threading
 from pathlib import Path
+from filelock import FileLock
 from unittest.mock import patch
 
 import numpy as np
@@ -184,7 +185,8 @@ class ThreeWayChecks:
         with patch.object(splitter, 'split_info_constructor', side_effect=failed_writer):
             with self.assertRaisesRegex(RuntimeError, 'Simulated'):
                 list(splitter.split(dataset))
-        self.assertEqual(list(Path(self.directory.name).iterdir()), [])
+        self.assertFalse(Path(self.split_path).exists())
+        self.assertFalse(list(Path(self.directory.name).glob('.torcheeg-split-*')))
         self.assert_partition(dataset, list(splitter.split(dataset)))
 
     def test_parallel_threads_wait_for_complete_cache(self):
@@ -238,13 +240,13 @@ class ThreeWayChecks:
             queue.close()
             queue.join_thread()
 
-    def test_stale_creation_lock_times_out_without_deleting_it(self):
+    def test_active_creation_lock_times_out_without_deleting_it(self):
         lock = Path(self.split_path + '.lock')
-        lock.write_text('Test-only lock')
-        with patch('torcheeg.model_selection._three_way._CACHE_TIMEOUT', 0.0):
-            with self.assertRaisesRegex(RuntimeError, 'Timeout'):
-                list(self.make_splitter().split(make_three_way_dataset()))
-        self.assertTrue(lock.exists())
+        with FileLock(str(lock)):
+            with patch(self.splitter_class.__module__ + '._CACHE_TIMEOUT', 0.0):
+                with self.assertRaisesRegex(RuntimeError, 'Timeout'):
+                    list(self.make_splitter().split(make_three_way_dataset()))
+            self.assertTrue(lock.exists())
 
     def test_unrecognized_old_cache_is_preserved_and_rejected(self):
         os.makedirs(self.split_path)
