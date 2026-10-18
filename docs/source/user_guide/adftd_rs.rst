@@ -125,8 +125,8 @@ Use a new cache path when changing source level or preprocessing; see
 order and are templates, not measured patient connectivity.
 
 Signal-loading checks do not establish classification performance. Keep test
-labels out of preprocessing/model/epoch selection. A standalone training
-workflow and any verified performance report require separate execution.
+labels out of preprocessing/model/epoch selection. See the standalone
+training workflow below for a fixed participant holdout.
 
 
 Regional electrode groups
@@ -138,3 +138,39 @@ unchanged 19-channel source order. For matching the shared regional templates,
 includes all 19 source columns once. Signal labels, grid locations and both
 adjacency matrices retain their original values. These regional templates
 are anatomical priors, not measured patient connectivity.
+
+
+Train EEGNet
+--------------
+
+Use :doc:`/auto_examples/examples_adftd_rs_eegnet` for a standalone three-class
+training workflow. Keep all 19 channels at 500 Hz, convert EEGLAB microvolt
+numbers to volts, and add no filtering, referencing or resampling. Normalize
+each nonoverlapping one-second window per channel. No statistics are learned
+from other windows or held-out participants.
+
+The highest numeric participant ID in each diagnosis is held out. Every
+session, run and window for that person remains in the same partition.
+Require at least two people per class. Train for a fixed epoch count without
+selecting settings from test labels. Report pooled window cross-entropy,
+accuracy and macro F1 for this one fixed split. These are diagnostic workflow
+results, not a published benchmark or evidence of clinical validity.
+
+.. code-block:: console
+
+    python examples/examples_adftd_rs_eegnet.py --root-path ./ADFTD-RS --epochs 1 --batch-size 32 --output-path ./adftd-rs-original.pt
+
+Pass ``--preprocessed`` for the provider-cleaned branch and choose a separate
+output path. The source selection is appended to the cache path, and windows
+remain within stored contiguous segments. Use a fresh cache root when source
+files or settings change. Original and cleaned branches share identities;
+so does photostimulation ds006036. Do not split these alternatives as if they
+were independent people.
+
+The export contains every EEGNet constructor setting, all tensor states,
+preprocessing and actual participant/record partitions as tensor/JSON data.
+Load with ``torch.load(..., weights_only=True)``; construct EEGNet from
+``model_config_json``, freeze with ``requires_grad_(False).eval()``, then call
+``load_state_dict(payload['state_dict'], strict=True)``. A separate JSON report
+records optimizer steps, window counts and metrics. Existing outputs are
+preserved. The documentation gallery does not execute training.
