@@ -243,7 +243,9 @@ class _ADFTDDataset(BaseDataset):
             if (values.ndim != 2 or values.shape[0] < num_channel or values.shape[1] == 0
                     or values.dtype.kind not in 'iuf' or not np.isfinite(values).all()):
                 raise ValueError('Require finite nonempty ADFTD channel/time segments.')
-            expected = round((segment['source_last'] - segment['source_first']) * sfreq / 500)
+            # MNE rounds ratio * length and retains at least one output sample.
+            expected = max(round((float(sfreq) / SOURCE_SFREQ) *
+                                 (segment['source_last'] - segment['source_first'])), 1)
             if values.shape[1] != expected or segment['source_first'] < 0 or segment['source_last'] <= segment['source_first']:
                 raise ValueError('ADFTD segment sample counts must match the source/output clocks.')
             trial = values[:num_channel].copy()

@@ -148,6 +148,19 @@ class TestADFTDRSDataset(unittest.TestCase):
                 self.assertEqual(item['info']['source_start_seconds'],index*6.)
                 self.assertEqual(item['info']['source_end_seconds'],(index+1)*6.)
 
+    def test_resampling_half_sample_ties_and_minimum_one_sample_follow_mne(self):
+        for samples,rate,count in [(3250,137,891),(10,1,1)]:
+            with self.subTest(samples=samples,rate=rate),tempfile.TemporaryDirectory() as directory:
+                participants(directory);_,source=write_record(directory,samples=samples)
+                record=records(directory)[0]
+                result=rows(record,options=dict(NATIVE,sfreq=rate),chunk_size=-1)
+                raw=mne.io.RawArray(source.astype(np.float64)*1e-6,mne.create_info(CHANNELS,500,'eeg'),verbose=False)
+                raw.resample(rate,verbose=False)
+                self.assertEqual(len(result),1)
+                self.assertEqual(result[0]['eeg'].shape,(19,count))
+                np.testing.assert_array_equal(result[0]['eeg'],raw.get_data())
+                self.assertEqual(result[0]['info']['source_end_seconds'],samples/500.)
+
     def test_invalid_settings_fail_before_cache_creation_and_before_window_loop(self):
         cases=[dict(overlap=400),dict(overlap=-1),dict(chunk_size=True),dict(num_channel=0),dict(num_channel=20),dict(sfreq=0),dict(sfreq=200.5),dict(notch_freqs=250),dict(l_freq=float('nan')),dict(l_freq=50,h_freq=20),dict(ref_channels='Cz'),dict(preprocessed='yes')]
         with tempfile.TemporaryDirectory() as directory:
