@@ -1,6 +1,6 @@
 """
 Train EEGNet on Sleep-EDF Expanded
-=================================
+==================================
 
 Download the Sleep-EDF Expanded database (Kemp et al., 2000) from
 https://physionet.org/content/sleep-edfx/1.0.0/. Retain the ``sleep-cassette``

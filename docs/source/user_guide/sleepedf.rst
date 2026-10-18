@@ -107,7 +107,7 @@ unlabeled target-record statistics. Local reader validation is separate from
 training a complete sleep-stage or domain-generalization method.
 
 Train a standalone EEGNet
-------------------------
+-------------------------
 
 :doc:`/auto_examples/examples_sleepedf_eegnet` trains a fixed two-channel
 EEGNet on these reader outputs. Install the source with the ``dataset`` and
