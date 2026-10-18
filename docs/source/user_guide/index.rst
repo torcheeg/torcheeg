@@ -59,5 +59,6 @@ the same library workflow as a reusable assistant skill.
    cbramod
    labram_encoder
    labram_tasks
+   labram_tuning
    fourier_resampling
    cbramod_heads

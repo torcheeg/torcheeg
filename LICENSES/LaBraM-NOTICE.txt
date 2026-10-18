@@ -36,3 +36,11 @@ explicit window/independent-patch Fourier resampling and freeze/eval control.
 Task heads start from fresh weights; encoder loading does not restore any
 trained task head. Resampling input/parameter gradients are checked against
 an independent dense SciPy operator and unmodified native encoder reference.
+
+
+Registered adapter blocks retain the archived TorchEEG workspace's two
+post-residual bottleneck positions, preserving native layer-scale parameter
+objects and state paths. The shared EEGPT bottleneck implementation is reused
+with zero-initialized up-projections for deterministic identity at insertion.
+The archived nonzero-adapter/native-block computation supplies an independent
+synthetic output/gradient fixture; no pretrained adapter weights are claimed.

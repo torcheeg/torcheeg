@@ -104,6 +104,11 @@ EEGPT parameter-efficient tuning
 
 .. autofunction:: add_eegpt_lora
 
+LaBraM parameter-efficient tuning
+---------------------------------
+
+.. autofunction:: add_labram_adapters
+
 Signal processing layers
 -------------------------
 
