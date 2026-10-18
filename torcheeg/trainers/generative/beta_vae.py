@@ -92,19 +92,22 @@ class BetaVAETrainer(pl.LightningModule):
         self.test_kld_loss = torchmetrics.MeanMetric()
 
         if 'fid' in metrics:
-            assert not self.metric_extractor is None, 'The metric_extractor should be specified.'
+            if not (not self.metric_extractor is None):
+                raise ValueError('The metric_extractor should be specified.')
             if hasattr(self.metric_extractor,
                        'in_channels') and self.metric_num_features is None:
                 warnings.warn(
                     f'No metric_num_features specified, use metric_extractor.in_channels ({self.metric_extractor.in_channels}) as metric_num_features.'
                 )
                 self.metric_num_features = self.metric_extractor.in_channels
-            assert not self.metric_num_features is None, 'The metric_num_features should be specified.'
+            if not (not self.metric_num_features is None):
+                raise ValueError('The metric_num_features should be specified.')
             self.test_fid = FrechetInceptionDistance(self.metric_extractor,
                                                      self.metric_num_features)
 
         if 'is' in metrics:
-            assert not self.metric_extractor is None, 'The metric_classifier should be specified.'
+            if not (not self.metric_extractor is None):
+                raise ValueError('The metric_classifier should be specified.')
             self.test_is = InceptionScore(self.metric_classifier)
 
     def fit(self,

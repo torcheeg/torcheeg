@@ -35,7 +35,8 @@ class ChannelAttention(nn.Module):
 class SpatialAttention(nn.Module):
     def __init__(self, kernel_size=7):
         super(SpatialAttention, self).__init__()
-        assert kernel_size in (3, 7), 'Kernel size must be 3 or 7.'
+        if not (kernel_size in (3, 7)):
+            raise ValueError('Kernel size must be 3 or 7.')
         padding = 3 if kernel_size == 7 else 1
         self.conv1 = nn.Conv2d(2, 1, kernel_size, padding=padding, bias=False)
         self.sigmoid = nn.Sigmoid()
@@ -283,7 +284,7 @@ class LGGNet(nn.Module):
         x = self.aggregate.forward(x)
         adj = self.get_adj(x)
         x = self.bn_g1(x)
-        
+
         x = self.gcn(x, adj)
         x = self.bn_g2(x)
         x = x.view(x.shape[0], -1)

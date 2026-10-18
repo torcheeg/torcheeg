@@ -210,7 +210,8 @@ class BYOLTrainer(pl.LightningModule):
                       batch_idx: int) -> torch.Tensor:
         xs, _ = batch
 
-        assert len(xs) == 2, "The number of views must be two in BYOL."
+        if not (len(xs) == 2):
+            raise ValueError('The number of views must be two in BYOL.')
 
         for i, x in enumerate(xs):
             # # batch size must greater than one
@@ -349,7 +350,8 @@ class BYOLTrainer(pl.LightningModule):
                         batch_idx: int) -> torch.Tensor:
         xs, _ = batch
 
-        assert len(xs) == 2, "The number of views must be two in BYOL."
+        if not (len(xs) == 2):
+            raise ValueError('The number of views must be two in BYOL.')
         for i, x in enumerate(xs):
             # # batch size must greater than one
             # assert x.shape[

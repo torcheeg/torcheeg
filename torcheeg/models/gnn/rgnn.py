@@ -48,7 +48,8 @@ def _add_remaining_self_loops(edge_index: torch.Tensor,
                              device=edge_index.device)
 
     if edge_weight is not None:
-        assert edge_weight.numel() == edge_index.size(1)
+        if not (edge_weight.numel() == edge_index.size(1)):
+            raise ValueError('edge_weight must contain one weight per edge.')
         remaining_edge_weight = edge_weight[inv_mask]
 
         if remaining_edge_weight.numel() > 0:

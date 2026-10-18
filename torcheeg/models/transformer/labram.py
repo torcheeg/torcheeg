@@ -396,11 +396,18 @@ class LaBraM(nn.Module):
         input_chans = None
         if len(electrodes):
             for electrode in electrodes:
-                assert electrode in _STANDARD_1020, f"{electrode} not in standard_1020"
-            assert len(electrodes) == x.shape[1], f"Number of electrodes {len(electrodes)} should match input ({x.shape[1]})."
+                if not (electrode in _STANDARD_1020):
+                    raise ValueError(f'{electrode} not in standard_1020')
+            if not (len(electrodes) == x.shape[1]):
+                raise ValueError(
+                    f'Number of electrodes {len(electrodes)} should match input ({x.shape[1]}).'
+                )
             input_chans = _get_input_chans(electrodes)
         else:
-            assert len(_STANDARD_1020) == x.shape[1], f"You must provide electrodes for the input. Expected default channels {_STANDARD_1020} are used."
+            if not (len(_STANDARD_1020) == x.shape[1]):
+                raise ValueError(
+                    f'You must provide electrodes for the input. Expected default channels {_STANDARD_1020} are used.'
+                )
 
         batch_size, n, a, t = x.shape
         input_time_window = a if t == self.patch_size else t

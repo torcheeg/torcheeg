@@ -12,9 +12,9 @@ def _compute_same_pad(kernel_size, stride):
     if isinstance(stride, int):
         stride = [stride]
 
-    assert len(stride) == len(
-        kernel_size
-    ), "Pass kernel size and stride both as int, or both as equal length iterable"
+    if not (len(stride) == len(kernel_size)):
+        raise ValueError(
+            'Pass kernel size and stride both as int, or both as equal length iterable')
 
     return [((k - 1) * s + 1) // 2 for k, s in zip(kernel_size, stride)]
 
@@ -77,7 +77,8 @@ def _squeeze2d(input, factor):
 
     B, C, H, W = input.size()
 
-    assert H % factor == 0 and W % factor == 0, "H or W modulo factor is not 0"
+    if not (H % factor == 0 and W % factor == 0):
+        raise ValueError('H or W modulo factor is not 0')
 
     x = input.view(B, C, H // factor, factor, W // factor, factor)
     x = x.permute(0, 1, 3, 5, 2, 4).contiguous()
@@ -94,7 +95,8 @@ def _unsqueeze2d(input, factor):
 
     B, C, H, W = input.size()
 
-    assert C % (factor2) == 0, "C module factor squared is not 0"
+    if not (C % factor2 == 0):
+        raise ValueError('C module factor squared is not 0')
 
     x = input.view(B, C // factor2, factor, factor, H, W)
     x = x.permute(0, 1, 4, 2, 5, 3).contiguous()
@@ -187,11 +189,12 @@ class ActNorm2d(_ActNorm):
         super().__init__(num_features, scale)
 
     def _check_input_dim(self, input):
-        assert len(input.size()) == 4
-        assert input.size(1) == self.num_features, (
-            "[ActNorm]: input should be in shape as `BCHW`,"
-            " channels should be {} rather than {}".format(
-                self.num_features, input.size()))
+        if not (len(input.size()) == 4):
+            raise ValueError('input must be a 4D tensor.')
+        if not (input.size(1) == self.num_features):
+            raise ValueError(
+                '[ActNorm]: input should be in shape as `BCHW`, channels should be {} rather than {}'
+                .format(self.num_features, input.size()))
 
 
 class LinearZeros(nn.Module):
@@ -311,7 +314,8 @@ class Permute2d(nn.Module):
             self.indices_inverse[self.indices[i]] = i
 
     def forward(self, input, reverse=False):
-        assert len(input.size()) == 4
+        if not (len(input.size()) == 4):
+            raise ValueError('input must be a 4D tensor.')
 
         if not reverse:
             input = input[:, self.indices, :, :]
@@ -496,7 +500,8 @@ class FlowStep(nn.Module):
             return self.reverse_flow(input, logdet)
 
     def normal_flow(self, input, logdet):
-        assert input.size(1) % 2 == 0
+        if not (input.size(1) % 2 == 0):
+            raise ValueError('input must have an even number of channels.')
 
         # 1. actnorm
         z, logdet = self.actnorm(input, logdet=logdet, reverse=False)
@@ -520,7 +525,8 @@ class FlowStep(nn.Module):
         return z, logdet
 
     def reverse_flow(self, input, logdet):
-        assert input.size(1) % 2 == 0
+        if not (input.size(1) % 2 == 0):
+            raise ValueError('input must have an even number of channels.')
 
         # 1.coupling
         z1, z2 = _split_feature(input, "split")

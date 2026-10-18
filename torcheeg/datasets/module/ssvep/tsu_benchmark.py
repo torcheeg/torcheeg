@@ -245,9 +245,10 @@ class TSUBenckmarkDataset(BaseDataset):
     def set_records(self, **kwargs):
         root_path = kwargs.pop('root_path', './TSUBenchmark')  # str
 
-        assert os.path.exists(
-            root_path
-        ), f'root_path ({root_path}) does not exist. Please download the dataset and set the root_path to the downloaded path.'
+        if not (os.path.exists(root_path)):
+            raise FileNotFoundError(
+                f'root_path ({root_path}) does not exist. Please download the dataset and set the root_path to the downloaded path.'
+            )
 
         file_list = os.listdir(root_path)
         skip_set = [

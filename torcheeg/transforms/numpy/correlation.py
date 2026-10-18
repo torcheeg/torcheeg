@@ -24,9 +24,10 @@ class CorrelationTransform(EEGTransform):
                         matrix[i][j] = self.opt(band_eeg[i], band_eeg[j])
                 band_list.append(matrix)
             return np.stack(band_list, axis=0)
-        assert len(
-            eeg.shape
-        ) == 2, 'The input of CorrelationTransform must have 2 or 3 dimensions, which represent band number [optional], electrode number and time point number.'
+        if not (len(eeg.shape) == 2):
+            raise ValueError(
+                'The input of CorrelationTransform must have 2 or 3 dimensions, which represent band number [optional], electrode number and time point number.'
+            )
 
         num_item = eeg.shape[0]
         matrix = np.zeros((num_item, num_item))

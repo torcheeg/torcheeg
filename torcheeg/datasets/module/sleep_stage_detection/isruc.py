@@ -145,7 +145,8 @@ class ISRUCDataset(BaseDataset):
         if io_path is None:
             io_path = get_random_dir_path(dir_prefix='datasets')
 
-        assert 0 in groups or 1 in groups or 2 in groups, "groups must be a subset of [0, 1, 2]"
+        if not (0 in groups or 1 in groups or 2 in groups):
+            raise ValueError('groups must be a subset of [0, 1, 2]')
 
         params = {
             'root_path': root_path,

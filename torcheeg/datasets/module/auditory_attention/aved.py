@@ -344,16 +344,19 @@ class AVEDDataset(BaseDataset):
                 end_at = start_at + dynamic_chunk_size
 
     def set_records(self, root_path: str = './eeg_raw', **kwargs):
-        assert os.path.exists(root_path), \
-            f'root_path ({root_path}) does not exist. Please download the dataset and set the root_path to the downloaded path.'
+        if not (os.path.exists(root_path)):
+            raise FileNotFoundError(
+                f'root_path ({root_path}) does not exist. Please download the dataset and set the root_path to the downloaded path.'
+            )
 
         records = []
         conditions = ['audio_video', 'audio_only']
 
         for condition in conditions:
             condition_path = os.path.join(root_path, condition)
-            assert os.path.exists(condition_path), \
-                f'Condition path ({condition_path}) does not exist.'
+            if not (os.path.exists(condition_path)):
+                raise FileNotFoundError(
+                    f'Condition path ({condition_path}) does not exist.')
 
             subject_dirs = sorted([d for d in os.listdir(condition_path)
                                    if os.path.isdir(os.path.join(condition_path, d))

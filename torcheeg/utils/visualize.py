@@ -378,8 +378,10 @@ def plot_adj_connectivity(adj: torch.Tensor,
     if channel_list is None:
         channel_list = list(range(len(adj)))
     adj = adj.detach().cpu().numpy()
-    assert len(channel_list) == adj.shape[0] and len(channel_list) == adj.shape[
-        1], 'The size of the adjacency matrix does not match the number of channel names.'
+    if not (len(channel_list) == adj.shape[0] and len(channel_list) == adj.shape[1]):
+        raise ValueError(
+            'The size of the adjacency matrix does not match the number of channel names.'
+        )
 
     node_colors = None
     if region_list:

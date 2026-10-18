@@ -62,6 +62,25 @@ def build(self, **kwargs):
 
 For a class-level hook, use `@classmethod` and `cls.__name__` in the message. Subclasses can still implement dataset record hooks as static methods. Keep working default implementations in base classes; returning an empty parameter dictionary or implementing `__repr__` does not require an exception. Exceptions for unsupported algorithm options are separate from required subclass hooks.
 
+## Input validation and exceptions
+
+Check arguments at the interface that owns their meaning. Constructors check configuration; methods check runtime inputs. Base classes own checks required by their shared workflow. Keep one-off checks inline; use `_validate_<name>` for a genuinely reusable helper inside a module, and `validate_<name>` in the relevant package's `utils.py` when multiple modules share the same rule. Existing public `check` hooks remain public. Do not add a validator section to every file or revalidate every argument in every helper.
+
+Use the following exception meanings consistently:
+
+| Exception | Meaning |
+| --- | --- |
+| `TypeError` | An explicitly checked argument has the wrong Python type. |
+| `ValueError` | An argument has an invalid shape, range, choice, or combination. |
+| `FileNotFoundError` | An input file or dataset directory does not exist. |
+| `KeyError` | A requested mapping or EEG sample key does not exist. |
+| `RuntimeError` | An operation cannot proceed because stored or computed state is invalid. |
+| `NotImplementedError` | A required subclass implementation or supported extension is missing. |
+
+Use explicit `if`/`raise` statements for caller-input checks so they still run under `python -O`. Reserve `assert` for internal invariants. Error messages identify the relevant argument and requirement; include actual values when useful. Preserve useful upstream exceptions rather than catching everything and replacing the cause with a generic message. Libraries such as scikit-learn may already validate their own arguments; delegate those checks instead of copying them or changing their exception contracts.
+
+Shared cache code belongs in the package that owns the cache. Model-selection caches contain row-index CSVs and one shared manifest for dataset/configuration matching and file integrity; do not add separate files for information already represented in the filenames or index files.
+
 ## Unit Testing
 
 The TorchEEG unit tests are located under `test/`. Run the all the unit tests with:

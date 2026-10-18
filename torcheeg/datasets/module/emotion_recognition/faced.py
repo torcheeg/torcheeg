@@ -226,7 +226,7 @@ class FACEDDataset(BaseDataset):
         sampling_rate = 250
         duration = 30
         time_points = duration * sampling_rate
-        
+
         samples = np.random.randn(num_trials, num_channels, time_points)
 
         return {
@@ -298,9 +298,10 @@ class FACEDDataset(BaseDataset):
                 end_at = start_at + dynamic_chunk_size
 
     def set_records(self, root_path: str = './Processed_data', **kwargs):
-        assert os.path.exists(
-            root_path
-        ), f'root_path ({root_path}) does not exist. Please download the dataset and set the root_path to the downloaded path.'
+        if not (os.path.exists(root_path)):
+            raise FileNotFoundError(
+                f'root_path ({root_path}) does not exist. Please download the dataset and set the root_path to the downloaded path.'
+            )
         file_path_list = os.listdir(root_path)
         file_path_list.sort()
         file_path_list = [

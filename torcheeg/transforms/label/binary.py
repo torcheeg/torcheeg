@@ -51,7 +51,7 @@ class Binary(LabelTransform):
         if isinstance(y, list):
             return [self._binarize(l) for l in y]
         return self._binarize(y)
-    
+
     def _binarize(self, y: Union[int, float]) -> int:
         if np.isnan(y):
             return np.random.randint(2)
@@ -94,9 +94,10 @@ class BinaryOneVSRest(LabelTransform):
         self.positive = positive
 
     def apply(self, y: Union[int, float, List], **kwargs) -> Union[int, List]:
-        assert isinstance(
-            y, (int, float, list)
-        ), f'The transform Binary only accepts label list or item (int or float) as input, but obtain {type(y)} as input.'
+        if not (isinstance(y, (int, float, list))):
+            raise TypeError(
+                f'The transform Binary only accepts label list or item (int or float) as input, but obtain {type(y)} as input.'
+            )
         if isinstance(y, list):
             return [int(l == self.positive) for l in y]
         return int(y == self.positive)
@@ -144,7 +145,8 @@ class BinariesToCategory(LabelTransform):
         Returns:
             int: The converted multiclass label.
         '''
-        assert isinstance(
-            y, list
-        ), f'The transform BinariesToCategory only accepts label list as input, but obtain {type(y)} as input.'
+        if not (isinstance(y, list)):
+            raise TypeError(
+                f'The transform BinariesToCategory only accepts label list as input, but obtain {type(y)} as input.'
+            )
         return sum([v * 2**i for i, v in enumerate(reversed(y))])

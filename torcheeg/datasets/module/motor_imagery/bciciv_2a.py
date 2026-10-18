@@ -236,9 +236,10 @@ class BCICIV2aDataset(BaseDataset):
                     end_at = start_at + dynamic_chunk_size
 
     def set_records(self, root_path: str = './BCICIV_2a_mat', **kwargs):
-        assert os.path.exists(
-            root_path
-        ), f'root_path ({root_path}) does not exist. Please download the dataset and set the root_path to the downloaded path.'
+        if not (os.path.exists(root_path)):
+            raise FileNotFoundError(
+                f'root_path ({root_path}) does not exist. Please download the dataset and set the root_path to the downloaded path.'
+            )
 
         file_name_list = os.listdir(root_path)
         file_path_list = [

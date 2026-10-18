@@ -429,7 +429,9 @@ class BandDetrendedFluctuationAnalysis(BandTransform):
 
         for i in range(0, len(L)):
             n = int(L[i])
-            assert n, 'Time series is too short while the box length is too big.'
+            if not (n):
+                raise ValueError(
+                    'Time series is too short while the box length is too big.')
             for j in range(0, len(eeg), n):
                 if j + n < len(eeg):
                     c = list(range(j, j + n))

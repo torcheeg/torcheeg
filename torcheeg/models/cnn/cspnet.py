@@ -96,7 +96,8 @@ class CSPNet(nn.Module):
         pool_stride_1: float = 25,
     ):
         super().__init__()
-        assert filter_size_t <= chunk_size, "Temporal filter size error"
+        if not (filter_size_t <= chunk_size):
+            raise ValueError('Temporal filter size error')
         if filter_size_s <= 0:
             filter_size_s = num_electrodes
 

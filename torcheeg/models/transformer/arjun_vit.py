@@ -185,14 +185,17 @@ class ArjunViT(nn.Module):
         self.dropout = dropout
         self.pool_func = pool_func
 
-        assert chunk_size % t_patch_size == 0, f'EEG chunk size {chunk_size} must be divisible by the temporal patch size {t_patch_size}.'
+        if not (chunk_size % t_patch_size == 0):
+            raise ValueError(
+                f'EEG chunk size {chunk_size} must be divisible by the temporal patch size {t_patch_size}.'
+            )
 
         num_patches = chunk_size // t_patch_size
         patch_channels = num_electrodes * t_patch_size
 
-        assert pool_func in {
-            'cls', 'mean'
-        }, 'pool_func must be either cls (cls token) or mean (mean pooling)'
+        if not (pool_func in {'cls', 'mean'}):
+            raise ValueError(
+                'pool_func must be either cls (cls token) or mean (mean pooling)')
 
         self.to_patch_embedding = nn.Sequential(
             Rearrange('b c (w p) -> b w (c p)', p=t_patch_size),

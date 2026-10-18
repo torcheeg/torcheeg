@@ -184,24 +184,24 @@ class AMIGOSDataset(BaseDataset):
             'samples': samples,
             'labels': labels
         }
-    
+
     @staticmethod
     def fake_record(record: str, **kwargs) -> Dict:
         num_trials = 20
         trial_length = 10 * 128
         num_channels = 17
         num_labels = 12
-        
+
         samples = []
         labels = []
-        
+
         for _ in range(num_trials):
             trial_sample = np.random.rand(trial_length, num_channels)
             trial_label = np.random.uniform(1, 9, (1, num_labels))
-            
+
             samples.append(trial_sample)
             labels.append(trial_label)
-        
+
         return {
             'record': 'Data_Preprocessed_P1.mat',
             'samples': np.array(samples),
@@ -322,9 +322,10 @@ class AMIGOSDataset(BaseDataset):
                 end_at = start_at + dynamic_chunk_size
 
     def set_records(self, root_path: str = './data_preprocessed', **kwargs):
-        assert os.path.exists(
-            root_path
-        ), f'root_path ({root_path}) does not exist. Please download the dataset and set the root_path to the downloaded path.'
+        if not (os.path.exists(root_path)):
+            raise FileNotFoundError(
+                f'root_path ({root_path}) does not exist. Please download the dataset and set the root_path to the downloaded path.'
+            )
         return os.listdir(root_path)
 
     def __getitem__(self, index: int) -> Tuple[any, any, int, int, int]:

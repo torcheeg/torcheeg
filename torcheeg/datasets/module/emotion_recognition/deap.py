@@ -182,11 +182,11 @@ class DEAPDataset(BaseDataset):
         num_trials = 40
         num_channels = 32
         trial_length = 63 * 128
-        
+
         samples = np.random.randn(num_trials, num_channels, trial_length)
-        
+
         labels = np.random.uniform(1, 9, (num_trials, 4))
-        
+
         return {
             'samples': samples,
             'labels': labels
@@ -278,9 +278,10 @@ class DEAPDataset(BaseDataset):
     def set_records(self,
                     root_path: str = './data_preprocessed_python',
                     **kwargs):
-        assert os.path.exists(
-            root_path
-        ), f'root_path ({root_path}) does not exist. Please download the dataset and set the root_path to the downloaded path.'
+        if not (os.path.exists(root_path)):
+            raise FileNotFoundError(
+                f'root_path ({root_path}) does not exist. Please download the dataset and set the root_path to the downloaded path.'
+            )
         return os.listdir(root_path)
 
     def __getitem__(self, index: int) -> Tuple:

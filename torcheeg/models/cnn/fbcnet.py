@@ -154,7 +154,10 @@ class FBCNet(nn.Module):
         self.stride_factor = stride_factor
         self.weight_norm = weight_norm
 
-        assert chunk_size % stride_factor == 0, f'chunk_size should be divisible by stride_factor, chunk_size={chunk_size},stride_factor={stride_factor} does not meet the requirements.'
+        if not (chunk_size % stride_factor == 0):
+            raise ValueError(
+                f'chunk_size should be divisible by stride_factor, chunk_size={chunk_size},stride_factor={stride_factor} does not meet the requirements.'
+            )
 
         self.scb = self._build_spatial_block(num_S,
                             num_electrodes,

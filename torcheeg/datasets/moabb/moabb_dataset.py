@@ -99,8 +99,8 @@ class MOABBDataset(BaseDataset):
 
         if not paradigm.is_valid(dataset):
             message = f"Dataset {dataset.code} is not valid for paradigm"
-            raise AssertionError(message)
-        
+            raise ValueError(message)
+
         super().__init__(**params)
         # save all arguments to __dict__
         self.__dict__.update(params)

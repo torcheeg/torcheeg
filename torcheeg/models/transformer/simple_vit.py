@@ -33,7 +33,7 @@ class PositionEmbedding3D(nn.Module):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         if len(x.shape) != 5:
-            raise RuntimeError(
+            raise ValueError(
                 "The input must be five-dimensional to perform thres-dimensional position embedding!"
             )
 
@@ -247,8 +247,14 @@ class SimpleViT(nn.Module):
         grid_height, grid_width = _pair(grid_size)
         patch_height, patch_width = _pair(s_patch_size)
 
-        assert grid_height % patch_height == 0 and grid_width % patch_width == 0, f'EEG grid size {grid_size} must be divisible by the spatial patch size {s_patch_size}.'
-        assert chunk_size % t_patch_size == 0, f'EEG chunk size {chunk_size} must be divisible by the temporal patch size {t_patch_size}.'
+        if not (grid_height % patch_height == 0 and grid_width % patch_width == 0):
+            raise ValueError(
+                f'EEG grid size {grid_size} must be divisible by the spatial patch size {s_patch_size}.'
+            )
+        if not (chunk_size % t_patch_size == 0):
+            raise ValueError(
+                f'EEG chunk size {chunk_size} must be divisible by the temporal patch size {t_patch_size}.'
+            )
 
         patch_channels = t_patch_size * patch_height * patch_width
 

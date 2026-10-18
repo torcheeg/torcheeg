@@ -241,14 +241,16 @@ class MPEDFeatureDataset(BaseDataset):
                     root_path: str = './EEG_feature',
                     feature: list = ['PSD'],
                     **kwargs):
-        assert os.path.exists(
-            root_path
-        ), f'root_path ({root_path}) does not exist. Please download the dataset and set the root_path to the downloaded path.'
+        if not (os.path.exists(root_path)):
+            raise FileNotFoundError(
+                f'root_path ({root_path}) does not exist. Please download the dataset and set the root_path to the downloaded path.'
+            )
         available_features = os.listdir(root_path)
 
-        assert set(feature).issubset(
-            set(available_features)
-        ), 'The features supported by the MPEDFeature dataset are HHS, Hjorth, PSD, STFT, HOC. The input features are not a subset of the list of supported features.'
+        if not (set(feature).issubset(set(available_features))):
+            raise ValueError(
+                'The features supported by the MPEDFeature dataset are HHS, Hjorth, PSD, STFT, HOC. The input features are not a subset of the list of supported features.'
+            )
 
         file_list = os.listdir(os.path.join(root_path, available_features[0]))
         return file_list

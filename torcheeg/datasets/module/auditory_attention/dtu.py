@@ -508,9 +508,10 @@ class DTUDataset(BaseDataset):
                     root_path: str = './EEG',
                     **kwargs):
 
-        assert os.path.exists(
-            root_path
-        ), f'root_path ({root_path}) does not exist. Please download the dataset and set the root_path to the downloaded path.'
+        if not (os.path.exists(root_path)):
+            raise FileNotFoundError(
+                f'root_path ({root_path}) does not exist. Please download the dataset and set the root_path to the downloaded path.'
+            )
 
         all_files = os.listdir(root_path)
         records = [f for f in all_files if f.endswith('.mat') and

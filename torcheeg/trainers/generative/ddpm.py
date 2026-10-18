@@ -255,9 +255,8 @@ class DDPMTrainer(pl.LightningModule):
             metric_classifier: nn.Module = None,
             metric_num_features: int = None):
         super().__init__()
-        assert parameterization in [
-            "eps", "x0", "v"
-        ], 'currently only supporting "eps" and "x0" and "v"'
+        if not (parameterization in ['eps', 'x0', 'v']):
+            raise ValueError('currently only supporting "eps" and "x0" and "v"')
         self.parameterization = parameterization
         self.lr = lr
         self.weight_decay = weight_decay
@@ -307,19 +306,22 @@ class DDPMTrainer(pl.LightningModule):
         self.test_vlb_loss = torchmetrics.MeanMetric()
 
         if 'fid' in metrics:
-            assert not self.metric_extractor is None, 'The metric_extractor should be specified.'
+            if not (not self.metric_extractor is None):
+                raise ValueError('The metric_extractor should be specified.')
             if hasattr(self.metric_extractor,
                        'in_channels') and self.metric_num_features is None:
                 warnings.warn(
                     f'No metric_num_features specified, use metric_extractor.in_channels ({self.metric_extractor.in_channels}) as metric_num_features.'
                 )
                 self.metric_num_features = self.metric_extractor.in_channels
-            assert not self.metric_num_features is None, 'The metric_num_features should be specified.'
+            if not (not self.metric_num_features is None):
+                raise ValueError('The metric_num_features should be specified.')
             self.test_fid = FrechetInceptionDistance(self.metric_extractor,
                                                      self.metric_num_features)
 
         if 'is' in metrics:
-            assert not self.metric_extractor is None, 'The metric_classifier should be specified.'
+            if not (not self.metric_extractor is None):
+                raise ValueError('The metric_classifier should be specified.')
             self.test_is = InceptionScore(self.metric_classifier)
 
     def register_schedule(self,
@@ -341,8 +343,8 @@ class DDPMTrainer(pl.LightningModule):
         self.num_timesteps = int(timesteps)
         self.linear_start = linear_start
         self.linear_end = linear_end
-        assert alphas_cumprod.shape[
-            0] == self.num_timesteps, 'alphas have to be defined for each timestep'
+        if not (alphas_cumprod.shape[0] == self.num_timesteps):
+            raise ValueError('alphas have to be defined for each timestep')
 
         to_torch = partial(torch.tensor, dtype=torch.float32)
 
@@ -392,7 +394,7 @@ class DDPMTrainer(pl.LightningModule):
                 (2 * self.posterior_variance * to_torch(alphas) *
                  (1 - self.alphas_cumprod)))
         else:
-            raise NotImplementedError("mu not supported")
+            raise ValueError("mu not supported")
         lvlb_weights[0] = lvlb_weights[1]
         self.register_buffer('lvlb_weights', lvlb_weights, persistent=False)
         assert not torch.isnan(self.lvlb_weights).all()
@@ -523,7 +525,7 @@ class DDPMTrainer(pl.LightningModule):
                                                     pred,
                                                     reduction='none')
         else:
-            raise NotImplementedError("unknown loss type '{loss_type}'")
+            raise ValueError(f"Unknown loss_type {loss_type!r}.")
 
         return loss
 
@@ -545,7 +547,7 @@ class DDPMTrainer(pl.LightningModule):
         elif self.parameterization == "v":
             target = self.get_v(x_start, noise, t)
         else:
-            raise NotImplementedError(
+            raise ValueError(
                 f"Parameterization {self.parameterization} not yet supported")
 
         loss = self.get_loss(model_out, target, mean=False).mean(dim=[1, 2, 3])
@@ -848,7 +850,7 @@ class CDDPMTrainer(DDPMTrainer):
         elif self.parameterization == "v":
             target = self.get_v(x_start, noise, t)
         else:
-            raise NotImplementedError(
+            raise ValueError(
                 f"Parameterization {self.parameterization} not yet supported")
 
         loss = self.get_loss(model_out, target, mean=False).mean(dim=[1, 2, 3])

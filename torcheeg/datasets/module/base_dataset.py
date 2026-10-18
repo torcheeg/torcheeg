@@ -139,8 +139,10 @@ class BaseDataset(Dataset):
         # sort the records
         records = sorted(records, key=lambda x: int(x.split('_')[2]))
 
-        assert len(records) > 0, \
-            f"The io_path, {io_path}, is corrupted. Please delete this folder and try again."
+        if not (len(records) > 0):
+            raise RuntimeError(
+                f'The io_path, {io_path}, is corrupted. Please delete this folder and try again.'
+            )
 
         info_merged = []
 
@@ -155,8 +157,9 @@ class BaseDataset(Dataset):
                 self.eeg_signal_paths[record] = eeg_signal_path
 
                 info_df = info_io.read_all()
-                assert '_record_id' not in info_df.columns, \
-                    "column '_record_id' is a forbidden reserved word."
+                if not ('_record_id' not in info_df.columns):
+                    raise ValueError(
+                        "column '_record_id' is a forbidden reserved word.")
                 info_df['_record_id'] = record
                 info_merged.append(info_df)
 
@@ -174,8 +177,9 @@ class BaseDataset(Dataset):
                 self.eeg_io_router[record] = eeg_io
 
                 info_df = info_io.read_all()
-                assert '_record_id' not in info_df.columns, \
-                    "column '_record_id' is a forbidden reserved word."
+                if not ('_record_id' not in info_df.columns):
+                    raise ValueError(
+                        "column '_record_id' is a forbidden reserved word.")
                 info_df['_record_id'] = record
                 info_merged.append(info_df)
 
@@ -184,8 +188,9 @@ class BaseDataset(Dataset):
         self.info = pd.concat(info_merged, ignore_index=True)
 
     def is_lazy(self):
-        assert hasattr(self, 'eeg_io_router') or hasattr(
-            self, 'eeg_signal_paths'), "The dataset should contain eeg_io_router or eeg_signal_paths."
+        if not (hasattr(self, 'eeg_io_router') or hasattr(self, 'eeg_signal_paths')):
+            raise RuntimeError(
+                'The dataset should contain eeg_io_router or eeg_signal_paths.')
         if hasattr(self, 'eeg_io_router') and len(self.eeg_io_router) > 0:
             return False
         if hasattr(
