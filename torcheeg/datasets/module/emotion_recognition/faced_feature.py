@@ -22,7 +22,7 @@ class FACEDFeatureDataset(BaseDataset):
     - Signals: Electroencephalogram (30 channels at 250Hz) and two channels of left/right mastoid signals from 123 subjects.
     - Rating: 28 video clips are annotated in valence and discrete emotion dimensions. The valence is divided into positive (1), negative (-1), and neutral (0). Discrete emotions are divided into anger (0), disgust (1), fear (2), sadness (3), neutral (4), amusement (5), inspiration (6), joy (7), and tenderness (8).
 
-    In order to use this dataset, the download folder :obj:`EEG_Features`(download from this url: https://www.synapse.org/#!Synapse:syn52368847) is required, containing the following files:
+    In order to use this dataset, the download folder :obj:`EEG_Features` (download from this url: https://www.synapse.org/#!Synapse:syn52368847) is required, containing the following files:
 
     .. code-block:: text
 

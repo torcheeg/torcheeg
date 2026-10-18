@@ -1,0 +1,242 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="480" viewBox="0 0 1200 480" role="img" aria-labelledby="title">
+<title id="title">KFoldCrossSubject</title>
+<rect width="1200" height="480" fill="white"/>
+<g font-family="DejaVu Sans, Arial, sans-serif">
+<text x="410.0" y="115" font-size="18" fill="#253047" text-anchor="middle" font-weight="400">Fold 1</text>
+<text x="360.0" y="143" font-size="14" fill="#637086" text-anchor="middle" font-weight="400">Trial 1</text>
+<text x="428.0" y="143" font-size="14" fill="#637086" text-anchor="middle" font-weight="400">Trial 2</text>
+<text x="496.0" y="143" font-size="14" fill="#637086" text-anchor="middle" font-weight="400">Trial 3</text>
+<text x="322.0" y="181" font-size="14" fill="#637086" text-anchor="end" font-weight="400">Subject 1</text>
+<rect x="332.0" y="158" width="16" height="18" rx="3" fill="#A77BCB"/>
+<path d="M336.0 167 h8" stroke="white" stroke-width="2"/>
+<rect x="352.0" y="158" width="16" height="18" rx="3" fill="#A77BCB"/>
+<path d="M356.0 167 h8" stroke="white" stroke-width="2"/>
+<rect x="372.0" y="158" width="16" height="18" rx="3" fill="#A77BCB"/>
+<path d="M376.0 167 h8" stroke="white" stroke-width="2"/>
+<rect x="332.0" y="179" width="16" height="18" rx="3" fill="#A77BCB"/>
+<path d="M336.0 188 h8" stroke="white" stroke-width="2"/>
+<rect x="352.0" y="179" width="16" height="18" rx="3" fill="#A77BCB"/>
+<path d="M356.0 188 h8" stroke="white" stroke-width="2"/>
+<rect x="372.0" y="179" width="16" height="18" rx="3" fill="#A77BCB"/>
+<path d="M376.0 188 h8" stroke="white" stroke-width="2"/>
+<rect x="400.0" y="158" width="16" height="18" rx="3" fill="#A77BCB"/>
+<path d="M404.0 167 h8" stroke="white" stroke-width="2"/>
+<rect x="420.0" y="158" width="16" height="18" rx="3" fill="#A77BCB"/>
+<path d="M424.0 167 h8" stroke="white" stroke-width="2"/>
+<rect x="440.0" y="158" width="16" height="18" rx="3" fill="#A77BCB"/>
+<path d="M444.0 167 h8" stroke="white" stroke-width="2"/>
+<rect x="400.0" y="179" width="16" height="18" rx="3" fill="#A77BCB"/>
+<path d="M404.0 188 h8" stroke="white" stroke-width="2"/>
+<rect x="420.0" y="179" width="16" height="18" rx="3" fill="#A77BCB"/>
+<path d="M424.0 188 h8" stroke="white" stroke-width="2"/>
+<rect x="440.0" y="179" width="16" height="18" rx="3" fill="#A77BCB"/>
+<path d="M444.0 188 h8" stroke="white" stroke-width="2"/>
+<rect x="468.0" y="158" width="16" height="18" rx="3" fill="#A77BCB"/>
+<path d="M472.0 167 h8" stroke="white" stroke-width="2"/>
+<rect x="488.0" y="158" width="16" height="18" rx="3" fill="#A77BCB"/>
+<path d="M492.0 167 h8" stroke="white" stroke-width="2"/>
+<rect x="508.0" y="158" width="16" height="18" rx="3" fill="#A77BCB"/>
+<path d="M512.0 167 h8" stroke="white" stroke-width="2"/>
+<rect x="468.0" y="179" width="16" height="18" rx="3" fill="#A77BCB"/>
+<path d="M472.0 188 h8" stroke="white" stroke-width="2"/>
+<rect x="488.0" y="179" width="16" height="18" rx="3" fill="#A77BCB"/>
+<path d="M492.0 188 h8" stroke="white" stroke-width="2"/>
+<rect x="508.0" y="179" width="16" height="18" rx="3" fill="#A77BCB"/>
+<path d="M512.0 188 h8" stroke="white" stroke-width="2"/>
+<text x="322.0" y="229" font-size="14" fill="#637086" text-anchor="end" font-weight="400">Subject 2</text>
+<rect x="332.0" y="206" width="16" height="18" rx="3" fill="#A77BCB"/>
+<path d="M336.0 215 h8" stroke="white" stroke-width="2"/>
+<rect x="352.0" y="206" width="16" height="18" rx="3" fill="#A77BCB"/>
+<path d="M356.0 215 h8" stroke="white" stroke-width="2"/>
+<rect x="372.0" y="206" width="16" height="18" rx="3" fill="#A77BCB"/>
+<path d="M376.0 215 h8" stroke="white" stroke-width="2"/>
+<rect x="332.0" y="227" width="16" height="18" rx="3" fill="#A77BCB"/>
+<path d="M336.0 236 h8" stroke="white" stroke-width="2"/>
+<rect x="352.0" y="227" width="16" height="18" rx="3" fill="#A77BCB"/>
+<path d="M356.0 236 h8" stroke="white" stroke-width="2"/>
+<rect x="372.0" y="227" width="16" height="18" rx="3" fill="#A77BCB"/>
+<path d="M376.0 236 h8" stroke="white" stroke-width="2"/>
+<rect x="400.0" y="206" width="16" height="18" rx="3" fill="#A77BCB"/>
+<path d="M404.0 215 h8" stroke="white" stroke-width="2"/>
+<rect x="420.0" y="206" width="16" height="18" rx="3" fill="#A77BCB"/>
+<path d="M424.0 215 h8" stroke="white" stroke-width="2"/>
+<rect x="440.0" y="206" width="16" height="18" rx="3" fill="#A77BCB"/>
+<path d="M444.0 215 h8" stroke="white" stroke-width="2"/>
+<rect x="400.0" y="227" width="16" height="18" rx="3" fill="#A77BCB"/>
+<path d="M404.0 236 h8" stroke="white" stroke-width="2"/>
+<rect x="420.0" y="227" width="16" height="18" rx="3" fill="#A77BCB"/>
+<path d="M424.0 236 h8" stroke="white" stroke-width="2"/>
+<rect x="440.0" y="227" width="16" height="18" rx="3" fill="#A77BCB"/>
+<path d="M444.0 236 h8" stroke="white" stroke-width="2"/>
+<rect x="468.0" y="206" width="16" height="18" rx="3" fill="#A77BCB"/>
+<path d="M472.0 215 h8" stroke="white" stroke-width="2"/>
+<rect x="488.0" y="206" width="16" height="18" rx="3" fill="#A77BCB"/>
+<path d="M492.0 215 h8" stroke="white" stroke-width="2"/>
+<rect x="508.0" y="206" width="16" height="18" rx="3" fill="#A77BCB"/>
+<path d="M512.0 215 h8" stroke="white" stroke-width="2"/>
+<rect x="468.0" y="227" width="16" height="18" rx="3" fill="#A77BCB"/>
+<path d="M472.0 236 h8" stroke="white" stroke-width="2"/>
+<rect x="488.0" y="227" width="16" height="18" rx="3" fill="#A77BCB"/>
+<path d="M492.0 236 h8" stroke="white" stroke-width="2"/>
+<rect x="508.0" y="227" width="16" height="18" rx="3" fill="#A77BCB"/>
+<path d="M512.0 236 h8" stroke="white" stroke-width="2"/>
+<text x="322.0" y="277" font-size="14" fill="#637086" text-anchor="end" font-weight="400">Subject 3</text>
+<rect x="332.0" y="254" width="16" height="18" rx="3" fill="#B6BDC8"/>
+<rect x="352.0" y="254" width="16" height="18" rx="3" fill="#B6BDC8"/>
+<rect x="372.0" y="254" width="16" height="18" rx="3" fill="#B6BDC8"/>
+<rect x="332.0" y="275" width="16" height="18" rx="3" fill="#B6BDC8"/>
+<rect x="352.0" y="275" width="16" height="18" rx="3" fill="#B6BDC8"/>
+<rect x="372.0" y="275" width="16" height="18" rx="3" fill="#B6BDC8"/>
+<rect x="400.0" y="254" width="16" height="18" rx="3" fill="#B6BDC8"/>
+<rect x="420.0" y="254" width="16" height="18" rx="3" fill="#B6BDC8"/>
+<rect x="440.0" y="254" width="16" height="18" rx="3" fill="#B6BDC8"/>
+<rect x="400.0" y="275" width="16" height="18" rx="3" fill="#B6BDC8"/>
+<rect x="420.0" y="275" width="16" height="18" rx="3" fill="#B6BDC8"/>
+<rect x="440.0" y="275" width="16" height="18" rx="3" fill="#B6BDC8"/>
+<rect x="468.0" y="254" width="16" height="18" rx="3" fill="#B6BDC8"/>
+<rect x="488.0" y="254" width="16" height="18" rx="3" fill="#B6BDC8"/>
+<rect x="508.0" y="254" width="16" height="18" rx="3" fill="#B6BDC8"/>
+<rect x="468.0" y="275" width="16" height="18" rx="3" fill="#B6BDC8"/>
+<rect x="488.0" y="275" width="16" height="18" rx="3" fill="#B6BDC8"/>
+<rect x="508.0" y="275" width="16" height="18" rx="3" fill="#B6BDC8"/>
+<text x="322.0" y="325" font-size="14" fill="#637086" text-anchor="end" font-weight="400">Subject 4</text>
+<rect x="332.0" y="302" width="16" height="18" rx="3" fill="#B6BDC8"/>
+<rect x="352.0" y="302" width="16" height="18" rx="3" fill="#B6BDC8"/>
+<rect x="372.0" y="302" width="16" height="18" rx="3" fill="#B6BDC8"/>
+<rect x="332.0" y="323" width="16" height="18" rx="3" fill="#B6BDC8"/>
+<rect x="352.0" y="323" width="16" height="18" rx="3" fill="#B6BDC8"/>
+<rect x="372.0" y="323" width="16" height="18" rx="3" fill="#B6BDC8"/>
+<rect x="400.0" y="302" width="16" height="18" rx="3" fill="#B6BDC8"/>
+<rect x="420.0" y="302" width="16" height="18" rx="3" fill="#B6BDC8"/>
+<rect x="440.0" y="302" width="16" height="18" rx="3" fill="#B6BDC8"/>
+<rect x="400.0" y="323" width="16" height="18" rx="3" fill="#B6BDC8"/>
+<rect x="420.0" y="323" width="16" height="18" rx="3" fill="#B6BDC8"/>
+<rect x="440.0" y="323" width="16" height="18" rx="3" fill="#B6BDC8"/>
+<rect x="468.0" y="302" width="16" height="18" rx="3" fill="#B6BDC8"/>
+<rect x="488.0" y="302" width="16" height="18" rx="3" fill="#B6BDC8"/>
+<rect x="508.0" y="302" width="16" height="18" rx="3" fill="#B6BDC8"/>
+<rect x="468.0" y="323" width="16" height="18" rx="3" fill="#B6BDC8"/>
+<rect x="488.0" y="323" width="16" height="18" rx="3" fill="#B6BDC8"/>
+<rect x="508.0" y="323" width="16" height="18" rx="3" fill="#B6BDC8"/>
+<text x="790.0" y="115" font-size="18" fill="#253047" text-anchor="middle" font-weight="400">Fold 2</text>
+<text x="740.0" y="143" font-size="14" fill="#637086" text-anchor="middle" font-weight="400">Trial 1</text>
+<text x="808.0" y="143" font-size="14" fill="#637086" text-anchor="middle" font-weight="400">Trial 2</text>
+<text x="876.0" y="143" font-size="14" fill="#637086" text-anchor="middle" font-weight="400">Trial 3</text>
+<text x="702.0" y="181" font-size="14" fill="#637086" text-anchor="end" font-weight="400">Subject 1</text>
+<rect x="712.0" y="158" width="16" height="18" rx="3" fill="#B6BDC8"/>
+<rect x="732.0" y="158" width="16" height="18" rx="3" fill="#B6BDC8"/>
+<rect x="752.0" y="158" width="16" height="18" rx="3" fill="#B6BDC8"/>
+<rect x="712.0" y="179" width="16" height="18" rx="3" fill="#B6BDC8"/>
+<rect x="732.0" y="179" width="16" height="18" rx="3" fill="#B6BDC8"/>
+<rect x="752.0" y="179" width="16" height="18" rx="3" fill="#B6BDC8"/>
+<rect x="780.0" y="158" width="16" height="18" rx="3" fill="#B6BDC8"/>
+<rect x="800.0" y="158" width="16" height="18" rx="3" fill="#B6BDC8"/>
+<rect x="820.0" y="158" width="16" height="18" rx="3" fill="#B6BDC8"/>
+<rect x="780.0" y="179" width="16" height="18" rx="3" fill="#B6BDC8"/>
+<rect x="800.0" y="179" width="16" height="18" rx="3" fill="#B6BDC8"/>
+<rect x="820.0" y="179" width="16" height="18" rx="3" fill="#B6BDC8"/>
+<rect x="848.0" y="158" width="16" height="18" rx="3" fill="#B6BDC8"/>
+<rect x="868.0" y="158" width="16" height="18" rx="3" fill="#B6BDC8"/>
+<rect x="888.0" y="158" width="16" height="18" rx="3" fill="#B6BDC8"/>
+<rect x="848.0" y="179" width="16" height="18" rx="3" fill="#B6BDC8"/>
+<rect x="868.0" y="179" width="16" height="18" rx="3" fill="#B6BDC8"/>
+<rect x="888.0" y="179" width="16" height="18" rx="3" fill="#B6BDC8"/>
+<text x="702.0" y="229" font-size="14" fill="#637086" text-anchor="end" font-weight="400">Subject 2</text>
+<rect x="712.0" y="206" width="16" height="18" rx="3" fill="#B6BDC8"/>
+<rect x="732.0" y="206" width="16" height="18" rx="3" fill="#B6BDC8"/>
+<rect x="752.0" y="206" width="16" height="18" rx="3" fill="#B6BDC8"/>
+<rect x="712.0" y="227" width="16" height="18" rx="3" fill="#B6BDC8"/>
+<rect x="732.0" y="227" width="16" height="18" rx="3" fill="#B6BDC8"/>
+<rect x="752.0" y="227" width="16" height="18" rx="3" fill="#B6BDC8"/>
+<rect x="780.0" y="206" width="16" height="18" rx="3" fill="#B6BDC8"/>
+<rect x="800.0" y="206" width="16" height="18" rx="3" fill="#B6BDC8"/>
+<rect x="820.0" y="206" width="16" height="18" rx="3" fill="#B6BDC8"/>
+<rect x="780.0" y="227" width="16" height="18" rx="3" fill="#B6BDC8"/>
+<rect x="800.0" y="227" width="16" height="18" rx="3" fill="#B6BDC8"/>
+<rect x="820.0" y="227" width="16" height="18" rx="3" fill="#B6BDC8"/>
+<rect x="848.0" y="206" width="16" height="18" rx="3" fill="#B6BDC8"/>
+<rect x="868.0" y="206" width="16" height="18" rx="3" fill="#B6BDC8"/>
+<rect x="888.0" y="206" width="16" height="18" rx="3" fill="#B6BDC8"/>
+<rect x="848.0" y="227" width="16" height="18" rx="3" fill="#B6BDC8"/>
+<rect x="868.0" y="227" width="16" height="18" rx="3" fill="#B6BDC8"/>
+<rect x="888.0" y="227" width="16" height="18" rx="3" fill="#B6BDC8"/>
+<text x="702.0" y="277" font-size="14" fill="#637086" text-anchor="end" font-weight="400">Subject 3</text>
+<rect x="712.0" y="254" width="16" height="18" rx="3" fill="#A77BCB"/>
+<path d="M716.0 263 h8" stroke="white" stroke-width="2"/>
+<rect x="732.0" y="254" width="16" height="18" rx="3" fill="#A77BCB"/>
+<path d="M736.0 263 h8" stroke="white" stroke-width="2"/>
+<rect x="752.0" y="254" width="16" height="18" rx="3" fill="#A77BCB"/>
+<path d="M756.0 263 h8" stroke="white" stroke-width="2"/>
+<rect x="712.0" y="275" width="16" height="18" rx="3" fill="#A77BCB"/>
+<path d="M716.0 284 h8" stroke="white" stroke-width="2"/>
+<rect x="732.0" y="275" width="16" height="18" rx="3" fill="#A77BCB"/>
+<path d="M736.0 284 h8" stroke="white" stroke-width="2"/>
+<rect x="752.0" y="275" width="16" height="18" rx="3" fill="#A77BCB"/>
+<path d="M756.0 284 h8" stroke="white" stroke-width="2"/>
+<rect x="780.0" y="254" width="16" height="18" rx="3" fill="#A77BCB"/>
+<path d="M784.0 263 h8" stroke="white" stroke-width="2"/>
+<rect x="800.0" y="254" width="16" height="18" rx="3" fill="#A77BCB"/>
+<path d="M804.0 263 h8" stroke="white" stroke-width="2"/>
+<rect x="820.0" y="254" width="16" height="18" rx="3" fill="#A77BCB"/>
+<path d="M824.0 263 h8" stroke="white" stroke-width="2"/>
+<rect x="780.0" y="275" width="16" height="18" rx="3" fill="#A77BCB"/>
+<path d="M784.0 284 h8" stroke="white" stroke-width="2"/>
+<rect x="800.0" y="275" width="16" height="18" rx="3" fill="#A77BCB"/>
+<path d="M804.0 284 h8" stroke="white" stroke-width="2"/>
+<rect x="820.0" y="275" width="16" height="18" rx="3" fill="#A77BCB"/>
+<path d="M824.0 284 h8" stroke="white" stroke-width="2"/>
+<rect x="848.0" y="254" width="16" height="18" rx="3" fill="#A77BCB"/>
+<path d="M852.0 263 h8" stroke="white" stroke-width="2"/>
+<rect x="868.0" y="254" width="16" height="18" rx="3" fill="#A77BCB"/>
+<path d="M872.0 263 h8" stroke="white" stroke-width="2"/>
+<rect x="888.0" y="254" width="16" height="18" rx="3" fill="#A77BCB"/>
+<path d="M892.0 263 h8" stroke="white" stroke-width="2"/>
+<rect x="848.0" y="275" width="16" height="18" rx="3" fill="#A77BCB"/>
+<path d="M852.0 284 h8" stroke="white" stroke-width="2"/>
+<rect x="868.0" y="275" width="16" height="18" rx="3" fill="#A77BCB"/>
+<path d="M872.0 284 h8" stroke="white" stroke-width="2"/>
+<rect x="888.0" y="275" width="16" height="18" rx="3" fill="#A77BCB"/>
+<path d="M892.0 284 h8" stroke="white" stroke-width="2"/>
+<text x="702.0" y="325" font-size="14" fill="#637086" text-anchor="end" font-weight="400">Subject 4</text>
+<rect x="712.0" y="302" width="16" height="18" rx="3" fill="#A77BCB"/>
+<path d="M716.0 311 h8" stroke="white" stroke-width="2"/>
+<rect x="732.0" y="302" width="16" height="18" rx="3" fill="#A77BCB"/>
+<path d="M736.0 311 h8" stroke="white" stroke-width="2"/>
+<rect x="752.0" y="302" width="16" height="18" rx="3" fill="#A77BCB"/>
+<path d="M756.0 311 h8" stroke="white" stroke-width="2"/>
+<rect x="712.0" y="323" width="16" height="18" rx="3" fill="#A77BCB"/>
+<path d="M716.0 332 h8" stroke="white" stroke-width="2"/>
+<rect x="732.0" y="323" width="16" height="18" rx="3" fill="#A77BCB"/>
+<path d="M736.0 332 h8" stroke="white" stroke-width="2"/>
+<rect x="752.0" y="323" width="16" height="18" rx="3" fill="#A77BCB"/>
+<path d="M756.0 332 h8" stroke="white" stroke-width="2"/>
+<rect x="780.0" y="302" width="16" height="18" rx="3" fill="#A77BCB"/>
+<path d="M784.0 311 h8" stroke="white" stroke-width="2"/>
+<rect x="800.0" y="302" width="16" height="18" rx="3" fill="#A77BCB"/>
+<path d="M804.0 311 h8" stroke="white" stroke-width="2"/>
+<rect x="820.0" y="302" width="16" height="18" rx="3" fill="#A77BCB"/>
+<path d="M824.0 311 h8" stroke="white" stroke-width="2"/>
+<rect x="780.0" y="323" width="16" height="18" rx="3" fill="#A77BCB"/>
+<path d="M784.0 332 h8" stroke="white" stroke-width="2"/>
+<rect x="800.0" y="323" width="16" height="18" rx="3" fill="#A77BCB"/>
+<path d="M804.0 332 h8" stroke="white" stroke-width="2"/>
+<rect x="820.0" y="323" width="16" height="18" rx="3" fill="#A77BCB"/>
+<path d="M824.0 332 h8" stroke="white" stroke-width="2"/>
+<rect x="848.0" y="302" width="16" height="18" rx="3" fill="#A77BCB"/>
+<path d="M852.0 311 h8" stroke="white" stroke-width="2"/>
+<rect x="868.0" y="302" width="16" height="18" rx="3" fill="#A77BCB"/>
+<path d="M872.0 311 h8" stroke="white" stroke-width="2"/>
+<rect x="888.0" y="302" width="16" height="18" rx="3" fill="#A77BCB"/>
+<path d="M892.0 311 h8" stroke="white" stroke-width="2"/>
+<rect x="848.0" y="323" width="16" height="18" rx="3" fill="#A77BCB"/>
+<path d="M852.0 332 h8" stroke="white" stroke-width="2"/>
+<rect x="868.0" y="323" width="16" height="18" rx="3" fill="#A77BCB"/>
+<path d="M872.0 332 h8" stroke="white" stroke-width="2"/>
+<rect x="888.0" y="323" width="16" height="18" rx="3" fill="#A77BCB"/>
+<path d="M892.0 332 h8" stroke="white" stroke-width="2"/>
+<rect x="499" y="400" width="16" height="18" rx="3" fill="#B6BDC8"/>
+<text x="524" y="415" font-size="16" fill="#253047" text-anchor="start" font-weight="400">Train</text>
+<rect x="625" y="400" width="16" height="18" rx="3" fill="#A77BCB"/>
+<path d="M629 409 h8" stroke="white" stroke-width="2"/>
+<text x="650" y="415" font-size="16" fill="#253047" text-anchor="start" font-weight="400">Test</text>
+</g></svg>

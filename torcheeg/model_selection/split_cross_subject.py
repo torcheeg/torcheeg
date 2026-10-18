@@ -25,11 +25,13 @@ def train_test_split_cross_subject(dataset: BaseDataset,
 
     :obj:`train_test_split_cross_subject` divides training set and the test set at the dimension of subjects. For example, when :obj:`test_size=0.2`, 80% of subjects are used for training, and 20% of subjects are used for testing. It is more consistent with real applications and can test the generalization of the model across different subjects.
 
-    .. image:: _static/train_test_split_cross_subject.png
-        :alt: The schematic diagram of train_test_split_cross_subject
+    .. image:: _static/splits/train_test_split_cross_subject.svg
+        :width: 100%
+        :alt: Whole subjects are assigned to either training or test
         :align: center
 
-    |
+    Training and test sets contain disjoint subject IDs. All samples from one
+    subject remain in the same subset.
 
     .. code-block:: python
 

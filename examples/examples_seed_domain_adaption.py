@@ -1,6 +1,6 @@
 """
 Apply the Domain Adaption Algorithm on the SEED Dataset
-===================================================
+=======================================================
 
 In this tutorial, you'll learn how to utilize TorchEEG's Associative Domain Adaptation (ADA) algorithm to address the cross-subject emotion recognition challenge using the SEED dataset.
 
