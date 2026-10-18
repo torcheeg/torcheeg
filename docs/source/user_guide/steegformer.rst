@@ -140,3 +140,71 @@ default; a verified local canonical small checkpoint is optional.
 Subjects remain separate and epochs are fixed. A teaching run checks
 training and safe restoration. It does not reproduce the author's benchmark
 protocol or establish an EEG-Arena score.
+
+
+Classification, regression and embeddings
+------------------------------------------
+
+:class:`torcheeg.models.STEEGFormerClassifier` returns unnormalized
+``[batch, num_classes]`` logits. :class:`torcheeg.models.STEEGFormerRegression`
+returns ``[batch, num_outputs]`` without an output activation. Both mean-pool
+patch tokens over electrodes and time, then apply dropout and a linear head.
+Default ``normalize_features=False`` matches the official downstream pre-norm
+path; True explicitly selects the archived workspace's post-norm features.
+
+:class:`torcheeg.models.STEEGFormerEmbedding` has no learned task head.
+Default ``pooling='mean'`` returns ``[batch, hid_channels]``.
+``pooling='none'`` returns a channel-major
+``[batch, electrodes, patches, hid_channels]`` grid; ``pooling='flatten'``
+flattens that grid from axis one. Each wrapper's ``feature`` method exposes
+the same grid, with optional flattening. Its axis order differs from the
+encoder's temporal-major grid.
+
+Supply ordered ``channel_names``, source ``chunk_size`` and ``sampling_rate``.
+The wrapper Fourier-resamples the entire window to 128 Hz. Physical duration
+must map to an exact integer sample count and complete native patches;
+invalid durations raise an error without truncating samples. Fourier
+interpolation assumes periodic windows and can ring at the boundaries.
+At 128 Hz the operation is an identity.
+
+``normalize_signal=True`` z-scores each channel/window BEFORE resampling.
+No cross-subject statistics are fitted. ``std_correction=0`` uses population
+standard deviation; one uses sample standard deviation. ``std_floor`` uses
+the supplied signal units. Half/bfloat16 statistics are computed in float32
+then cast back. The default leaves signal normalization to the caller.
+Filtering, source units and reference selection belong to the data pipeline.
+
+``freeze_encoder=True`` freezes all encoder parameters and keeps it in
+evaluation mode while the head trains. Input gradients remain available.
+Otherwise existing parameter trainability flags are preserved. For example::
+
+    backbone = STEEGFormer(hid_channels=32, mlp_channels=128, depth=2, num_heads=4)
+    model = STEEGFormerClassifier(backbone, ['C3', 'C4'], chunk_size=800,
+        sampling_rate=200, normalize_signal=True, freeze_encoder=True)
+    logits = model(torch.randn(2, 2, 800))
+
+Wrapper ``from_pretrained`` takes explicit ``backbone_kwargs`` and task
+settings, restoring a complete encoder and initializing a fresh task head.
+Native metadata/decoder handling follows the safe encoder loader above.
+To restore a trained task, rebuild both configurations and strictly load its
+complete state. An encoder load alone does not restore a trained task head.
+
+Standalone workflows
+---------------------
+
+* :doc:`/auto_examples/examples_eegmat_steegformer_classifier`: background vs
+  arithmetic classification with a held-out subject.
+* :doc:`/auto_examples/examples_eegmat_steegformer_regression`: arithmetic-only
+  prediction of published subtraction counts. At least three subjects and
+  two different training targets are required. The built-in RegressorTrainer
+  supports scalar targets; multiple outputs require an explicit task loss.
+* :doc:`/auto_examples/examples_eegmat_steegformer_embeddings`: pooled features
+  with every source metadata row in unchanged dataset order.
+
+These use native 128 Hz, complete-recording .5--45 Hz FIR filtering,
+four-second windows, source channel order/reference, per-window population
+z-scoring and a frozen encoder. Epochs are fixed and subjects stay separate.
+Regression records the metadata hash, fixed target scale and MAE in original
+units. Every artifact includes complete tensor state, both constructor
+configurations, preprocessing and all predictions/targets or feature rows.
+No test target selects epochs or parameters; no benchmark result is implied.
