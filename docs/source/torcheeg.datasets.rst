@@ -74,6 +74,7 @@ Motor Imagery Datasets
     :template: datasettemplate.rst
 
     BCICIV2aDataset
+    BCICIV2bDataset
     PhysioNetMIDataset
 
 PhysioNet motor imagery tasks
