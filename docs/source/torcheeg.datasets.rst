@@ -167,9 +167,11 @@ Clinical Datasets
     :template: datasettemplate.rst
 
     ADAuditoryDataset
+    ADFTDRSDataset
 
 See :doc:`user_guide/ad_auditory` for the released SET/FDT format, labels,
 provider preprocessing and event/window clocks.
+See :doc:`user_guide/adftd_rs` for ADFTD source selection, units and discontinuities.
 
 Customized Datasets
 ---------------------------------------------------------
