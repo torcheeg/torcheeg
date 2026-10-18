@@ -7,7 +7,6 @@ from ..standard_1020 import (
     STANDARD_1020_CHANNEL_LOCATION_DICT,
 )
 from ..utils import (
-    format_adj_list_from_location_list,
     format_adj_matrix_from_adj_list,
     format_adj_matrix_from_standard,
     format_channel_location_dict,
@@ -29,8 +28,7 @@ BCICIV2B_LOCATION_LIST = [
 BCICIV2B_CHANNEL_LOCATION_DICT = format_channel_location_dict(
     BCICIV2B_CHANNEL_LIST, BCICIV2B_LOCATION_LIST)
 
-BCICIV2B_ADJACENCY_LIST = format_adj_list_from_location_list(
-    BCICIV2B_LOCATION_LIST)
+BCICIV2B_ADJACENCY_LIST = {'C3': ['CZ'], 'CZ': ['C3', 'C4'], 'C4': ['CZ']}
 
 BCICIV2B_ADJACENCY_MATRIX = format_adj_matrix_from_adj_list(
     BCICIV2B_CHANNEL_LIST, BCICIV2B_ADJACENCY_LIST)
