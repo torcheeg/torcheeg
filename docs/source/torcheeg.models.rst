@@ -105,6 +105,8 @@ CBraMod parameter-efficient tuning
 
 .. autofunction:: add_cbramod_adapters
 
+.. autofunction:: add_cbramod_prompts
+
 Signal processing layers
 -------------------------
 
