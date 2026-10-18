@@ -1,9 +1,12 @@
+import math
+
 import torch
 from torch import nn
+from torch.nn import functional as F
 
-from .cbramod import CBraMod, _CrissCrossBlock, _Encoder
+from .cbramod import CBraMod, _CrissCrossBlock, _Encoder, _Attention
 from .cbramod_heads import _CBraModDownstream
-from ._tuning import _Adapter
+from ._tuning import _Adapter, _LoRALinear
 from ._utils import _positive_int, _probability
 
 
@@ -126,6 +129,11 @@ def _freeze_base(encoder, freeze_base):
             module.requires_grad_(True)
         elif isinstance(module, _PromptEncoder):
             module.prompt_tokens.requires_grad_(True)
+        elif isinstance(module, _LoRALinear):
+            module.lora_A.requires_grad_(True)
+            module.lora_B.requires_grad_(True)
+        elif isinstance(module, _LoRAUpdate):
+            module.requires_grad_(True)
 
 
 def add_cbramod_prompts(model, num_prompts=10, num_electrodes=None, freeze_base=True):
@@ -176,5 +184,156 @@ def add_cbramod_prompts(model, num_prompts=10, num_electrodes=None, freeze_base=
         raise ValueError('The CBraMod encoder has an unsupported custom implementation.')
     replacement = _PromptEncoder(encoder.encoder, num_electrodes, num_prompts)
     encoder.encoder = replacement
+    _freeze_base(encoder, freeze_base)
+    return model
+
+
+class _LoRAUpdate(nn.Module):
+    def __init__(self, reference, in_features, out_features, rank, alpha, dropout):
+        super().__init__()
+        self.scaling = alpha / rank
+        self.lora_A = nn.Parameter(reference.new_empty(in_features, rank))
+        self.lora_B = nn.Parameter(reference.new_zeros(rank, out_features))
+        self.dropout = nn.Dropout(dropout)
+        nn.init.kaiming_uniform_(self.lora_A.T, a=math.sqrt(5))
+
+    def forward(self, x):
+        return F.linear(F.linear(self.dropout(x), self.lora_A.T), self.lora_B.T) * self.scaling
+
+
+# Native packed attention layout follows CBraMod; see LICENSES/CBraMod.txt.
+class _LoRAAttention(_Attention):
+    def __init__(self, attention, projections, rank, alpha, dropout):
+        nn.Module.__init__(self)
+        self.num_heads = attention.num_heads
+        self.dropout = attention.dropout
+        self.in_proj_weight = attention.in_proj_weight
+        self.in_proj_bias = attention.in_proj_bias
+        self.out_proj = attention.out_proj
+        width = attention.in_proj_weight.shape[1]
+        for name in ('q', 'k', 'v'):
+            attribute = 'lora_' + name
+            if hasattr(attention, attribute):
+                self.add_module(attribute, getattr(attention, attribute))
+            if name + '_proj' in projections:
+                update = _LoRAUpdate(attention.in_proj_weight, width, width, rank, alpha, dropout)
+                update.train(attention.training)
+                self.add_module(attribute, update)
+        self.training = attention.training
+
+    def forward(self, x):
+        batch, tokens, width = x.shape
+        projected = F.linear(x, self.in_proj_weight, self.in_proj_bias)
+        updates = []
+        for name in ('q', 'k', 'v'):
+            module = getattr(self, 'lora_' + name, None)
+            updates.append(module(x) if module is not None else projected.new_zeros(x.shape))
+        # Retain the native packed layout, including its batch/token axes.
+        q, k, v = (projected + torch.cat(updates, dim=-1)).reshape(
+            batch, tokens, 3, self.num_heads, width // self.num_heads
+        ).permute(2, 0, 3, 1, 4).unbind(0)
+        attended = F.scaled_dot_product_attention(q, k, v,
+            dropout_p=self.dropout if self.training else 0.)
+        return self.out_proj(attended.transpose(1, 2).reshape(batch, tokens, width))
+
+
+def add_cbramod_lora(model, rank=4, alpha=8.0, dropout=0.1, blocks=None,
+                     target_modules=('linear1', 'linear2'), freeze_base=True):
+    r'''Add registered low-rank updates to selected CBraMod projections.
+
+    Compute x W^T + b + (alpha / rank) * dropout(x) A B. A is shaped
+    [in_features, rank], B is [rank, out_features]. B starts at zero, preserving
+    deterministic evaluation at insertion. Dropout is applied to INPUT
+    features. No evaluation-time weight merging or monkey-patched closures
+    are used. Native parameter objects and state keys remain unchanged.
+
+    Exact targets are linear1/linear2, and self_attn_s or self_attn_t followed
+    by .q_proj, .k_proj, .v_proj or .out_proj. Q/K/V targets are logical slices
+    of the native packed projection; each selected slice has independent A/B
+    parameters. The default targets only feed-forward projections, matching
+    the original workspace's selection. Explicit attention targets use the
+    native batch-first scaled-dot-product path, correcting the archived
+    attention wrapper's batch/sequence layout and zero-update behavior.
+
+    Rebuild the same structure before strict augmented tensor-state loading.
+    Install modules before constructing the optimizer. New parameters inherit
+    dtype/device/mode. Base parameter flags and task-head flags are otherwise
+    preserved. Stochastic training dropout need not preserve bitwise outputs.
+
+    - Reference: Hu et al., LoRA: Low-Rank Adaptation of Large Language Models, ICLR 2022.
+    - URL: https://github.com/microsoft/LoRA
+
+    .. code-block:: python
+
+        from torcheeg.models import CBraMod, CBraModClassifier, add_cbramod_lora
+
+        model = CBraModClassifier(CBraMod(), num_electrodes=19,
+                                 chunk_size=800, num_patches=4)
+        add_cbramod_lora(model, rank=4)
+
+    Args:
+        model (nn.Module): CBraMod backbone or task model with freeze_encoder=False.
+        rank (int): Rank per selected projection. (default: :obj:`4`)
+        alpha (float): Positive scaling numerator. (default: :obj:`8.0`)
+        dropout (float): Low-rank input dropout probability. (default: :obj:`0.1`)
+        blocks (list of int, optional): Unique zero-based block indices, or all blocks. (default: :obj:`None`)
+        target_modules (tuple of str): Unique exact block-relative projection names. Attention Q/K/V names select independent slices of packed native weights. (default: :obj:`('linear1', 'linear2')`)
+        freeze_base (bool): Freeze original backbone weights and retain installed LoRA, adapters and prompts as trainable. Preserve task-head flags. False preserves existing base flags. (default: :obj:`True`)
+
+    Returns:
+        nn.Module: The supplied model, modified in place. No weights are loaded automatically.
+    '''
+    _positive_int('rank', rank)
+    _probability('dropout', dropout)
+    if isinstance(alpha, bool) or not isinstance(alpha, (int, float)) or not math.isfinite(alpha) or alpha <= 0:
+        raise ValueError('alpha must be finite and positive.')
+    allowed = ('linear1', 'linear2') + tuple(
+        axis + '.' + projection for axis in ('self_attn_s', 'self_attn_t')
+        for projection in ('q_proj', 'k_proj', 'v_proj', 'out_proj'))
+    if (not isinstance(target_modules, (list, tuple)) or not target_modules or
+            any(not isinstance(name, str) or name not in allowed for name in target_modules) or
+            len(set(target_modules)) != len(target_modules)):
+        raise ValueError('target_modules must contain unique exact CBraMod projection paths.')
+    encoder, indices = _select_blocks(model, blocks, freeze_base)
+    # Check every requested target before allocating or replacing modules.
+    for index in indices:
+        block = encoder.encoder.layers[index]
+        for name in target_modules:
+            if name in ('linear1', 'linear2'):
+                if type(getattr(block, name)) is not nn.Linear:
+                    raise ValueError(f'Projection {index}.{name} already has LoRA or is unsupported.')
+            else:
+                axis, projection = name.split('.')
+                attention = getattr(block, axis)
+                if type(attention) not in (_Attention, _LoRAAttention):
+                    raise ValueError(f'Attention {index}.{axis} has an unsupported implementation.')
+                if projection == 'out_proj':
+                    duplicate = type(attention.out_proj) is not nn.Linear
+                else:
+                    duplicate = hasattr(attention, 'lora_' + projection[0])
+                if duplicate:
+                    raise ValueError(f'Projection {index}.{name} already has LoRA or is unsupported.')
+    replacements = []
+    for index in indices:
+        block = encoder.encoder.layers[index]
+        for name in ('linear1', 'linear2'):
+            if name in target_modules:
+                linear = getattr(block, name)
+                replacements.append((block, name, _LoRALinear(linear, rank, alpha, dropout)))
+        for axis in ('self_attn_s', 'self_attn_t'):
+            selected = [name.split('.')[1] for name in target_modules if name.startswith(axis + '.')]
+            if not selected:
+                continue
+            attention = getattr(block, axis)
+            qkv = [name for name in selected if name != 'out_proj']
+            if qkv:
+                replacement = _LoRAAttention(attention, qkv, rank, alpha, dropout)
+                if 'out_proj' in selected:
+                    replacement.out_proj = _LoRALinear(attention.out_proj, rank, alpha, dropout)
+                replacements.append((block, axis, replacement))
+            else:
+                replacements.append((attention, 'out_proj', _LoRALinear(attention.out_proj, rank, alpha, dropout)))
+    for parent, attribute, module in replacements:
+        setattr(parent, attribute, module)
     _freeze_base(encoder, freeze_base)
     return model
