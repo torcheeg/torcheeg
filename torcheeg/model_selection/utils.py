@@ -12,7 +12,6 @@ import numpy as np
 import pandas as pd
 from filelock import FileLock, Timeout
 
-_CACHE_VERSION = 2
 _MANIFEST = 'manifest.json'
 
 
@@ -150,15 +149,15 @@ def ensure_split_cache(info,
     timeout = validate_timeout(timeout)
     validate_metadata(info, columns)
     split_path = os.path.abspath(os.fspath(split_path))
-    configuration_hash = _hash_bytes(
-        json.dumps(configuration, sort_keys=True,
-                   default=_serialize_configuration).encode())
-    expected = {
-        'version': _CACHE_VERSION,
-        'format': 'row_indices',
-        'dataset': _fingerprint_dataset(info, columns),
-        'configuration': configuration_hash
-    }
+    key = _hash_bytes(
+        json.dumps(
+            {
+                'dataset': _fingerprint_dataset(info, columns),
+                'configuration': configuration
+            },
+            sort_keys=True,
+            default=_serialize_configuration).encode())
+    expected = {'key': key}
     os.makedirs(os.path.dirname(split_path), exist_ok=True)
     try:
         with FileLock(split_path + '.lock', timeout=timeout):
