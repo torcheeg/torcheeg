@@ -1,5 +1,5 @@
 BCI Competition IV 2b native MAT records
-=======================================
+========================================
 
 :class:`torcheeg.datasets.BCICIV2bDataset` reads BNCI 004-2014's labeled
 MATLAB files directly. Download them from the `BNCI dataset page
