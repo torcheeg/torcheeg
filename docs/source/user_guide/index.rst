@@ -1,4 +1,5 @@
 User Guide
+==========
 
 A TorchEEG workflow starts with a dataset and ends with an evaluation result.
 The library components make each intermediate step explicit.
