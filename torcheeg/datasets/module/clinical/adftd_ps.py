@@ -8,7 +8,7 @@ class ADFTDPSDataset(_ADFTDDataset):
     - Author: Ntetska et al.
     - Year: 2025
     - Download URL: https://openneuro.org/datasets/ds006036/versions/1.0.5
-    - Reference: Ntetska A, Miltiadous A, Tsipouras M G, et al. Complementary photostimulation EEG dataset. Data, 2025, 10(5): 64. DOI: 10.3390/data10050064.
+    - Reference: Ntetska A, Miltiadous A, Tsipouras M G, et al. A Complementary Dataset of Scalp EEG Recordings Featuring Participants with Alzheimer’s Disease, Frontotemporal Dementia, and Healthy Controls, Obtained from Photostimulation EEG. Data, 2025, 10(5): 64. DOI: 10.3390/data10050064.
     - Paradigm: Whole photostimulation recordings, with diagnosis labels rather than stimulation-frequency targets.
     - Signals: 19-channel scalp EEG (10-20 system) recorded with a Nihon Kohden EEG 2100 device at 500 Hz from 88 subjects (36 Alzheimer's disease, 23 frontotemporal dementia, 29 healthy controls); source SET reference field A1 A2 (the acquisition README also describes a Cz referential montage).
     - Classes: HC (0), AD (1), FTD (2)
