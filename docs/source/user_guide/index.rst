@@ -61,3 +61,4 @@ the same library workflow as a reusable assistant skill.
    cbramod_heads
    sleepedf
    ad_auditory
+   adfsu

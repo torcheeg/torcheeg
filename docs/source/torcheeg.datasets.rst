@@ -167,9 +167,11 @@ Clinical Datasets
     :template: datasettemplate.rst
 
     ADAuditoryDataset
+    ADFSUDataset
 
 See :doc:`user_guide/ad_auditory` for the released SET/FDT format, labels,
 provider preprocessing and event/window clocks.
+See :doc:`user_guide/adfsu` for the resting text release and its identity/unit limits.
 
 Customized Datasets
 ---------------------------------------------------------
