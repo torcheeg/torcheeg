@@ -8,7 +8,7 @@ from sklearn import model_selection
 from torcheeg.datasets.module.base_dataset import BaseDataset
 
 from .base_model_selection import BaseModelSelection
-from .utils import read_subset, write_indices
+from .utils import create_subset, read_indices, write_indices
 
 __all__ = ['KFoldCrossSubject']
 
@@ -146,11 +146,14 @@ class KFoldCrossSubject(BaseModelSelection):
 
         for fold_id in fold_ids:
 
-            train_dataset = read_subset(dataset, self.split_path,
-                                        f'train_fold_{fold_id}.csv')
+            train_indices = read_indices(
+                os.path.join(self.split_path, f'train_fold_{fold_id}.csv'),
+                len(dataset))
+            train_dataset = create_subset(dataset, train_indices)
 
-            test_dataset = read_subset(dataset, self.split_path,
-                                       f'test_fold_{fold_id}.csv')
+            test_indices = read_indices(
+                os.path.join(self.split_path, f'test_fold_{fold_id}.csv'), len(dataset))
+            test_dataset = create_subset(dataset, test_indices)
 
             yield train_dataset, test_dataset
 

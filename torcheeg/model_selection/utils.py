@@ -13,7 +13,7 @@ __all__ = [
     'get_cache_key', 'validate_cache', 'ensure_cache', 'validate_timeout',
     'validate_metadata', 'validate_group_names', 'validate_partition_ids',
     'write_partition_indices', 'validate_indices', 'write_indices', 'read_indices',
-    'create_subset', 'read_subset'
+    'create_subset'
 ]
 
 
@@ -165,8 +165,3 @@ def create_subset(dataset, indices):
     subset = copy(dataset)
     subset.info = dataset.info.iloc[indices].reset_index(drop=True)
     return subset
-
-
-def read_subset(dataset, split_path, filename):
-    return create_subset(dataset,
-                         read_indices(os.path.join(split_path, filename), len(dataset)))

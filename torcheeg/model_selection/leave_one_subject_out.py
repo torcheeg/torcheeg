@@ -8,7 +8,7 @@ import pandas as pd
 from torcheeg.datasets.module.base_dataset import BaseDataset
 
 from .base_model_selection import BaseModelSelection
-from .utils import read_subset, validate_group_names, write_indices
+from .utils import create_subset, read_indices, validate_group_names, write_indices
 
 __all__ = ['LeaveOneSubjectOut']
 
@@ -111,24 +111,32 @@ class LeaveOneSubjectOut(BaseModelSelection):
             if str(subject) not in subjects:
                 raise ValueError(
                     f'The subject should be in the subject list {subjects}.')
-            train_dataset = read_subset(
-                dataset, self.split_path,
-                f'train_subject_{quote(str(subject), safe="")}.csv')
+            train_indices = read_indices(
+                os.path.join(self.split_path,
+                             f"train_subject_{quote(str(subject), safe='')}.csv"),
+                len(dataset))
+            train_dataset = create_subset(dataset, train_indices)
 
-            test_dataset = read_subset(
-                dataset, self.split_path,
-                f'test_subject_{quote(str(subject), safe="")}.csv')
+            test_indices = read_indices(
+                os.path.join(self.split_path,
+                             f"test_subject_{quote(str(subject), safe='')}.csv"),
+                len(dataset))
+            test_dataset = create_subset(dataset, test_indices)
 
             yield train_dataset, test_dataset
         else:
             for subject in subjects:
 
-                train_dataset = read_subset(
-                    dataset, self.split_path,
-                    f'train_subject_{quote(str(subject), safe="")}.csv')
+                train_indices = read_indices(
+                    os.path.join(self.split_path,
+                                 f"train_subject_{quote(str(subject), safe='')}.csv"),
+                    len(dataset))
+                train_dataset = create_subset(dataset, train_indices)
 
-                test_dataset = read_subset(
-                    dataset, self.split_path,
-                    f'test_subject_{quote(str(subject), safe="")}.csv')
+                test_indices = read_indices(
+                    os.path.join(self.split_path,
+                                 f"test_subject_{quote(str(subject), safe='')}.csv"),
+                    len(dataset))
+                test_dataset = create_subset(dataset, test_indices)
 
                 yield train_dataset, test_dataset

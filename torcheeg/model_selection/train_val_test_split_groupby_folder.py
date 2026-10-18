@@ -1,10 +1,11 @@
+import os
 from typing import Dict, Iterator, Tuple, Union
 
 import pandas as pd
 
 from torcheeg.datasets.module.base_dataset import BaseDataset
 from .base_model_selection import BaseModelSelection
-from .utils import read_subset, write_partition_indices
+from .utils import create_subset, read_indices, write_partition_indices
 
 __all__ = ['TrainValTestSplitGroupbyFolder']
 
@@ -49,7 +50,11 @@ class TrainValTestSplitGroupbyFolder(BaseModelSelection):
     ) -> Iterator[Tuple[BaseDataset, BaseDataset, BaseDataset]]:
         files = ['train.csv', 'val.csv', 'test.csv']
         self._prepare(dataset, 'split', files)
-        yield tuple(read_subset(dataset, self.split_path, name) for name in files)
+        subsets = []
+        for name in files:
+            indices = read_indices(os.path.join(self.split_path, name), len(dataset))
+            subsets.append(create_subset(dataset, indices))
+        yield tuple(subsets)
 
     @property
     def repr_body(self) -> Dict:
