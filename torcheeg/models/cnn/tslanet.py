@@ -5,7 +5,7 @@ import torch
 import torch.nn as nn
 
 
-def _trunc_normal_(tensor, mean, std, a, b):
+def _fill_truncated_normal_(tensor, mean, std, a, b):
     def norm_cdf(x):
         return (1. + math.erf(x / math.sqrt(2.))) / 2.
 
@@ -28,12 +28,12 @@ def _trunc_normal_(tensor, mean, std, a, b):
     return tensor
 
 
-def trunc_normal_(tensor, mean=0., std=1., a=-2., b=2.):
+def _trunc_normal_(tensor, mean=0., std=1., a=-2., b=2.):
     with torch.no_grad():
-        return _trunc_normal_(tensor, mean, std, a, b)
+        return _fill_truncated_normal_(tensor, mean, std, a, b)
 
 
-def drop_path(x, drop_prob: float = 0., training: bool = False, scale_by_keep: bool = True):
+def _drop_path(x, drop_prob: float = 0., training: bool = False, scale_by_keep: bool = True):
     if drop_prob == 0. or not training:
         return x
     keep_prob = 1 - drop_prob
@@ -51,7 +51,7 @@ class DropPath(nn.Module):
         self.scale_by_keep = scale_by_keep
 
     def forward(self, x):
-        return drop_path(x, self.drop_prob, self.training, self.scale_by_keep)
+        return _drop_path(x, self.drop_prob, self.training, self.scale_by_keep)
 
 
 class ICB(nn.Module):
@@ -105,11 +105,11 @@ class AdaptiveSpectralBlock(nn.Module):
         self.complex_weight = nn.Parameter(
             torch.randn(dim, 2, dtype=torch.float32) * 0.02)
 
-        trunc_normal_(self.complex_weight_high, std=.02)
-        trunc_normal_(self.complex_weight, std=.02)
+        _trunc_normal_(self.complex_weight_high, std=.02)
+        _trunc_normal_(self.complex_weight, std=.02)
         self.threshold_param = nn.Parameter(torch.rand(1))  # * 0.5)
 
-    def create_adaptive_high_freq_mask(self, x_fft):
+    def _create_adaptive_high_freq_mask(self, x_fft):
         B, _, _ = x_fft.shape
 
         energy = torch.abs(x_fft).pow(2).sum(dim=-1)
@@ -139,7 +139,7 @@ class AdaptiveSpectralBlock(nn.Module):
         x_weighted = x_fft * weight
 
         if self.adaptive_filter:
-            freq_mask = self.create_adaptive_high_freq_mask(x_fft)
+            freq_mask = self._create_adaptive_high_freq_mask(x_fft)
             x_masked = x_fft * freq_mask.to(x.device)
 
             weight_high = torch.view_as_complex(self.complex_weight_high)
@@ -238,12 +238,12 @@ class TSLANet(nn.Module):
 
         self.head = nn.Linear(emb_dim, num_classes)
 
-        trunc_normal_(self.pos_embed, std=.02)
+        _trunc_normal_(self.pos_embed, std=.02)
         self.apply(self._init_weights)
 
     def _init_weights(self, m):
         if isinstance(m, nn.Linear):
-            trunc_normal_(m.weight, std=.02)
+            _trunc_normal_(m.weight, std=.02)
             if isinstance(m, nn.Linear) and m.bias is not None:
                 nn.init.constant_(m.bias, 0)
         elif isinstance(m, nn.LayerNorm):

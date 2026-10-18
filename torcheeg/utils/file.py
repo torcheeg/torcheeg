@@ -12,7 +12,7 @@ import urllib
 from functools import partial
 from typing import Optional
 
-log = logging.getLogger('torcheeg')
+_log = logging.getLogger('torcheeg')
 
 
 def get_temp_dir_path():
@@ -70,11 +70,11 @@ def download_url(url: str,
 
     if os.path.exists(path):  # pragma: no cover
         if verbose:
-            log.info(f'Using existing file {filename}', file=sys.stderr)
+            _log.info(f'Using existing file {filename}', file=sys.stderr)
         return path
 
     if verbose:
-        log.info(f'Downloading {url}', file=sys.stderr)
+        _log.info(f'Downloading {url}', file=sys.stderr)
 
     os.makedirs(os.path.expanduser(os.path.normpath(folder)))
 

@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
-class LazyLoader:
+class _LazyLoader:
     def __init__(self, lib_name):
         self._lib_name = lib_name
         self._module = None
@@ -20,7 +20,7 @@ class LazyLoader:
         return getattr(self._module, name)
 
 
-pyg = LazyLoader('torch_geometric')
+_pyg = _LazyLoader('torch_geometric')
 
 
 class GIN(nn.Module):
@@ -73,17 +73,17 @@ class GIN(nn.Module):
 
         nn1 = nn.Sequential(nn.Linear(in_channels, hid_channels), nn.ReLU(),
                             nn.Linear(hid_channels, hid_channels))
-        self.conv1 = pyg.nn.GINConv(nn1)
+        self.conv1 = _pyg.nn.GINConv(nn1)
         self.bn1 = nn.BatchNorm1d(hid_channels)
 
         nn2 = nn.Sequential(nn.Linear(hid_channels, hid_channels), nn.ReLU(),
                             nn.Linear(hid_channels, hid_channels))
-        self.conv2 = pyg.nn.GINConv(nn2)
+        self.conv2 = _pyg.nn.GINConv(nn2)
         self.bn2 = nn.BatchNorm1d(hid_channels)
 
         nn3 = nn.Sequential(nn.Linear(hid_channels, hid_channels), nn.ReLU(),
                             nn.Linear(hid_channels, hid_channels))
-        self.conv3 = pyg.nn.GINConv(nn3)
+        self.conv3 = _pyg.nn.GINConv(nn3)
         self.bn3 = nn.BatchNorm1d(hid_channels)
 
         self.fc1 = nn.Linear(hid_channels, hid_channels)

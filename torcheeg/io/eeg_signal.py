@@ -13,18 +13,30 @@ class _EEGSignalIO:
         return len(self)
 
     def keys(self):
-        raise NotImplementedError
+        raise NotImplementedError(
+            "Method keys is not implemented in class "
+            + self.__class__.__name__
+        )
 
     def eegs(self):
-        raise NotImplementedError
+        raise NotImplementedError(
+            "Method eegs is not implemented in class "
+            + self.__class__.__name__
+        )
 
     def read_eeg(self, key: str) -> any:
-        raise NotImplementedError
+        raise NotImplementedError(
+            "Method read_eeg is not implemented in class "
+            + self.__class__.__name__
+        )
 
     def write_eeg(self,
                   eeg: Union[any, torch.Tensor],
                   key: Union[str, None] = None) -> str:
-        raise NotImplementedError
+        raise NotImplementedError(
+            "Method write_eeg is not implemented in class "
+            + self.__class__.__name__
+        )
 
 
 class MemoryEEGSignalIO(_EEGSignalIO):
@@ -58,8 +70,7 @@ class MemoryEEGSignalIO(_EEGSignalIO):
             any: The EEG signal sample.
         '''
         if key not in self._memory:
-            raise RuntimeError(
-                f'Unable to index the EEG signal sample with key {key}!')
+            raise KeyError(f'Unable to index the EEG signal sample with key {key}!')
 
         return self._memory[key]
 
@@ -77,12 +88,12 @@ class MemoryEEGSignalIO(_EEGSignalIO):
             key = str(self.write_pointer)
 
         if eeg is None:
-            raise RuntimeError(f'Save None to the memory with the key {key}!')
+            raise ValueError(f'Save None to the memory with the key {key}!')
 
         self._memory[key] = eeg
 
         return key
-    
+
     def __copy__(self):
         cls = self.__class__
         result = cls.__new__(cls)
@@ -127,7 +138,7 @@ class LMDBEEGSignalIO(_EEGSignalIO):
             key = str(self.write_pointer)
 
         if eeg is None:
-            raise RuntimeError(f'Save None to the LMDB with the key {key}!')
+            raise ValueError(f'Save None to the LMDB with the key {key}!')
 
         try_again = False
         try:
@@ -155,8 +166,7 @@ class LMDBEEGSignalIO(_EEGSignalIO):
             eeg = transaction.get(key.encode())
 
         if eeg is None:
-            raise RuntimeError(
-                f'Unable to index the EEG signal sample with key {key}!')
+            raise KeyError(f'Unable to index the EEG signal sample with key {key}!')
 
         return pickle.loads(eeg)
 
@@ -229,7 +239,7 @@ class PickleEEGSignalIO(_EEGSignalIO):
             key = str(self.write_pointer)
 
         if eeg is None:
-            raise RuntimeError(f'Save None to the LMDB with the key {key}!')
+            raise ValueError(f'Save None to the LMDB with the key {key}!')
 
         with open(os.path.join(self.io_path, key), 'wb') as f:
             pickle.dump(eeg, f)
@@ -246,8 +256,11 @@ class PickleEEGSignalIO(_EEGSignalIO):
             Returns:
                 any: The EEG signal sample.
             '''
-        with open(os.path.join(self.io_path, key), 'rb') as f:
-            eeg = pickle.load(f)
+        try:
+            with open(os.path.join(self.io_path, key), 'rb') as f:
+                eeg = pickle.load(f)
+        except FileNotFoundError as error:
+            raise KeyError(key) from error
 
         return eeg
 
@@ -268,7 +281,7 @@ class PickleEEGSignalIO(_EEGSignalIO):
                 list: The list of EEG signals in the PickleEEGSignalIO.
             '''
         return [self.read_eeg(key) for key in self.keys()]
-    
+
     def __copy__(self):
         cls = self.__class__
         result = cls.__new__(cls)
@@ -288,12 +301,6 @@ class EEGSignalIO:
         eeg.shape
         >>> (32, 128)
     
-    Shallow copies made with :obj:`copy.copy` share the LMDB backend in the
-    same process. Writes are visible through both copies. Either wrapper can
-    be deleted without closing the backend while the other still uses it.
-    Copying does not create an independent database. Convert a copy to memory
-    or use a separate path when independent storage is required.
-
     Args:
         io_path (str): Where the database is stored.
         io_size (int, optional): The maximum capacity of the database. It will increase according to the size of the dataset. (default: :obj:`1024`)
@@ -316,7 +323,7 @@ class EEGSignalIO:
         elif self.io_mode == 'memory':
             self._io = MemoryEEGSignalIO()
         else:
-            raise RuntimeError(
+            raise ValueError(
                 f'Unsupported io_mode {self.io_mode}, please choose from lmdb, pickle and memory.'
             )
 

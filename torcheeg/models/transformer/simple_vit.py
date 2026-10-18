@@ -7,11 +7,11 @@ from einops.layers.torch import Rearrange
 from torch import nn
 
 
-def pair(t):
+def _pair(t):
     return t if isinstance(t, tuple) else (t, t)
 
 
-def get_emb(sin_inp):
+def _get_emb(sin_inp):
     emb = torch.stack((sin_inp.sin(), sin_inp.cos()), dim=-1)
     return torch.flatten(emb, -2, -1)
 
@@ -33,7 +33,7 @@ class PositionEmbedding3D(nn.Module):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         if len(x.shape) != 5:
-            raise RuntimeError(
+            raise ValueError(
                 "The input must be five-dimensional to perform thres-dimensional position embedding!"
             )
 
@@ -48,9 +48,9 @@ class PositionEmbedding3D(nn.Module):
         sin_inp_a = torch.einsum("i,j->ij", pos_a, self.inv_freq)
         sin_inp_b = torch.einsum("i,j->ij", pos_b, self.inv_freq)
         sin_inp_c = torch.einsum("i,j->ij", pos_c, self.inv_freq)
-        emb_a = get_emb(sin_inp_a).unsqueeze(1).unsqueeze(1)
-        emb_b = get_emb(sin_inp_b).unsqueeze(1)
-        emb_c = get_emb(sin_inp_c)
+        emb_a = _get_emb(sin_inp_a).unsqueeze(1).unsqueeze(1)
+        emb_b = _get_emb(sin_inp_b).unsqueeze(1)
+        emb_c = _get_emb(sin_inp_c)
         emb = torch.zeros((a, b, c, self.in_channels * 3),
                           device=x.device).type(x.type())
         emb[:, :, :, :self.in_channels] = emb_a
@@ -244,11 +244,17 @@ class SimpleViT(nn.Module):
         self.mlp_channels = mlp_channels
         self.num_classes = num_classes
 
-        grid_height, grid_width = pair(grid_size)
-        patch_height, patch_width = pair(s_patch_size)
+        grid_height, grid_width = _pair(grid_size)
+        patch_height, patch_width = _pair(s_patch_size)
 
-        assert grid_height % patch_height == 0 and grid_width % patch_width == 0, f'EEG grid size {grid_size} must be divisible by the spatial patch size {s_patch_size}.'
-        assert chunk_size % t_patch_size == 0, f'EEG chunk size {chunk_size} must be divisible by the temporal patch size {t_patch_size}.'
+        if not (grid_height % patch_height == 0 and grid_width % patch_width == 0):
+            raise ValueError(
+                f'EEG grid size {grid_size} must be divisible by the spatial patch size {s_patch_size}.'
+            )
+        if not (chunk_size % t_patch_size == 0):
+            raise ValueError(
+                f'EEG chunk size {chunk_size} must be divisible by the temporal patch size {t_patch_size}.'
+            )
 
         patch_channels = t_patch_size * patch_height * patch_width
 
