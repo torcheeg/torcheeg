@@ -101,3 +101,25 @@ Fixture output, selected feature gradients and per-linear-layer weight-gradient
 sum/norm/first entries and complete bias gradients are checked. Pooling,
 flattening order, nonlinearities and all four head topologies are covered.
 No upstream checkpoint or patient signal is stored in the fixture.
+
+## ST-EEGFormer encoder
+
+`steegformer_reference.json` comes from the unmodified MIT
+`pretrain/models_mae_eeg.py` at author revision
+542ee17918c3c2c36ba1d4ea02bedff5eb149370 and timm 1.0.10. A float64 model
+uses width16, MLP32, depth2 and four heads. Its decoder is not part of the
+fixture. Registered encoder tensors include the 512-position sinusoidal
+buffer and 145-slot channel table.
+
+For native named-parameter index i, parameter entries are
+`sin(arange(numel) * .13 + i * .4) * .08`, with one added to normalization
+weights. Input is linspace(-1.2, .8, 128).reshape(2,2,32), and batch-specific
+channel indices are [[6,60],[110,71]]. Native forward_encoder_demo receives
+all four patch/channel positions in their original order, bypassing random
+mask permutation without altering encoder computation. A pre-hook captures
+the final norm input for the second, explicitly unnormalized feature mode.
+
+Both full token outputs are weighted by linspace(-.7,1.1,numel).reshape_as
+output. Complete input and encoder-parameter gradients are stored, including
+None for unused final-norm parameters in raw mode. No author weights,
+optimizer objects or EEG recordings are included. Tests do not need timm.
