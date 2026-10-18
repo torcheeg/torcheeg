@@ -166,7 +166,8 @@ class TestTrainTestSplitPerSubjectGroupbyTrial(unittest.TestCase):
             lambda i: 'trial_' + str(i))
         splitter = self._make_splitter()
         self._assert_folds(self._dataset, list(splitter.split(self._dataset)))
-        self.assertEqual(splitter.subjects, ['../01', 'a/b', 'a%b', '空 格', '004'])
+        self.assertEqual(splitter.subjects,
+                         sorted(['../01', 'a/b', 'a%b', '空 格', '004']))
         self.assertEqual(len(list(splitter.split(self._dataset, subject='a/b'))), 1)
         self.assertFalse(Path(self._directory.name, '01.csv').exists())
 
@@ -177,13 +178,15 @@ class TestTrainTestSplitPerSubjectGroupbyTrial(unittest.TestCase):
             list(self._make_splitter().split(self._dataset))
 
     def test_invalid_constructor_parameters(self):
-        cases = [{
+        cases = [({
             'train_size': value
-        } for value in (0, 1, -1, float('nan'), True, '0.8')]
-        cases += [{'random_state': value} for value in (-1, 2**32, True, 1.5)]
-        cases += [{'shuffle': 'yes'}]
-        for parameters in cases:
-            with self.subTest(parameters=parameters), self.assertRaises(ValueError):
+        }, ValueError) for value in (0, 1, -1, float('nan'))]
+        cases += [({'train_size': value}, TypeError) for value in (True, '0.8')]
+        cases += [({'random_state': value}, ValueError) for value in (-1, 2**32)]
+        cases += [({'random_state': value}, TypeError) for value in (True, 1.5)]
+        cases += [({'shuffle': 'yes'}, TypeError)]
+        for parameters, error in cases:
+            with self.subTest(parameters=parameters), self.assertRaises(error):
                 self._make_splitter(**parameters)
 
     def test_empty_missing_and_null_group_columns(self):
@@ -215,8 +218,8 @@ class TestTrainTestSplitPerSubjectGroupbyTrial(unittest.TestCase):
                                                 path, 'split')).split(dataset))
                 self.assertFalse(os.path.exists(os.path.join(path, 'split')))
 
-    def test_corrupted_csv_or_subject_list_is_rejected(self):
-        for name in ('train_subject_0.csv', '_subjects.json', '_split_manifest.json'):
+    def test_corrupted_cache_files_are_rejected(self):
+        for name in ('train_subject_0.csv', '_split_manifest.json'):
             with self.subTest(name=name), tempfile.TemporaryDirectory() as path:
                 splitter = self._make_splitter(split_path=os.path.join(path, 'split'))
                 list(splitter.split(self._dataset))

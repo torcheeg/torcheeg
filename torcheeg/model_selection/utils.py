@@ -15,6 +15,24 @@ _CACHE_TIMEOUT = 300.0
 _MANIFEST = '_split_manifest.json'
 
 
+def validate_metadata(info, columns=()):
+    if not isinstance(info, pd.DataFrame):
+        raise TypeError('Dataset metadata must be a pandas DataFrame.')
+    if info.empty:
+        raise ValueError('The dataset must contain nonempty metadata.')
+    columns = [columns] if isinstance(columns, str) else list(columns)
+    for column in columns:
+        if column not in info or info[column].isna().any():
+            raise ValueError(f'The dataset must contain nonmissing {column} values.')
+
+
+def validate_group_names(values):
+    names = [str(value) for value in values]
+    if len(set(names)) != len(names):
+        raise ValueError('Subject IDs must have distinct string representations.')
+    return names
+
+
 def validate_partition_ids(partitions):
     r'''Reject empty, repeated or overlapping train/validation/test IDs.'''
     seen = set()
@@ -116,12 +134,7 @@ def _serialize_configuration(value):
 
 def ensure_split_cache(info, columns, split_path, configuration, files, writer):
     r'''Create or reuse a complete split cache under a process-safe lock.'''
-    if not isinstance(info, pd.DataFrame) or info.empty:
-        raise ValueError('The dataset must contain nonempty metadata.')
-    columns = [columns] if isinstance(columns, str) else list(columns)
-    for name in columns:
-        if name not in info or info[name].isna().any():
-            raise ValueError(f'The dataset must contain nonmissing {name} values.')
+    validate_metadata(info, columns)
     split_path = os.path.abspath(os.fspath(split_path))
     configuration_hash = _hash_bytes(
         json.dumps(configuration, sort_keys=True,

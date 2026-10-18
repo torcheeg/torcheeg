@@ -32,11 +32,7 @@ class TrainValTestSplitCrossSubject(BaseModelSelection):
             ...
 
     The three ID lists must be nonempty, unique, disjoint and present in the
-    dataset. IDs not assigned to any list are intentionally excluded. Original
-    metadata dtypes are preserved, regardless of the DataFrame index labels.
-    A cache is reused only for the same configuration and ordered sample IDs.
-    Use a new :obj:`split_path` for older caches or changed partitions. Cache
-    creation is atomic across processes; a failed creation can be retried.
+    dataset. IDs not assigned to any list are intentionally excluded.
 
     Args:
         train_subjects (list): List of subject IDs for the training set.

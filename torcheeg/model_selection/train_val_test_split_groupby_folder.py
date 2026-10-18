@@ -28,8 +28,6 @@ class TrainValTestSplitGroupbyFolder(BaseModelSelection):
     Each row must have one of the three split values, and all three subsets
     must be nonempty. Folder labels determine the split; this does not itself
     guarantee that subjects or trials are disjoint across the source folders.
-    Metadata dtypes are preserved. Existing caches must match the configuration
-    and ordered sample IDs; use a new :obj:`split_path` after changing the data.
 
     Args:
         split_path (str): The path to data partition information. If the path

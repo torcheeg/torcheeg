@@ -4,7 +4,7 @@ from typing import Dict, Union
 import pandas as pd
 
 from ..utils import get_random_dir_path
-from .utils import ensure_split_cache, read_subset
+from .utils import ensure_split_cache, read_subset, validate_metadata
 
 
 class BaseModelSelection:
@@ -16,27 +16,17 @@ class BaseModelSelection:
 
     def build(self, info: pd.DataFrame, split_path: Union[None, str] = None) -> None:
         r'''Write the row positions for this splitting rule.'''
-        raise NotImplementedError(
-            "Method build is not implemented in class "
-            + self.__class__.__name__
-        )
+        raise NotImplementedError("Method build is not implemented in class " +
+                                  self.__class__.__name__)
 
     def split(self, dataset, **kwargs):
         r'''Yield dataset subsets for this splitting rule.'''
-        raise NotImplementedError(
-            "Method split is not implemented in class "
-            + self.__class__.__name__
-        )
+        raise NotImplementedError("Method split is not implemented in class " +
+                                  self.__class__.__name__)
 
     def check(self, dataset, columns=()):
         r'''Check the metadata required by a splitting rule.'''
-        if not isinstance(dataset.info, pd.DataFrame) or dataset.info.empty:
-            raise ValueError('The dataset must contain nonempty metadata.')
-        columns = [columns] if isinstance(columns, str) else list(columns)
-        for column in columns:
-            if column not in dataset.info or dataset.info[column].isna().any():
-                raise ValueError(
-                    f'The dataset must contain nonmissing {column} values.')
+        validate_metadata(dataset.info, columns)
 
     def _prepare(self, dataset, columns=(), files=None, configuration=None):
         self.check(dataset, columns)

@@ -34,9 +34,7 @@ class KFoldCrossSubjectTrainValTest(BaseModelSelection):
 
     Use at least three folds and at least one subject per fold. Subject IDs
     must be unique and match the dataset; filter the dataset first to evaluate
-    a selected group of subjects. Metadata dtypes are preserved. Cached folds
-    are reused only for the same configuration and ordered sample identities.
-    Use a new :obj:`split_path` after changing the data or fold configuration.
+    a selected group of subjects.
 
     Args:
         all_subjects (list): The list of all subject ids to be partitioned into folds.
@@ -54,17 +52,18 @@ class KFoldCrossSubjectTrainValTest(BaseModelSelection):
                  random_state: int = 42) -> None:
         self.all_subjects = list(all_subjects)
         validate_partition_ids([self.all_subjects])
-        if (isinstance(n_folds, bool) or not isinstance(n_folds, Integral)
-                or not 3 <= n_folds <= len(self.all_subjects)):
-            raise ValueError(
-                'n_folds must be an integer between 3 and the number of subjects.')
+        if isinstance(n_folds, (bool, np.bool_)) or not isinstance(n_folds, Integral):
+            raise TypeError('n_folds must be an integer.')
+        if not 3 <= n_folds <= len(self.all_subjects):
+            raise ValueError('n_folds must be between 3 and the number of subjects.')
         if not isinstance(shuffle, (bool, np.bool_)):
-            raise ValueError('shuffle must be a boolean.')
-        if random_state is not None and (isinstance(random_state, (bool, np.bool_))
-                                         or not isinstance(random_state, Integral)
-                                         or not 0 <= random_state <= 2**32 - 1):
-            raise ValueError(
-                'random_state must be None or an integer in [0, 2**32 - 1].')
+            raise TypeError('shuffle must be a boolean.')
+        if random_state is not None:
+            if isinstance(random_state,
+                          (bool, np.bool_)) or not isinstance(random_state, Integral):
+                raise TypeError('random_state must be None or an integer.')
+            if not 0 <= random_state <= 2**32 - 1:
+                raise ValueError('random_state must be in [0, 2**32 - 1].')
         self.n_folds = int(n_folds)
         super().__init__(split_path=split_path)
         self.shuffle = shuffle

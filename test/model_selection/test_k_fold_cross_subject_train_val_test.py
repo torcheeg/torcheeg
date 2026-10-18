@@ -67,7 +67,8 @@ class TestKFoldCrossSubjectTrainValTest(unittest.TestCase):
 
     def test_invalid_fold_counts_are_rejected(self):
         for count in (0, 1, 2, 6, 3.5, True):
-            with self.subTest(count=count), self.assertRaises(ValueError):
+            with self.subTest(count=count), self.assertRaises(
+                    TypeError if isinstance(count, (bool, float)) else ValueError):
                 self._make_splitter(n_folds=count)
 
     def test_repeated_or_missing_subject_ids_are_rejected(self):
@@ -114,18 +115,18 @@ class TestKFoldCrossSubjectTrainValTest(unittest.TestCase):
         self.assertEqual(set(folds[0][0].info['subject_id']), {2})
 
     def test_invalid_shuffle_and_random_state_are_rejected(self):
-        for parameters in ({
+        for parameters, error in (({
                 'shuffle': 'False'
-        }, {
+        }, TypeError), ({
                 'random_state': True
-        }, {
+        }, TypeError), ({
                 'random_state': -1
-        }, {
+        }, ValueError), ({
                 'random_state': 2**32
-        }, {
+        }, ValueError), ({
                 'random_state': 0.5
-        }):
-            with self.subTest(parameters=parameters), self.assertRaises(ValueError):
+        }, TypeError)):
+            with self.subTest(parameters=parameters), self.assertRaises(error):
                 self._make_splitter(**parameters)
 
 
