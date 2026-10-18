@@ -114,3 +114,43 @@ unchanged 19-channel source order. For matching the shared regional templates,
 includes all 19 source columns once. Signal labels, grid locations and both
 adjacency matrices retain their original values. These regional templates
 are anatomical priors, not measured patient connectivity.
+
+
+Train EEGNet
+--------------
+
+Use :doc:`/auto_examples/examples_adftd_ps_eegnet` for a standalone three-class
+diagnosis workflow. This is continuous photostimulation EEG classification;
+``PHOTO``/``Photo/HV`` events are not targets, window limits or inferred
+frequency labels. No SSVEP protocol or per-window eye state is claimed.
+Keep all 19 channels at 500 Hz, use the EEGLAB microvolt convention to produce
+volts, and add no filter, reference or resampling. The channel-table units
+are ``n/a``; format conversion is not independent hardware calibration.
+Normalize each nonoverlapping one-second window per channel without fitting
+statistics across windows or participants.
+
+Hold out the highest numeric participant ID per diagnosis, with all sessions,
+runs and windows for that participant in one partition. Require at least two
+participants in each class. Train a fixed epoch count without selecting
+settings from test labels, and report pooled window cross-entropy, accuracy
+and macro F1 for this one split. These workflow metrics are not a published
+benchmark or evidence of clinical validity.
+
+.. code-block:: console
+
+    python examples/examples_adftd_ps_eegnet.py --root-path ./ADFTD-PS --epochs 1 --batch-size 32 --output-path ./adftd-ps-original.pt
+
+Pass ``--preprocessed`` to select the provider's ``derivatives/eeglab`` data.
+Choose a separate output; the source mode is appended to the cache root.
+Windows stay within stored contiguous segments and incomplete segment tails
+are omitted. Use a fresh cache root when source files or settings change.
+Both source modes share participant identities with each other and with
+resting-state ds004504; never treat these alternatives as independent people.
+
+The safe export contains all EEGNet constructor settings, tensor states,
+preprocessing and actual participant/record partitions. Load with
+``torch.load(..., weights_only=True)``, construct EEGNet from
+``model_config_json``, freeze with ``requires_grad_(False).eval()``, then call
+``load_state_dict(payload['state_dict'], strict=True)``. A separate JSON report
+records window counts, optimizer steps and metrics. Existing outputs are
+preserved. The gallery renders this example without executing training.
