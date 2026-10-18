@@ -105,8 +105,9 @@ Use the complete loss with explicit source membership::
 
 Flatten epoch logits and targets consistently. The ordinary ClassifierTrainer
 expects its standard flat-sample contract and does not infer this sequence
-axis or multi-domain objective. A dedicated complete training workflow and
-standalone data example remain separate work. Keep target features and labels
+axis or multi-domain objective. SleepDGTrainer implements the training phases and default schedule described
+below. Data preparation and a standalone multi-dataset example remain separate
+work. Keep target features and labels
 out of the source-alignment call. In the published protocol, each domain is
 a different dataset; treating subjects from one dataset as domains is a
 different experiment.
@@ -143,13 +144,110 @@ FP16/BF16 features use FP32 statistics outside autocast; FP64 inputs retain
 FP64. This does not normalize the input EEG or make every half-precision loss
 scale safe.
 
-Per-step CE/MSE/alignment composition is now available. This does not establish
-a full published training schedule, data protocol, trained checkpoint or
-cross-dataset benchmark score. The paper's full loss has separate coefficients;
-the fixed author training implementation adds CE, reconstruction and the
-combined alignment term with unit coefficients. Match the chosen protocol
-explicitly when adding weights, label smoothing, gradient clipping or a
-learning-rate schedule.
+Training with SleepDGTrainer
+----------------------------
+
+:class:`torcheeg.trainers.SleepDGTrainer` trains with per-epoch cross-entropy,
+reconstruction MSE and multi-level alignment. Source training batches contain
+``(eeg, labels, domains)``. Validation and test batches contain ``(eeg, labels)``
+or the same three-tuple; evaluation ignores domain codes, calls encoder-only
+classification, and does not compute reconstruction or alignment.
+
+Before creating loaders, assemble each sequence from consecutive 30-second
+epochs in one recording. Check true start/end times and record identifiers;
+never bridge movement/unscored gaps or join different nights. Keep all nights
+of a held-out person out of training when that protocol requires person
+isolation. Map source-dataset names to integer codes from zero through
+``num_domains - 1``. Target features must not enter the source training loader,
+and target labels must not select checkpoints or hyperparameters.
+
+Use a source validation split for checkpoint selection::
+
+    from pytorch_lightning.callbacks import ModelCheckpoint
+    from torcheeg.models import SleepDG
+    from torcheeg.trainers import SleepDGTrainer
+
+    model = SleepDG()
+    trainer = SleepDGTrainer(model, num_classes=5, num_domains=4,
+                            metrics=['accuracy', 'f1score'])
+    checkpoint = ModelCheckpoint(monitor='val_accuracy', mode='max',
+                                 save_top_k=1)
+    trainer.fit(source_train_loader, source_val_loader, max_epochs=50,
+                callbacks=[checkpoint])
+    results = trainer.test(target_test_loader,
+                           ckpt_path=checkpoint.best_model_path)
+
+This code assumes correctly prepared loaders; it does not download or silently
+prepare a dataset. A standalone multi-dataset data workflow remains separate
+work. Supply the actual selected checkpoint path: each ``test`` call constructs
+a new Lightning evaluator, which cannot infer a previous callback's ``'best'``
+checkpoint. A test call without ``ckpt_path`` evaluates the current model.
+
+The trainer's default Adam learning rate is ``0.001``, weight decay ``0.0001``,
+and epsilon ``1e-8``. Set weight decay to ``lr / 10`` explicitly if changing the
+learning rate while following the author's rule. Label smoothing is ``0.1``
+for cross-entropy in every labeled phase. Reconstruction and combined alignment
+weights are both ``1.0``. The fixed author code uses the same unit coefficients;
+the paper also describes separately weighted terms. This trainer exposes
+``weight_reconstruction`` and a combined ``weight_alignment`` coefficient.
+
+The fit wrapper defaults to 50 epochs and gradient-norm clipping at ``1.0``.
+Override Lightning options explicitly for another protocol. Cosine annealing
+steps per successful optimizer update, with a horizon estimated from Lightning's optimizer
+step count. This accounts for accumulation and configured training limits.
+Set ``scheduler_steps`` to a planned positive horizon when splitting a run or
+using a loader whose length is unavailable. Set ``lr_scheduler=False`` to use
+constant-rate Adam. If AMP skips an update after nonfinite gradients, the
+learning rate also stays unchanged; Lightning's global step can still count
+that attempt. Thus the scheduler need not reach its horizon if updates were
+skipped. These settings do not reproduce the paper's data sampling
+or establish published accuracy by themselves.
+
+Loss and classification statistics weight batches by the number of labeled
+epochs, so a smaller last batch cannot receive a full batch's weight. The
+training loss is the weighted average of per-step composite losses, not a
+single global covariance loss over an entire epoch. Validation/test loss uses
+classification only. Configured multiclass metrics flatten all sequence epochs
+consistently. FP16/BF16 CE, MSE and alignment statistics use FP32; FP64 loss
+inputs preserve their precision. Follow the actual tested precision and loss
+scales when changing optimizer epsilon or native model dtype.
+
+The training, source-checkpoint selection and full optimizer/scheduler resume
+paths are also tested with PyTorch 1.13.1 and Lightning 1.9.5 on Python 3.10.
+The optimization hooks forward the installed Lightning version's arguments,
+including the extra optimizer index in Lightning 1.x. CPU float16 GradScaler
+and compilation tests require newer PyTorch APIs and are skipped in that old
+environment. This check does not establish support for every older dependency
+combination; use precision and device options supported by your installation.
+
+Training calls ``model.forward_all``; compile that callable when compiling the
+complete architecture. The validation/prediction path uses ``model.forward``.
+For compiled FP64 CPU execution, select the public math SDPA backend with
+``torch.nn.attention.sdpa_kernel(SDPBackend.MATH)`` around forward/backward.
+PyTorch 2.6 CPU flash SDPA can otherwise fail with a Double/Float backward dtype
+mismatch. This is a compiled math backend, not an eager fallback. FP32 keeps
+normal backend selection.
+
+For a strict CPU eager/compiled gradient comparison, use matching reference
+convolution kernels with ``torch.backends.mkldnn.flags(enabled=False)`` around
+both executions. The default optimized oneDNN path remains available and is
+also tested for complete finite training updates. In the tested small-model
+FP32 compound objective, the default server CPU kernels had a relative gradient
+difference of about ``5.8e-4`` despite closely matching losses; matching reference
+kernels reduced this to about ``6.9e-6``. These results do not establish bitwise
+parity for every optimized kernel. The checks retain full-graph Inductor
+compilation, raw per-parameter gradient checks, FP64 reference comparisons and
+the actual norm-clipped FP32 gradients; no eager fallback or relaxed parity
+threshold is used. Backend contexts restore the caller's settings on exit.
+
+``verbose=False`` follows the base trainer's convention and suppresses metric
+logging, while still updating statistics. Keep logging enabled when monitoring
+``val_accuracy`` in a checkpoint callback. The model, optimizer and scheduler
+can resume from a trusted Lightning checkpoint with
+``trainer.fit(..., ckpt_path=path)``. Rebuild the matching model geometry and
+use the same planned schedule. Checkpoint state restoration does not guarantee
+exact mid-epoch sample continuation: use end-of-epoch checkpoints or a resumable
+data loader to avoid replaying samples after an interruption.
 
 Save the full constructor configuration and complete state, including native
 encoder/decoder buffers and the trained classifier. Rebuild the same geometry

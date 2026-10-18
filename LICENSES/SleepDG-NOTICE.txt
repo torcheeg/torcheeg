@@ -21,3 +21,9 @@ multi-domain alignment training protocol or establish published performance.
 The domain-generalization alignment loss derives from losses/double_alignment.py.
 The independent test copy preserves its formulas and changes only the domain
 index tensor device; see the packaged alignment-manifest.json for file hashes.
+
+The Lightning trainer follows the objective and default optimizer/schedule
+settings in trainer.py and losses/ae_loss.py at the same source revision.
+Training phases, metrics, checkpoint paths and device handling are adapted to
+TorchEEG. Source sampling, data protocol and checkpoint selection remain
+explicit workflow choices; no published benchmark performance is implied.

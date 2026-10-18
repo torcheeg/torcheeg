@@ -52,6 +52,13 @@ objective, domain codes and validation boundaries.
 
    SleepDGAlignmentLoss
 
+.. autosummary::
+   :toctree: generated
+   :nosignatures:
+   :template: trainertemplate.rst
+
+   SleepDGTrainer
+
 Imbalance Learning for Classification
 -------------------------------------
 
