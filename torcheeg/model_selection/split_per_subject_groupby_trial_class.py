@@ -7,7 +7,7 @@ import pandas as pd
 
 from torcheeg.datasets.module.base_dataset import BaseDataset
 from .base_model_selection import BaseModelSelection
-from .utils import create_subset, read_indices, validate_group_names, write_indices
+from .utils import create_subset, read_indices, validate_groups, write_indices
 
 __all__ = ['TrainTestSplitPerSubjectGroupbyTrial']
 
@@ -75,7 +75,7 @@ class TrainTestSplitPerSubjectGroupbyTrial(BaseModelSelection):
     def build(self, info: pd.DataFrame, split_path: Union[None, str] = None) -> None:
         split_path = self.split_path if split_path is None else split_path
         subject_values = pd.unique(info['subject_id'])
-        subjects = validate_group_names(subject_values)
+        subjects = validate_groups(subject_values)
         rng = np.random.RandomState(self.random_state)
         os.makedirs(split_path, exist_ok=True)
         for subject, subject_value in zip(subjects, subject_values):
@@ -112,7 +112,7 @@ class TrainTestSplitPerSubjectGroupbyTrial(BaseModelSelection):
         subject: Union[int, str,
                        None] = None) -> Iterator[Tuple[BaseDataset, BaseDataset]]:
         self.check(dataset, ['subject_id', 'trial_id'])
-        subjects = validate_group_names(pd.unique(dataset.info['subject_id']))
+        subjects = validate_groups(pd.unique(dataset.info['subject_id']))
         if subject is not None and str(subject) not in subjects:
             raise ValueError(f'The subject {subject!r} must be in {subjects}.')
         files = [

@@ -5,7 +5,7 @@ import pandas as pd
 
 from torcheeg.datasets.module.base_dataset import BaseDataset
 from .base_model_selection import BaseModelSelection
-from .utils import create_subset, read_indices, validate_partition_ids, write_partition_indices
+from .utils import create_subset, read_indices, validate_partitions, write_partitions
 
 __all__ = ['TrainValTestSplitCrossTrial']
 
@@ -53,13 +53,13 @@ class TrainValTestSplitCrossTrial(BaseModelSelection):
         self.train_trials = list(train_trials)
         self.val_trials = list(val_trials)
         self.test_trials = list(test_trials)
-        validate_partition_ids([self.train_trials, self.val_trials, self.test_trials])
+        validate_partitions([self.train_trials, self.val_trials, self.test_trials])
         super().__init__(split_path=split_path, timeout=timeout)
 
     def build(self, info: pd.DataFrame, split_path: Union[None, str] = None) -> None:
-        write_partition_indices(info, 'trial_id',
-                                [self.train_trials, self.val_trials, self.test_trials],
-                                self.split_path if split_path is None else split_path)
+        write_partitions(info, 'trial_id',
+                         [self.train_trials, self.val_trials, self.test_trials],
+                         self.split_path if split_path is None else split_path)
 
     def split(
             self, dataset: BaseDataset

@@ -6,14 +6,13 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from ..utils.cache import (ensure_cache as _ensure_cache, get_cache_key as
-                           _get_cache_key, validate_cache, validate_timeout)
+from ..utils.cache import (ensure_cache as _ensure_cache, compute_fingerprint as
+                           _compute_fingerprint, validate_cache, validate_timeout)
 
 __all__ = [
-    'get_cache_key', 'validate_cache', 'ensure_cache', 'validate_timeout',
-    'validate_metadata', 'validate_group_names', 'validate_partition_ids',
-    'write_partition_indices', 'validate_indices', 'write_indices', 'read_indices',
-    'create_subset'
+    'compute_fingerprint', 'validate_cache', 'ensure_cache', 'validate_timeout',
+    'validate_metadata', 'validate_groups', 'validate_partitions', 'write_partitions',
+    'validate_indices', 'write_indices', 'read_indices', 'create_subset'
 ]
 
 
@@ -28,14 +27,14 @@ def validate_metadata(info, columns=()):
             raise ValueError(f'The dataset must contain nonmissing {column} values.')
 
 
-def validate_group_names(values):
+def validate_groups(values):
     names = [str(value) for value in values]
     if len(set(names)) != len(names):
         raise ValueError('Subject IDs must have distinct string representations.')
     return names
 
 
-def validate_partition_ids(partitions):
+def validate_partitions(partitions):
     r'''Reject empty, repeated or overlapping train/validation/test IDs.'''
     seen = set()
     for ids in partitions:
@@ -52,11 +51,11 @@ def validate_partition_ids(partitions):
         seen.update(values)
 
 
-def write_partition_indices(info, column, partitions, split_path):
+def write_partitions(info, column, partitions, split_path):
     r'''Write positions in the original row order without persisting metadata.'''
     if len(partitions) != 3:
         raise ValueError('Expected train, validation and test partitions.')
-    validate_partition_ids(partitions)
+    validate_partitions(partitions)
     requested = set().union(*(set(ids) for ids in partitions))
     if requested - set(info[column]):
         raise ValueError(f'Unknown {column} values in the partition IDs.')
@@ -70,7 +69,7 @@ def _hash_bytes(value):
     return hashlib.sha256(value).hexdigest()
 
 
-def _fingerprint_dataset(info, column):
+def _hash_metadata(info, column):
     columns = [column] if isinstance(column, str) else list(column)
     if not any(name in info for name in ('_record_id', 'clip_id')):
         columns = list(info.columns)
@@ -97,13 +96,13 @@ def _serialize_configuration(value):
     raise TypeError(f'Unsupported split configuration value: {type(value).__name__}')
 
 
-def get_cache_key(info, columns, configuration):
-    """Return a key for ordered sample identities and split configuration."""
+def compute_fingerprint(info, columns, configuration):
+    """Return a fingerprint for ordered sample identities and split configuration."""
     validate_metadata(info, columns)
-    return _get_cache_key(
+    return _compute_fingerprint(
         json.dumps(
             {
-                'dataset': _fingerprint_dataset(info, columns),
+                'dataset': _hash_metadata(info, columns),
                 'configuration': configuration
             },
             sort_keys=True,
@@ -118,7 +117,7 @@ def ensure_cache(info,
                  writer,
                  timeout=300.0):
     """Create or reuse validated row-position files."""
-    key = get_cache_key(info, columns, configuration)
+    fingerprint = compute_fingerprint(info, columns, configuration)
 
     def validate_outputs(path):
         names = files if files is not None else [
@@ -128,7 +127,7 @@ def ensure_cache(info,
             read_indices(os.path.join(path, name), len(info))
 
     _ensure_cache(split_path,
-                  key,
+                  fingerprint,
                   writer,
                   files=files,
                   timeout=timeout,

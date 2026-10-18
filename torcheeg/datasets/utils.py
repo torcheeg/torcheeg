@@ -10,13 +10,13 @@ import numpy as np
 import pandas as pd
 import torch
 
-from ..utils.cache import (ensure_cache, get_cache_key as _get_cache_key,
-                           validate_cache, validate_timeout, get_file_checksum)
+from ..utils.cache import (ensure_cache, compute_fingerprint as _compute_fingerprint,
+                           validate_cache, validate_timeout, compute_checksum)
 
-__all__ = ['get_cache_key', 'validate_cache', 'ensure_cache', 'validate_timeout']
+__all__ = ['compute_fingerprint', 'validate_cache', 'ensure_cache', 'validate_timeout']
 
 
-def _describe(value, seen=None):
+def _describe_value(value, seen=None):
     if value is None or isinstance(value, (str, bytes, int, float, bool, np.generic)):
         return value
     if isinstance(value, os.PathLike):
@@ -36,17 +36,17 @@ def _describe(value, seen=None):
         return type(value).__module__, type(value).__qualname__
     seen = seen | {id(value)}
     if isinstance(value, dict):
-        return {key: _describe(item, seen) for key, item in value.items()}
+        return {key: _describe_value(item, seen) for key, item in value.items()}
     if isinstance(value, (list, tuple)):
-        return type(value).__name__, [_describe(item, seen) for item in value]
+        return type(value).__name__, [_describe_value(item, seen) for item in value]
     if isinstance(value, (set, frozenset)):
-        return sorted((_describe(item, seen) for item in value), key=repr)
+        return sorted((_describe_value(item, seen) for item in value), key=repr)
     if isinstance(value, functools.partial):
-        return (_describe(value.func,
-                          seen), _describe(value.args,
-                                           seen), _describe(value.keywords, seen))
+        return (_describe_value(value.func, seen), _describe_value(value.args, seen),
+                _describe_value(value.keywords, seen))
     if inspect.ismethod(value):
-        return (_describe(value.__func__, seen), _describe(value.__self__, seen))
+        return (_describe_value(value.__func__,
+                                seen), _describe_value(value.__self__, seen))
     if inspect.isfunction(value):
         closure = [cell.cell_contents for cell in (value.__closure__ or ())]
         constants = {
@@ -56,30 +56,30 @@ def _describe(value, seen=None):
                 str, bytes, int, float, bool, tuple, list, dict, np.ndarray))
         }
         return (value.__module__, value.__qualname__, marshal.dumps(value.__code__),
-                _describe(value.__defaults__,
-                          seen), _describe(value.__kwdefaults__, seen),
-                _describe(closure, seen), _describe(constants, seen))
+                _describe_value(value.__defaults__,
+                                seen), _describe_value(value.__kwdefaults__, seen),
+                _describe_value(closure, seen), _describe_value(constants, seen))
     if hasattr(value, '__dict__'):
         cls = type(value)
         try:
             implementation = inspect.getsource(cls)
         except (OSError, TypeError):
             implementation = cls.__module__, cls.__qualname__
-        return implementation, _describe(vars(value), seen)
+        return implementation, _describe_value(vars(value), seen)
     return joblib.hash(value)
 
 
-def _input_files(value, excluded):
+def _collect_sources(value, excluded):
     if isinstance(value, dict):
         for item in value.values():
-            yield from _input_files(item, excluded)
+            yield from _collect_sources(item, excluded)
     elif isinstance(value, (list, tuple)):
         for item in value:
-            yield from _input_files(item, excluded)
+            yield from _collect_sources(item, excluded)
     elif isinstance(value, (pd.DataFrame, pd.Series)):
-        yield from _input_files(value.to_dict(), excluded)
+        yield from _collect_sources(value.to_dict(), excluded)
     elif hasattr(value, 'filenames'):
-        yield from _input_files(value.filenames, excluded)
+        yield from _collect_sources(value.filenames, excluded)
     elif isinstance(value, (str, os.PathLike)):
         path = Path(value)
         try:
@@ -101,16 +101,16 @@ def _input_files(value, excluded):
                 yield absolute
 
 
-def get_cache_key(dataset_class, configuration, records, io_path):
-    """Return a key for source files, processing configuration and record order."""
+def compute_fingerprint(dataset_class, configuration, records, io_path):
+    """Return a fingerprint for source files, processing configuration and record order."""
     excluded = os.path.abspath(io_path)
-    sources = sorted(set(_input_files((configuration, records), excluded)))
-    inputs = [(path, get_file_checksum(path)) for path in sources]
+    sources = sorted(set(_collect_sources((configuration, records), excluded)))
+    inputs = [(path, compute_checksum(path)) for path in sources]
     implementations = [
         getattr(dataset_class, name)
         for name in ('set_records', 'read_record', 'process_record')
     ]
     value = (dataset_class.__module__, dataset_class.__qualname__,
-             _describe(configuration), _describe(records), inputs,
-             _describe(implementations))
-    return _get_cache_key(joblib.hash(value).encode())
+             _describe_value(configuration), _describe_value(records), inputs,
+             _describe_value(implementations))
+    return _compute_fingerprint(joblib.hash(value).encode())

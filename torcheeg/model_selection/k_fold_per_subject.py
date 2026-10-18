@@ -8,7 +8,7 @@ from sklearn import model_selection
 from torcheeg.datasets.module.base_dataset import BaseDataset
 
 from .base_model_selection import BaseModelSelection
-from .utils import create_subset, read_indices, validate_group_names, write_indices
+from .utils import create_subset, read_indices, validate_groups, write_indices
 
 __all__ = ['KFoldPerSubject']
 
@@ -107,7 +107,7 @@ class KFoldPerSubject(BaseModelSelection):
         split_path = self.split_path if split_path is None else split_path
         os.makedirs(split_path, exist_ok=True)
         subjects = list(pd.unique(info['subject_id']))
-        validate_group_names(subjects)
+        validate_groups(subjects)
         for subject in subjects:
             subject_info = info[info['subject_id'] == subject]
             for i, (train_index,

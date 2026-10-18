@@ -13,7 +13,7 @@ from tqdm import tqdm
 
 from torcheeg.io import EEGSignalIO, MetaInfoIO
 from ...utils import get_random_dir_path
-from ..utils import ensure_cache, get_cache_key, validate_timeout
+from ..utils import ensure_cache, compute_fingerprint, validate_timeout
 
 _log = logging.getLogger('torcheeg')
 
@@ -61,9 +61,10 @@ class BaseDataset(Dataset):
                 self._build_cache(path, records, kwargs)
             self.io_path = io_path
         else:
-            key = get_cache_key(type(self), configuration, records, io_path)
+            fingerprint = compute_fingerprint(type(self), configuration, records,
+                                              io_path)
             ensure_cache(io_path,
-                         key,
+                         fingerprint,
                          lambda path: self._build_cache(path, records, kwargs),
                          timeout=self.timeout)
             self.init_io(io_path=self.io_path,

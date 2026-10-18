@@ -7,7 +7,7 @@ import pandas as pd
 
 from torcheeg.datasets.module.base_dataset import BaseDataset
 from .base_model_selection import BaseModelSelection
-from .utils import create_subset, read_indices, validate_partition_ids, write_partition_indices
+from .utils import create_subset, read_indices, validate_partitions, write_partitions
 
 __all__ = ['KFoldCrossSubjectTrainValTest']
 
@@ -51,7 +51,7 @@ class KFoldCrossSubjectTrainValTest(BaseModelSelection):
                  random_state: int = 42,
                  timeout: float = 300.0) -> None:
         self.all_subjects = list(all_subjects)
-        validate_partition_ids([self.all_subjects])
+        validate_partitions([self.all_subjects])
         if isinstance(n_folds, (bool, np.bool_)) or not isinstance(n_folds, Integral):
             raise TypeError('n_folds must be an integer.')
         if not 3 <= n_folds <= len(self.all_subjects):
@@ -88,9 +88,9 @@ class KFoldCrossSubjectTrainValTest(BaseModelSelection):
                 if index not in (fold_id, (fold_id + 1) % self.n_folds)
                 for subject in fold
             ]
-            write_partition_indices(info, 'subject_id',
-                                    [train_subjects, val_subjects, test_subjects],
-                                    os.path.join(split_path, f'fold_{fold_id}'))
+            write_partitions(info, 'subject_id',
+                             [train_subjects, val_subjects, test_subjects],
+                             os.path.join(split_path, f'fold_{fold_id}'))
 
     def split(
             self, dataset: BaseDataset

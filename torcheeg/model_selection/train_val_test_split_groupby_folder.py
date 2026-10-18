@@ -5,7 +5,7 @@ import pandas as pd
 
 from torcheeg.datasets.module.base_dataset import BaseDataset
 from .base_model_selection import BaseModelSelection
-from .utils import create_subset, read_indices, write_partition_indices
+from .utils import create_subset, read_indices, write_partitions
 
 __all__ = ['TrainValTestSplitGroupbyFolder']
 
@@ -42,8 +42,8 @@ class TrainValTestSplitGroupbyFolder(BaseModelSelection):
         if not info['split'].isin(['train', 'val', 'test']).all():
             raise ValueError(
                 "The split column must contain only 'train', 'val' and 'test'.")
-        write_partition_indices(info, 'split', [['train'], ['val'], ['test']],
-                                self.split_path if split_path is None else split_path)
+        write_partitions(info, 'split', [['train'], ['val'], ['test']],
+                         self.split_path if split_path is None else split_path)
 
     def split(
             self, dataset: BaseDataset

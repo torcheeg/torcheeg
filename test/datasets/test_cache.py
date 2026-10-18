@@ -106,7 +106,7 @@ class TestDatasetCache(unittest.TestCase):
                     label_transform=transforms.Select('subject_id'))
                 np.testing.assert_array_equal(repeated[0][0], self._samples[0] + 1)
                 self.assertEqual(before, manifest.read_bytes())
-                self.assertEqual(set(json.loads(before)), {'key', 'files'})
+                self.assertEqual(set(json.loads(before)), {'fingerprint', 'files'})
 
     def test_offline_parameters_and_hooks_invalidate_cache(self):
         self._dataset()

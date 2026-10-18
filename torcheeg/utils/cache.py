@@ -10,8 +10,8 @@ from pathlib import Path
 from filelock import FileLock, Timeout
 
 __all__ = [
-    'get_cache_key', 'validate_cache', 'ensure_cache', 'validate_timeout',
-    'get_file_checksum'
+    'compute_fingerprint', 'validate_cache', 'ensure_cache', 'validate_timeout',
+    'compute_checksum'
 ]
 
 
@@ -23,12 +23,12 @@ def validate_timeout(timeout):
     return float(timeout)
 
 
-def get_cache_key(value):
+def compute_fingerprint(value):
     """Return the SHA256 digest of bytes describing cache inputs."""
     return hashlib.sha256(value).hexdigest()
 
 
-def get_file_checksum(path):
+def compute_checksum(path):
     """Return the SHA256 digest of a file using bounded memory."""
     digest = hashlib.sha256()
     with open(path, 'rb') as file:
@@ -37,25 +37,25 @@ def get_file_checksum(path):
     return digest.hexdigest()
 
 
-def _get_files(path):
+def _list_files(path):
     return sorted(
         str(file.relative_to(path)) for file in Path(path).rglob('*') if file.is_file()
         and str(file.relative_to(path)) != 'manifest.json' and file.name != 'lock.mdb')
 
 
-def validate_cache(path, key, files=None):
+def validate_cache(path, fingerprint, files=None):
     """Raise ValueError if cache identity or output checksums do not match."""
     path = Path(path)
     try:
         with open(path / 'manifest.json', encoding='utf-8') as file:
             manifest = json.load(file)
-        if not isinstance(manifest, dict) or manifest.get('key') != key:
+        if not isinstance(manifest, dict) or manifest.get('fingerprint') != fingerprint:
             raise ValueError(
                 'Cache inputs or parameters have changed; use a new cache path.')
         checksums = manifest.get('files')
         if not isinstance(checksums, dict) or not checksums:
             raise ValueError('Incomplete cache; use a new cache path.')
-        if set(checksums) != set(_get_files(path)):
+        if set(checksums) != set(_list_files(path)):
             raise ValueError('Cache output files have changed; use a new cache path.')
         if files is not None and set(checksums) != set(files):
             raise ValueError('Incomplete cache; use a new cache path.')
@@ -64,14 +64,14 @@ def validate_cache(path, key, files=None):
             if file.is_symlink() or os.path.commonpath(
                 (str(file.resolve()), str(path.resolve()))) != str(path.resolve()):
                 raise ValueError('Invalid cache output path.')
-            if get_file_checksum(file) != checksum:
+            if compute_checksum(file) != checksum:
                 raise ValueError('Corrupt cache; use a new cache path.')
     except (OSError, KeyError, TypeError, json.JSONDecodeError) as error:
         raise ValueError(
             'Incomplete or corrupt cache; use a new cache path.') from error
 
 
-def ensure_cache(path, key, writer, files=None, timeout=300.0, validator=None):
+def ensure_cache(path, fingerprint, writer, files=None, timeout=300.0, validator=None):
     """Reuse a validated cache or build and publish it under a file lock."""
     timeout = validate_timeout(timeout)
     path = os.path.abspath(os.fspath(path))
@@ -79,7 +79,7 @@ def ensure_cache(path, key, writer, files=None, timeout=300.0, validator=None):
     try:
         with FileLock(path + '.lock', timeout=timeout):
             if os.path.isfile(os.path.join(path, 'manifest.json')):
-                validate_cache(path, key, files)
+                validate_cache(path, fingerprint, files)
                 if validator is not None:
                     validator(path)
                 return
@@ -89,15 +89,15 @@ def ensure_cache(path, key, writer, files=None, timeout=300.0, validator=None):
                                             dir=os.path.dirname(path))
             try:
                 writer(staging_path)
-                names = _get_files(staging_path)
+                names = _list_files(staging_path)
                 if not names or (files is not None and set(names) != set(files)):
                     raise ValueError('Incomplete cache output.')
                 if validator is not None:
                     validator(staging_path)
                 manifest = {
-                    'key': key,
+                    'fingerprint': fingerprint,
                     'files': {
-                        name: get_file_checksum(os.path.join(staging_path, name))
+                        name: compute_checksum(os.path.join(staging_path, name))
                         for name in names
                     }
                 }
