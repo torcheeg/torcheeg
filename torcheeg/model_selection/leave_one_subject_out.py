@@ -1,6 +1,7 @@
 import os
 import re
-from typing import List, Tuple, Union
+from urllib.parse import quote, unquote
+from typing import Iterator, List, Tuple, Union
 
 import pandas as pd
 
@@ -28,7 +29,7 @@ class LeaveOneSubjectOut(BaseModelSelection):
         from torcheeg.model_selection import LeaveOneSubjectOut
         from torcheeg.datasets import DEAPDataset
         from torcheeg import transforms
-        from torcheeg.utils import DataLoader
+        from torch.utils.data import DataLoader
 
         cv = LeaveOneSubjectOut()
         dataset = DEAPDataset(root_path='./data_preprocessed_python',
@@ -51,15 +52,19 @@ class LeaveOneSubjectOut(BaseModelSelection):
         split_path (str): The path to data partition information. If the path exists, read the existing partition from the path. If the path does not exist, the current division method will be saved for next use. If set to None, a random path will be generated. (default: :obj:`None`)
     '''
 
-    def __init__(self, split_path: Union[None, str] = None):
+    def __init__(self, split_path: Union[None, str] = None) -> None:
 
         super().__init__(split_path=split_path)
 
-    def build(self, info: pd.DataFrame, split_path=None) -> None:
+    def build(self, info: pd.DataFrame, split_path: Union[None, str] = None) -> None:
         info = info.reset_index(drop=True)
         split_path = self.split_path if split_path is None else split_path
         os.makedirs(split_path, exist_ok=True)
-        subjects = list(set(info['subject_id']))
+        subjects = list(pd.unique(info['subject_id']))
+        if len({str(subject) for subject in subjects}) != len(subjects):
+            raise ValueError('Subject IDs must have distinct string representations.')
+        if len(subjects) < 2:
+            raise ValueError('LeaveOneSubjectOut requires at least two subjects.')
         for test_subject in subjects:
             train_subjects = subjects.copy()
             train_subjects.remove(test_subject)
@@ -68,42 +73,54 @@ class LeaveOneSubjectOut(BaseModelSelection):
                 train_info.append(info[info['subject_id'] == train_subject])
             train_info = pd.concat(train_info)
             test_info = info[info['subject_id'] == test_subject]
-            write_indices(os.path.join(split_path, f'train_subject_{test_subject}.csv'),
-                          train_info.index.to_numpy())
-            write_indices(os.path.join(split_path, f'test_subject_{test_subject}.csv'),
-                          test_info.index.to_numpy())
+            write_indices(
+                os.path.join(split_path,
+                             f'train_subject_{quote(str(test_subject), safe="")}.csv'),
+                train_info.index.to_numpy())
+            write_indices(
+                os.path.join(split_path,
+                             f'test_subject_{quote(str(test_subject), safe="")}.csv'),
+                test_info.index.to_numpy())
 
     @property
-    def subjects(self) -> List:
+    def subjects(self) -> List[str]:
         indice_files = [
             name for name in os.listdir(self.split_path) if name.endswith('.csv')
         ]
 
         def indice_file_to_subject(indice_file):
-            return re.findall(r'subject_(.*).csv', indice_file)[0]
+            return unquote(re.findall(r'subject_(.*).csv', indice_file)[0])
 
         subjects = list(set(map(indice_file_to_subject, indice_files)))
         subjects.sort()
         return subjects
 
-    def split(self,
-              dataset: BaseDataset,
-              subject=None) -> Tuple[BaseDataset, BaseDataset]:
+    def split(
+        self,
+        dataset: BaseDataset,
+        subject: Union[int, str,
+                       None] = None) -> Iterator[Tuple[BaseDataset, BaseDataset]]:
         self._prepare(dataset, ['subject_id'])
 
         subjects = self.subjects
         if subject is not None:
-            train_dataset = self._read_subset(dataset, f'train_subject_{subject}.csv')
+            if str(subject) not in subjects:
+                raise ValueError(
+                    f'The subject should be in the subject list {subjects}.')
+            train_dataset = self._read_subset(
+                dataset, f'train_subject_{quote(str(subject), safe="")}.csv')
 
-            test_dataset = self._read_subset(dataset, f'test_subject_{subject}.csv')
+            test_dataset = self._read_subset(
+                dataset, f'test_subject_{quote(str(subject), safe="")}.csv')
 
             yield train_dataset, test_dataset
         else:
             for subject in subjects:
 
-                train_dataset = self._read_subset(dataset,
-                                                  f'train_subject_{subject}.csv')
+                train_dataset = self._read_subset(
+                    dataset, f'train_subject_{quote(str(subject), safe="")}.csv')
 
-                test_dataset = self._read_subset(dataset, f'test_subject_{subject}.csv')
+                test_dataset = self._read_subset(
+                    dataset, f'test_subject_{quote(str(subject), safe="")}.csv')
 
                 yield train_dataset, test_dataset

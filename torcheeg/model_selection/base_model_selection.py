@@ -10,19 +10,23 @@ from .utils import ensure_split_cache, read_subset
 class BaseModelSelection:
     r'''Common initialization, checks and cache access for dataset splitters.'''
 
-    def __init__(self, split_path: Union[None, str] = None):
+    def __init__(self, split_path: Union[None, str] = None) -> None:
         self.split_path = (get_random_dir_path(dir_prefix='model_selection')
                            if split_path is None else os.fspath(split_path))
 
-    def build(self, info: pd.DataFrame, split_path=None) -> None:
+    def build(self, info: pd.DataFrame, split_path: Union[None, str] = None) -> None:
         r'''Write the row positions for this splitting rule.'''
-        raise NotImplementedError("Method build is not implemented in class " +
-                                  self.__class__.__name__)
+        raise NotImplementedError(
+            "Method build is not implemented in class "
+            + self.__class__.__name__
+        )
 
     def split(self, dataset, **kwargs):
         r'''Yield dataset subsets for this splitting rule.'''
-        raise NotImplementedError("Method split is not implemented in class " +
-                                  self.__class__.__name__)
+        raise NotImplementedError(
+            "Method split is not implemented in class "
+            + self.__class__.__name__
+        )
 
     def check(self, dataset, columns=()):
         r'''Check the metadata required by a splitting rule.'''

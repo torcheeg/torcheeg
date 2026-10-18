@@ -10,6 +10,7 @@ import numpy as np
 import pandas as pd
 from filelock import FileLock, Timeout
 
+_CACHE_VERSION = 2
 _CACHE_TIMEOUT = 300.0
 _MANIFEST = '_split_manifest.json'
 
@@ -18,7 +19,7 @@ def validate_partition_ids(partitions):
     r'''Reject empty, repeated or overlapping train/validation/test IDs.'''
     seen = set()
     for ids in partitions:
-        if not ids or pd.Series(ids, dtype=object).isna().any():
+        if len(ids) == 0 or pd.Series(ids, dtype=object).isna().any():
             raise ValueError('Partition IDs must be nonempty and nonmissing.')
         try:
             values = set(ids)
@@ -33,6 +34,8 @@ def validate_partition_ids(partitions):
 
 def write_partition_indices(info, column, partitions, split_path):
     r'''Write positions in the original row order without persisting metadata.'''
+    if len(partitions) != 3:
+        raise ValueError('Expected train, validation and test partitions.')
     validate_partition_ids(partitions)
     requested = set().union(*(set(ids) for ids in partitions))
     if requested - set(info[column]):
@@ -56,7 +59,7 @@ def _fingerprint_dataset(info, column):
     # Index labels do not affect iloc positions. Include sample identities when
     # available so reordered datasets cannot silently reuse old positions.
     columns = [column] if isinstance(column, str) else list(column)
-    if not columns and not any(name in info for name in ('_record_id', 'clip_id')):
+    if not any(name in info for name in ('_record_id', 'clip_id')):
         columns = list(info.columns)
     columns += [
         name for name in ('_record_id', 'clip_id')
@@ -113,22 +116,21 @@ def _serialize_configuration(value):
 
 def ensure_split_cache(info, columns, split_path, configuration, files, writer):
     r'''Create or reuse a complete split cache under a process-safe lock.'''
+    if not isinstance(info, pd.DataFrame) or info.empty:
+        raise ValueError('The dataset must contain nonempty metadata.')
     columns = [columns] if isinstance(columns, str) else list(columns)
     for name in columns:
         if name not in info or info[name].isna().any():
             raise ValueError(f'The dataset must contain nonmissing {name} values.')
     split_path = os.path.abspath(os.fspath(split_path))
+    configuration_hash = _hash_bytes(
+        json.dumps(configuration, sort_keys=True,
+                   default=_serialize_configuration).encode())
     expected = {
-        'version':
-        1,
-        'format':
-        'row_indices',
-        'dataset':
-        _fingerprint_dataset(info, columns),
-        'configuration':
-        _hash_bytes(
-            json.dumps(configuration, sort_keys=True,
-                       default=_serialize_configuration).encode())
+        'version': _CACHE_VERSION,
+        'format': 'row_indices',
+        'dataset': _fingerprint_dataset(info, columns),
+        'configuration': configuration_hash
     }
     os.makedirs(os.path.dirname(split_path), exist_ok=True)
     try:
@@ -179,7 +181,8 @@ def validate_indices(indices, num_samples):
 
 def write_indices(path, indices):
     indices = np.asarray(indices)
-    if indices.ndim != 1 or indices.dtype.kind not in 'iu' or not indices.size:
+    if (indices.ndim != 1 or indices.dtype.kind not in 'iu' or not indices.size
+            or (indices < 0).any() or len(np.unique(indices)) != len(indices)):
         raise ValueError('Split indices must be nonempty integer row positions.')
     os.makedirs(os.path.dirname(os.fspath(path)) or '.', exist_ok=True)
     pd.DataFrame({'index': indices}).to_csv(path, index=False)

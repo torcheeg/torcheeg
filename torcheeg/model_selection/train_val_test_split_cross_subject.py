@@ -53,7 +53,7 @@ class TrainValTestSplitCrossSubject(BaseModelSelection):
                  train_subjects: List,
                  val_subjects: List,
                  test_subjects: List,
-                 split_path: Union[None, str] = None):
+                 split_path: Union[None, str] = None) -> None:
         self.train_subjects = list(train_subjects)
         self.val_subjects = list(val_subjects)
         self.test_subjects = list(test_subjects)
@@ -61,7 +61,7 @@ class TrainValTestSplitCrossSubject(BaseModelSelection):
             [self.train_subjects, self.val_subjects, self.test_subjects])
         super().__init__(split_path=split_path)
 
-    def build(self, info: pd.DataFrame, split_path=None) -> None:
+    def build(self, info: pd.DataFrame, split_path: Union[None, str] = None) -> None:
         write_partition_indices(
             info, 'subject_id',
             [self.train_subjects, self.val_subjects, self.test_subjects],

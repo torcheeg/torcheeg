@@ -8,6 +8,7 @@ import pandas as pd
 
 from torcheeg.datasets.module.base_dataset import BaseDataset
 from .base_model_selection import BaseModelSelection
+from .utils import write_indices
 
 __all__ = ['TrainTestSplitPerSubjectGroupbyTrial']
 
@@ -60,7 +61,7 @@ class TrainTestSplitPerSubjectGroupbyTrial(BaseModelSelection):
                  train_size: float = 0.8,
                  shuffle: bool = False,
                  random_state: Union[int, None] = None,
-                 split_path: Union[None, str] = None):
+                 split_path: Union[None, str] = None) -> None:
         if (isinstance(train_size, (bool, np.bool_))
                 or not isinstance(train_size,
                                   (int, float, np.number)) or not 0 < train_size < 1):
@@ -97,7 +98,7 @@ class TrainTestSplitPerSubjectGroupbyTrial(BaseModelSelection):
     def _filename(subject: str, partition: str) -> str:
         return f'{partition}_subject_{quote(subject, safe="")}.csv'
 
-    def build(self, info: pd.DataFrame, split_path=None) -> None:
+    def build(self, info: pd.DataFrame, split_path: Union[None, str] = None) -> None:
         split_path = self.split_path if split_path is None else split_path
         subjects = self._subject_ids(info)
         rng = np.random.RandomState(self.random_state)
@@ -121,10 +122,8 @@ class TrainTestSplitPerSubjectGroupbyTrial(BaseModelSelection):
                 train_indices.extend(positions[:train_size])
                 test_indices.extend(positions[train_size:])
             for name, indices in (('train', train_indices), ('test', test_indices)):
-                pd.DataFrame({
-                    'index': indices
-                }).to_csv(os.path.join(split_path, self._filename(subject, name)),
-                          index=False)
+                write_indices(os.path.join(split_path, self._filename(subject, name)),
+                              indices)
         with open(os.path.join(split_path, '_subjects.json'), 'w') as file:
             json.dump(subjects, file)
 

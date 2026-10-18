@@ -1,6 +1,5 @@
-import logging
 import os
-from typing import Union
+from typing import Tuple, Union
 
 import pandas as pd
 from sklearn import model_selection
@@ -10,17 +9,16 @@ from torcheeg.datasets.module.base_dataset import BaseDataset
 from ..utils import get_random_dir_path
 from .utils import create_subset, ensure_split_cache, read_indices, write_indices
 
-log = logging.getLogger('torcheeg')
-
 __all__ = ['train_test_split_per_subject_cross_trial']
 
 
-def train_test_split_per_subject_cross_trial(dataset: BaseDataset,
-                                             test_size: float = 0.2,
-                                             subject: str = 's01.dat',
-                                             shuffle: bool = False,
-                                             random_state: Union[float, None] = None,
-                                             split_path: Union[None, str] = None):
+def train_test_split_per_subject_cross_trial(
+        dataset: BaseDataset,
+        test_size: Union[int, float] = 0.2,
+        subject: str = 's01.dat',
+        shuffle: bool = False,
+        random_state: Union[int, None] = None,
+        split_path: Union[None, str] = None) -> Tuple[BaseDataset, BaseDataset]:
     r'''
     A tool function for cross-validations, to divide the training set and the test set. It is suitable for subject dependent experiments with large dataset volume and no need to use k-fold cross-validations. For the first step, the EEG signal samples of the specified user are selected. Then, parts of trials are sampled according to a certain proportion as the test dataset, and samples from other trials are used as training samples. In most literatures, 20% of the data are sampled for testing.
 
@@ -36,7 +34,7 @@ def train_test_split_per_subject_cross_trial(dataset: BaseDataset,
         from torcheeg.datasets import DEAPDataset
         from torcheeg.model_selection import train_test_split_per_subject_cross_trial
         from torcheeg import transforms
-        from torcheeg.utils import DataLoader
+        from torch.utils.data import DataLoader
 
         dataset = DEAPDataset(root_path='./data_preprocessed_python',
                               online_transform=transforms.Compose([
@@ -68,12 +66,13 @@ def train_test_split_per_subject_cross_trial(dataset: BaseDataset,
 
     def write_split(split_path):
         info = dataset.info.reset_index(drop=True)
-        subjects = list(set(info['subject_id']))
+        subjects = list(pd.unique(info['subject_id']))
 
-        assert subject in subjects, f'The subject should be in the subject list {subjects}.'
+        if subject not in subjects:
+            raise ValueError(f'The subject should be in the subject list {subjects}.')
 
         subject_info = info[info['subject_id'] == subject]
-        trial_ids = list(set(subject_info['trial_id']))
+        trial_ids = list(pd.unique(subject_info['trial_id']))
 
         train_trial_ids, test_trial_ids = model_selection.train_test_split(
             trial_ids, test_size=test_size, shuffle=shuffle, random_state=random_state)

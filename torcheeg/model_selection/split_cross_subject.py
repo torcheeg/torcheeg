@@ -1,6 +1,5 @@
-import logging
 import os
-from typing import Callable, Union
+from typing import Tuple, Callable, Union
 
 import pandas as pd
 from sklearn import model_selection
@@ -10,17 +9,16 @@ from torcheeg.datasets.module.base_dataset import BaseDataset
 from ..utils import get_random_dir_path
 from .utils import create_subset, ensure_split_cache, read_indices, write_indices
 
-log = logging.getLogger('torcheeg')
-
 __all__ = ['train_test_split_cross_subject']
 
 
-def train_test_split_cross_subject(dataset: BaseDataset,
-                                   test_size: float = 0.2,
-                                   shuffle: bool = False,
-                                   label_transform: Callable = None,
-                                   random_state: Union[float, None] = None,
-                                   split_path: Union[None, str] = None):
+def train_test_split_cross_subject(
+        dataset: BaseDataset,
+        test_size: Union[int, float] = 0.2,
+        shuffle: bool = False,
+        label_transform: Callable = None,
+        random_state: Union[int, None] = None,
+        split_path: Union[None, str] = None) -> Tuple[BaseDataset, BaseDataset]:
     r'''
     A tool function for cross-validations, to divide the training set and the test set across subjects. It is suitable for experiments with large dataset volume and no need to use k-fold cross-validations. A certain proportion of subjects are sampled as the test dataset, and samples from other subjects are used as training samples. In most literatures, 20% of the subjects are sampled for testing.
 
@@ -39,7 +37,7 @@ def train_test_split_cross_subject(dataset: BaseDataset,
         from torcheeg.datasets import DEAPDataset
         from torcheeg.model_selection import train_test_split_cross_subject
         from torcheeg import transforms
-        from torcheeg.utils import DataLoader
+        from torch.utils.data import DataLoader
 
         dataset = DEAPDataset(root_path='./data_preprocessed_python',
                               online_transform=transforms.Compose([
@@ -71,9 +69,9 @@ def train_test_split_cross_subject(dataset: BaseDataset,
 
     def write_split(split_path):
         info = dataset.info.reset_index(drop=True)
-        subject_ids = list(set(info['subject_id']))
+        subject_ids = list(pd.unique(info['subject_id']))
 
-        if label_transform:
+        if label_transform is not None:
             subject_labels = []
             for subject_id in subject_ids:
                 subject_info = info[info['subject_id'] == subject_id]

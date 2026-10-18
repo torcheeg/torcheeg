@@ -1,6 +1,9 @@
 import os
-import re
-from typing import Dict, Tuple, Union
+import json
+from urllib.parse import quote, unquote
+
+import numpy as np
+from typing import Iterator, Dict, Union
 
 import pandas as pd
 
@@ -23,7 +26,7 @@ class Subcategory(BaseModelSelection):
         from torcheeg.datasets import M3CVDataset
         from torcheeg.model_selection import Subcategory
         from torcheeg import transforms
-        from torcheeg.utils import DataLoader
+        from torch.utils.data import DataLoader
         
         cv = Subcategory()
         dataset = M3CVDataset(root_path='./aistudio',
@@ -94,22 +97,29 @@ class Subcategory(BaseModelSelection):
         split_path (str): The path to data partition information. If the path exists, read the existing partition from the path. If the path does not exist, the current division method will be saved for next use. If set to None, a random path will be generated. (default: :obj:`None`)
     '''
 
-    def __init__(self, criteria: str = 'task', split_path: Union[None, str] = None):
+    def __init__(self,
+                 criteria: str = 'task',
+                 split_path: Union[None, str] = None) -> None:
 
         self.criteria = criteria
         super().__init__(split_path=split_path)
 
-    def build(self, info: pd.DataFrame, split_path=None) -> None:
+    @staticmethod
+    def _filename(category) -> str:
+        if isinstance(category, np.generic):
+            category = category.item()
+        return quote(json.dumps(category), safe='') + '.csv'
+
+    def build(self, info: pd.DataFrame, split_path: Union[None, str] = None) -> None:
         info = info.reset_index(drop=True)
         split_path = self.split_path if split_path is None else split_path
         os.makedirs(split_path, exist_ok=True)
-        assert self.criteria in list(
-            info.columns
-        ), f'Unsupported criteria {self.criteria}, please select one of the following options {list(info.columns)}.'
-        category_list = list(set(info[self.criteria]))
+        if self.criteria not in info:
+            raise ValueError(f'Unsupported criteria {self.criteria}.')
+        category_list = list(pd.unique(info[self.criteria]))
         for category in category_list:
             subset_info = info[info[self.criteria] == category]
-            write_indices(os.path.join(split_path, f'{category}.csv'),
+            write_indices(os.path.join(split_path, self._filename(category)),
                           subset_info.index.to_numpy())
 
     @property
@@ -118,22 +128,22 @@ class Subcategory(BaseModelSelection):
             name for name in os.listdir(self.split_path) if name.endswith('.csv')
         ]
 
-        def indice_file_to_fold_id(indice_file):
-            return int(re.findall(r'(.*).csv', indice_file)[0])
-
-        category_list = list(set(map(indice_file_to_fold_id, indice_files)))
-        category_list.sort()
+        category_list = [json.loads(unquote(name[:-4])) for name in indice_files]
+        try:
+            category_list.sort()
+        except TypeError:
+            category_list.sort(key=lambda value: (type(value).__name__, str(value)))
 
         return category_list
 
-    def split(self, dataset: BaseDataset) -> Tuple[BaseDataset, BaseDataset]:
+    def split(self, dataset: BaseDataset) -> Iterator[BaseDataset]:
         self._prepare(dataset, [self.criteria])
 
         category_list = self.category_list
 
         for category in category_list:
 
-            subset_dataset = self._read_subset(dataset, f'{category}.csv')
+            subset_dataset = self._read_subset(dataset, self._filename(category))
 
             yield subset_dataset
 

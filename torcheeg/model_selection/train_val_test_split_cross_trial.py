@@ -55,14 +55,14 @@ class TrainValTestSplitCrossTrial(BaseModelSelection):
                  train_trials: List,
                  val_trials: List,
                  test_trials: List,
-                 split_path: Union[None, str] = None):
+                 split_path: Union[None, str] = None) -> None:
         self.train_trials = list(train_trials)
         self.val_trials = list(val_trials)
         self.test_trials = list(test_trials)
         validate_partition_ids([self.train_trials, self.val_trials, self.test_trials])
         super().__init__(split_path=split_path)
 
-    def build(self, info: pd.DataFrame, split_path=None) -> None:
+    def build(self, info: pd.DataFrame, split_path: Union[None, str] = None) -> None:
         write_partition_indices(info, 'trial_id',
                                 [self.train_trials, self.val_trials, self.test_trials],
                                 self.split_path if split_path is None else split_path)

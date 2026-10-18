@@ -1,6 +1,5 @@
-import logging
 import os
-from typing import Union
+from typing import Tuple, Union
 
 import numpy as np
 from sklearn import model_selection
@@ -10,20 +9,19 @@ from torcheeg.datasets.module.base_dataset import BaseDataset
 from ..utils import get_random_dir_path
 from .utils import create_subset, ensure_split_cache, read_indices, write_indices
 
-log = logging.getLogger('torcheeg')
-
 __all__ = ['train_test_split']
 
 
-def train_test_split(dataset: BaseDataset,
-                     test_size: float = 0.2,
-                     shuffle: bool = False,
-                     random_state: Union[float, None] = None,
-                     split_path: Union[None, str] = None):
+def train_test_split(
+        dataset: BaseDataset,
+        test_size: Union[int, float] = 0.2,
+        shuffle: bool = False,
+        random_state: Union[int, None] = None,
+        split_path: Union[None, str] = None) -> Tuple[BaseDataset, BaseDataset]:
     r'''
     A tool function for cross-validations, to divide the training set and the test set. It is suitable for experiments with large dataset volume and no need to use k-fold cross-validations. The test samples are sampled according to a certain proportion, and other samples are used as training samples. In most literatures, 20% of the data are sampled for testing.
 
-    :obj:`train_test_split` devides the training set and the test set without grouping. It means that during random sampling, adjacent signal samples may be assigned to the training set and the test set, respectively. When random sampling is not used, some subjects are not included in the training set. If you think these situations shouldn't happen, consider using :obj:`train_test_split_per_subject_groupby_trial` or :obj:`train_test_split_groupby_trial`.
+    :obj:`train_test_split` divides the training set and the test set without grouping. It means that during random sampling, adjacent signal samples may be assigned to the training set and the test set, respectively. When random sampling is not used, some subjects are not included in the training set. If you think these situations shouldn't happen, consider using :obj:`train_test_split_per_subject_groupby_trial` or :obj:`train_test_split_groupby_trial`.
 
     .. image:: _static/splits/train_test_split.svg
         :width: 100%
@@ -37,7 +35,7 @@ def train_test_split(dataset: BaseDataset,
         from torcheeg.datasets import DEAPDataset
         from torcheeg.model_selection import train_test_split
         from torcheeg import transforms
-        from torcheeg.utils import DataLoader
+        from torch.utils.data import DataLoader
 
         dataset = DEAPDataset(root_path='./data_preprocessed_python',
                               online_transform=transforms.Compose([

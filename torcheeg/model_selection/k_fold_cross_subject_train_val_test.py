@@ -1,6 +1,6 @@
 import os
 from numbers import Integral
-from typing import Iterator, List, Tuple, Union
+from typing import Dict, Iterator, List, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -51,13 +51,20 @@ class KFoldCrossSubjectTrainValTest(BaseModelSelection):
                  n_folds: int = 5,
                  split_path: Union[None, str] = None,
                  shuffle: bool = True,
-                 random_state: int = 42):
+                 random_state: int = 42) -> None:
         self.all_subjects = list(all_subjects)
         validate_partition_ids([self.all_subjects])
         if (isinstance(n_folds, bool) or not isinstance(n_folds, Integral)
                 or not 3 <= n_folds <= len(self.all_subjects)):
             raise ValueError(
                 'n_folds must be an integer between 3 and the number of subjects.')
+        if not isinstance(shuffle, (bool, np.bool_)):
+            raise ValueError('shuffle must be a boolean.')
+        if random_state is not None and (isinstance(random_state, (bool, np.bool_))
+                                         or not isinstance(random_state, Integral)
+                                         or not 0 <= random_state <= 2**32 - 1):
+            raise ValueError(
+                'random_state must be None or an integer in [0, 2**32 - 1].')
         self.n_folds = int(n_folds)
         super().__init__(split_path=split_path)
         self.shuffle = shuffle
@@ -69,7 +76,7 @@ class KFoldCrossSubjectTrainValTest(BaseModelSelection):
             np.random.RandomState(self.random_state).shuffle(subjects)
         return [subjects[index::self.n_folds] for index in range(self.n_folds)]
 
-    def build(self, info: pd.DataFrame, split_path=None) -> None:
+    def build(self, info: pd.DataFrame, split_path: Union[None, str] = None) -> None:
         if set(info['subject_id']) != set(self.all_subjects):
             raise ValueError('all_subjects must match the dataset subject_id values.')
         split_path = self.split_path if split_path is None else split_path
@@ -100,7 +107,7 @@ class KFoldCrossSubjectTrainValTest(BaseModelSelection):
                 for name in ('train', 'val', 'test'))
 
     @property
-    def repr_body(self):
+    def repr_body(self) -> Dict:
         return dict(super().repr_body,
                     all_subjects=self.all_subjects,
                     n_folds=self.n_folds,

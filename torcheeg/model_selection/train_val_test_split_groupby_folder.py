@@ -39,10 +39,10 @@ class TrainValTestSplitGroupbyFolder(BaseModelSelection):
             (default: :obj:`None`)
     '''
 
-    def __init__(self, split_path: Union[None, str] = None):
+    def __init__(self, split_path: Union[None, str] = None) -> None:
         super().__init__(split_path=split_path)
 
-    def build(self, info: pd.DataFrame, split_path=None) -> None:
+    def build(self, info: pd.DataFrame, split_path: Union[None, str] = None) -> None:
         if not info['split'].isin(['train', 'val', 'test']).all():
             raise ValueError(
                 "The split column must contain only 'train', 'val' and 'test'.")

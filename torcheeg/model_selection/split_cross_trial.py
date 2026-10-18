@@ -1,6 +1,5 @@
-import logging
 import os
-from typing import Union
+from typing import Tuple, Union
 
 import pandas as pd
 from sklearn import model_selection
@@ -10,20 +9,19 @@ from torcheeg.datasets.module.base_dataset import BaseDataset
 from ..utils import get_random_dir_path
 from .utils import create_subset, ensure_split_cache, read_indices, write_indices
 
-log = logging.getLogger('torcheeg')
-
 __all__ = ['train_test_split_cross_trial']
 
 
-def train_test_split_cross_trial(dataset: BaseDataset,
-                                 test_size: float = 0.2,
-                                 shuffle: bool = False,
-                                 random_state: Union[float, None] = None,
-                                 split_path: Union[None, str] = None):
+def train_test_split_cross_trial(
+        dataset: BaseDataset,
+        test_size: Union[int, float] = 0.2,
+        shuffle: bool = False,
+        random_state: Union[int, None] = None,
+        split_path: Union[None, str] = None) -> Tuple[BaseDataset, BaseDataset]:
     r'''
     A tool function for cross-validations, to divide the training set and the test set. It is suitable for experiments with large dataset volume and no need to use k-fold cross-validations. Parts of trials are sampled according to a certain proportion as the test dataset, and samples from other trials are used as training samples. In most literatures, 20% of the data are sampled for testing.
 
-    :obj:`train_test_split_cross_trial` devides training set and the test set at the dimension of each trial. For example, when :obj:`test_size=0.2`, the first 80% of samples of each trial are used for training, and the last 20% of samples are used for testing. It is more consistent with real applications and can test the generalization of the model to a certain extent.
+    Trials are partitioned separately within each subject. With :obj:`shuffle=False` and :obj:`test_size=0.2`, the first 80% of each subject's trial IDs, in their order of appearance, are used for training and the remaining 20% for testing. All samples of a subject-trial pair stay together.
 
     .. image:: _static/splits/train_test_split_cross_trial.svg
         :width: 100%
@@ -37,7 +35,7 @@ def train_test_split_cross_trial(dataset: BaseDataset,
         from torcheeg.datasets import DEAPDataset
         from torcheeg.model_selection import train_test_split_cross_trial
         from torcheeg import transforms
-        from torcheeg.utils import DataLoader
+        from torch.utils.data import DataLoader
 
         dataset = DEAPDataset(root_path='./data_preprocessed_python',
                               online_transform=transforms.Compose([
@@ -68,14 +66,14 @@ def train_test_split_cross_trial(dataset: BaseDataset,
 
     def write_split(split_path):
         info = dataset.info.reset_index(drop=True)
-        subjects = list(set(info['subject_id']))
+        subjects = list(pd.unique(info['subject_id']))
 
         train_info = None
         test_info = None
 
         for subject in subjects:
             subject_info = info[info['subject_id'] == subject]
-            trial_ids = list(set(subject_info['trial_id']))
+            trial_ids = list(pd.unique(subject_info['trial_id']))
 
             train_index_trial_ids, test_index_trial_ids = model_selection.train_test_split(
                 trial_ids,

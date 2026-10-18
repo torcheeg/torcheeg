@@ -1,6 +1,7 @@
 import os
 import re
-from typing import List, Tuple, Union, Dict
+from urllib.parse import quote, unquote
+from typing import Iterator, List, Tuple, Union, Dict
 
 import pandas as pd
 from sklearn import model_selection
@@ -28,7 +29,7 @@ class KFoldPerSubject(BaseModelSelection):
         from torcheeg.datasets import DEAPDataset
         from torcheeg import transforms
         from torcheeg.model_selection import KFoldPerSubject
-        from torcheeg.utils import DataLoader
+        from torch.utils.data import DataLoader
 
         cv = KFoldPerSubject(n_splits=5, shuffle=True)
         dataset = DEAPDataset(root_path='./data_preprocessed_python',
@@ -55,7 +56,7 @@ class KFoldPerSubject(BaseModelSelection):
         from torcheeg.datasets import DEAPDataset
         from torcheeg import transforms
         from torcheeg.model_selection import KFoldPerSubject
-        from torcheeg.utils import DataLoader
+        from torch.utils.data import DataLoader
 
         cv = KFoldPerSubject(n_splits=5, shuffle=True)
         dataset = DEAPDataset(root_path='./data_preprocessed_python',
@@ -85,51 +86,58 @@ class KFoldPerSubject(BaseModelSelection):
     def __init__(self,
                  n_splits: int = 5,
                  shuffle: bool = False,
-                 random_state: Union[float, None] = None,
-                 split_path: Union[None, str] = None):
+                 random_state: Union[int, None] = None,
+                 split_path: Union[None, str] = None) -> None:
 
         self.n_splits = n_splits
         self.shuffle = shuffle
         self.random_state = random_state
         super().__init__(split_path=split_path)
 
-        self.k_fold = model_selection.KFold(n_splits=n_splits,
-                                            shuffle=shuffle,
-                                            random_state=random_state)
+        self._k_fold = model_selection.KFold(n_splits=n_splits,
+                                             shuffle=shuffle,
+                                             random_state=random_state)
 
-    def build(self, info: pd.DataFrame, split_path=None) -> None:
+    def build(self, info: pd.DataFrame, split_path: Union[None, str] = None) -> None:
         info = info.reset_index(drop=True)
         split_path = self.split_path if split_path is None else split_path
         os.makedirs(split_path, exist_ok=True)
-        subjects = list(set(info['subject_id']))
+        subjects = list(pd.unique(info['subject_id']))
+        if len({str(subject) for subject in subjects}) != len(subjects):
+            raise ValueError('Subject IDs must have distinct string representations.')
         for subject in subjects:
             subject_info = info[info['subject_id'] == subject]
             for i, (train_index,
-                    test_index) in enumerate(self.k_fold.split(subject_info)):
+                    test_index) in enumerate(self._k_fold.split(subject_info)):
                 train_info = subject_info.iloc[train_index]
                 test_info = subject_info.iloc[test_index]
                 write_indices(
-                    os.path.join(split_path, f'train_subject_{subject}_fold_{i}.csv'),
+                    os.path.join(
+                        split_path,
+                        f'train_subject_{quote(str(subject), safe="")}_fold_{i}.csv'),
                     train_info.index.to_numpy())
                 write_indices(
-                    os.path.join(split_path, f'test_subject_{subject}_fold_{i}.csv'),
+                    os.path.join(
+                        split_path,
+                        f'test_subject_{quote(str(subject), safe="")}_fold_{i}.csv'),
                     test_info.index.to_numpy())
 
     @property
-    def subjects(self) -> List:
+    def subjects(self) -> List[str]:
         indice_files = [
             name for name in os.listdir(self.split_path) if name.endswith('.csv')
         ]
 
         def indice_file_to_subject(indice_file):
-            return re.findall(r'subject_(.*)_fold_(\d*).csv', indice_file)[0][0]
+            return unquote(
+                re.findall(r'subject_(.*)_fold_(\d*).csv', indice_file)[0][0])
 
         subjects = list(set(map(indice_file_to_subject, indice_files)))
         subjects.sort()
         return subjects
 
     @property
-    def fold_ids(self) -> List:
+    def fold_ids(self) -> List[int]:
         indice_files = [
             name for name in os.listdir(self.split_path) if name.endswith('.csv')
         ]
@@ -141,30 +149,36 @@ class KFoldPerSubject(BaseModelSelection):
         fold_ids.sort()
         return fold_ids
 
-    def split(self,
-              dataset: BaseDataset,
-              subject: Union[int, None] = None) -> Tuple[BaseDataset, BaseDataset]:
+    def split(
+        self,
+        dataset: BaseDataset,
+        subject: Union[int, str,
+                       None] = None) -> Iterator[Tuple[BaseDataset, BaseDataset]]:
         self._prepare(dataset, ['subject_id'])
 
         subjects = self.subjects
         fold_ids = self.fold_ids
 
-        if not subject is None:
-            assert str(
-                subject
-            ) in subjects, f'The subject should be in the subject list {subjects}.'
+        if subject is not None:
+            if str(subject) not in subjects:
+                raise ValueError(
+                    f'The subject should be in the subject list {subjects}.')
 
         for local_subject in subjects:
-            if (not subject is None) and (local_subject != subject):
+            if subject is not None and local_subject != str(subject):
                 continue
 
             for fold_id in fold_ids:
 
                 train_dataset = self._read_subset(
-                    dataset, f'train_subject_{local_subject}_fold_{fold_id}.csv')
+                    dataset,
+                    f'train_subject_{quote(str(local_subject), safe="")}_fold_{fold_id}.csv'
+                )
 
                 test_dataset = self._read_subset(
-                    dataset, f'test_subject_{local_subject}_fold_{fold_id}.csv')
+                    dataset,
+                    f'test_subject_{quote(str(local_subject), safe="")}_fold_{fold_id}.csv'
+                )
 
                 yield train_dataset, test_dataset
 

@@ -1,8 +1,7 @@
 import os
 import re
-from typing import Callable, Dict, Tuple, Union
+from typing import Iterator, Callable, Dict, Tuple, Union
 
-import numpy as np
 import pandas as pd
 from sklearn import model_selection
 
@@ -30,7 +29,7 @@ class KFoldCrossSubject(BaseModelSelection):
         from torcheeg.model_selection import KFoldCrossSubject
         from torcheeg.datasets import DEAPDataset
         from torcheeg import transforms
-        from torcheeg.utils import DataLoader
+        from torch.utils.data import DataLoader
 
         cv = KFoldCrossSubject(n_splits=5, shuffle=True)
         dataset = DEAPDataset(root_path='./data_preprocessed_python',
@@ -62,7 +61,7 @@ class KFoldCrossSubject(BaseModelSelection):
                  shuffle: bool = False,
                  label_transform: Callable = None,
                  random_state: Union[None, int] = None,
-                 split_path: Union[None, str] = None):
+                 split_path: Union[None, str] = None) -> None:
 
         self.n_splits = n_splits
         self.shuffle = shuffle
@@ -70,25 +69,21 @@ class KFoldCrossSubject(BaseModelSelection):
         super().__init__(split_path=split_path)
         self.label_transform = label_transform
 
-        if n_splits < 2:
-            raise ValueError(
-                f'Number of splits must be at least 2, but got {n_splits}.')
-
-        if label_transform:
-            self.k_fold = model_selection.StratifiedKFold(n_splits=n_splits,
-                                                          shuffle=shuffle,
-                                                          random_state=random_state)
+        if label_transform is not None:
+            self._k_fold = model_selection.StratifiedKFold(n_splits=n_splits,
+                                                           shuffle=shuffle,
+                                                           random_state=random_state)
         else:
-            self.k_fold = model_selection.KFold(n_splits=n_splits,
-                                                shuffle=shuffle,
-                                                random_state=random_state)
+            self._k_fold = model_selection.KFold(n_splits=n_splits,
+                                                 shuffle=shuffle,
+                                                 random_state=random_state)
 
-    def build(self, info: pd.DataFrame, split_path=None) -> None:
+    def build(self, info: pd.DataFrame, split_path: Union[None, str] = None) -> None:
         info = info.reset_index(drop=True)
         split_path = self.split_path if split_path is None else split_path
         os.makedirs(split_path, exist_ok=True)
-        subject_ids = list(set(info['subject_id']))
-        if self.label_transform:
+        subject_ids = list(pd.unique(info['subject_id']))
+        if self.label_transform is not None:
             subject_labels = []
             for subject_id in subject_ids:
                 subject_info = info[info['subject_id'] == subject_id]
@@ -96,14 +91,16 @@ class KFoldCrossSubject(BaseModelSelection):
                     lambda info: self.label_transform(y=info.to_dict())['y'],
                     axis=1).mean()
                 subject_labels.append(subject_label)
-            enumerater = enumerate(self.k_fold.split(subject_ids, subject_labels))
+            enumerater = enumerate(self._k_fold.split(subject_ids, subject_labels))
         else:
-            enumerater = enumerate(self.k_fold.split(subject_ids))
+            enumerater = enumerate(self._k_fold.split(subject_ids))
         for fold_id, (train_index_subject_ids, test_index_subject_ids) in enumerater:
             if len(train_index_subject_ids) == 0 or len(test_index_subject_ids) == 0:
                 raise ValueError(f'The number of training or testing subjects is zero.')
-            train_subject_ids = np.array(subject_ids)[train_index_subject_ids].tolist()
-            test_subject_ids = np.array(subject_ids)[test_index_subject_ids].tolist()
+            train_subject_ids = [
+                subject_ids[index] for index in train_index_subject_ids
+            ]
+            test_subject_ids = [subject_ids[index] for index in test_index_subject_ids]
             train_info = []
             for train_subject_id in train_subject_ids:
                 train_info.append(info[info['subject_id'] == train_subject_id])
@@ -130,7 +127,7 @@ class KFoldCrossSubject(BaseModelSelection):
         fold_ids.sort()
         return fold_ids
 
-    def split(self, dataset: BaseDataset) -> Tuple[BaseDataset, BaseDataset]:
+    def split(self, dataset: BaseDataset) -> Iterator[Tuple[BaseDataset, BaseDataset]]:
         self.check(dataset, ['subject_id'])
         configuration = {}
         if self.label_transform is not None:

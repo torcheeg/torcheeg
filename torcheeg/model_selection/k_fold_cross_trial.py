@@ -1,8 +1,7 @@
 import os
 import re
-from typing import Dict, Tuple, Union
+from typing import Iterator, Dict, Tuple, Union
 
-import numpy as np
 import pandas as pd
 from sklearn import model_selection
 
@@ -17,7 +16,7 @@ class KFoldCrossTrial(BaseModelSelection):
     r'''
     A tool class for k-fold cross-validations, to divide the training set and the test set. One of the most commonly used data partitioning methods, where the data set is divided into k subsets of trials, with one subset trials being retained as the test set and the remaining k-1 subset trials being used as training data. In most of the literature, K is chosen as 5 or 10 according to the size of the data set.
 
-    :obj:`KFoldCrossTrial` devides subsets at the dataset dimension. It means that during random sampling, adjacent signal samples may be assigned to the training set and the test set, respectively. When random sampling is not used, some subjects are not included in the training set. If you think these situations shouldn't happen, consider using :obj:`KFoldPerSubjectGroupbyTrial` or :obj:`KFoldGroupbyTrial`.
+    Trial IDs are partitioned across the whole dataset. All samples sharing a trial ID stay in the same fold, including samples from different subjects.
 
     .. image:: _static/splits/KFoldCrossTrial.svg
         :width: 100%
@@ -31,7 +30,7 @@ class KFoldCrossTrial(BaseModelSelection):
         from torcheeg.model_selection import KFoldCrossTrial
         from torcheeg.datasets import DEAPDataset
         from torcheeg import transforms
-        from torcheeg.utils import DataLoader
+        from torch.utils.data import DataLoader
 
         cv = KFoldCrossTrial(n_splits=5, shuffle=True)
         dataset = DEAPDataset(root_path='./data_preprocessed_python',
@@ -61,28 +60,28 @@ class KFoldCrossTrial(BaseModelSelection):
                  n_splits: int = 5,
                  shuffle: bool = False,
                  random_state: Union[None, int] = None,
-                 split_path: Union[None, str] = None):
+                 split_path: Union[None, str] = None) -> None:
 
         self.n_splits = n_splits
         self.shuffle = shuffle
         self.random_state = random_state
         super().__init__(split_path=split_path)
 
-        self.k_fold = model_selection.KFold(n_splits=n_splits,
-                                            shuffle=shuffle,
-                                            random_state=random_state)
+        self._k_fold = model_selection.KFold(n_splits=n_splits,
+                                             shuffle=shuffle,
+                                             random_state=random_state)
 
-    def build(self, info: pd.DataFrame, split_path=None) -> None:
+    def build(self, info: pd.DataFrame, split_path: Union[None, str] = None) -> None:
         info = info.reset_index(drop=True)
         split_path = self.split_path if split_path is None else split_path
         os.makedirs(split_path, exist_ok=True)
-        trial_ids = list(set(info['trial_id']))
+        trial_ids = list(pd.unique(info['trial_id']))
         for fold_id, (train_index_trial_ids,
-                      test_index_trial_ids) in enumerate(self.k_fold.split(trial_ids)):
+                      test_index_trial_ids) in enumerate(self._k_fold.split(trial_ids)):
             if len(train_index_trial_ids) == 0 or len(test_index_trial_ids) == 0:
                 raise ValueError(f'The number of training or testing trials is zero.')
-            train_trial_ids = np.array(trial_ids)[train_index_trial_ids].tolist()
-            test_trial_ids = np.array(trial_ids)[test_index_trial_ids].tolist()
+            train_trial_ids = [trial_ids[index] for index in train_index_trial_ids]
+            test_trial_ids = [trial_ids[index] for index in test_index_trial_ids]
             train_info = []
             for train_trial_id in train_trial_ids:
                 train_info.append(info[info['trial_id'] == train_trial_id])
@@ -109,7 +108,7 @@ class KFoldCrossTrial(BaseModelSelection):
         fold_ids.sort()
         return fold_ids
 
-    def split(self, dataset: BaseDataset) -> Tuple[BaseDataset, BaseDataset]:
+    def split(self, dataset: BaseDataset) -> Iterator[Tuple[BaseDataset, BaseDataset]]:
         self._prepare(dataset, ['trial_id'])
 
         fold_ids = self.fold_ids

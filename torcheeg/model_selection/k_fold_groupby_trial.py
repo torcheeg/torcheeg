@@ -1,6 +1,6 @@
 import os
 import re
-from typing import Dict, List, Tuple, Union
+from typing import Iterator, Dict, List, Tuple, Union
 
 import pandas as pd
 from sklearn import model_selection
@@ -17,7 +17,7 @@ class KFoldGroupbyTrial(BaseModelSelection):
     r'''
     A tool class for k-fold cross-validations, to divide the training set and the test set. A variant of :obj:`KFold`, where the data set is divided into k subsets at the dimension of trials, with one subset being retained as the test set and the remaining k-1 being used as training data. In most of the literature, K is chosen as 5 or 10 according to the size of the data set.
 
-    :obj:`KFoldGroupbyTrial` devides subsets at the dimension of trials. Take the first partition with :obj:`k=5` as an example, the first 80% of samples of each trial are used for training, and the last 20% of samples are used for testing. It is more consistent with real applications and can test the generalization of the model to a certain extent.
+    :obj:`KFoldGroupbyTrial` divides subsets at the dimension of trials. Take the first partition with :obj:`k=5` as an example, the first 80% of samples of each trial are used for training, and the last 20% of samples are used for testing. It is more consistent with real applications and can test the generalization of the model to a certain extent.
 
     .. image:: _static/splits/KFoldGroupbyTrial.svg
         :width: 100%
@@ -31,7 +31,7 @@ class KFoldGroupbyTrial(BaseModelSelection):
         from torcheeg.model_selection import KFoldGroupbyTrial
         from torcheeg.datasets import DEAPDataset
         from torcheeg import transforms
-        from torcheeg.utils import DataLoader
+        from torch.utils.data import DataLoader
 
         cv = KFoldGroupbyTrial(n_splits=5, shuffle=False)
         dataset = DEAPDataset(root_path='./data_preprocessed_python',
@@ -60,37 +60,37 @@ class KFoldGroupbyTrial(BaseModelSelection):
     def __init__(self,
                  n_splits: int = 5,
                  shuffle: bool = False,
-                 random_state: Union[float, None] = None,
-                 split_path: Union[None, str] = None):
+                 random_state: Union[int, None] = None,
+                 split_path: Union[None, str] = None) -> None:
 
         self.n_splits = n_splits
         self.shuffle = shuffle
         self.random_state = random_state
         super().__init__(split_path=split_path)
 
-        self.k_fold = model_selection.KFold(n_splits=n_splits,
-                                            shuffle=shuffle,
-                                            random_state=random_state)
+        self._k_fold = model_selection.KFold(n_splits=n_splits,
+                                             shuffle=shuffle,
+                                             random_state=random_state)
 
-    def build(self, info: pd.DataFrame, split_path=None) -> None:
+    def build(self, info: pd.DataFrame, split_path: Union[None, str] = None) -> None:
         info = info.reset_index(drop=True)
         split_path = self.split_path if split_path is None else split_path
         os.makedirs(split_path, exist_ok=True)
-        subjects = list(set(info['subject_id']))
+        subjects = list(pd.unique(info['subject_id']))
         train_infos = {}
         test_infos = {}
         for subject in subjects:
             subject_info = info[info['subject_id'] == subject]
-            trial_ids = list(set(subject_info['trial_id']))
+            trial_ids = list(pd.unique(subject_info['trial_id']))
             for trial_id in trial_ids:
                 trial_info = subject_info[subject_info['trial_id'] == trial_id]
                 for i, (train_index,
-                        test_index) in enumerate(self.k_fold.split(trial_info)):
+                        test_index) in enumerate(self._k_fold.split(trial_info)):
                     train_info = trial_info.iloc[train_index]
                     test_info = trial_info.iloc[test_index]
-                    if not i in train_infos:
+                    if i not in train_infos:
                         train_infos[i] = []
-                    if not i in test_infos:
+                    if i not in test_infos:
                         test_infos[i] = []
                     train_infos[i].append(train_info)
                     test_infos[i].append(test_info)
@@ -115,7 +115,7 @@ class KFoldGroupbyTrial(BaseModelSelection):
         fold_ids.sort()
         return fold_ids
 
-    def split(self, dataset: BaseDataset) -> Tuple[BaseDataset, BaseDataset]:
+    def split(self, dataset: BaseDataset) -> Iterator[Tuple[BaseDataset, BaseDataset]]:
         self._prepare(dataset, ['subject_id', 'trial_id'])
 
         fold_ids = self.fold_ids
