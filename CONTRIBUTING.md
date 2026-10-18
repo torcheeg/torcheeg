@@ -79,8 +79,6 @@ Use the following exception meanings consistently:
 
 Use explicit `if`/`raise` statements for caller-input checks so they still run under `python -O`. Reserve `assert` for internal invariants. Error messages identify the relevant argument and requirement; include actual values when useful. Preserve useful upstream exceptions rather than catching everything and replacing the cause with a generic message. Libraries such as scikit-learn may already validate their own arguments; delegate those checks instead of copying them or changing their exception contracts.
 
-Shared cache code belongs in the package that owns the cache. Model-selection caches contain row-index CSVs and one shared manifest for dataset/configuration matching and file integrity; do not add separate files for information already represented in the filenames or index files.
-
 ## Unit Testing
 
 The TorchEEG unit tests are located under `test/`. Run the all the unit tests with:
