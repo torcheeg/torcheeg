@@ -13,12 +13,14 @@ class ConcatDataset(Dataset):
 
     An example usage for combining sleep EEG datasets:
 
+    The ISRUC reordering labels below denote electrode positions only; actual
+    channel references and any derived/zero-filled channels remain in its
+    per-record metadata. They are not renamed into equivalent references.
+
     .. code-block:: python
 
         isruc_dataset = ISRUCDataset(root_path='./ISRUC-SLEEP',
                        sfreq=100,
-                       channels=['F3-M2', 'C3-M2', 'O1-M2',
-                                 'F4-M1', 'C4-M1', 'O2-M1'],
                        label_transform=transforms.Compose([
                            transforms.Select('label'),
                            transforms.Mapping({'Sleep stage W': 0,
@@ -30,8 +32,8 @@ class ConcatDataset(Dataset):
                        ]),
                        online_transform=transforms.Compose([
                            transforms.MeanStdNormalize(),
-                           OrderElectrode(source_electrodes=['F3-M2', 'C3-M2', 'O1-M2', 'F4-M1', 'C4-M1', 'O2-M1'],
-                                          target_electrodes=['F3-M2', 'F4-M1', 'C3-M2', 'C4-M1', 'O1-M2', 'O2-M1'])
+                           OrderElectrode(source_electrodes=['F3', 'C3', 'O1', 'F4', 'C4', 'O2'],
+                                          target_electrodes=['F3', 'F4', 'C3', 'C4', 'O1', 'O2'])
                        ]),
                        )
 

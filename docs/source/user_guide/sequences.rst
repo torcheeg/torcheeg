@@ -66,7 +66,7 @@ the same epoch in training and test. The wrapper cannot prevent leakage
 between separately supplied inputs; check partition IDs and source membership.
 
 Source-dataset codes
--------------------
+--------------------
 
 ``domain_id`` adds a constant nonnegative int64 source-dataset code as the
 third sample item. Create one wrapper per source, then combine wrappers with

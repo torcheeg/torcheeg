@@ -63,3 +63,4 @@ the same library workflow as a reusable assistant skill.
    hmc
    sequences
    sleepdg
+   isruc
