@@ -24,7 +24,8 @@ def train_test_split_groupby_trial(dataset: BaseDataset,
 
     :obj:`train_test_split_groupby_trial` devides training set and the test set at the dimension of each trial. For example, when :obj:`test_size=0.2`, the first 80% of samples of each trial are used for training, and the last 20% of samples are used for testing. It is more consistent with real applications and can test the generalization of the model to a certain extent.
 
-    .. image:: _static/train_test_split_groupby_trial.png
+    .. image:: _static/splits/train_test_split_groupby_trial.svg
+        :width: 100%
         :alt: The schematic diagram of train_test_split_groupby_trial
         :align: center
 

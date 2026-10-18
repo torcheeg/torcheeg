@@ -20,7 +20,8 @@ class KFoldCrossTrial:
 
     :obj:`KFoldCrossTrial` devides subsets at the dataset dimension. It means that during random sampling, adjacent signal samples may be assigned to the training set and the test set, respectively. When random sampling is not used, some subjects are not included in the training set. If you think these situations shouldn't happen, consider using :obj:`KFoldPerSubjectGroupbyTrial` or :obj:`KFoldGroupbyTrial`.
 
-    .. image:: _static/KFoldCrossTrial.png
+    .. image:: _static/splits/KFoldCrossTrial.svg
+        :width: 100%
         :alt: The schematic diagram of KFoldCrossTrial
         :align: center
 
