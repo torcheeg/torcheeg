@@ -31,9 +31,40 @@ cd torcheeg
 Install dependencies required during development:
 
 ```bash
-pip install -e ".[test,example,pyg]"
+python -m pip install -e ".[test,model,trainer,transforms,dataset]"
 ```
 
+
+Use a dedicated environment. Install matching PyTorch and torchvision versions
+from the same CPU/CUDA build source using the
+[official installation instructions](https://pytorch.org/get-started/previous-versions/).
+Install graph extension wheels matching that PyTorch version and build using the
+[PyG instructions](https://pytorch-geometric.readthedocs.io/en/latest/install/installation.html)
+before installing the development extras above. The full suite includes graph
+tests, so it requires those plugins even when your own model does not.
+See [.github/workflows/test.yml](.github/workflows/test.yml) for the exact
+Python 3.8 / PyTorch 2.4.1 CPU environment used by CI.
+
+Before running the full suite, check dependency consistency and imports:
+
+```bash
+python -m pip check
+python -c "import torch, torchvision; print(torch.__version__, torchvision.__version__)"
+python -c "import torch_geometric, torch_scatter, torch_sparse"
+```
+
+If discovery reports missing `torch_scatter` or `torch_geometric`, install
+matching graph plugins in that environment. The current RGNN module also imports
+`torch_scatter` when the model package is imported, so one missing plugin can
+cause failures in several non-graph test modules.
+[PR #228](https://github.com/torcheeg/torcheeg/pull/228) separately addresses
+that eager import.
+
+If torchvision reports `operator torchvision::nms does not exist`, check the
+torch/torchvision version pair and binary build compatibility. Recreate the
+dedicated environment with matching official wheels before rerunning discovery.
+Do not hide the import failure by skipping trainer tests. A successful
+`pip check` alone does not verify that compiled operators load.
 
 ## Unit Testing
 
