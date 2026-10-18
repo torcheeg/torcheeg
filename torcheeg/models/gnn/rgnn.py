@@ -3,7 +3,6 @@ from typing import Tuple, Union
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch_scatter import scatter_add
 
 
 class LazyLoader:
@@ -24,6 +23,7 @@ class LazyLoader:
 
 
 pyg = LazyLoader('torch_geometric')
+scatter = LazyLoader('torch_scatter')
 
 
 def maybe_num_electrodes(index: torch.Tensor, num_electrodes: Union[int, None] = None) -> int:
@@ -125,6 +125,7 @@ class RGNN(torch.nn.Module):
                  learn_edge_weights: bool = True):
 
         super(RGNN, self).__init__()
+        scatter_add = scatter.scatter_add
         self.num_electrodes = num_electrodes
         self.in_channels = in_channels
         self.num_electrodes = num_electrodes
