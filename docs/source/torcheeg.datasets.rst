@@ -141,6 +141,7 @@ Sleep Stage Detection Datasets
     HMCDataset
     ISRUCDataset
     P2018Dataset
+    SHHSDataset
     SleepEDFxDataset
 
 Auditory Attention Datasets
