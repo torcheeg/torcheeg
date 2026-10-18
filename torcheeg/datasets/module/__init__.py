@@ -11,3 +11,4 @@ from .sleep_stage_detection import *
 from .auditory_attention import *
 from .ssvep import *
 from .mental_workload import *
+from .sequence_dataset import SequenceDataset
