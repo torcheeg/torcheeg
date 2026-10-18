@@ -1,2 +1,3 @@
 from .ad_auditory import ADAuditoryDataset
 from .adftd_rs import ADFTDRSDataset
+from .adftd_ps import ADFTDPSDataset

@@ -62,3 +62,4 @@ the same library workflow as a reusable assistant skill.
    sleepedf
    ad_auditory
    adftd_rs
+   adftd_ps
