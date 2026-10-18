@@ -86,3 +86,33 @@ caches used session-local integer trial IDs and lacked unit provenance.
 Preserve those caches for the original experiments. A separate standalone
 training example and real-data benchmark results require their own validation;
 rendering this guide does not execute training.
+
+Train a standalone EEGNet
+-------------------------
+
+:doc:`/auto_examples/examples_shu_mi_eegnet` runs an explicit participant
+holdout with the native trial reader. Install the source with ``dataset``
+and ``trainer`` extras and run:
+
+.. code-block:: console
+
+   python examples/examples_shu_mi_eegnet.py --root-path ./SHU-MI \
+       --epochs 1 --output-path ./shu-mi-eegnet.pt
+
+Every model input is one complete four-second trial: 32 published channels
+resampled to 200 Hz, shape [1,32,800], then normalized per trial/channel.
+No extra filter, division by 100, bad-channel repair or target-data fitting
+is introduced. The provider's preprocessing is recorded in the model report.
+
+The last sorted participant is held out with every available session; all
+others train for a fixed number of epochs. There is no test-based selection.
+Use at least two participants and fresh caches after changing the inputs or
+processing. This cross-participant workflow does not reproduce the paper's
+within-session, cross-session or adaptation results.
+
+The safe model file stores all constructor arguments and state tensors,
+preprocessing and participant/record partition IDs. A JSON sidecar reports
+trial counts, optimizer updates and test metrics. Existing outputs are
+preserved; strict restoration and inference equality are verified after
+freezing constrained convolution weights. The gallery renders source without
+running the experiment.
