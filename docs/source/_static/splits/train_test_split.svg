@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="480" viewBox="0 0 1200 480" role="img" aria-labelledby="title">
+<title id="title">train_test_split</title>
+<rect width="1200" height="480" fill="white"/>
+<g font-family="DejaVu Sans, Arial, sans-serif">
+<text x="600.0" y="217" font-size="16" fill="#637086" text-anchor="middle" font-weight="400">Samples</text>
+<rect x="482.0" y="240" width="16" height="18" rx="3" fill="#B6BDC8"/>
+<rect x="502.0" y="240" width="16" height="18" rx="3" fill="#B6BDC8"/>
+<rect x="522.0" y="240" width="16" height="18" rx="3" fill="#B6BDC8"/>
+<rect x="542.0" y="240" width="16" height="18" rx="3" fill="#B6BDC8"/>
+<rect x="562.0" y="240" width="16" height="18" rx="3" fill="#B6BDC8"/>
+<rect x="582.0" y="240" width="16" height="18" rx="3" fill="#B6BDC8"/>
+<rect x="602.0" y="240" width="16" height="18" rx="3" fill="#B6BDC8"/>
+<rect x="622.0" y="240" width="16" height="18" rx="3" fill="#B6BDC8"/>
+<rect x="642.0" y="240" width="16" height="18" rx="3" fill="#A77BCB"/>
+<path d="M646.0 249 h8" stroke="white" stroke-width="2"/>
+<rect x="662.0" y="240" width="16" height="18" rx="3" fill="#A77BCB"/>
+<path d="M666.0 249 h8" stroke="white" stroke-width="2"/>
+<rect x="682.0" y="240" width="16" height="18" rx="3" fill="#A77BCB"/>
+<path d="M686.0 249 h8" stroke="white" stroke-width="2"/>
+<rect x="702.0" y="240" width="16" height="18" rx="3" fill="#A77BCB"/>
+<path d="M706.0 249 h8" stroke="white" stroke-width="2"/>
+<rect x="499" y="400" width="16" height="18" rx="3" fill="#B6BDC8"/>
+<text x="524" y="415" font-size="16" fill="#253047" text-anchor="start" font-weight="400">Train</text>
+<rect x="625" y="400" width="16" height="18" rx="3" fill="#A77BCB"/>
+<path d="M629 409 h8" stroke="white" stroke-width="2"/>
+<text x="650" y="415" font-size="16" fill="#253047" text-anchor="start" font-weight="400">Test</text>
+</g></svg>

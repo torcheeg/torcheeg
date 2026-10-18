@@ -38,7 +38,7 @@ The individual differences and nonstationary of EEG signals make it difficult fo
    CenterLossTrainer
 
 Imbalance Learning for Classification
-----------------------------------
+-------------------------------------
 
 EEG emotion datasets have the problem of sample class imbalance, and imbalance learning can be used to solve the class imbalance problem in emotion recognition tasks.
 
@@ -69,7 +69,7 @@ Data scarcity and data imbalance are one of the important challenges in the anal
    CWGANGPTrainer
 
 Self-supervised Algorithm for Pre-training
-----------------------------------------
+------------------------------------------
 As the cost of data collection decreases, the difficulty of obtaining unlabeled data is greatly reduced. How to use unlabeled data to train the model so that the model can learn task-independent general knowledge on large-scale datasets has attracted extensive attention. In natural language processing and computer vision, self-supervised models have made continuous progress by building pretext tasks to learn good language or visual representations. Today, self-supervised learning algorithms are also being tested for EEG analysis to train larger models.
 
 .. autosummary::

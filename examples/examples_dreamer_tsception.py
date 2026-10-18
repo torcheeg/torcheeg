@@ -1,6 +1,6 @@
 """
 Train a Tsception Model on the DREAMER Dataset
-==========================
+==============================================
 
 In this tutorial, we'll showcase how you can use TorchEEG to train a Tsception model on the DREAMER dataset for the task of emotion classification. Let's go through the process step-by-step, covering everything from dataset preparation to model evaluation.
 
@@ -42,7 +42,7 @@ dataset = DREAMERDataset(io_path='./examples_dreamer_tsception/dreamer',
 
 ######################################################################
 # Step 2: Divide the Training and Test Samples in the Dataset
-# ----------------------------------------------
+# -----------------------------------------------------------
 #
 # Next, let's partition our dataset into training and test sets using 5-fold cross-validation. We group the data based on their trial index, where each trial contributes 4 folds to the training set and 1 fold to the test set. These grouped samples are then combined to form the final training and test sets.
 #
