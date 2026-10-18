@@ -108,3 +108,40 @@ keep equal conservative grouping keys together if using both conditions.
 Never select filters, model settings or epochs with the test labels.
 The reader checks signal loading and metadata; it does not establish clinical
 prediction accuracy or reproduce a published classifier score.
+
+Train EEGNet in one condition
+------------------------------
+
+Run the :doc:`standalone ADFSU EEGNet example
+<../auto_examples/examples_adfsu_eegnet>` with the extracted archive::
+
+    python examples/examples_adfsu_eegnet.py --root-path ./EEG_data --state Eyes_closed --epochs 1 --batch-size 32 --output-path ./adfsu-eyes-closed.pt
+
+Run ``--state Eyes_open`` separately with a different output file. Each run
+uses one condition, all 19 channels, native 128 Hz and nonoverlapping
+one-second windows. No extra filter, reference or resampling is added.
+Normalize each window per channel, without fitting statistics across groups.
+Channels whose values are all equal become exactly zero after normalization.
+Source values have no supplied physical calibration; normalization does not
+establish a physical unit.
+
+Within each diagnosis, hold out the largest folder number and train on the
+other folders. Natural numeric order puts ``Paciente10`` after ``Paciente2``.
+Both classes must be present and each must have at least two complete folder
+identities. All windows from a folder stay together. The selected state is
+appended to the cache root, keeping the two conditions' caches separate.
+Use a fresh cache root if source data or preprocessing change.
+
+This is one illustrative fixed split. The report records source-folder keys,
+diagnosis mapping, condition-qualified records, window counts, optimizer
+updates and pooled window metrics. It does not assert cross-condition
+clinical identity or reproduce the source article's classifier protocol.
+No test labels select settings or epochs; the chosen epoch count is fixed.
+The workflow does not add its diagnostic outputs to the leaderboard.
+
+The export includes all nine EEGNet constructor settings, all tensor states,
+preprocessing and partitions as tensor/JSON data. Constrained convolutions
+are frozen for exact inference restoration. The script checks strict safe
+loading and equal inference from memory and disk, and preserves existing
+model and report files. Gallery generation renders the source without
+executing training; run the command separately to validate the workflow.
