@@ -44,3 +44,10 @@ objects and state paths. The shared EEGPT bottleneck implementation is reused
 with zero-initialized up-projections for deterministic identity at insertion.
 The archived nonzero-adapter/native-block computation supplies an independent
 synthetic output/gradient fixture; no pretrained adapter weights are claimed.
+
+
+Registered attention prefixes preserve the archived workspace's learned
+key/value layout and insertion after native key normalization. Module-owned
+parameters replace forward closures and support full state restoration.
+Independent synthetic fixtures use the unmodified archived prefix helpers
+and official native encoder; no pretrained prefix weights are supplied.
