@@ -203,3 +203,8 @@ each window::
 Pass it as ``after_trial=center_trial`` when the offline transform returns
 tensors, for example with :class:`torcheeg.transforms.ToTensor`. The callback
 receives the complete trial batch; the dataset stores its individual windows.
+
+Electrode grid adjacency
+------------------------
+
+.. autofunction:: torcheeg.datasets.constants.utils.format_adj_list_from_location_list
