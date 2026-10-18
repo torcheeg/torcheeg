@@ -14,8 +14,10 @@ from torcheeg.model_selection import Subcategory
 from torch.utils.data import DataLoader
 
 
-def _read_in_spawned_process(io, queue):
+def _read_in_spawned_process(io, queue, release):
     try:
+        if not release.wait(timeout=30):
+            raise RuntimeError('Parent did not release the worker.')
         queue.put(('ok', io.read_eeg('sample').tolist()))
     except Exception as error:
         queue.put(('error', repr(error)))
@@ -166,20 +168,25 @@ class TestLMDBCopy(unittest.TestCase):
         np.testing.assert_array_equal(io.read_eeg('sample'),
                                       np.arange(12).reshape(3, 4))
 
-    def test_pickled_copy_can_be__read_in_spawned_process(self):
+    def test_spawned_reader_survives_parent_release(self):
         io = self._make_io()
         duplicate = copy(io)
         context = mp.get_context('spawn')
         queue = context.Queue()
+        release = context.Event()
         worker = context.Process(target=_read_in_spawned_process,
-                                 args=(duplicate, queue))
+                                 args=(duplicate, queue, release))
         worker.start()
+        del io, duplicate
+        gc.collect()
+        release.set()
         try:
             result = queue.get(timeout=60)
             worker.join(timeout=10)
             self.assertEqual(worker.exitcode, 0)
             self.assertEqual(result, ('ok', np.arange(12).reshape(3, 4).tolist()))
-            np.testing.assert_array_equal(io.read_eeg('sample'),
+            reopened = EEGSignalIO(self._path, io_mode='lmdb')
+            np.testing.assert_array_equal(reopened.read_eeg('sample'),
                                           np.arange(12).reshape(3, 4))
         finally:
             if worker.is_alive():
