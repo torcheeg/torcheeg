@@ -3,6 +3,10 @@ from torch import nn
 from torch.nn import functional as F
 
 
+# The module-class marker is absent in the tested PyTorch 2.4 runtime.
+_HAS_STATIC_MODULES = tuple(int(part) for part in torch.__version__.split('.')[:2]) >= (2, 6)
+
+
 class FourierResample(nn.Module):
     r'''Differentiable Fourier resampling along the final sample axis.
 
@@ -11,6 +15,13 @@ class FourierResample(nn.Module):
     unwindowed Fourier-resampling convention of scipy.signal.resample.
     The runtime implementation uses PyTorch only. It treats each input
     window as periodic; discontinuities at its endpoints can cause ringing.
+
+    Compiled output length remains guarded constructor configuration. FFT
+    kernels in the tested runtimes require concrete input dimensions; use
+    torch.compile(..., dynamic=False) for fixed-window workflows whose shapes
+    change between compiled instances. PyTorch 2.4 also requires this option
+    for changing constructor lengths because its module static marker is not
+    available. Symbolic FFT inputs are not supported.
 
     Input and output use the same floating dtype and device. Float16
     and bfloat16 spectra are computed in float32, then converted back.
@@ -64,3 +75,9 @@ class FourierResample(nn.Module):
         result = torch.fft.irfft(spectrum, n=self.num_samples, dim=-1)
         return (result * (self.num_samples / source_samples)).to(dtype=x.dtype)
 
+
+
+# FFT output length is constructor configuration, not a symbolic input size.
+# Specialize each instance's integer attributes while retaining value guards.
+if _HAS_STATIC_MODULES:
+    torch._dynamo.mark_static(FourierResample)

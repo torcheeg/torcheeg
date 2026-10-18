@@ -27,3 +27,12 @@ optimizer and trained downstream heads are not restored by encoder loading.
 No author checkpoint is redistributed. Independent fixtures use deterministic
 synthetic tensors and unmodified author computation, with timm0.4.12 only
 in the separate reference environment. TorchEEG has no timm dependency here.
+
+
+Downstream wrappers retain the archived TorchEEG workspace's channel-major
+flattening and two-hidden-layer ELU task topology. They expose complete
+native encoder norm restoration, configurable hidden widths/dropout,
+explicit window/independent-patch Fourier resampling and freeze/eval control.
+Task heads start from fresh weights; encoder loading does not restore any
+trained task head. Resampling input/parameter gradients are checked against
+an independent dense SciPy operator and unmodified native encoder reference.
