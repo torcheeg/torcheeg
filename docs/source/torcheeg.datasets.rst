@@ -171,6 +171,7 @@ Customized Datasets
     MNERawDataset
     ConcatDataset
     PairDataset
+    SequenceDataset
 
 
 Mental Workload Datasets
