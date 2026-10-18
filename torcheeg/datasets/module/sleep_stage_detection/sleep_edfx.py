@@ -113,14 +113,14 @@ class SleepEDFxDataset(BaseDataset):
         io_size (int): Maximum size database may grow to; used to size the memory mapping. If database grows larger than ``map_size``, an exception will be raised and the user must close and reopen. (default: :obj:`1048576`)
         io_mode (str): Storage mode of EEG signal. When io_mode is set to :obj:`lmdb`, TorchEEG provides an efficient database (LMDB) for storing EEG signals. When io_mode is set to :obj:`pickle`, pickle-based persistence files are used. When io_mode is set to :obj:`memory`, memory are used. (default: :obj:`lmdb`)
         num_worker (int): Number of subprocesses to use for data loading. 0 means that the data will be loaded in the main process. (default: :obj:`0`)
+        timeout (float): Seconds to wait for cache creation; -1 waits indefinitely. (default: :obj:`300.0`)
         verbose (bool): Whether to display logs during processing, such as progress bars, etc. (default: :obj:`True`)
     '''
 
     def __init__(self,
                  root_path: str = './sleep-edf-database-expanded-1.0.0/',
                  studies: List = ['cassette', 'telemetry'],
-                 channels: List = ['EEG Fpz-Cz',
-                                   'EEG Pz-Oz'],
+                 channels: List = ['EEG Fpz-Cz', 'EEG Pz-Oz'],
                  l_freq: float = 0.5,
                  h_freq: float = 30,
                  sfreq: int = 100,
@@ -132,6 +132,7 @@ class SleepEDFxDataset(BaseDataset):
                  io_mode: str = 'lmdb',
                  num_worker: int = 0,
                  verbose: bool = True,
+                 timeout: float = 300.0,
                  **kwargs):
         if io_path is None:
             io_path = get_random_dir_path(dir_prefix='datasets')
@@ -140,6 +141,7 @@ class SleepEDFxDataset(BaseDataset):
             raise ValueError('studies must contain either "cassette" or "telemetry"')
 
         params = {
+            'timeout': timeout,
             'root_path': root_path,
             'studies': studies,
             'channels': channels,

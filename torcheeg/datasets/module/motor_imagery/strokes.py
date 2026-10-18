@@ -61,26 +61,29 @@ class StrokePatientsMIDataset(BaseDataset):
         io_size (int): Maximum size database may grow to; used to size the memory mapping. If database grows larger than ``map_size``, an exception will be raised and the user must close and reopen. (default: :obj:`1048576`)
         io_mode (str): Storage mode of EEG signal. When io_mode is set to :obj:`lmdb`, TorchEEG provides an efficient database (LMDB) for storing EEG signals. LMDB may not perform well on limited operating systems, where a file system based EEG signal storage is also provided. When io_mode is set to :obj:`pickle`, pickle-based persistence files are used. When io_mode is set to :obj:`memory`, memory are used. (default: :obj:`lmdb`)
         num_worker (int): Number of subprocesses to use for data loading. 0 means that the data will be loaded in the main process. (default: :obj:`0`)
+        timeout (float): Seconds to wait for cache creation; -1 waits indefinitely. (default: :obj:`300.0`)
         verbose (bool): Whether to display logs during processing, such as progress bars, etc. (default: :obj:`True`)
     '''
 
-    def __init__(self,
-                 root_path='./StrokePatientsMIDataset',
-                 chunk_size: int = 500,
-                 overlap: int = 0,
-                 online_transform: Union[None, Callable] = None,
-                 offline_transform: Union[None, Callable] = None,
-                 label_transform: Union[None, Callable] = None,
-                 before_trial: Union[None, Callable] = None,
-                 after_trial: Union[Callable, None] = None,
-                 after_session: Union[Callable, None] = None,
-                 after_subject: Union[Callable, None] = None,
-                 io_path: Union[None, str] = None,
-                 io_size: int = 1048576,
-                 io_mode: str = 'lmdb',
-                 num_worker: int = 0,
-                 verbose: bool = True,
-                 ):
+    def __init__(
+        self,
+        root_path='./StrokePatientsMIDataset',
+        chunk_size: int = 500,
+        overlap: int = 0,
+        online_transform: Union[None, Callable] = None,
+        offline_transform: Union[None, Callable] = None,
+        label_transform: Union[None, Callable] = None,
+        before_trial: Union[None, Callable] = None,
+        after_trial: Union[Callable, None] = None,
+        after_session: Union[Callable, None] = None,
+        after_subject: Union[Callable, None] = None,
+        io_path: Union[None, str] = None,
+        io_size: int = 1048576,
+        io_mode: str = 'lmdb',
+        num_worker: int = 0,
+        verbose: bool = True,
+        timeout: float = 300.0,
+    ):
         if io_path is None:
             io_path = get_random_dir_path(dir_prefix='datasets')
 
@@ -118,6 +121,7 @@ class StrokePatientsMIDataset(BaseDataset):
             sep='\t')
         # pass all arguments to super class
         params = {
+            'timeout': timeout,
             'root_path': root_path,
             'chunk_size': chunk_size,
             'overlap': overlap,

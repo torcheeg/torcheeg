@@ -1,26 +1,20 @@
 import hashlib
 import json
-import math
-from numbers import Real
 import os
-import shutil
-import tempfile
 from copy import copy
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from filelock import FileLock, Timeout
+from ..utils.cache import (ensure_cache as _ensure_cache, get_cache_key as
+                           _get_cache_key, validate_cache, validate_timeout)
 
-_MANIFEST = 'manifest.json'
-
-
-def validate_timeout(timeout):
-    if isinstance(timeout, (bool, np.bool_)) or not isinstance(timeout, Real):
-        raise TypeError('timeout must be a number of seconds.')
-    if not math.isfinite(timeout) or (timeout < 0 and timeout != -1):
-        raise ValueError('timeout must be nonnegative or -1.')
-    return float(timeout)
+__all__ = [
+    'get_cache_key', 'validate_cache', 'ensure_cache', 'validate_timeout',
+    'validate_metadata', 'validate_group_names', 'validate_partition_ids',
+    'write_partition_indices', 'validate_indices', 'write_indices', 'read_indices',
+    'create_subset', 'read_subset'
+]
 
 
 def validate_metadata(info, columns=()):
@@ -76,11 +70,6 @@ def _hash_bytes(value):
     return hashlib.sha256(value).hexdigest()
 
 
-def _hash_file(path):
-    with open(path, 'rb') as file:
-        return _hash_bytes(file.read())
-
-
 def _fingerprint_dataset(info, column):
     columns = [column] if isinstance(column, str) else list(column)
     if not any(name in info for name in ('_record_id', 'clip_id')):
@@ -98,36 +87,6 @@ def _fingerprint_dataset(info, column):
     return _hash_bytes(json.dumps(header).encode() + hashes.tobytes())
 
 
-def _validate_split_cache(split_path, expected, files):
-    try:
-        with open(os.path.join(split_path, _MANIFEST)) as file:
-            manifest = json.load(file)
-        if not isinstance(manifest, dict):
-            raise ValueError('Corrupt split cache; use a new split_path.')
-        if any(manifest.get(key) != value for key, value in expected.items()):
-            raise ValueError(
-                'Split parameters or dataset order have changed; use a new split_path.')
-        checksums = manifest['files']
-        if not isinstance(checksums, dict) or not checksums:
-            raise ValueError('Incomplete split cache; use a new split_path.')
-        if files is not None and set(checksums) != set(files):
-            raise ValueError('Incomplete split cache; use a new split_path.')
-        if files is None:
-            files = list(checksums)
-            actual = {
-                str(path.relative_to(split_path))
-                for path in Path(split_path).rglob('*.csv')
-            }
-            if actual != set(files):
-                raise ValueError('Incomplete split cache; use a new split_path.')
-        for name in files:
-            if _hash_file(os.path.join(split_path, name)) != checksums[name]:
-                raise ValueError('Corrupt split cache; use a new split_path.')
-    except (OSError, KeyError, TypeError, json.JSONDecodeError) as error:
-        raise ValueError(
-            'Incomplete or corrupt split cache; use a new split_path.') from error
-
-
 def _serialize_configuration(value):
     if isinstance(value, np.generic):
         return value.item()
@@ -138,18 +97,10 @@ def _serialize_configuration(value):
     raise TypeError(f'Unsupported split configuration value: {type(value).__name__}')
 
 
-def ensure_split_cache(info,
-                       columns,
-                       split_path,
-                       configuration,
-                       files,
-                       writer,
-                       timeout=300.0):
-    r'''Create or reuse a complete split cache under a process-safe lock.'''
-    timeout = validate_timeout(timeout)
+def get_cache_key(info, columns, configuration):
+    """Return a key for ordered sample identities and split configuration."""
     validate_metadata(info, columns)
-    split_path = os.path.abspath(os.fspath(split_path))
-    key = _hash_bytes(
+    return _get_cache_key(
         json.dumps(
             {
                 'dataset': _fingerprint_dataset(info, columns),
@@ -157,43 +108,31 @@ def ensure_split_cache(info,
             },
             sort_keys=True,
             default=_serialize_configuration).encode())
-    expected = {'key': key}
-    os.makedirs(os.path.dirname(split_path), exist_ok=True)
-    try:
-        with FileLock(split_path + '.lock', timeout=timeout):
-            if os.path.isfile(os.path.join(split_path, _MANIFEST)):
-                _validate_split_cache(split_path, expected, files)
-                return
-            if os.path.exists(split_path) and (not os.path.isdir(split_path)
-                                               or os.listdir(split_path)):
-                raise ValueError('Incomplete split cache; use a new split_path.')
-            staging_path = tempfile.mkdtemp(prefix='.torcheeg-split-',
-                                            dir=os.path.dirname(split_path))
-            try:
-                writer(staging_path)
-                manifest = dict(expected)
-                names = files if files is not None else sorted(
-                    str(path.relative_to(staging_path))
-                    for path in Path(staging_path).rglob('*.csv'))
-                if not names:
-                    raise ValueError('The split cache must contain at least one file.')
-                for name in names:
-                    if name.endswith('.csv'):
-                        read_indices(os.path.join(staging_path, name), len(info))
-                manifest['files'] = {
-                    name: _hash_file(os.path.join(staging_path, name))
-                    for name in names
-                }
-                with open(os.path.join(staging_path, _MANIFEST), 'w') as file:
-                    json.dump(manifest, file, sort_keys=True)
-                if os.path.isdir(split_path):
-                    os.rmdir(split_path)
-                os.replace(staging_path, split_path)
-            finally:
-                shutil.rmtree(staging_path, ignore_errors=True)
-    except Timeout as error:
-        raise RuntimeError(
-            f'Timeout waiting for split creation at {split_path}.') from error
+
+
+def ensure_cache(info,
+                 columns,
+                 split_path,
+                 configuration,
+                 files,
+                 writer,
+                 timeout=300.0):
+    """Create or reuse validated row-position files."""
+    key = get_cache_key(info, columns, configuration)
+
+    def validate_outputs(path):
+        names = files if files is not None else [
+            str(file.relative_to(path)) for file in Path(path).rglob('*.csv')
+        ]
+        for name in names:
+            read_indices(os.path.join(path, name), len(info))
+
+    _ensure_cache(split_path,
+                  key,
+                  writer,
+                  files=files,
+                  timeout=timeout,
+                  validator=validate_outputs)
 
 
 def validate_indices(indices, num_samples):

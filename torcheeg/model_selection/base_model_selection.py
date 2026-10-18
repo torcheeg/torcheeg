@@ -4,7 +4,7 @@ from typing import Dict, Union
 import pandas as pd
 
 from ..utils import get_random_dir_path
-from .utils import ensure_split_cache, read_subset, validate_metadata, validate_timeout
+from .utils import ensure_cache, read_subset, validate_metadata, validate_timeout
 
 
 class BaseModelSelection:
@@ -39,13 +39,13 @@ class BaseModelSelection:
         parameters['splitter'] = self.__class__.__name__
         if configuration is not None:
             parameters.update(configuration)
-        ensure_split_cache(dataset.info,
-                           columns,
-                           self.split_path,
-                           parameters,
-                           files,
-                           lambda path: self.build(dataset.info, path),
-                           timeout=self.timeout)
+        ensure_cache(dataset.info,
+                     columns,
+                     self.split_path,
+                     parameters,
+                     files,
+                     lambda path: self.build(dataset.info, path),
+                     timeout=self.timeout)
 
     def _read_subset(self, dataset, filename):
         return read_subset(dataset, self.split_path, filename)

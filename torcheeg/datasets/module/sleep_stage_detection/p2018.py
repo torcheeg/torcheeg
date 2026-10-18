@@ -70,33 +70,32 @@ class P2018Dataset(BaseDataset):
         io_size (int): Maximum size database may grow to; used to size the memory mapping. If database grows larger than ``map_size``, an exception will be raised and the user must close and reopen. (default: :obj:`1048576`)
         io_mode (str): Storage mode of EEG signal. When io_mode is set to :obj:`lmdb`, TorchEEG provides an efficient database (LMDB) for storing EEG signals. When io_mode is set to :obj:`pickle`, pickle-based persistence files are used. When io_mode is set to :obj:`memory`, memory are used. (default: :obj:`lmdb`)
         num_worker (int): Number of subprocesses to use for data loading. 0 means that the data will be loaded in the main process. (default: :obj:`0`)
+        timeout (float): Seconds to wait for cache creation; -1 waits indefinitely. (default: :obj:`300.0`)
         verbose (bool): Whether to display logs during processing, such as progress bars, etc. (default: :obj:`True`)
     '''
 
-    def __init__(self,
-                 root_path: str = './P2018/training/',
-                 channels: List = ['F3-M2',
-                                   'F4-M1',
-                                   'C3-M2',
-                                   'C4-M1',
-                                   'O1-M2',
-                                   'O2-M1'],
-                 l_freq: float = 0.5,
-                 h_freq: float = 30,
-                 sfreq: int = 100,
-                 online_transform: Union[None, Callable] = None,
-                 offline_transform: Union[None, Callable] = None,
-                 label_transform: Union[None, Callable] = None,
-                 io_path: Union[None, str] = None,
-                 io_size: int = 1048576,
-                 io_mode: str = 'lmdb',
-                 num_worker: int = 0,
-                 verbose: bool = True,
-                 **kwargs):
+    def __init__(
+            self,
+            root_path: str = './P2018/training/',
+            channels: List = ['F3-M2', 'F4-M1', 'C3-M2', 'C4-M1', 'O1-M2', 'O2-M1'],
+            l_freq: float = 0.5,
+            h_freq: float = 30,
+            sfreq: int = 100,
+            online_transform: Union[None, Callable] = None,
+            offline_transform: Union[None, Callable] = None,
+            label_transform: Union[None, Callable] = None,
+            io_path: Union[None, str] = None,
+            io_size: int = 1048576,
+            io_mode: str = 'lmdb',
+            num_worker: int = 0,
+            verbose: bool = True,
+            timeout: float = 300.0,
+            **kwargs):
         if io_path is None:
             io_path = get_random_dir_path(dir_prefix='datasets')
 
         params = {
+            'timeout': timeout,
             'root_path': root_path,
             'channels': channels,
             'l_freq': l_freq,

@@ -171,7 +171,7 @@ class TestModelSelectionUtils(unittest.TestCase):
             value.encode() if isinstance(value, str) else str(value)
             for value in dataset.info[column]
         ]
-        with self.assertRaisesRegex(ValueError, 'dataset order'):
+        with self.assertRaisesRegex(ValueError, 'changed'):
             next(self._make_splitter().split(dataset))
 
     def test_empty_existing_directory_is_initialized(self):
@@ -204,7 +204,7 @@ class TestModelSelectionUtils(unittest.TestCase):
         dataset = _make_dataset()
         list(self._make_splitter().split(dataset))
         dataset.info = dataset.info.iloc[::-1].reset_index(drop=True)
-        with self.assertRaisesRegex(ValueError, 'dataset order'):
+        with self.assertRaisesRegex(ValueError, 'changed'):
             next(self._make_splitter().split(dataset))
 
     def test_failed_creation_cleans_up_and_can_be_retried(self):
@@ -329,7 +329,7 @@ class TestModelSelectionUtils(unittest.TestCase):
         file = Path(self._split_path, 'train.csv')
         file.write_text('index\n0\n')
         before = file.read_bytes()
-        with self.assertRaisesRegex(ValueError, 'Incomplete split cache'):
+        with self.assertRaisesRegex(ValueError, 'Incomplete cache'):
             list(self._make_splitter().split(_make_dataset()))
         self.assertEqual(file.read_bytes(), before)
 
@@ -410,5 +410,5 @@ class TestModelSelectionUtils(unittest.TestCase):
                                                      split_path=self._split_path)
         list(splitter.split(dataset))
         dataset.info.iloc[[0, 1]] = dataset.info.iloc[[1, 0]].to_numpy()
-        with self.assertRaisesRegex(ValueError, 'dataset order'):
+        with self.assertRaisesRegex(ValueError, 'changed'):
             list(splitter.split(dataset))

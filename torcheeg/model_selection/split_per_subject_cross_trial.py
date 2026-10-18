@@ -7,7 +7,7 @@ from sklearn import model_selection
 from torcheeg.datasets.module.base_dataset import BaseDataset
 
 from ..utils import get_random_dir_path
-from .utils import create_subset, ensure_split_cache, read_indices, write_indices
+from .utils import create_subset, ensure_cache, read_indices, write_indices
 
 __all__ = ['train_test_split_per_subject_cross_trial']
 
@@ -107,11 +107,11 @@ def train_test_split_per_subject_cross_trial(
         'shuffle': shuffle,
         'random_state': random_state
     }
-    ensure_split_cache(dataset.info, ['subject_id', 'trial_id'],
-                       split_path,
-                       configuration, ['train.csv', 'test.csv'],
-                       write_split,
-                       timeout=timeout)
+    ensure_cache(dataset.info, ['subject_id', 'trial_id'],
+                 split_path,
+                 configuration, ['train.csv', 'test.csv'],
+                 write_split,
+                 timeout=timeout)
 
     train_info = read_indices(os.path.join(split_path, 'train.csv'), len(dataset))
     test_info = read_indices(os.path.join(split_path, 'test.csv'), len(dataset))

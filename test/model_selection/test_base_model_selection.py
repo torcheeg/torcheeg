@@ -152,7 +152,7 @@ class TestBaseModelSelection(unittest.TestCase):
                 # The same public operation must reject a different row order.
                 dataset.info = dataset.info.iloc[::-1].reset_index(drop=True)
                 try:
-                    with self.assertRaisesRegex(ValueError, 'dataset order'):
+                    with self.assertRaisesRegex(ValueError, 'changed'):
                         run()
                 finally:
                     dataset.info = dataset.info.iloc[::-1].reset_index(drop=True)

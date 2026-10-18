@@ -49,6 +49,7 @@ class MNERawDataset(BaseDataset):
         io_size (int): Maximum size database may grow to; used to size the memory mapping. If database grows larger than ``map_size``, an exception will be raised and the user must close and reopen. (default: :obj:`1048576`)
         io_mode (str): Storage mode of EEG signal. When io_mode is set to :obj:`lmdb`, TorchEEG provides an efficient database (LMDB) for storing EEG signals. LMDB may not perform well on limited operating systems, where a file system based EEG signal storage is also provided. When io_mode is set to :obj:`pickle`, pickle-based persistence files are used. When io_mode is set to :obj:`memory`, memory are used. (default: :obj:`lmdb`)
         num_worker (int): Number of subprocesses to use for data loading. 0 means that the data will be loaded in the main process. (default: :obj:`0`)
+        timeout (float): Seconds to wait for cache creation; -1 waits indefinitely. (default: :obj:`300.0`)
         verbose (bool): Whether to display logs during processing, such as progress bars, etc. (default: :obj:`True`)
     '''
     def __init__(self,
@@ -64,11 +65,13 @@ class MNERawDataset(BaseDataset):
                  io_mode: str = 'lmdb',
                  num_worker: int = 0,
                  verbose: bool = True,
+                 timeout: float = 300.0,
                  **kwargs):
         if io_path is None:
             io_path = get_random_dir_path(dir_prefix='datasets')
 
         params = {
+            'timeout': timeout,
             'raw_list': raw_list,
             'info_list': info_list,
             'chunk_size': chunk_size,
@@ -89,7 +92,7 @@ class MNERawDataset(BaseDataset):
     @staticmethod
     def read_record(record: str, **kwargs) -> Dict:
         return {}
-    
+
     @staticmethod
     def process_record(record: Tuple,
                        offline_transform: Union[None, Callable] = None,
@@ -98,26 +101,26 @@ class MNERawDataset(BaseDataset):
                        **kwargs):
         raw, info = record
         data, times = raw[:, :]
-        
+
         # Calculate the step size
         step = chunk_size - overlap
-        
+
         # Generate chunks
         for i in range(0, data.shape[1] - chunk_size + 1, step):
             chunk = data[:, i:i+chunk_size]
-            
+
             if offline_transform is not None:
                 chunk = offline_transform(eeg=chunk)['eeg']
-            
+
             clip_id = f"{info['subject_id']}_{info['trial_id']}_{i}"
-            
+
             record_info = {
                 **info,
                 'start_at': times[i],
                 'end_at': times[i+chunk_size-1],
                 'clip_id': clip_id
             }
-            
+
             yield {'eeg': chunk, 'key': clip_id, 'info': record_info}
 
     def set_records(self, raw_list: List[mne.io.BaseRaw], info_list: List[Dict[str, Any]], **kwargs):
