@@ -1,0 +1,97 @@
+P2018 sleep-stage signals and annotation time
+=============================================
+
+:class:`torcheeg.datasets.P2018Dataset` reads complete scored sleep-stage
+epochs from the `PhysioNet/CinC Challenge 2018 data
+<https://physionet.org/content/challenge-2018/1.0.0/>`_. Its target is five-class
+sleep staging. It does not create the challenge's binary arousal target or
+establish an arousal-detection competition score.
+
+Each labeled record needs matching ``<record>.mat``, ``<record>.hea`` and
+``<record>.arousal`` files in its record folder, such as
+``training/tr03-0005/``. Files are discovered deterministically by record ID.
+Incomplete pairs raise an error. The provider's held-out test set requires
+annotations before it can be used for supervised sleep-stage evaluation.
+
+Sampling, filtering and units
+-----------------------------
+
+WFDB supplies the actual source sampling rate and physical channel units.
+The original signals are normally at 200 Hz; EEG/EOG values remain in
+microvolts. They are not silently converted into MNE-style volts. Requested
+channel order is preserved. ``channel_names`` and ``channel_units`` in sample
+metadata are JSON strings; an unavailable unit is represented as null.
+
+The reader retains WFDB's per-channel FFT resampling and uses ``30 * sfreq``
+samples per epoch. The output rate must yield an integer epoch sample count.
+For example, 100 Hz gives 3000 samples and 137 Hz gives 4110. Only complete
+output windows are returned; partial tails are omitted.
+
+The default filter remains an eighth-order zero-phase Butterworth bandpass
+at 0.5--30 Hz, applied after resampling. Second-order sections avoid the poor
+conditioning of direct polynomial coefficients at low cutoffs. Both bounds
+must be inside the output Nyquist frequency. One missing bound selects a
+high-pass or low-pass filter; set both to None to disable filtering. Selected
+signals and preprocessing results must be finite; no interpolation is hidden
+inside this reader.
+
+For an explicit EEG/EOG configuration::
+
+    from torcheeg.datasets import P2018Dataset
+    from torcheeg import transforms
+
+    dataset = P2018Dataset(
+        root_path='./P2018/training', io_path='./cache/p2018-stage-v2',
+        channels=['C3-M2', 'E1-M2'], sfreq=100,
+        l_freq=0.3, h_freq=35.,
+        online_transform=transforms.ToTensor(),
+        label_transform=transforms.Compose([
+            transforms.Select('label'),
+            transforms.Mapping({'Sleep stage W': 0, 'Sleep stage N1': 1,
+                                'Sleep stage N2': 2, 'Sleep stage N3': 3,
+                                'Sleep stage R': 4})]))
+
+This configuration returns [2, 3000] samples. It does not standardize records,
+trim wake intervals or reproduce a model benchmark. Record the actual units,
+reference channels, filter design, rate and partition used for an experiment.
+
+Scoring origin, undefined data and boundaries
+---------------------------------------------
+
+The ``.arousal`` stream also contains respiratory/arousal interval markers.
+They are not sleep-stage labels and do not define the signal crop. The first
+explicit sleep-stage event anchors the epoch grid. Source stage W at sample
+zero is a valid origin, not an uninitialized-state sentinel. Repeated
+same-stage markers do not create a new boundary; conflicting stages at one
+sample are rejected.
+
+Known labels W/N1/N2/N3/R map to the corresponding TorchEEG sleep-stage names.
+Explicit undefined/unscored intervals are omitted. Unknown non-interval stage
+codes raise an error. A window is retained only when all its observed samples
+remain inside one scored interval; a mid-epoch change creates a gap rather
+than receiving the previous label. Arousal interval comments do not change
+the active sleep stage.
+
+Stage event positions stay on the original WFDB clock. The output window
+start rounds forward onto the resampled sample grid when needed; it can move
+by less than one output sample. ``start_at`` and ``end_at`` are actual output
+grid seconds from the recording start, with end_at exclusive. A first scored
+epoch at 360 seconds therefore remains at 360 seconds, rather than becoming
+zero. ``subject_id``, ``record_id`` and ``trial_id`` use the released record ID;
+``clip_id`` adds a path-free epoch index.
+
+Select subject/record partitions before building :doc:`sequences`. Check real
+adjacent end/start times and do not join an undefined or mixed-stage gap.
+The reader does not assign a stage to the unscored signal preceding the first
+stage annotation.
+
+Cache migration
+---------------
+
+Use a new preprocessing and split cache after upgrading this reader. Old
+caches can contain an arousal-based crop, fixed 3000-point windows despite a
+different output rate, shifted zero-origin labels and fabricated zero-based
+time metadata. The stable filter representation also changes numerical
+preprocessing. Existing caches are preserved and are not silently rewritten.
+Also use a new cache path after changing source files, channel order, rate,
+filter bounds or label mapping.
