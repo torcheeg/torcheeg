@@ -96,17 +96,14 @@ class Subcategory(BaseModelSelection):
         criteria (str): The classification criteria according to which we extract subsets of data for the including categories. (default: :obj:`'task'`)
         split_path (str, optional): Directory for saved splits.
             If None, generate a random path. (default: :obj:`None`)
-        timeout (float): Lock wait in seconds; -1 waits indefinitely.
-            (default: :obj:`300.0`)
     '''
 
     def __init__(self,
                  criteria: str = 'task',
-                 split_path: Union[None, str] = None,
-                 timeout: float = 300.0) -> None:
+                 split_path: Union[None, str] = None) -> None:
 
         self.criteria = criteria
-        super().__init__(split_path=split_path, timeout=timeout)
+        super().__init__(split_path=split_path)
 
     @staticmethod
     def _filename(category) -> str:
@@ -155,8 +152,4 @@ class Subcategory(BaseModelSelection):
 
     @property
     def repr_body(self) -> Dict:
-        return {
-            'criteria': self.criteria,
-            'split_path': self.split_path,
-            'timeout': self.timeout
-        }
+        return {'criteria': self.criteria, 'split_path': self.split_path}

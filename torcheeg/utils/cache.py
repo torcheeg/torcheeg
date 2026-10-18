@@ -1,26 +1,13 @@
 import hashlib
 import json
-import math
 import os
 import shutil
 import tempfile
-from numbers import Real
 from pathlib import Path
 
-from filelock import FileLock, Timeout
+from filelock import FileLock
 
-__all__ = [
-    'compute_fingerprint', 'validate_cache', 'ensure_cache', 'validate_timeout',
-    'compute_checksum'
-]
-
-
-def validate_timeout(timeout):
-    if isinstance(timeout, bool) or not isinstance(timeout, Real):
-        raise TypeError('timeout must be a number of seconds.')
-    if not math.isfinite(timeout) or (timeout < 0 and timeout != -1):
-        raise ValueError('timeout must be nonnegative or -1.')
-    return float(timeout)
+__all__ = ['compute_fingerprint', 'validate_cache', 'ensure_cache', 'compute_checksum']
 
 
 def compute_fingerprint(value):
@@ -71,44 +58,40 @@ def validate_cache(path, fingerprint, files=None):
             'Incomplete or corrupt cache; use a new cache path.') from error
 
 
-def ensure_cache(path, fingerprint, writer, files=None, timeout=300.0, validator=None):
+def ensure_cache(path, fingerprint, writer, files=None, validator=None):
     """Reuse a validated cache or build and publish it under a file lock."""
-    timeout = validate_timeout(timeout)
     path = os.path.abspath(os.fspath(path))
     os.makedirs(os.path.dirname(path), exist_ok=True)
-    try:
-        with FileLock(path + '.lock', timeout=timeout):
-            if os.path.isfile(os.path.join(path, 'manifest.json')):
-                validate_cache(path, fingerprint, files)
-                if validator is not None:
-                    validator(path)
-                return
-            if os.path.exists(path) and (not os.path.isdir(path) or os.listdir(path)):
-                raise ValueError('Incomplete cache; use a new cache path.')
-            staging_path = tempfile.mkdtemp(prefix='.torcheeg-cache-',
-                                            dir=os.path.dirname(path))
-            try:
-                writer(staging_path)
-                names = _list_files(staging_path)
-                if not names or (files is not None and set(names) != set(files)):
-                    raise ValueError('Incomplete cache output.')
-                if validator is not None:
-                    validator(staging_path)
-                manifest = {
-                    'fingerprint': fingerprint,
-                    'files': {
-                        name: compute_checksum(os.path.join(staging_path, name))
-                        for name in names
-                    }
+    with FileLock(path + '.lock', timeout=-1):
+        if os.path.isfile(os.path.join(path, 'manifest.json')):
+            validate_cache(path, fingerprint, files)
+            if validator is not None:
+                validator(path)
+            return
+        if os.path.exists(path) and (not os.path.isdir(path) or os.listdir(path)):
+            raise ValueError('Incomplete cache; use a new cache path.')
+        staging_path = tempfile.mkdtemp(prefix='.torcheeg-cache-',
+                                        dir=os.path.dirname(path))
+        try:
+            writer(staging_path)
+            names = _list_files(staging_path)
+            if not names or (files is not None and set(names) != set(files)):
+                raise ValueError('Incomplete cache output.')
+            if validator is not None:
+                validator(staging_path)
+            manifest = {
+                'fingerprint': fingerprint,
+                'files': {
+                    name: compute_checksum(os.path.join(staging_path, name))
+                    for name in names
                 }
-                with open(os.path.join(staging_path, 'manifest.json'),
-                          'w',
-                          encoding='utf-8') as file:
-                    json.dump(manifest, file, sort_keys=True)
-                if os.path.isdir(path):
-                    os.rmdir(path)
-                os.replace(staging_path, path)
-            finally:
-                shutil.rmtree(staging_path, ignore_errors=True)
-    except Timeout as error:
-        raise RuntimeError(f'Timeout waiting for cache creation at {path}.') from error
+            }
+            with open(os.path.join(staging_path, 'manifest.json'),
+                      'w',
+                      encoding='utf-8') as file:
+                json.dump(manifest, file, sort_keys=True)
+            if os.path.isdir(path):
+                os.rmdir(path)
+            os.replace(staging_path, path)
+        finally:
+            shutil.rmtree(staging_path, ignore_errors=True)

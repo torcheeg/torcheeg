@@ -38,16 +38,13 @@ class TrainTestSplitPerSubjectGroupbyTrial(BaseModelSelection):
             (default: :obj:`None`)
         split_path (str, optional): Directory for saved splits.
             If None, generate a random path. (default: :obj:`None`)
-        timeout (float): Lock wait in seconds; -1 waits indefinitely.
-            (default: :obj:`300.0`)
     '''
 
     def __init__(self,
                  train_size: float = 0.8,
                  shuffle: bool = False,
                  random_state: Union[int, None] = None,
-                 split_path: Union[None, str] = None,
-                 timeout: float = 300.0) -> None:
+                 split_path: Union[None, str] = None) -> None:
         if isinstance(train_size,
                       (bool, np.bool_)) or not isinstance(train_size,
                                                           (int, float, np.number)):
@@ -66,7 +63,7 @@ class TrainTestSplitPerSubjectGroupbyTrial(BaseModelSelection):
         self.train_size = float(train_size)
         self.shuffle = bool(shuffle)
         self.random_state = None if random_state is None else int(random_state)
-        super().__init__(split_path=split_path, timeout=timeout)
+        super().__init__(split_path=split_path)
 
     @staticmethod
     def _filename(subject: str, partition: str) -> str:
@@ -136,6 +133,5 @@ class TrainTestSplitPerSubjectGroupbyTrial(BaseModelSelection):
             'train_size': self.train_size,
             'shuffle': self.shuffle,
             'random_state': self.random_state,
-            'split_path': self.split_path,
-            'timeout': self.timeout
+            'split_path': self.split_path
         }

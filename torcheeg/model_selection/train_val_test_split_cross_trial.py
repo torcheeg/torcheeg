@@ -40,21 +40,18 @@ class TrainValTestSplitCrossTrial(BaseModelSelection):
         test_trials (list): List of trial IDs for the test set.
         split_path (str, optional): Directory for saved splits.
             If None, generate a random path. (default: :obj:`None`)
-        timeout (float): Lock wait in seconds; -1 waits indefinitely.
-            (default: :obj:`300.0`)
     '''
 
     def __init__(self,
                  train_trials: List,
                  val_trials: List,
                  test_trials: List,
-                 split_path: Union[None, str] = None,
-                 timeout: float = 300.0) -> None:
+                 split_path: Union[None, str] = None) -> None:
         self.train_trials = list(train_trials)
         self.val_trials = list(val_trials)
         self.test_trials = list(test_trials)
         validate_partitions([self.train_trials, self.val_trials, self.test_trials])
-        super().__init__(split_path=split_path, timeout=timeout)
+        super().__init__(split_path=split_path)
 
     def build(self, info: pd.DataFrame, split_path: Union[None, str] = None) -> None:
         write_partitions(info, 'trial_id',
@@ -78,6 +75,5 @@ class TrainValTestSplitCrossTrial(BaseModelSelection):
             'train_trials': self.train_trials,
             'val_trials': self.val_trials,
             'test_trials': self.test_trials,
-            'split_path': self.split_path,
-            'timeout': self.timeout
+            'split_path': self.split_path
         }

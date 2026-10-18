@@ -97,7 +97,6 @@ class TSUBenckmarkDataset(BaseDataset):
         after_trial (Callable, optional): The hook performed on the trial to which the sample belongs. It is performed after the offline transformation and thus typically used to implement context-dependent sample transformations, such as moving averages, etc. The input and output of this hook function should be a sequence of dictionaries representing a sequence of EEG samples. Each dictionary contains two key-value pairs, indexed by :obj:`eeg` (the EEG signal matrix) and :obj:`key` (the index in the database) respectively.
         io_path (str): The path to generated unified data IO, cached as an intermediate result. If set to None, a random path will be generated. (default: :obj:`None`)
         num_worker (int): Number of subprocesses to use for data loading. 0 means that the data will be loaded in the main process. (default: :obj:`0`)
-        timeout (float): Seconds to wait for cache creation; -1 waits indefinitely. (default: :obj:`300.0`)
         verbose (bool): Whether to display logs during processing, such as progress bars, etc. (default: :obj:`True`)
 
     '''
@@ -116,14 +115,12 @@ class TSUBenckmarkDataset(BaseDataset):
                  io_size: int = 1048576,
                  io_mode: str = 'lmdb',
                  num_worker: int = 0,
-                 verbose: bool = True,
-                 timeout: float = 300.0):
+                 verbose: bool = True):
         if io_path is None:
             io_path = get_random_dir_path(dir_prefix='datasets')
 
         # pass all arguments to super class
         params = {
-            'timeout': timeout,
             'root_path': root_path,
             'chunk_size': chunk_size,
             'overlap': overlap,

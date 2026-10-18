@@ -9,7 +9,7 @@ import numpy as np
 from filelock import FileLock
 
 from torcheeg import transforms
-from torcheeg.datasets import BaseDataset, DEAPDataset
+from torcheeg.datasets import BaseDataset
 
 
 class _CachedDataset(BaseDataset):
@@ -100,7 +100,6 @@ class TestDatasetCache(unittest.TestCase):
                     io_mode=mode,
                     lazy_threshold=0,
                     after_trial=_add_one,
-                    timeout=0,
                     num_worker=1,
                     online_transform=transforms.ToTensor(),
                     label_transform=transforms.Select('subject_id'))
@@ -176,16 +175,24 @@ class TestDatasetCache(unittest.TestCase):
             self._dataset()
         self.assertEqual(file.read_text(), 'old data')
 
-    def test_timeout_is_public_and_validated(self):
-        with FileLock(str(self._path) + '.lock'):
-            with self.assertRaisesRegex(RuntimeError, 'Timeout'):
-                self._dataset(timeout=0)
-        for value, error in ((True, TypeError), ('1', TypeError), (-2, ValueError)):
-            with self.subTest(value=value), self.assertRaises(error):
-                self._dataset(timeout=value)
-        # Concrete datasets expose the same option before attempting source IO.
-        with self.assertRaises(TypeError):
-            DEAPDataset(timeout='1', verbose=False)
+    def test_cache_waits_for_another_writer(self):
+        from concurrent.futures import ThreadPoolExecutor, TimeoutError
+        from threading import Event
+
+        started = Event()
+
+        def create_dataset():
+            started.set()
+            return self._dataset()
+
+        with ThreadPoolExecutor(max_workers=1) as executor:
+            with FileLock(str(self._path) + '.lock'):
+                future = executor.submit(create_dataset)
+                self.assertTrue(started.wait(timeout=10))
+                with self.assertRaises(TimeoutError):
+                    future.result(timeout=0.1)
+            dataset = future.result(timeout=20)
+        np.testing.assert_array_equal(dataset[0][0], self._samples[0])
 
     def test_competing_processes_publish_one_complete_cache(self):
         context = multiprocessing.get_context('spawn')

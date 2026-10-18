@@ -18,8 +18,7 @@ def train_test_split_cross_subject(
         shuffle: bool = False,
         label_transform: Callable = None,
         random_state: Union[int, None] = None,
-        split_path: Union[None, str] = None,
-        timeout: float = 300.0) -> Tuple[BaseDataset, BaseDataset]:
+        split_path: Union[None, str] = None) -> Tuple[BaseDataset, BaseDataset]:
     r'''
     A tool function for cross-validations, to divide the training set and the test set across subjects. It is suitable for experiments with large dataset volume and no need to use k-fold cross-validations. A certain proportion of subjects are sampled as the test dataset, and samples from other subjects are used as training samples. In most literatures, 20% of the subjects are sampled for testing.
 
@@ -65,8 +64,6 @@ def train_test_split_cross_subject(
         random_state (int, optional): When shuffle is :obj:`True`, :obj:`random_state` affects the ordering of the subjects, which controls the randomness of the split. Otherwise, this parameter has no effect. (default: :obj:`None`)
         split_path (str, optional): Directory for saved splits.
             If None, generate a random path. (default: :obj:`None`)
-        timeout (float): Lock wait in seconds; -1 waits indefinitely.
-            (default: :obj:`300.0`)
     '''
     if split_path is None:
         split_path = get_random_dir_path(dir_prefix='model_selection')
@@ -118,11 +115,8 @@ def train_test_split_cross_subject(
                 lambda row: label_transform(y=row.to_dict())['y'], axis=1).mean())
             for subject in pd.unique(dataset.info['subject_id'])
         ]
-    ensure_cache(dataset.info, ['subject_id'],
-                 split_path,
-                 configuration, ['train.csv', 'test.csv'],
-                 write_split,
-                 timeout=timeout)
+    ensure_cache(dataset.info, ['subject_id'], split_path, configuration,
+                 ['train.csv', 'test.csv'], write_split)
 
     train_info = read_indices(os.path.join(split_path, 'train.csv'), len(dataset))
     test_info = read_indices(os.path.join(split_path, 'test.csv'), len(dataset))

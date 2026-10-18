@@ -30,7 +30,7 @@ class TestBaseModelSelection(unittest.TestCase):
             base.split(_make_dataset())
         self.assertEqual(
             repr(base),
-            f'BaseModelSelection(split_path={self._split_path!r}, timeout=300.0)')
+            f'BaseModelSelection(split_path={self._split_path!r})')
 
     def test_existing_and_new_splitters_use_the_shared_index_cache(self):
         dataset = _make_dataset()

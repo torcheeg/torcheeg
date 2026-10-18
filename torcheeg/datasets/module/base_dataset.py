@@ -13,7 +13,7 @@ from tqdm import tqdm
 
 from torcheeg.io import EEGSignalIO, MetaInfoIO
 from ...utils import get_random_dir_path
-from ..utils import ensure_cache, compute_fingerprint, validate_timeout
+from ..utils import ensure_cache, compute_fingerprint
 
 _log = logging.getLogger('torcheeg')
 
@@ -30,9 +30,7 @@ class BaseDataset(Dataset):
                  after_trial: Callable = None,
                  after_session: Callable = None,
                  after_subject: Callable = None,
-                 timeout: float = 300.0,
                  **kwargs):
-        self.timeout = validate_timeout(timeout)
         io_path = get_random_dir_path(
             dir_prefix='datasets') if io_path is None else os.fspath(io_path)
         self.io_path = io_path
@@ -63,10 +61,8 @@ class BaseDataset(Dataset):
         else:
             fingerprint = compute_fingerprint(type(self), configuration, records,
                                               io_path)
-            ensure_cache(io_path,
-                         fingerprint,
-                         lambda path: self._build_cache(path, records, kwargs),
-                         timeout=self.timeout)
+            ensure_cache(io_path, fingerprint,
+                         lambda path: self._build_cache(path, records, kwargs))
             self.init_io(io_path=self.io_path,
                          io_size=self.io_size,
                          io_mode=self.io_mode)
@@ -545,8 +541,7 @@ class BaseDataset(Dataset):
         return {
             'io_path': self.io_path,
             'io_size': self.io_size,
-            'io_mode': self.io_mode,
-            'timeout': self.timeout
+            'io_mode': self.io_mode
         }
 
     @property

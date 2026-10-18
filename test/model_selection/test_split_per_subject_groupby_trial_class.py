@@ -44,7 +44,7 @@ class TestTrainTestSplitPerSubjectGroupbyTrial(unittest.TestCase):
             # The abandoned private staging directory cannot be read as a cache.
             self._assert_folds(
                 self._dataset,
-                list(self._make_splitter(timeout=1.0).split(self._dataset)))
+                list(self._make_splitter().split(self._dataset)))
         finally:
             ready.close()
             child_ready.close()

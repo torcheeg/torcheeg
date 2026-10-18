@@ -11,9 +11,13 @@ import pandas as pd
 import torch
 
 from ..utils.cache import (ensure_cache, compute_fingerprint as _compute_fingerprint,
-                           validate_cache, validate_timeout, compute_checksum)
+                           validate_cache, compute_checksum)
 
-__all__ = ['compute_fingerprint', 'validate_cache', 'ensure_cache', 'validate_timeout']
+__all__ = [
+    'compute_fingerprint',
+    'validate_cache',
+    'ensure_cache',
+]
 
 
 def _describe_value(value, seen=None):

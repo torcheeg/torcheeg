@@ -7,12 +7,12 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 from ..utils.cache import (ensure_cache as _ensure_cache, compute_fingerprint as
-                           _compute_fingerprint, validate_cache, validate_timeout)
+                           _compute_fingerprint, validate_cache)
 
 __all__ = [
-    'compute_fingerprint', 'validate_cache', 'ensure_cache', 'validate_timeout',
-    'validate_metadata', 'validate_groups', 'validate_partitions', 'write_partitions',
-    'validate_indices', 'write_indices', 'read_indices', 'create_subset'
+    'compute_fingerprint', 'validate_cache', 'ensure_cache', 'validate_metadata',
+    'validate_groups', 'validate_partitions', 'write_partitions', 'validate_indices',
+    'write_indices', 'read_indices', 'create_subset'
 ]
 
 
@@ -109,13 +109,7 @@ def compute_fingerprint(info, columns, configuration):
             default=_serialize_configuration).encode())
 
 
-def ensure_cache(info,
-                 columns,
-                 split_path,
-                 configuration,
-                 files,
-                 writer,
-                 timeout=300.0):
+def ensure_cache(info, columns, split_path, configuration, files, writer):
     """Create or reuse validated row-position files."""
     fingerprint = compute_fingerprint(info, columns, configuration)
 
@@ -130,7 +124,6 @@ def ensure_cache(info,
                   fingerprint,
                   writer,
                   files=files,
-                  timeout=timeout,
                   validator=validate_outputs)
 
 

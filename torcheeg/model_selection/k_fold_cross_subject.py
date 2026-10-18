@@ -55,8 +55,6 @@ class KFoldCrossSubject(BaseModelSelection):
         random_state (int, optional): When shuffle is :obj:`True`, :obj:`random_state` affects the ordering of the indices, which controls the randomness of each fold. If shuffle is :obj:`False`, this parameter has no effect. (default: :obj:`None`)
         split_path (str, optional): Directory for saved splits.
             If None, generate a random path. (default: :obj:`None`)
-        timeout (float): Lock wait in seconds; -1 waits indefinitely.
-            (default: :obj:`300.0`)
     '''
 
     def __init__(self,
@@ -64,13 +62,12 @@ class KFoldCrossSubject(BaseModelSelection):
                  shuffle: bool = False,
                  label_transform: Callable = None,
                  random_state: Union[None, int] = None,
-                 split_path: Union[None, str] = None,
-                 timeout: float = 300.0) -> None:
+                 split_path: Union[None, str] = None) -> None:
 
         self.n_splits = n_splits
         self.shuffle = shuffle
         self.random_state = random_state
-        super().__init__(split_path=split_path, timeout=timeout)
+        super().__init__(split_path=split_path)
         self.label_transform = label_transform
 
         if label_transform is not None:
@@ -163,6 +160,5 @@ class KFoldCrossSubject(BaseModelSelection):
             'n_splits': self.n_splits,
             'shuffle': self.shuffle,
             'random_state': self.random_state,
-            'split_path': self.split_path,
-            'timeout': self.timeout
+            'split_path': self.split_path
         }

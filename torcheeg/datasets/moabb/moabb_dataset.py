@@ -74,7 +74,6 @@ class MOABBDataset(BaseDataset):
                  download_path: str = None,
                  num_worker: int = 0,
                  verbose: bool = True,
-                 timeout: float = 300.0,
                  **kwargs):
         if download_path is None:
             from ...utils import get_random_dir_path
@@ -83,7 +82,6 @@ class MOABBDataset(BaseDataset):
             download_path = os.fspath(io_path) + '_raw'
         # pass all arguments to super class
         params = {
-            'timeout': timeout,
             'dataset': dataset,
             'paradigm': paradigm,
             'chunk_size': chunk_size,
