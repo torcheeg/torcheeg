@@ -105,3 +105,39 @@ those steps explicitly. For standard holdout evaluation, fit data-dependent
 preprocessing on training data only. State any protocol that instead uses
 unlabeled target-record statistics. Local reader validation is separate from
 training a complete sleep-stage or domain-generalization method.
+
+Train a standalone EEGNet
+------------------------
+
+:doc:`/auto_examples/examples_sleepedf_eegnet` trains a fixed two-channel
+EEGNet on these reader outputs. Install the source with the ``dataset`` and
+``trainer`` extras, then run:
+
+.. code-block:: console
+
+   python examples/examples_sleepedf_eegnet.py \
+       --root-path ./sleep-edf-database-expanded-1.0.0 \
+       --epochs 1 --output-path ./sleepedf-eegnet.pt
+
+The root contains the study subdirectories, not individual EDF files.
+Cassette is the default; select telemetry or both studies with ``--studies``.
+The example requires measured Fpz-Cz EEG and horizontal EOG, rejects missing
+channels, filters at 0.5--30 Hz, and resamples to 100 Hz. It uses complete
+30-second scored intervals, merges stages 3 and 4 as N3, and excludes movement
+and unknown intervals. It retains all scored wake epochs. Long daytime wake
+periods can therefore dominate the class distribution. This is not the
+30-minute wake-margin protocol used by some papers.
+
+Both nights share a participant split. The last sorted participant ID is the
+test set; the study prefix prevents cassette and telemetry ID collisions.
+Each epoch is normalized per channel independently. The fixed training count
+does not use test metrics for model selection. At least two participants are
+required. Use a new cache after changing studies, data or preprocessing.
+
+The safe model file stores all EEGNet constructor settings, the full tensor
+state, preprocessing and partition metadata. Its JSON sidecar records both
+participant and record IDs, counts, optimizer steps and test metrics. Existing
+outputs are preserved. The example checks strict restoration and equal
+inference after freezing constrained convolution weights. A successful run
+establishes this explicit workflow; it does not establish a published score.
+The gallery renders source without executing training.
