@@ -7,6 +7,18 @@ torcheeg.model\_selection
     :backlinks: top
 
 
+Splitters store row positions and construct subsets from the original dataset,
+preserving metadata types. The index cache format differs from older metadata
+CSV caches; use an unused ``split_path`` when switching formats. Existing caches
+are left unchanged.
+
+BaseModelSelection
+------------------
+
+.. autoclass:: torcheeg.model_selection.BaseModelSelection
+    :members: build, split, check
+
+
 KFoldCrossSubject
 -------------------------------------------------
 

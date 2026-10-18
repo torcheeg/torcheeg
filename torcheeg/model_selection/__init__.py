@@ -1,3 +1,4 @@
+from .base_model_selection import BaseModelSelection
 from .k_fold import *
 from .k_fold_cross_subject import *
 from .k_fold_cross_trial import *

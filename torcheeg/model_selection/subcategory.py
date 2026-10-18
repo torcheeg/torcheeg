@@ -1,19 +1,18 @@
-import logging
 import os
 import re
-from copy import copy
 from typing import Dict, Tuple, Union
 
 import pandas as pd
 
 from torcheeg.datasets.module.base_dataset import BaseDataset
 
-from ..utils import get_random_dir_path
+from .base_model_selection import BaseModelSelection
+from .utils import write_indices
 
-log = logging.getLogger('torcheeg')
+__all__ = ['Subcategory']
 
 
-class Subcategory:
+class Subcategory(BaseModelSelection):
     r'''
     A tool class for separating out subsets of specified categories, often used to extract data for a certain type of paradigm, or for a certain type of task. Each subset in the formed subset list contains only one type of data.
     
@@ -96,27 +95,28 @@ class Subcategory:
     '''
 
     def __init__(self, criteria: str = 'task', split_path: Union[None, str] = None):
-        if split_path is None:
-            split_path = get_random_dir_path(dir_prefix='model_selection')
 
         self.criteria = criteria
-        self.split_path = split_path
+        super().__init__(split_path=split_path)
 
-    def split_info_constructor(self, info: pd.DataFrame) -> None:
+    def build(self, info: pd.DataFrame, split_path=None) -> None:
+        info = info.reset_index(drop=True)
+        split_path = self.split_path if split_path is None else split_path
+        os.makedirs(split_path, exist_ok=True)
         assert self.criteria in list(
             info.columns
         ), f'Unsupported criteria {self.criteria}, please select one of the following options {list(info.columns)}.'
-
         category_list = list(set(info[self.criteria]))
-
         for category in category_list:
             subset_info = info[info[self.criteria] == category]
-            subset_info.to_csv(os.path.join(self.split_path, f'{category}.csv'),
-                               index=False)
+            write_indices(os.path.join(split_path, f'{category}.csv'),
+                          subset_info.index.to_numpy())
 
     @property
     def category_list(self):
-        indice_files = list(os.listdir(self.split_path))
+        indice_files = [
+            name for name in os.listdir(self.split_path) if name.endswith('.csv')
+        ]
 
         def indice_file_to_fold_id(indice_file):
             return int(re.findall(r'(.*).csv', indice_file)[0])
@@ -127,49 +127,16 @@ class Subcategory:
         return category_list
 
     def split(self, dataset: BaseDataset) -> Tuple[BaseDataset, BaseDataset]:
-        if not os.path.exists(self.split_path):
-            log.info(
-                f'📊 | Create the split of train and test set.'
-            )
-            log.info(
-                f'😊 | Please set \033[92msplit_path\033[0m to \033[92m{self.split_path}\033[0m for the next run, if you want to use the same setting for the experiment.'
-            )
-            os.makedirs(self.split_path)
-            self.split_info_constructor(dataset.info)
-        else:
-            log.info(
-                f'📊 | Detected existing split of train and test set, use existing split from {self.split_path}.'
-            )
-            log.info(
-                f'💡 | If the dataset is re-generated, you need to re-generate the split of the dataset instead of using the previous split.'
-            )
+        self._prepare(dataset, [self.criteria])
 
         category_list = self.category_list
 
         for category in category_list:
-            subset_info = pd.read_csv(
-                os.path.join(self.split_path, f'{category}.csv'))
 
-            subset_dataset = copy(dataset)
-            subset_dataset.info = subset_info
+            subset_dataset = self._read_subset(dataset, f'{category}.csv')
 
             yield subset_dataset
 
     @property
     def repr_body(self) -> Dict:
         return {'criteria': self.criteria, 'split_path': self.split_path}
-
-    def __repr__(self) -> str:
-        # init info
-        format_string = self.__class__.__name__ + '('
-        for i, (k, v) in enumerate(self.repr_body.items()):
-            # line end
-            if i:
-                format_string += ', '
-            # str param
-            if isinstance(v, str):
-                format_string += f"{k}='{v}'"
-            else:
-                format_string += f"{k}={v}"
-        format_string += ')'
-        return format_string

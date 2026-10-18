@@ -1,25 +1,25 @@
 import logging
 import os
-from copy import copy
 from typing import Union
 
-import numpy as np
 import pandas as pd
 from sklearn import model_selection
 
 from torcheeg.datasets.module.base_dataset import BaseDataset
 
 from ..utils import get_random_dir_path
+from .utils import create_subset, ensure_split_cache, read_indices, write_indices
 
 log = logging.getLogger('torcheeg')
+
+__all__ = ['train_test_split_per_subject_cross_trial']
 
 
 def train_test_split_per_subject_cross_trial(dataset: BaseDataset,
                                              test_size: float = 0.2,
                                              subject: str = 's01.dat',
                                              shuffle: bool = False,
-                                             random_state: Union[float,
-                                                                 None] = None,
+                                             random_state: Union[float, None] = None,
                                              split_path: Union[None, str] = None):
     r'''
     A tool function for cross-validations, to divide the training set and the test set. It is suitable for subject dependent experiments with large dataset volume and no need to use k-fold cross-validations. For the first step, the EEG signal samples of the specified user are selected. Then, parts of trials are sampled according to a certain proportion as the test dataset, and samples from other trials are used as training samples. In most literatures, 20% of the data are sampled for testing.
@@ -66,13 +66,8 @@ def train_test_split_per_subject_cross_trial(dataset: BaseDataset,
     if split_path is None:
         split_path = get_random_dir_path(dir_prefix='model_selection')
 
-    if not os.path.exists(split_path):
-        log.info(f'📊 | Create the split of train and test set.')
-        log.info(
-            f'😊 | Please set \033[92msplit_path\033[0m to \033[92m{split_path}\033[0m for the next run, if you want to use the same setting for the experiment.'
-        )
-        os.makedirs(split_path)
-        info = dataset.info
+    def write_split(split_path):
+        info = dataset.info.reset_index(drop=True)
         subjects = list(set(info['subject_id']))
 
         assert subject in subjects, f'The subject should be in the subject list {subjects}.'
@@ -81,10 +76,7 @@ def train_test_split_per_subject_cross_trial(dataset: BaseDataset,
         trial_ids = list(set(subject_info['trial_id']))
 
         train_trial_ids, test_trial_ids = model_selection.train_test_split(
-            trial_ids,
-            test_size=test_size,
-            shuffle=shuffle,
-            random_state=random_state)
+            trial_ids, test_size=test_size, shuffle=shuffle, random_state=random_state)
 
         if len(train_trial_ids) == 0 or len(test_trial_ids) == 0:
             raise ValueError(
@@ -93,34 +85,33 @@ def train_test_split_per_subject_cross_trial(dataset: BaseDataset,
 
         train_info = []
         for train_trial_id in train_trial_ids:
-            train_info.append(
-                subject_info[subject_info['trial_id'] == train_trial_id])
-        train_info = pd.concat(train_info, ignore_index=True)
+            train_info.append(subject_info[subject_info['trial_id'] == train_trial_id])
+        train_info = pd.concat(train_info, ignore_index=False)
 
         test_info = []
         for test_trial_id in test_trial_ids:
-            test_info.append(
-                subject_info[subject_info['trial_id'] == test_trial_id])
-        test_info = pd.concat(test_info, ignore_index=True)
+            test_info.append(subject_info[subject_info['trial_id'] == test_trial_id])
+        test_info = pd.concat(test_info, ignore_index=False)
 
-        train_info.to_csv(os.path.join(split_path, 'train.csv'), index=False)
-        test_info.to_csv(os.path.join(split_path, 'test.csv'), index=False)
+        write_indices(os.path.join(split_path, 'train.csv'),
+                      train_info.index.to_numpy())
+        write_indices(os.path.join(split_path, 'test.csv'), test_info.index.to_numpy())
 
-    else:
-        log.info(
-            f'📊 | Detected existing split of train and test set, use existing split from {split_path}.'
-        )
-        log.info(
-            f'💡 | If the dataset is re-generated, you need to re-generate the split of the dataset instead of using the previous split.'
-        )
+    configuration = {
+        'splitter': 'train_test_split_per_subject_cross_trial',
+        'test_size': test_size,
+        'subject': subject,
+        'shuffle': shuffle,
+        'random_state': random_state
+    }
+    ensure_split_cache(dataset.info, ['subject_id', 'trial_id'], split_path,
+                       configuration, ['train.csv', 'test.csv'], write_split)
 
-    train_info = pd.read_csv(os.path.join(split_path, 'train.csv'))
-    test_info = pd.read_csv(os.path.join(split_path, 'test.csv'))
+    train_info = read_indices(os.path.join(split_path, 'train.csv'), len(dataset))
+    test_info = read_indices(os.path.join(split_path, 'test.csv'), len(dataset))
 
-    train_dataset = copy(dataset)
-    train_dataset.info = train_info
+    train_dataset = create_subset(dataset, train_info)
 
-    test_dataset = copy(dataset)
-    test_dataset.info = test_info
+    test_dataset = create_subset(dataset, test_info)
 
     return train_dataset, test_dataset

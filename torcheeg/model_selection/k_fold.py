@@ -1,7 +1,5 @@
-import logging
 import os
 import re
-from copy import copy
 from typing import Dict, Tuple, Union
 
 import pandas as pd
@@ -9,12 +7,13 @@ from sklearn import model_selection
 
 from torcheeg.datasets.module.base_dataset import BaseDataset
 
-from ..utils import get_random_dir_path
+from .base_model_selection import BaseModelSelection
+from .utils import write_indices
 
-log = logging.getLogger('torcheeg')
+__all__ = ['KFold']
 
 
-class KFold:
+class KFold(BaseModelSelection):
     r'''
     A tool class for k-fold cross-validations, to divide the training set and the test set. One of the most commonly used data partitioning methods, where the data set is divided into k subsets, with one subset being retained as the test set and the remaining k-1 being used as training data. In most of the literature, K is chosen as 5 or 10 according to the size of the data set.
 
@@ -63,34 +62,31 @@ class KFold:
                  shuffle: bool = False,
                  random_state: Union[None, int] = None,
                  split_path: Union[None, str] = None):
-        if split_path is None:
-            split_path = get_random_dir_path(dir_prefix='model_selection')
 
         self.n_splits = n_splits
         self.shuffle = shuffle
         self.random_state = random_state
-        self.split_path = split_path
+        super().__init__(split_path=split_path)
 
         self.k_fold = model_selection.KFold(n_splits=n_splits,
                                             shuffle=shuffle,
                                             random_state=random_state)
 
-    def split_info_constructor(self, info: pd.DataFrame) -> None:
-        for fold_id, (train_index,
-                      test_index) in enumerate(self.k_fold.split(info)):
-            train_info = info.iloc[train_index]
-            test_info = info.iloc[test_index]
-
-            train_info.to_csv(os.path.join(self.split_path,
-                                           f'train_fold_{fold_id}.csv'),
-                              index=False)
-            test_info.to_csv(os.path.join(self.split_path,
-                                          f'test_fold_{fold_id}.csv'),
-                             index=False)
+    def build(self, info: pd.DataFrame, split_path=None) -> None:
+        info = info.reset_index(drop=True)
+        split_path = self.split_path if split_path is None else split_path
+        os.makedirs(split_path, exist_ok=True)
+        for fold_id, (train_index, test_index) in enumerate(self.k_fold.split(info)):
+            write_indices(os.path.join(split_path, f'train_fold_{fold_id}.csv'),
+                          train_index)
+            write_indices(os.path.join(split_path, f'test_fold_{fold_id}.csv'),
+                          test_index)
 
     @property
     def fold_ids(self):
-        indice_files = list(os.listdir(self.split_path))
+        indice_files = [
+            name for name in os.listdir(self.split_path) if name.endswith('.csv')
+        ]
 
         def indice_file_to_fold_id(indice_file):
             return int(re.findall(r'fold_(\d*).csv', indice_file)[0])
@@ -100,36 +96,15 @@ class KFold:
         return fold_ids
 
     def split(self, dataset: BaseDataset) -> Tuple[BaseDataset, BaseDataset]:
-        if not os.path.exists(self.split_path):
-            log.info(
-                f'📊 | Create the split of train and test set.'
-            )
-            log.info(
-                f'😊 | Please set \033[92msplit_path\033[0m to \033[92m{self.split_path}\033[0m for the next run, if you want to use the same setting for the experiment.'
-            )
-            os.makedirs(self.split_path)
-            self.split_info_constructor(dataset.info)
-        else:
-            log.info(
-                f'📊 | Detected existing split of train and test set, use existing split from {self.split_path}.'
-            )
-            log.info(
-                f'💡 | If the dataset is re-generated, you need to re-generate the split of the dataset instead of using the previous split.'
-            )
+        self._prepare(dataset, [])
 
         fold_ids = self.fold_ids
 
         for fold_id in fold_ids:
-            train_info = pd.read_csv(
-                os.path.join(self.split_path, f'train_fold_{fold_id}.csv'))
-            test_info = pd.read_csv(
-                os.path.join(self.split_path, f'test_fold_{fold_id}.csv'))
 
-            train_dataset = copy(dataset)
-            train_dataset.info = train_info
+            train_dataset = self._read_subset(dataset, f'train_fold_{fold_id}.csv')
 
-            test_dataset = copy(dataset)
-            test_dataset.info = test_info
+            test_dataset = self._read_subset(dataset, f'test_fold_{fold_id}.csv')
 
             yield train_dataset, test_dataset
 
@@ -141,18 +116,3 @@ class KFold:
             'random_state': self.random_state,
             'split_path': self.split_path
         }
-
-    def __repr__(self) -> str:
-        # init info
-        format_string = self.__class__.__name__ + '('
-        for i, (k, v) in enumerate(self.repr_body.items()):
-            # line end
-            if i:
-                format_string += ', '
-            # str param
-            if isinstance(v, str):
-                format_string += f"{k}='{v}'"
-            else:
-                format_string += f"{k}={v}"
-        format_string += ')'
-        return format_string

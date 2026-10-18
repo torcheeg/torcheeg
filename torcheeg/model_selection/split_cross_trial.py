@@ -1,17 +1,18 @@
 import logging
 import os
-from copy import copy
 from typing import Union
 
-import numpy as np
 import pandas as pd
 from sklearn import model_selection
 
 from torcheeg.datasets.module.base_dataset import BaseDataset
 
 from ..utils import get_random_dir_path
+from .utils import create_subset, ensure_split_cache, read_indices, write_indices
 
 log = logging.getLogger('torcheeg')
+
+__all__ = ['train_test_split_cross_trial']
 
 
 def train_test_split_cross_trial(dataset: BaseDataset,
@@ -65,13 +66,8 @@ def train_test_split_cross_trial(dataset: BaseDataset,
     if split_path is None:
         split_path = get_random_dir_path(dir_prefix='model_selection')
 
-    if not os.path.exists(split_path):
-        log.info(f'📊 | Create the split of train and test set.')
-        log.info(
-            f'😊 | Please set \033[92msplit_path\033[0m to \033[92m{split_path}\033[0m for the next run, if you want to use the same setting for the experiment.'
-        )
-        os.makedirs(split_path)
-        info = dataset.info
+    def write_split(split_path):
+        info = dataset.info.reset_index(drop=True)
         subjects = list(set(info['subject_id']))
 
         train_info = None
@@ -87,28 +83,25 @@ def train_test_split_cross_trial(dataset: BaseDataset,
                 shuffle=shuffle,
                 random_state=random_state)
 
-            if len(train_index_trial_ids) == 0 or len(
-                    test_index_trial_ids) == 0:
+            if len(train_index_trial_ids) == 0 or len(test_index_trial_ids) == 0:
                 raise ValueError(
                     f'The number of training or testing trials for subject {subject} is zero.'
                 )
 
-            train_trial_ids = np.array(
-                trial_ids)[train_index_trial_ids].tolist()
-            test_trial_ids = np.array(trial_ids)[test_index_trial_ids].tolist()
+            train_trial_ids = list(train_index_trial_ids)
+            test_trial_ids = list(test_index_trial_ids)
 
             subject_train_info = []
             for train_trial_id in train_trial_ids:
                 subject_train_info.append(
                     subject_info[subject_info['trial_id'] == train_trial_id])
-            subject_train_info = pd.concat(subject_train_info,
-                                           ignore_index=True)
+            subject_train_info = pd.concat(subject_train_info, ignore_index=False)
 
             subject_test_info = []
             for test_trial_id in test_trial_ids:
                 subject_test_info.append(
                     subject_info[subject_info['trial_id'] == test_trial_id])
-            subject_test_info = pd.concat(subject_test_info, ignore_index=True)
+            subject_test_info = pd.concat(subject_test_info, ignore_index=False)
 
             if train_info is None and test_info is None:
                 train_info = [subject_train_info]
@@ -117,27 +110,27 @@ def train_test_split_cross_trial(dataset: BaseDataset,
                 train_info.append(subject_train_info)
                 test_info.append(subject_test_info)
 
-        train_info = pd.concat(train_info, ignore_index=True)
-        test_info = pd.concat(test_info, ignore_index=True)
+        train_info = pd.concat(train_info, ignore_index=False)
+        test_info = pd.concat(test_info, ignore_index=False)
 
-        train_info.to_csv(os.path.join(split_path, 'train.csv'), index=False)
-        test_info.to_csv(os.path.join(split_path, 'test.csv'), index=False)
+        write_indices(os.path.join(split_path, 'train.csv'),
+                      train_info.index.to_numpy())
+        write_indices(os.path.join(split_path, 'test.csv'), test_info.index.to_numpy())
 
-    else:
-        log.info(
-            f'📊 | Detected existing split of train and test set, use existing split from {split_path}.'
-        )
-        log.info(
-            f'💡 | If the dataset is re-generated, you need to re-generate the split of the dataset instead of using the previous split.'
-        )
+    configuration = {
+        'splitter': 'train_test_split_cross_trial',
+        'test_size': test_size,
+        'shuffle': shuffle,
+        'random_state': random_state
+    }
+    ensure_split_cache(dataset.info, ['subject_id', 'trial_id'], split_path,
+                       configuration, ['train.csv', 'test.csv'], write_split)
 
-    train_info = pd.read_csv(os.path.join(split_path, 'train.csv'))
-    test_info = pd.read_csv(os.path.join(split_path, 'test.csv'))
+    train_info = read_indices(os.path.join(split_path, 'train.csv'), len(dataset))
+    test_info = read_indices(os.path.join(split_path, 'test.csv'), len(dataset))
 
-    train_dataset = copy(dataset)
-    train_dataset.info = train_info
+    train_dataset = create_subset(dataset, train_info)
 
-    test_dataset = copy(dataset)
-    test_dataset.info = test_info
+    test_dataset = create_subset(dataset, test_info)
 
     return train_dataset, test_dataset

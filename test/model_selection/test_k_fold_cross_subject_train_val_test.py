@@ -6,18 +6,48 @@ import numpy as np
 
 from torcheeg.model_selection import KFoldCrossSubjectTrainValTest
 
-from ._three_way_cases import ThreeWayChecks, make_three_way_dataset
+from .test_utils import make_dataset
 
 
-class TestKFoldCrossSubjectTrainValTest(ThreeWayChecks, unittest.TestCase):
+class TestKFoldCrossSubjectTrainValTest(unittest.TestCase):
     splitter_class = KFoldCrossSubjectTrainValTest
     parameters = {'all_subjects': [0, 1, 2, 3, 4], 'n_folds': 5}
     fold_count = 5
     group_column = 'subject_id'
     metadata_column = 'subject_id'
 
+    def setUp(self):
+        self.directory = tempfile.TemporaryDirectory()
+        self.addCleanup(self.directory.cleanup)
+        self.split_path = os.path.join(self.directory.name, 'split')
+
+    def make_splitter(self, split_path=None, **overrides):
+        parameters = dict(self.parameters)
+        parameters.update(overrides)
+        return self.splitter_class(
+            split_path=self.split_path if split_path is None else split_path,
+            **parameters)
+
+    def assert_partition(self, dataset, folds):
+        self.assertEqual(len(folds), self.fold_count)
+        for fold in folds:
+            self.assertEqual(len(fold), 3)
+            clips = [set(subset.info['clip_id']) for subset in fold]
+            self.assertEqual(set.union(*clips), set(dataset.info['clip_id']))
+            for first, second in ((0, 1), (0, 2), (1, 2)):
+                self.assertFalse(clips[first] & clips[second])
+                if self.group_column is not None:
+                    self.assertFalse(
+                        set(fold[first].info[self.group_column])
+                        & set(fold[second].info[self.group_column]))
+            for subset in fold:
+                self.assertGreater(len(subset), 0)
+                for index in range(len(subset)):
+                    signal, info = subset[index]
+                    self.assertEqual(signal[0], int(info['clip_id']))
+
     def test_k_fold_cross_subject_train_val_test(self):
-        folds = list(self.make_splitter().split(make_three_way_dataset()))
+        folds = list(self.make_splitter().split(make_dataset()))
         self.assertEqual(len(folds), 5)
         validation_subjects, test_subjects = [], []
         for train, val, test in folds:
@@ -28,9 +58,11 @@ class TestKFoldCrossSubjectTrainValTest(ThreeWayChecks, unittest.TestCase):
         self.assertCountEqual(test_subjects, list(range(5)))
 
     def test_string_subject_ids_keep_their_values_and_types(self):
-        dataset = make_three_way_dataset()
-        dataset.info['subject_id'] = dataset.info['subject_id'].map(lambda value: f'sub_{value:02d}')
-        splitter = self.make_splitter(all_subjects=[f'sub_{value:02d}' for value in range(5)])
+        dataset = make_dataset()
+        dataset.info['subject_id'] = dataset.info['subject_id'].map(
+            lambda value: f'sub_{value:02d}')
+        splitter = self.make_splitter(
+            all_subjects=[f'sub_{value:02d}' for value in range(5)])
         self.assert_partition(dataset, list(splitter.split(dataset)))
 
     def test_invalid_fold_counts_are_rejected(self):
@@ -47,11 +79,13 @@ class TestKFoldCrossSubjectTrainValTest(ThreeWayChecks, unittest.TestCase):
         for subjects in ([0, 1, 2, 3, 99], [0, 1, 2]):
             with tempfile.TemporaryDirectory() as path:
                 with self.assertRaisesRegex(ValueError, 'all_subjects'):
-                    list(self.make_splitter(os.path.join(path, 'split'),
-                        all_subjects=subjects, n_folds=3).split(make_three_way_dataset()))
+                    list(
+                        self.make_splitter(os.path.join(path, 'split'),
+                                           all_subjects=subjects,
+                                           n_folds=3).split(make_dataset()))
 
     def test_seeded_folds_are_reproducible_without_changing_global_rng(self):
-        dataset = make_three_way_dataset()
+        dataset = make_dataset()
         np.random.seed(123)
         before = np.random.get_state()
         first = list(self.make_splitter().split(dataset))
@@ -60,20 +94,21 @@ class TestKFoldCrossSubjectTrainValTest(ThreeWayChecks, unittest.TestCase):
         np.testing.assert_array_equal(before[1], after[1])
         self.assertEqual(before[2:], after[2:])
         with tempfile.TemporaryDirectory() as path:
-            repeated = list(self.make_splitter(os.path.join(path, 'split')).split(dataset))
+            repeated = list(
+                self.make_splitter(os.path.join(path, 'split')).split(dataset))
         for a, b in zip(first, repeated):
             for x, y in zip(a, b):
                 self.assertEqual(list(x.info['clip_id']), list(y.info['clip_id']))
 
     def test_changed_fold_configuration_is_rejected(self):
-        dataset = make_three_way_dataset()
+        dataset = make_dataset()
         list(self.make_splitter().split(dataset))
         with self.assertRaisesRegex(ValueError, 'parameters'):
             next(self.make_splitter(random_state=7).split(dataset))
 
     def test_unshuffled_folds_follow_supplied_subject_order(self):
         splitter = self.make_splitter(n_folds=3, shuffle=False)
-        folds = list(splitter.split(make_three_way_dataset()))
+        folds = list(splitter.split(make_dataset()))
         self.assertEqual(set(folds[0][2].info['subject_id']), {0, 3})
         self.assertEqual(set(folds[0][1].info['subject_id']), {1, 4})
         self.assertEqual(set(folds[0][0].info['subject_id']), {2})

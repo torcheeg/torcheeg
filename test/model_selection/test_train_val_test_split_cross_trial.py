@@ -1,20 +1,51 @@
+import os
 import tempfile
 import unittest
 
 from torcheeg.model_selection import TrainValTestSplitCrossTrial
 
-from ._three_way_cases import ThreeWayChecks, make_three_way_dataset
+from .test_utils import make_dataset
 
 
-class TestTrainValTestSplitCrossTrial(ThreeWayChecks, unittest.TestCase):
+class TestTrainValTestSplitCrossTrial(unittest.TestCase):
     splitter_class = TrainValTestSplitCrossTrial
     parameters = {'train_trials': [0, 1, 2], 'val_trials': [3], 'test_trials': [4]}
     fold_count = 1
     group_column = 'trial_id'
     metadata_column = 'trial_id'
 
+    def setUp(self):
+        self.directory = tempfile.TemporaryDirectory()
+        self.addCleanup(self.directory.cleanup)
+        self.split_path = os.path.join(self.directory.name, 'split')
+
+    def make_splitter(self, split_path=None, **overrides):
+        parameters = dict(self.parameters)
+        parameters.update(overrides)
+        return self.splitter_class(
+            split_path=self.split_path if split_path is None else split_path,
+            **parameters)
+
+    def assert_partition(self, dataset, folds):
+        self.assertEqual(len(folds), self.fold_count)
+        for fold in folds:
+            self.assertEqual(len(fold), 3)
+            clips = [set(subset.info['clip_id']) for subset in fold]
+            self.assertEqual(set.union(*clips), set(dataset.info['clip_id']))
+            for first, second in ((0, 1), (0, 2), (1, 2)):
+                self.assertFalse(clips[first] & clips[second])
+                if self.group_column is not None:
+                    self.assertFalse(
+                        set(fold[first].info[self.group_column])
+                        & set(fold[second].info[self.group_column]))
+            for subset in fold:
+                self.assertGreater(len(subset), 0)
+                for index in range(len(subset)):
+                    signal, info = subset[index]
+                    self.assertEqual(signal[0], int(info['clip_id']))
+
     def test_train_val_test_split_cross_trial(self):
-        train, val, test = next(self.make_splitter().split(make_three_way_dataset()))
+        train, val, test = next(self.make_splitter().split(make_dataset()))
         self.assertEqual([len(train), len(val), len(test)], [75, 25, 25])
 
     def test_overlapping_empty_duplicate_and_missing_partition_ids_are_rejected(self):
@@ -24,24 +55,29 @@ class TestTrainValTestSplitCrossTrial(ThreeWayChecks, unittest.TestCase):
 
     def test_unknown_partition_ids_are_rejected(self):
         with self.assertRaisesRegex(ValueError, 'Unknown'):
-            list(self.make_splitter(train_trials=[0, 1, 99]).split(make_three_way_dataset()))
+            list(self.make_splitter(train_trials=[0, 1, 99]).split(make_dataset()))
 
     def test_unassigned_ids_can_be_intentionally_excluded(self):
-        train, val, test = next(self.make_splitter(train_trials=[0],
-            val_trials=[1], test_trials=[2]).split(make_three_way_dataset()))
+        train, val, test = next(
+            self.make_splitter(train_trials=[0], val_trials=[1],
+                               test_trials=[2]).split(make_dataset()))
         self.assertEqual([len(train), len(val), len(test)], [25, 25, 25])
 
     def test_changed_partition_configuration_does_not_reuse_old_cache(self):
-        dataset = make_three_way_dataset()
+        dataset = make_dataset()
         list(self.make_splitter().split(dataset))
         with self.assertRaisesRegex(ValueError, 'parameters'):
-            next(self.make_splitter(train_trials=[4], test_trials=[0, 1, 2]).split(dataset))
+            next(
+                self.make_splitter(train_trials=[4], test_trials=[0, 1,
+                                                                  2]).split(dataset))
 
     def test_string_ids_keep_their_values_and_types(self):
-        dataset = make_three_way_dataset()
-        dataset.info['trial_id'] = dataset.info['trial_id'].map(lambda value: f'id_{value:02d}')
+        dataset = make_dataset()
+        dataset.info['trial_id'] = dataset.info['trial_id'].map(
+            lambda value: f'id_{value:02d}')
         splitter = self.make_splitter(train_trials=['id_00', 'id_01', 'id_02'],
-            val_trials=['id_03'], test_trials=['id_04'])
+                                      val_trials=['id_03'],
+                                      test_trials=['id_04'])
         folds = list(splitter.split(dataset))
         self.assert_partition(dataset, folds)
         self.assertEqual(set(folds[0][1].info['trial_id']), {'id_03'})
