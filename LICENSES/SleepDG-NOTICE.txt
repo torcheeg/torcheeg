@@ -1,0 +1,29 @@
+SleepDG code attribution
+
+Source: https://github.com/wjq-learning/SleepDG
+Revision: 01d209d4fda874933a277a88bccdca6e3835e884
+License: MIT, copyright (c) 2023 Jiquan Wang (SleepDG.txt).
+
+The sequence encoder, convolutional epoch encoder, deterministic feature
+projection, reconstruction decoder and classifier follow the author model.
+Native parameter/buffer paths are retained. Configuration and validation are
+adapted to TorchEEG conventions. Batch and sequence axes are preserved for
+single-element configurations; no constructor-time dummy forward is used.
+forward follows the author's encoder-only inference path. forward_all runs
+the complete reconstruction path. No author trained weights are distributed.
+
+Independent model reference modules under test/models/fixtures/sleepdg_reference/models
+retain the author's computational class bodies verbatim; only package-local
+imports are adapted. Original/adapted SHA256 hashes and the revision are
+recorded there. The model architecture alone does not implement the full
+multi-domain alignment training protocol or establish published performance.
+
+The domain-generalization alignment loss derives from losses/double_alignment.py.
+The independent test copy preserves its formulas and changes only the domain
+index tensor device; see the packaged alignment-manifest.json for file hashes.
+
+The Lightning trainer follows the objective and default optimizer/schedule
+settings in trainer.py and losses/ae_loss.py at the same source revision.
+Training phases, metrics, checkpoint paths and device handling are adapted to
+TorchEEG. Source sampling, data protocol and checkpoint selection remain
+explicit workflow choices; no published benchmark performance is implied.

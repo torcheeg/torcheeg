@@ -1,0 +1,36 @@
+{
+  "repository": "https://github.com/wjq-learning/SleepDG",
+  "revision": "01d209d4fda874933a277a88bccdca6e3835e884",
+  "files": [
+    {
+      "path": "models/__init__.py",
+      "original_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "adapted_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "models/ae.py",
+      "original_sha256": "8b76a6c0bfd46e9664dd99a8b59e277cb1330d8fcfbeaafdaad74a81cb1de4a2",
+      "adapted_sha256": "fc4c170c3d7abb5f5528c768183b0133eb0608d228d38a83f1088efdefaba7ee"
+    },
+    {
+      "path": "models/decoder.py",
+      "original_sha256": "c75e7a982eca529a1a68c74eebc87c29b721255c95039744afa104994675aa6a",
+      "adapted_sha256": "d25ec0d99dfdd59130c648a51d721e21ac1b6a60a377b070782d38636975b169"
+    },
+    {
+      "path": "models/encoder.py",
+      "original_sha256": "e312c1f28b9ce6f15783170d0d3a51c373ec161e95d5ab108898756d26e5243c",
+      "adapted_sha256": "5d5720816efb2263640abc1103af168d01d574f02fedca6d4d0fdda73838c4b0"
+    },
+    {
+      "path": "models/model.py",
+      "original_sha256": "ea7c846b5e4eafdc79c22cb2f4af8157db4468a46b3cbc8d2f168834a38b6fdd",
+      "adapted_sha256": "d9e80cbafbce3391911b05db9c33f1567c613d350ceb0c116dd9b17252345d0d"
+    },
+    {
+      "path": "models/transformer.py",
+      "original_sha256": "39475ee9626194c5d7552917044342c948dd6a4589defc097c86906337095438",
+      "adapted_sha256": "39475ee9626194c5d7552917044342c948dd6a4589defc097c86906337095438"
+    }
+  ]
+}
