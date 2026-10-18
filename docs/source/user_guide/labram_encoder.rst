@@ -165,3 +165,65 @@ The default encoder is small and random; an explicitly verified local base
 checkpoint is optional. The example downloads nothing. A teaching run
 verifies training and restoration, not published benchmark accuracy or a
 pretrained behavioral claim. Test labels do not select epochs or parameters.
+
+
+Existing classifier compatibility
+----------------------------------
+
+:class:`torcheeg.models.LaBraM` retains its classification API, constructor
+parameters and base/large/huge factories. It is separate from LaBraMEncoder.
+Setting use_abs_pos_emb=False now disables the spatial lookup while retaining
+temporal positions, all token-return modes and the existing pooling/head
+behaviour. It does not replace the spatial table with a random substitute.
+
+Its :meth:`~torcheeg.models.LaBraM.load_pretrained` method accepts local
+raw tensor state or one model, module or state_dict container. None of these
+flat states is silently filtered into an empty dictionary. With prefix=None,
+it selects student. when present and otherwise retains raw keys; an explicit
+prefix selects and strips exactly that prefix. Empty, wholly unrelated or
+ambiguous selections are errors. For example::
+
+    model = LaBraM.base_patch200_200(num_classes=4)
+    result = model.load_pretrained('complete-classifier.pt', strict=True)
+
+strict=True requires complete matching classifier state. The default
+strict=False remains a transfer-loading policy: every missing and unexpected
+key is reported in a warning and returned as load_state_dict's missing_keys
+and unexpected_keys. No compatible tensor is copied until all matching
+tensor shapes/types and finite values have been checked. Invalid shape or
+nonfinite input fails before any partial mutation. exclude_head=True
+explicitly leaves head.* fresh, for transfer across class counts; it does
+not silently ignore an incompatible head by default.
+
+A complete native encoder's norm and the mean-pooled classifier's fc_norm
+have distinct roles. They are not automatically renamed. Native transfer
+therefore reports the missing classifier head/fc_norm and unexpected native
+norm/pretraining tensors. Check the returned report. Complete native encoder
+restoration with explicit token contracts remains LaBraMEncoder's role.
+
+Both loaders always use weights_only=True across tested runtime defaults.
+They share the existing known-author metadata context. A verified author
+training file needs explicit allow_training_metadata=True to admit its
+Namespace and recognized NumPy scalar metadata, with no unsafe fallback or
+persistent allowlist additions. Runtimes lacking the public safe_globals
+context require verified conversion to tensor-only state first. Executable
+pickle metadata is rejected even with the known-metadata option. Loading
+performs no download, optimizer restoration or parameter-mode changes.
+
+
+The legacy electrode argument keeps its existing standard_1020 spellings
+(e.g. FP1 rather than Fp1). Its query/key normalization now uses a two-dimensional
+per-head view to avoid backward-fusion layout conflicts in tested compiler
+runtimes. Output/token/pooling contracts and native parameter paths remain
+unchanged. Full-graph training checks cover spatial positions enabled or
+disabled and mean or CLS pooling, with input and all parameter gradients
+compared against eager execution.
+
+
+The legacy catalog lists 136 electrode/derivation names, while its native
+spatial table has 128 electrode slots plus CLS. With spatial positions enabled,
+provide explicit electrodes within those learned slots. The first eight
+bipolar names retain slots 121--128; the last eight catalog entries have no
+learned spatial vectors and raise a clear error. The implicit full catalog
+also raises before a tensor shape failure. Disabling spatial positions
+removes this lookup constraint without inventing or remapping positions.
