@@ -11,7 +11,7 @@ from sklearn import model_selection
 from torcheeg.datasets.module.base_dataset import BaseDataset
 from ..utils import get_random_dir_path
 
-_log = logging.getLogger('torcheeg')
+log = logging.getLogger('torcheeg')
 
 
 class KFoldCrossTrial:
@@ -120,19 +120,19 @@ class KFoldCrossTrial:
 
     def split(self, dataset: BaseDataset) -> Tuple[BaseDataset, BaseDataset]:
         if not os.path.exists(self.split_path):
-            _log.info(
+            log.info(
                 f'📊 | Create the split of train and test set.'
             )
-            _log.info(
+            log.info(
                 f'😊 | Please set \033[92msplit_path\033[0m to \033[92m{self.split_path}\033[0m for the next run, if you want to use the same setting for the experiment.'
             )
             os.makedirs(self.split_path)
             self.split_info_constructor(dataset.info)
         else:
-            _log.info(
+            log.info(
                 f'📊 | Detected existing split of train and test set, use existing split from {self.split_path}.'
             )
-            _log.info(
+            log.info(
                 f'💡 | If the dataset is re-generated, you need to re-generate the split of the dataset instead of using the previous split.'
             )
 
