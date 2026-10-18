@@ -95,3 +95,37 @@ time metadata. The stable filter representation also changes numerical
 preprocessing. Existing caches are preserved and are not silently rewritten.
 Also use a new cache path after changing source files, channel order, rate,
 filter bounds or label mapping.
+
+Train a standalone EEGNet
+-------------------------
+
+:doc:`/auto_examples/examples_p2018_eegnet` uses the labeled training directory
+for a five-class sleep-stage holdout. It does not predict the challenge's
+arousal target or use the provider's hidden test labels. Install the source
+with the ``dataset`` and ``trainer`` extras, then run:
+
+.. code-block:: console
+
+   python examples/examples_p2018_eegnet.py --root-path ./P2018/training \
+       --epochs 1 --output-path ./p2018-eegnet.pt
+
+The example selects C3-M2 EEG and E1-M2 EOG, resamples each whole signal to
+100 Hz with WFDB FFT, and then applies the eighth-order 0.5--30 Hz zero-phase
+SOS Butterworth filter. Each complete 30-second scored epoch is normalized
+per channel. Header physical units remain native; selected EEG/EOG are
+normally microvolts. Actual channel names and units are checked per record
+and saved with the model. Missing unit metadata raises an error.
+
+Keep at least two complete labeled records. The final sorted released record
+is held out; all other records train for a fixed count without test-based
+selection. The reader preserves the sleep-stage clock even when an arousal
+occurs earlier, and excludes undefined and mixed-stage windows. All scored
+wake epochs are retained. This workflow is not a published benchmark.
+
+The safe model file contains all constructor settings, the full tensor state,
+preprocessing, physical-unit provenance, and partition IDs. A JSON sidecar
+records sample counts, optimizer updates and test metrics. Existing outputs
+are preserved. Strict reload and inference equality checks use frozen
+constrained convolution weights. Select fresh caches after changing data,
+units, channel order or preprocessing. Gallery rendering does not execute
+training; run the script separately on your labeled data.
