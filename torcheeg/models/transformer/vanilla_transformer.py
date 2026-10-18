@@ -146,7 +146,10 @@ class VanillaTransformer(nn.Module):
         self.mlp_channels = mlp_channels
         self.num_classes = num_classes
 
-        assert chunk_size % t_patch_size == 0, f'EEG chunk size {chunk_size} must be divisible by the patch size {t_patch_size}.'
+        if not (chunk_size % t_patch_size == 0):
+            raise ValueError(
+                f'EEG chunk size {chunk_size} must be divisible by the patch size {t_patch_size}.'
+            )
 
         self.to_patch_embedding = nn.Sequential(
             Rearrange('b c (w p) -> b (c w) p', p=t_patch_size),

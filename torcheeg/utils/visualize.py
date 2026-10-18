@@ -17,7 +17,7 @@ from pylab import cm
 mne.set_log_level('CRITICAL')
 
 
-class LazyLoader:
+class _LazyLoader:
     def __init__(self, lib_name):
         self._lib_name = lib_name
         self._module = None
@@ -34,13 +34,13 @@ class LazyLoader:
         return getattr(self._module, name)
 
 
-pyg = LazyLoader('torch_geometric')
+_pyg = _LazyLoader('torch_geometric')
 
 
-default_montage = mne.channels.make_standard_montage('standard_1020')
+_DEFAULT_MONTAGE = mne.channels.make_standard_montage('standard_1020')
 
 
-def plot2image(ploter):
+def _plot_to_image(ploter):
     buf = io.BytesIO()
     ploter.savefig(buf, bbox_inches='tight', pad_inches=0.0)
     buf.seek(0)
@@ -51,7 +51,7 @@ def plot_raw_topomap(tensor: torch.Tensor,
                      channel_list: List[str],
                      sampling_rate: int,
                      plot_second_list: List[int] = [0.0, 0.25, 0.5, 0.75],
-                     montage: mne.channels.DigMontage = default_montage):
+                     montage: mne.channels.DigMontage = _DEFAULT_MONTAGE):
     r'''
     Plot a topographic map of the input raw EEG signal as image.
 
@@ -103,7 +103,7 @@ def plot_raw_topomap(tensor: torch.Tensor,
             'fontname': 'Liberation Serif'
         })
 
-    img = plot2image(fig)
+    img = _plot_to_image(fig)
     plt.show()
     return np.array(img)
 
@@ -111,7 +111,7 @@ def plot_raw_topomap(tensor: torch.Tensor,
 def plot_feature_topomap(tensor: torch.Tensor,
                          channel_list: List[str],
                          feature_list: Union[List[str], None] = None,
-                         montage: mne.channels.DigMontage = default_montage,
+                         montage: mne.channels.DigMontage = _DEFAULT_MONTAGE,
                          fig_shape: Tuple[int, int] = None):
     r'''
     Plot a topographic map of the input EEG features as image.
@@ -198,7 +198,7 @@ def plot_feature_topomap(tensor: torch.Tensor,
             'fontname': 'Liberation Serif'
         })
 
-    img = plot2image(fig)
+    img = _plot_to_image(fig)
     plt.show()
     return np.array(img)
 
@@ -206,7 +206,7 @@ def plot_feature_topomap(tensor: torch.Tensor,
 def plot_signal(tensor: torch.Tensor,
                 channel_list: List[str],
                 sampling_rate: int,
-                montage: mne.channels.DigMontage = default_montage):
+                montage: mne.channels.DigMontage = _DEFAULT_MONTAGE):
     r'''
     Plot signal values of the input raw EEG as image.
 
@@ -245,7 +245,7 @@ def plot_signal(tensor: torch.Tensor,
 
     epochs = mne.io.RawArray(tensor.detach().cpu().numpy(), info)
     epochs.set_montage(montage, match_alias=True, on_missing='ignore')
-    img = plot2image(
+    img = _plot_to_image(
         epochs.plot(show_scrollbars=False, show_scalebars=False, block=True))
     plt.show()
     return np.array(img)
@@ -292,7 +292,7 @@ def plot_3d_tensor(tensor: torch.Tensor,
               linewidths=0.1,
               shade=False)
 
-    img = plot2image(fig)
+    img = _plot_to_image(fig)
     plt.show()
 
     return np.array(img)
@@ -334,7 +334,7 @@ def plot_2d_tensor(tensor: torch.Tensor,
     colormap = cm.get_cmap(color)
     ax.imshow(ndarray, cmap=colormap, interpolation='nearest')
 
-    img = plot2image(fig)
+    img = _plot_to_image(fig)
     plt.show()
 
     return np.array(img)
@@ -378,8 +378,10 @@ def plot_adj_connectivity(adj: torch.Tensor,
     if channel_list is None:
         channel_list = list(range(len(adj)))
     adj = adj.detach().cpu().numpy()
-    assert len(channel_list) == adj.shape[0] and len(channel_list) == adj.shape[
-        1], 'The size of the adjacency matrix does not match the number of channel names.'
+    if not (len(channel_list) == adj.shape[0] and len(channel_list) == adj.shape[1]):
+        raise ValueError(
+            'The size of the adjacency matrix does not match the number of channel names.'
+        )
 
     node_colors = None
     if region_list:
@@ -434,7 +436,7 @@ def plot_adj_connectivity(adj: torch.Tensor,
                              linewidth=linewidth,
                              fontsize_names=16)
     fig.tight_layout()
-    img = plot2image(fig)
+    img = _plot_to_image(fig)
     plt.show()
 
     return np.array(img)
@@ -481,7 +483,7 @@ def plot_graph(data: 'pyg.data.Data',
 
     # convert to networkx
     edge_attrs = ['edge_weight'] * len(data.edge_weight.tolist())
-    g = pyg.utils.to_networkx(data, edge_attrs=edge_attrs)
+    g = _pyg.utils.to_networkx(data, edge_attrs=edge_attrs)
 
     # get color of edges
     edge_weights = [
@@ -519,7 +521,7 @@ def plot_graph(data: 'pyg.data.Data',
     plt.gca().xaxis.set_major_locator(plt.NullLocator())
     plt.gca().yaxis.set_major_locator(plt.NullLocator())
 
-    img = plot2image(fig)
+    img = _plot_to_image(fig)
     plt.show()
 
     return np.array(img)

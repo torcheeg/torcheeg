@@ -9,7 +9,7 @@ from ....utils import get_random_dir_path
 from ..base_dataset import BaseDataset
 
 
-def crop(raw: mne.io.BaseRaw, start_at: int = 15 * 60, end_at: int = 15 * 60 + 6 * 60 * 60):
+def _crop(raw: mne.io.BaseRaw, start_at: int = 15 * 60, end_at: int = 15 * 60 + 6 * 60 * 60):
     if end_at > raw.times[-1]:
         print(
             "Warning: The recording is not long enough for the desired 6-hour segment.")
@@ -19,7 +19,7 @@ def crop(raw: mne.io.BaseRaw, start_at: int = 15 * 60, end_at: int = 15 * 60 + 6
     return raw
 
 
-def interploate(raw: mne.io.BaseRaw, channels: List = ['EEG F4-M1',
+def _interpolate(raw: mne.io.BaseRaw, channels: List = ['EEG F4-M1',
                                                        'EEG C4-M1',
                                                        'EEG O2-M1',
                                                        'EEG C3-M2']):
@@ -34,12 +34,12 @@ def interploate(raw: mne.io.BaseRaw, channels: List = ['EEG F4-M1',
     return raw
 
 
-def filter(raw: mne.io.BaseRaw, l_freq: float = 0.5, h_freq: float = 30):
+def _filter(raw: mne.io.BaseRaw, l_freq: float = 0.5, h_freq: float = 30):
     raw = raw.filter(l_freq=l_freq, h_freq=h_freq, fir_design='firwin')
     return raw
 
 
-def downsample(epochs: mne.Epochs, sfreq: int = 100):
+def _downsample(epochs: mne.Epochs, sfreq: int = 100):
     epochs = epochs.resample(sfreq)
     return epochs
 
@@ -168,10 +168,10 @@ class HMCDataset(BaseDataset):
         montage = mne.channels.make_standard_montage('standard_1020')
         raw.set_montage(montage, on_missing='ignore')
 
-        raw = filter(raw, l_freq, h_freq)
-        raw = downsample(raw, sfreq)
-        raw = crop(raw, start_at, end_at)
-        raw = interploate(raw, channels)
+        raw = _filter(raw, l_freq, h_freq)
+        raw = _downsample(raw, sfreq)
+        raw = _crop(raw, start_at, end_at)
+        raw = _interpolate(raw, channels)
 
         annotation = mne.read_annotations(
             os.path.join(root_path, scoring_file))

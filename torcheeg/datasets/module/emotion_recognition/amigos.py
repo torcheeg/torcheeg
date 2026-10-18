@@ -9,7 +9,7 @@ import scipy.io as scio
 from ....utils import get_random_dir_path
 from ..base_dataset import BaseDataset
 
-log = logging.getLogger('torcheeg')
+_log = logging.getLogger('torcheeg')
 
 
 class AMIGOSDataset(BaseDataset):
@@ -184,24 +184,24 @@ class AMIGOSDataset(BaseDataset):
             'samples': samples,
             'labels': labels
         }
-    
+
     @staticmethod
     def fake_record(record: str, **kwargs) -> Dict:
         num_trials = 20
         trial_length = 10 * 128
         num_channels = 17
         num_labels = 12
-        
+
         samples = []
         labels = []
-        
+
         for _ in range(num_trials):
             trial_sample = np.random.rand(trial_length, num_channels)
             trial_label = np.random.uniform(1, 9, (1, num_labels))
-            
+
             samples.append(trial_sample)
             labels.append(trial_label)
-        
+
         return {
             'record': 'Data_Preprocessed_P1.mat',
             'samples': np.array(samples),
@@ -252,7 +252,7 @@ class AMIGOSDataset(BaseDataset):
             if (not sum(trial_samples.shape)) or (not sum(trial_rating.shape)):
                 # 3 of the participants (08,24,28<->32) of the previous experiment did not watch a set of 4 long affective
                 if sum(trial_samples.shape) != sum(trial_rating.shape):
-                    log.info(
+                    _log.info(
                         f'Find EEG signals without labels, or labels without EEG signals. Please check the {trial_id + 1}-th experiment of the {subject}-th subject in the file {record}. TorchEEG currently skipped the mismatched data.'
                     )
                 continue
@@ -322,9 +322,10 @@ class AMIGOSDataset(BaseDataset):
                 end_at = start_at + dynamic_chunk_size
 
     def set_records(self, root_path: str = './data_preprocessed', **kwargs):
-        assert os.path.exists(
-            root_path
-        ), f'root_path ({root_path}) does not exist. Please download the dataset and set the root_path to the downloaded path.'
+        if not (os.path.exists(root_path)):
+            raise FileNotFoundError(
+                f'root_path ({root_path}) does not exist. Please download the dataset and set the root_path to the downloaded path.'
+            )
         return os.listdir(root_path)
 
     def __getitem__(self, index: int) -> Tuple[any, any, int, int, int]:

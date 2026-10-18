@@ -223,16 +223,19 @@ class AVEDProcessedDataset(BaseDataset):
                 end_at = start_at + dynamic_chunk_size
 
     def set_records(self, root_path: str = './eeg_preproc', **kwargs):
-        assert os.path.exists(root_path), \
-            f'root_path ({root_path}) does not exist. Please download the dataset and set the root_path to the downloaded path.'
+        if not (os.path.exists(root_path)):
+            raise FileNotFoundError(
+                f'root_path ({root_path}) does not exist. Please download the dataset and set the root_path to the downloaded path.'
+            )
 
         records = []
         conditions = ['audio-video', 'audio-only']
 
         for condition in conditions:
             condition_path = os.path.join(root_path, condition)
-            assert os.path.exists(condition_path), \
-                f'Condition path ({condition_path}) does not exist.'
+            if not (os.path.exists(condition_path)):
+                raise FileNotFoundError(
+                    f'Condition path ({condition_path}) does not exist.')
 
             files = sorted([f for f in os.listdir(
                 condition_path) if f.endswith('.csv')])

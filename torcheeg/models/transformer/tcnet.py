@@ -22,10 +22,10 @@ class CausalConv1d(nn.Conv1d):
                                            dilation=dilation,
                                            groups=groups,
                                            bias=bias)
-        self.__padding = (kernel_size - 1) * dilation
+        self._padding = (kernel_size - 1) * dilation
 
     def forward(self, x):
-        return super(CausalConv1d, self).forward(F.pad(x, (self.__padding, 0)))
+        return super(CausalConv1d, self).forward(F.pad(x, (self._padding, 0)))
 
 
 class Conv2dWithConstraint(nn.Conv2d):
@@ -58,7 +58,7 @@ class LinearWithConstraint(nn.Linear):
         return super(LinearWithConstraint, self).forward(x)
 
 
-def glorot_weight_zero_bias(model):
+def _glorot_weight_zero_bias(model):
     for module in model.modules():
         if hasattr(module, "weight"):
             if "norm" not in module.__class__.__name__.lower():
@@ -68,7 +68,7 @@ def glorot_weight_zero_bias(model):
                 nn.init.constant_(module.bias, 0)
 
 
-nonlinearity_dict = dict(relu=nn.ReLU(), elu=nn.ELU())
+_NONLINEARITIES = dict(relu=nn.ReLU(), elu=nn.ELU())
 
 
 class _TCNBlock(nn.Module):
@@ -86,20 +86,20 @@ class _TCNBlock(nn.Module):
                                   kernel_size,
                                   dilation=dilation)
         self.bn1 = nn.BatchNorm1d(out_channels, momentum=0.01, eps=0.001)
-        self.nonlinearity1 = nonlinearity_dict[activation]
+        self.nonlinearity1 = _NONLINEARITIES[activation]
         self.drop1 = nn.Dropout(dropout)
         self.conv2 = CausalConv1d(out_channels,
                                   out_channels,
                                   kernel_size,
                                   dilation=dilation)
         self.bn2 = nn.BatchNorm1d(out_channels, momentum=0.01, eps=0.001)
-        self.nonlinearity2 = nonlinearity_dict[activation]
+        self.nonlinearity2 = _NONLINEARITIES[activation]
         self.drop2 = nn.Dropout(dropout)
         if in_channels != out_channels:
             self.project_channels = nn.Conv1d(in_channels, out_channels, 1)
         else:
             self.project_channels = nn.Identity()
-        self.final_nonlinearity = nonlinearity_dict[activation]
+        self.final_nonlinearity = _NONLINEARITIES[activation]
 
     def forward(self, x):
         residual = self.project_channels(x)
@@ -203,8 +203,8 @@ class TCNet(nn.Module):
         self.classifier = LinearWithConstraint(hid_channels,
                                                num_classes,
                                                max_norm=regRate)
-        glorot_weight_zero_bias(self.eegnet)
-        glorot_weight_zero_bias(self.classifier)
+        _glorot_weight_zero_bias(self.eegnet)
+        _glorot_weight_zero_bias(self.classifier)
 
     def forward(self, x):
         x = self.eegnet(x)

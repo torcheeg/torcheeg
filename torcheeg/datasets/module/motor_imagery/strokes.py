@@ -179,7 +179,10 @@ class StrokePatientsMIDataset(BaseDataset):
             # eog_baseline = eog_trial[:, :1000]
             label = 1 if trial_id % 2 else 0
 
-            assert chunk_size > overlap, f"Arg 'chunk_size' must be larger than arg 'overlap'.Current chunksize is {chunk_size},overlap is {overlap}"
+            if not (chunk_size > overlap):
+                raise ValueError(
+                    f"Arg 'chunk_size' must be larger than arg 'overlap'.Current chunksize is {chunk_size},overlap is {overlap}"
+                )
             start = 1000
             step = chunk_size - overlap
             end = start + step
@@ -376,7 +379,10 @@ class StrokePatientsMIProcessedDataset(StrokePatientsMIDataset):
             # eog_baseline = eog_trial[:, :1000]
             label = 1 if trial_id % 2 else 0
 
-            assert chunk_size > overlap, f"Arg 'chunk_size' must be larger than arg 'overlap'.Current chunksize is {chunk_size},overlap is {overlap}"
+            if not (chunk_size > overlap):
+                raise ValueError(
+                    f"Arg 'chunk_size' must be larger than arg 'overlap'.Current chunksize is {chunk_size},overlap is {overlap}"
+                )
             start = 1000
             step = chunk_size - overlap
             end = start + step
