@@ -11,7 +11,7 @@ from ..module.base_dataset import BaseDataset
 from moabb.datasets.base import BaseDataset as _MOABBDataset
 from moabb.paradigms.base import BaseParadigm as _MOABBParadigm
 
-log = logging.getLogger('torcheeg')
+_log = logging.getLogger('torcheeg')
 
 class MOABBDataset(BaseDataset):
     '''
@@ -99,8 +99,8 @@ class MOABBDataset(BaseDataset):
 
         if not paradigm.is_valid(dataset):
             message = f"Dataset {dataset.code} is not valid for paradigm"
-            raise AssertionError(message)
-        
+            raise ValueError(message)
+
         super().__init__(**params)
         # save all arguments to __dict__
         self.__dict__.update(params)

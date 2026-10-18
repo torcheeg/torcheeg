@@ -51,8 +51,10 @@ class PickElectrode(EEGTransform):
         return super().__call__(*args, eeg=eeg, baseline=baseline, **kwargs)
 
     def apply(self, eeg: np.ndarray, **kwargs) -> np.ndarray:
-        assert max(self.pick_list) < eeg.shape[
-            0], f'The index {max(self.pick_list)} of the specified electrode is out of bounds {eeg.shape[0]}.'
+        if not (max(self.pick_list) < eeg.shape[0]):
+            raise ValueError(
+                f'The index {max(self.pick_list)} of the specified electrode is out of bounds {eeg.shape[0]}.'
+            )
         return eeg[self.pick_list]
 
     @staticmethod
