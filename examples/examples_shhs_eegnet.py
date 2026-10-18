@@ -1,6 +1,6 @@
 """
 Train EEGNet on SHHS
-===================
+=========================
 
 Obtain access to SHHS EDF and NSRR XML files from
 https://sleepdata.org/datasets/shhs. Cite Quan et al. (1997) and NSRR.

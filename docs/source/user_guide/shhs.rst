@@ -1,5 +1,5 @@
 SHHS recordings, stages and visits
-=================================
+=======================================
 
 :class:`torcheeg.datasets.SHHSDataset` reads the Sleep Heart Health Study
 EDF recordings and NSRR XML annotations. Obtain data access from
@@ -11,7 +11,7 @@ XML format. The `provider's polysomnography guide
 describes both annotation formats.
 
 File pairs and participant identity
-----------------------------------
+----------------------------------------
 
 Set ``root_path`` to the SHHS directory or its ``polysomnography`` subdirectory::
 
@@ -33,7 +33,7 @@ by participant to keep repeated visits in the same evaluation partition.
 A split by record alone does not provide participant isolation.
 
 Signals and preprocessing
--------------------------
+------------------------------
 
 The default channels are ``['EEG', 'EOG(L)']`` in that order. Names must
 match the actual EDF labels. The second EEG channel can be called
@@ -58,7 +58,7 @@ must produce an integer number of samples in 30 seconds. No interpolation
 of nonfinite input is performed. All returned signals must be finite.
 
 Scored epochs and real time
---------------------------
+--------------------------------
 
 NSRR stage codes 0, 1, 2, 3/4 and 5 map to W, N1, N2, N3 and R. Codes 6
 (movement) and 9 (unscored) are omitted. Non-stage events such as respiratory
@@ -95,7 +95,7 @@ This reader does not trim wake periods or standardize a whole night. Record
 those choices explicitly when reproducing a published protocol.
 
 Standalone training
--------------------
+------------------------
 
 Run :doc:`../auto_examples/examples_shhs_eegnet` for a two-channel EEGNet
 workflow. It keeps the final participant in sorted order for testing,
