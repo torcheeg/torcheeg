@@ -1,4 +1,5 @@
 User Guide
+==========
 
 A TorchEEG workflow starts with a dataset and ends with an evaluation result.
 The library components make each intermediate step explicit.
@@ -60,3 +61,4 @@ the same library workflow as a reusable assistant skill.
    cbramod_heads
    cbramod_tuning
    cbramod_prompts
+   cbramod_lora

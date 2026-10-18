@@ -6,7 +6,7 @@ from torch.nn import functional as F
 
 from .eegpt import EEGPT, _Attention, _Block, _positive_int, _probability
 from .eegpt_heads import _EEGPTDownstream
-from ._tuning import _Adapter
+from ._tuning import _Adapter, _LoRALinear
 
 
 class _AdapterBlock(nn.Module):
@@ -62,25 +62,6 @@ class _PrefixAttention(nn.Module):
         x = F.scaled_dot_product_attention(q, k, v,
             dropout_p=self.attn_dropout if self.training else 0)
         return self.proj_drop(self.proj(x.transpose(1, 2).reshape(batch, tokens, width)))
-
-
-class _LoRALinear(nn.Module):
-    def __init__(self, linear, rank, alpha, dropout):
-        super().__init__()
-        self.in_features = linear.in_features
-        self.out_features = linear.out_features
-        self.weight = linear.weight
-        self.bias = linear.bias
-        self.scaling = alpha / rank
-        self.lora_A = nn.Parameter(linear.weight.new_empty(self.in_features, rank))
-        self.lora_B = nn.Parameter(linear.weight.new_zeros(rank, self.out_features))
-        self.dropout = nn.Dropout(dropout)
-        nn.init.kaiming_uniform_(self.lora_A.T, a=math.sqrt(5))
-        self.train(linear.training)
-
-    def forward(self, x):
-        update = F.linear(F.linear(self.dropout(x), self.lora_A.T), self.lora_B.T)
-        return F.linear(x, self.weight, self.bias) + update * self.scaling
 
 
 def _select_blocks(model, blocks, freeze_base):
@@ -213,7 +194,7 @@ def add_eegpt_lora(model, rank=4, alpha=8.0, dropout=0.1, blocks=None,
                    target_modules=('attn.qkv', 'attn.proj', 'mlp.fc1', 'mlp.fc2'), freeze_base=True):
     r'''Add registered low-rank updates to selected EEGPT linear projections.
 
-    Compute W x + b + (alpha / rank) * dropout(x) A B, with input dropout,
+    Compute x W^T + b + (alpha / rank) * dropout(x) A B, with input dropout,
     A shaped [in_features, rank] and B shaped [rank, out_features]. B starts
     at zero, so insertion preserves the base function. Base parameters keep
     their original objects and key names; no eval-time weight merging occurs.
