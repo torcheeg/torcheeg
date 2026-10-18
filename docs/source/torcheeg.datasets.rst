@@ -75,6 +75,7 @@ Motor Imagery Datasets
 
     BCICIV2aDataset
     PhysioNetMIDataset
+    SHUMIDataset
 
 PhysioNet motor imagery tasks
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
