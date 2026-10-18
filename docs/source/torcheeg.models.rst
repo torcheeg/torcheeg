@@ -100,6 +100,11 @@ EEGPT parameter-efficient tuning
 
 .. autofunction:: add_eegpt_lora
 
+CBraMod parameter-efficient tuning
+----------------------------------
+
+.. autofunction:: add_cbramod_adapters
+
 Signal processing layers
 -------------------------
 
