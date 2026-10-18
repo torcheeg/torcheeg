@@ -7,7 +7,7 @@ import pandas as pd
 
 from torcheeg.datasets.module.base_dataset import BaseDataset
 from .base_model_selection import BaseModelSelection
-from .utils import validate_group_names, write_indices
+from .utils import read_subset, validate_group_names, write_indices
 
 __all__ = ['TrainTestSplitPerSubjectGroupbyTrial']
 
@@ -123,7 +123,8 @@ class TrainTestSplitPerSubjectGroupbyTrial(BaseModelSelection):
         for value in subjects:
             if subject is None or str(subject) == value:
                 yield tuple(
-                    self._read_subset(dataset, self._filename(value, partition))
+                    read_subset(dataset, self.split_path,
+                                self._filename(value, partition))
                     for partition in ('train', 'test'))
 
     @property

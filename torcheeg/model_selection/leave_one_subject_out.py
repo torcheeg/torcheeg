@@ -8,7 +8,7 @@ import pandas as pd
 from torcheeg.datasets.module.base_dataset import BaseDataset
 
 from .base_model_selection import BaseModelSelection
-from .utils import validate_group_names, write_indices
+from .utils import read_subset, validate_group_names, write_indices
 
 __all__ = ['LeaveOneSubjectOut']
 
@@ -111,20 +111,24 @@ class LeaveOneSubjectOut(BaseModelSelection):
             if str(subject) not in subjects:
                 raise ValueError(
                     f'The subject should be in the subject list {subjects}.')
-            train_dataset = self._read_subset(
-                dataset, f'train_subject_{quote(str(subject), safe="")}.csv')
+            train_dataset = read_subset(
+                dataset, self.split_path,
+                f'train_subject_{quote(str(subject), safe="")}.csv')
 
-            test_dataset = self._read_subset(
-                dataset, f'test_subject_{quote(str(subject), safe="")}.csv')
+            test_dataset = read_subset(
+                dataset, self.split_path,
+                f'test_subject_{quote(str(subject), safe="")}.csv')
 
             yield train_dataset, test_dataset
         else:
             for subject in subjects:
 
-                train_dataset = self._read_subset(
-                    dataset, f'train_subject_{quote(str(subject), safe="")}.csv')
+                train_dataset = read_subset(
+                    dataset, self.split_path,
+                    f'train_subject_{quote(str(subject), safe="")}.csv')
 
-                test_dataset = self._read_subset(
-                    dataset, f'test_subject_{quote(str(subject), safe="")}.csv')
+                test_dataset = read_subset(
+                    dataset, self.split_path,
+                    f'test_subject_{quote(str(subject), safe="")}.csv')
 
                 yield train_dataset, test_dataset

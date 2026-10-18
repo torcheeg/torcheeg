@@ -10,7 +10,7 @@ import pandas as pd
 from torcheeg.datasets.module.base_dataset import BaseDataset
 
 from .base_model_selection import BaseModelSelection
-from .utils import write_indices
+from .utils import read_subset, write_indices
 
 __all__ = ['Subcategory']
 
@@ -147,7 +147,8 @@ class Subcategory(BaseModelSelection):
 
         for category in category_list:
 
-            subset_dataset = self._read_subset(dataset, self._filename(category))
+            subset_dataset = read_subset(dataset, self.split_path,
+                                         self._filename(category))
 
             yield subset_dataset
 

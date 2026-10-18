@@ -8,7 +8,7 @@ from sklearn import model_selection
 from torcheeg.datasets.module.base_dataset import BaseDataset
 
 from .base_model_selection import BaseModelSelection
-from .utils import validate_group_names, write_indices
+from .utils import read_subset, validate_group_names, write_indices
 
 __all__ = ['KFoldPerSubject']
 
@@ -173,13 +173,13 @@ class KFoldPerSubject(BaseModelSelection):
 
             for fold_id in fold_ids:
 
-                train_dataset = self._read_subset(
-                    dataset,
+                train_dataset = read_subset(
+                    dataset, self.split_path,
                     f'train_subject_{quote(str(local_subject), safe="")}_fold_{fold_id}.csv'
                 )
 
-                test_dataset = self._read_subset(
-                    dataset,
+                test_dataset = read_subset(
+                    dataset, self.split_path,
                     f'test_subject_{quote(str(local_subject), safe="")}_fold_{fold_id}.csv'
                 )
 

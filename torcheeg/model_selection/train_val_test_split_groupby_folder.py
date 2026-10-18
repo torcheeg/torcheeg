@@ -4,7 +4,7 @@ import pandas as pd
 
 from torcheeg.datasets.module.base_dataset import BaseDataset
 from .base_model_selection import BaseModelSelection
-from .utils import write_partition_indices
+from .utils import read_subset, write_partition_indices
 
 __all__ = ['TrainValTestSplitGroupbyFolder']
 
@@ -49,7 +49,7 @@ class TrainValTestSplitGroupbyFolder(BaseModelSelection):
     ) -> Iterator[Tuple[BaseDataset, BaseDataset, BaseDataset]]:
         files = ['train.csv', 'val.csv', 'test.csv']
         self._prepare(dataset, 'split', files)
-        yield tuple(self._read_subset(dataset, name) for name in files)
+        yield tuple(read_subset(dataset, self.split_path, name) for name in files)
 
     @property
     def repr_body(self) -> Dict:

@@ -4,7 +4,7 @@ from typing import Dict, Union
 import pandas as pd
 
 from ..utils import get_random_dir_path
-from .utils import ensure_cache, read_subset, validate_metadata, validate_timeout
+from .utils import ensure_cache, validate_metadata, validate_timeout
 
 
 class BaseModelSelection:
@@ -46,9 +46,6 @@ class BaseModelSelection:
                      files,
                      lambda path: self.build(dataset.info, path),
                      timeout=self.timeout)
-
-    def _read_subset(self, dataset, filename):
-        return read_subset(dataset, self.split_path, filename)
 
     @property
     def repr_body(self) -> Dict:

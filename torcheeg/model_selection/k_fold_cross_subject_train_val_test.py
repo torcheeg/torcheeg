@@ -7,7 +7,7 @@ import pandas as pd
 
 from torcheeg.datasets.module.base_dataset import BaseDataset
 from .base_model_selection import BaseModelSelection
-from .utils import validate_partition_ids, write_partition_indices
+from .utils import read_subset, validate_partition_ids, write_partition_indices
 
 __all__ = ['KFoldCrossSubjectTrainValTest']
 
@@ -102,7 +102,7 @@ class KFoldCrossSubjectTrainValTest(BaseModelSelection):
         self._prepare(dataset, 'subject_id', files)
         for fold_id in range(self.n_folds):
             yield tuple(
-                self._read_subset(dataset, f'fold_{fold_id}/{name}.csv')
+                read_subset(dataset, self.split_path, f'fold_{fold_id}/{name}.csv')
                 for name in ('train', 'val', 'test'))
 
     @property
