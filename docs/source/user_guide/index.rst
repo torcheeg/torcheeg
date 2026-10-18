@@ -60,3 +60,4 @@ the same library workflow as a reusable assistant skill.
    fourier_resampling
    cbramod_heads
    sleepedf
+   bciciv2a
