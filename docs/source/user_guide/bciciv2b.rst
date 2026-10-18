@@ -92,3 +92,35 @@ after adopting this reader or changing data, filters, rates, windows, reference
 or artifact policy. Earlier draft caches used the wrong MATLAB origin,
 resampled with unchanged crop indices and repeated T/E session/trial IDs.
 Preserve those caches for their original runs; do not relabel rows in place.
+
+Train a native EEGNet by released phase
+---------------------------------------
+
+:doc:`/auto_examples/examples_bciciv2b_native_eegnet` uses one participant's
+three T sessions for training and both E sessions for evaluation. Install the
+source with ``dataset`` and ``trainer`` extras, then run:
+
+.. code-block:: console
+
+   python examples/examples_bciciv2b_native_eegnet.py \
+       --root-path ./BCICIV_2b_mat --subject 1 --epochs 1 \
+       --output-path ./b01-native-eegnet.pt
+
+The example selects three bipolar EEG channels, whole-session 4--38 Hz FIR
+and 128 Hz resampling, then 3--7 seconds per trial ([1,3,512]). Each window is
+normalized per channel. It adds no notch, average reference or EOG feature.
+This is a same-participant phase holdout, distinct from the MOABB example's
+participant holdout. Test data do not select epochs or hyperparameters.
+
+All flagged trials remain by default. ``--skip-artifacts`` explicitly omits
+them from both phases; choose a fresh cache path when changing this policy.
+The report records retained flagged counts, actual sessions, trial counts and
+optimizer updates. Every T/E session must remain nonempty. Trial-level
+accuracy/F1 does not establish the competition's continuous artifact-free
+kappa score or a published benchmark result.
+
+A safe export stores all model constructor arguments, the full tensor state,
+preprocessing and phase/record IDs. The example checks strict restoration and
+inference equality after freezing constrained convolution weights. Existing
+models and JSON sidecars are preserved. Gallery rendering does not run the
+training script; execute it on the labeled MAT release separately.
