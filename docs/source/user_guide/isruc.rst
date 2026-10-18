@@ -93,3 +93,47 @@ This reader accepts original REC/text pairs. The separately published
 `pre-extracted MATLAB files <https://sleeptight.isr.uc.pt/?page_id=76>`_ omit
 30 final epochs according to their provider; that separate preparation is
 not silently applied to these raw recordings.
+
+
+Standalone EEGNet training
+-----------------------------------
+
+:doc:`../auto_examples/examples_isruc_eegnet` trains EEGNet on a fixed
+C3 EEG / left EOG pair, with actual A2/M2 and LOC/E1 names selected from
+the recorded candidates. C3 avoids requiring frontal channels that can be
+absent in an original record. Missing derivations are computed only from their
+recorded components. There is no reference renaming or silent zero filling.
+The sidecar report preserves the actual channel and derivation metadata
+for every record.
+
+The default uses Subgroup_1 (code 0), expert 1, 0.5--30 Hz FIR filtering,
+100 Hz output, complete 30-second epochs and per-epoch channel normalization.
+Select other subgroup codes and expert 2 explicitly. The example uses the
+original REC/text files and does not apply the separate MATLAB preparation
+that drops final epochs. Invalid score counts fail instead of being clipped.
+
+Hold out the final sorted participant for testing, with both Subgroup_2
+nights kept together. Training runs for a fixed epoch count and does not
+select settings from test scores. At least two participants are required.
+This is a standalone workflow rather than a published benchmark protocol.
+
+The exported model includes all EEGNet constructor settings and complete
+Tensor state. JSON preprocessing and partition metadata retain the subgroup,
+scorer, channel candidates and actual references; the report also lists the
+train/test record IDs and evaluated epoch counts. Choose a fresh output path
+for a new run, and new caches when data, scorer or preprocessing change.
+
+To restore an owned export::
+
+    import json
+    import torch
+    from torcheeg.models import EEGNet
+
+    payload = torch.load('isruc-eegnet.pt', map_location='cpu', weights_only=True)
+    model = EEGNet(**json.loads(payload['model_config_json']))
+    model.load_state_dict(payload['state_dict'], strict=True)
+    model.requires_grad_(False).eval()
+
+Freezing keeps constrained-convolution inference from updating stored
+weights. Apply the recorded channel/reference and preprocessing configuration
+to new samples; those operations are not inside the model Tensor state.
