@@ -72,6 +72,9 @@ Transformer
    Conformer
    LaBraM
    LaBraMEncoder
+   LaBraMClassifier
+   LaBraMRegression
+   LaBraMEmbedding
    TCNet
    MHANet
    DARNet

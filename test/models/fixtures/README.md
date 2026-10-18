@@ -119,3 +119,24 @@ are stored, including None for unused norm parameters in raw mode. A native
 norm pre-hook observes raw tokens without changing computation. No author
 weights, optimizer objects or patient signals are included. Tests do not
 require timm.
+
+
+## LaBraM downstream heads and resampling modes
+
+`labram_head_reference.json` uses the unmodified author encoder and the
+first architecture/state from labram_reference.json above. An independent
+Linear128->64/ELU/Linear64->16/ELU/Linear16->3 stack reproduces the archived
+flattening head for two channels/four patches/width16. For named head
+parameter index i, values are cos(arange(numel)*.17+i*.4)*.08.
+Input is linspace(-1.2,.8,192).reshape(2,2,48) plus
+.2*sin(arange(192)*.21). Channel slots are [1,40], with CLS zero internal.
+
+At source150Hz/native200Hz, whole-window resampling uses the independent
+SciPy resample(identity48,64,axis0) dense operator; independent patch mode
+uses resample(identity12,16,axis0) separately on four segments. These operators
+also provide input gradients without TorchEEG FFT code. Native per-token
+final norm is retained; CLS is excluded before channel-major flattening.
+Outputs are weighted by linspace(-.7,1.1,6).reshape(2,3). All preprocessed
+signals, features, outputs and complete encoder/head/input gradients are
+recorded. No author task weights or EEG recordings are included. Tests do
+not require timm.

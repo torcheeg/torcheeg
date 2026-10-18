@@ -58,5 +58,6 @@ the same library workflow as a reusable assistant skill.
    pytorch
    cbramod
    labram_encoder
+   labram_tasks
    fourier_resampling
    cbramod_heads

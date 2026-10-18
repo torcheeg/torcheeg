@@ -21,3 +21,5 @@ from .cbramod import CBraMod
 from .cbramod_heads import CBraModClassifier, CBraModRegression, CBraModEmbedding
 
 from .labram_encoder import LaBraMEncoder
+
+from .labram_heads import LaBraMClassifier, LaBraMRegression, LaBraMEmbedding
