@@ -75,6 +75,7 @@ Transformer
    MHANet
    DARNet
    CTNet
+   SleepDG
    EEGPT
    EEGPTClassifier
    EEGPTRegression
