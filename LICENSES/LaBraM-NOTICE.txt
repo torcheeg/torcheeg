@@ -51,3 +51,11 @@ key/value layout and insertion after native key normalization. Module-owned
 parameters replace forward closures and support full state restoration.
 Independent synthetic fixtures use the unmodified archived prefix helpers
 and official native encoder; no pretrained prefix weights are supplied.
+
+
+Registered low-rank projections reuse the existing EEGPT linear adaptation
+implementation. Exact block-relative targets replace substring matching;
+input dropout is module-owned, and both ordinary/prefix attention evaluate
+QKV through the module so its update is effective. Independent fixtures use
+unmodified author encoder computation with a separate weight parametrization
+and archived LoRALayer at dropout zero. No pretrained LoRA weights are supplied.

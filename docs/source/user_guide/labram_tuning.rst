@@ -167,3 +167,67 @@ Loss scale and optimizer epsilon therefore matter even when outputs are
 finite. Verify actual updates to both prefix keys and values. The teaching
 example uses float32 and does not claim that every pure-float16 objective
 will train successfully without appropriate scaling.
+
+
+Low-rank projections
+--------------------
+
+:func:`torcheeg.models.add_labram_lora` installs registered low-rank branches
+in selected block projections. Exact targets are attn.qkv, attn.proj,
+mlp.fc1 and mlp.fc2; the default selects all four. These paths do not match
+task heads, adapter projections or unrelated names by substring. Repeated
+installation of a selected projection raises before any selection changes;
+disjoint targets and blocks can be installed separately.
+
+Each projection computes::
+
+    linear(x, W, b) + (alpha / rank) * dropout(x) @ A @ B
+
+A has shape [in_features, rank], with Kaiming initialization using the input
+fan. B has shape [rank, out_features] and starts at zero. This preserves
+deterministic evaluation at insertion. The first update can change B;
+subsequent updates also train A. Low-rank dropout is applied to input
+features and belongs to the registered module, so normal train/eval calls
+control it. There is no automatic weight merging or optimizer restoration.
+
+The attn.qkv update covers the complete packed query/key/value projection,
+including keys. Native optional Q/V bias parameters remain separate and
+frozen under freeze_base=True. Both ordinary attention and prefix attention
+call the projection module. The archived helper patched a module forward
+that the functional QKV call bypassed; the new encoder path makes that
+update effective. The older standalone LaBraM classification API is separate
+and is not modified by these helpers.
+
+Native weights/biases remain the original Parameter objects at their native
+checkpoint paths. New factors inherit projection dtype/device/mode. All six
+installation orders of adapters, prefixes and LoRA are supported. With
+freeze_base=True, every installed tuning parameter remains trainable, native
+encoder parameters are frozen and task-head flags are preserved. False
+preserves existing flags. Freezing parameters does not change mixed child
+modes or disable input gradients. Task wrappers require freeze_encoder=False.
+
+For example::
+
+    backbone = LaBraMEncoder()
+    classifier = LaBraMClassifier(backbone, ['Fp1', 'C3', 'C4'], chunk_size=800,
+        sampling_rate=200, pooling='mean', head_channels=(), freeze_encoder=False)
+    add_labram_lora(classifier, rank=4, alpha=8., dropout=.1,
+        target_modules=('attn.qkv', 'attn.proj'))
+    optimizer = torch.optim.Adam(
+        [p for p in classifier.parameters() if p.requires_grad], lr=.001)
+
+Load native state before installation. For augmented task restoration,
+reconstruct every saved encoder/head/tuning configuration and selection,
+then load the complete state strictly. Install all modules before creating
+the optimizer. Registered factors support copying, device/dtype moves,
+fixed-window full-graph compilation and strict export. The precision and
+fixed-shape Fourier guidance above still applies.
+
+:doc:`/auto_examples/examples_eegmat_labram_lora` trains LoRA and the default
+flattened task head on subject-held-out EEGMat, with the same explicit native
+preprocessing as the other LaBraM examples. It saves all three constructor
+configurations, full native/LoRA/head state, trainable count, preprocessing,
+partition metadata and every held-out logit/target. The default small encoder
+is random; a verified local canonical base checkpoint is optional. Total
+trainable parameters include the substantial task head. This is a functional
+training/restoration workflow, not a published LoRA or EEG-Arena score.

@@ -187,3 +187,27 @@ Full state, output, input and every parameter gradient are recorded.
 Only the storage path is mapped from blocks.i.prefix.prefix_tokens to
 blocks.i.attn.prefix_tokens; computation is unchanged. No recordings or
 author checkpoint is included. Tests require no timm dependency.
+
+
+## LaBraM low-rank projections
+
+`labram_lora_reference.json` uses the unmodified official encoder at
+c431221e6cfd23dbfa9950e0180682fb322b0548 with the archived unmodified
+LoRALayer at dropout0. The archived source SHA256 is recorded. An independent
+PyTorch weight parametrization evaluates LoRALayer(identity).T and adds it
+to each native projection weight. This makes all four projections, including
+the functional QKV path, use W + (alpha/rank)*(A@B).T without changing author
+encoder forward source. It does not reuse TorchEEG's registered linear
+forward. The archived get_lora_model helper itself bypasses QKV updates and
+is not claimed to be a correct full-model reference.
+
+Two architectures/states match labram_reference.json: qkvFalse/qknormTrue
+and qkvTrue/qknormFalse. Each block's qkv/proj/fc1/fc2 uses rank3/alpha5.
+Factor named-parameter index i receives sin(arange(numel)*.11+i*.4)*.09,
+including nonzero B. Input, native positions, coefficient and normalized
+output contracts match the prefix fixture above. Full state and every
+input/parameter gradient are included. Native weight parametrization storage
+names are mapped to direct native weight and lora_A/lora_B names only.
+The zero-dropout equation is independently checked; registered INPUT dropout
+and deterministic zero-B insertion are separate runtime tests. No weights,
+recordings or timm dependency are added to runtime tests.
