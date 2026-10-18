@@ -1,12 +1,14 @@
 import math
 import warnings
-from collections import OrderedDict
+from collections.abc import Mapping
 from functools import partial
 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from einops import rearrange
+
+from ._checkpoint import _load_checkpoint
 
 
 def drop_path(x, drop_prob: float = 0., training: bool = False, scale_by_keep: bool = True):
@@ -176,10 +178,11 @@ class Attention(nn.Module):
         qkv = F.linear(input=x, weight=self.qkv.weight, bias=qkv_bias)
         qkv = qkv.reshape(B, N, 3, self.num_heads, -1).permute(2, 0, 3, 1, 4)
         q, k, v = qkv[0], qkv[1], qkv[2]
+        # Preserve per-head math while avoiding backward fusion layout conflicts.
         if self.q_norm is not None:
-            q = self.q_norm(q).type_as(v)
+            q = self.q_norm(q.flatten(0, 2)).reshape_as(q).type_as(v)
         if self.k_norm is not None:
-            k = self.k_norm(k).type_as(v)
+            k = self.k_norm(k.flatten(0, 2)).reshape_as(k).type_as(v)
 
         q = q * self.scale
         attn = (q @ k.transpose(-2, -1))
@@ -303,6 +306,8 @@ class LaBraM(nn.Module):
         x = torch.randn(2, 6, 8, 200)
         model(x, electrodes=['FP1', 'FPZ', 'FP2', 'AF9', 'AF7', 'AF5'])
 
+    .. automethod:: load_pretrained
+
     Args:
         chunk_size (int): The total length of the EEG signal segment to process. (default: :obj:`1600`)
         patch_size (int): The size of each temporal patch. (default: :obj:`200`)
@@ -408,9 +413,10 @@ class LaBraM(nn.Module):
         cls_tokens = self.cls_token.expand(batch_size, -1, -1)
 
         x = torch.cat((cls_tokens, x), dim=1)
-        pos_embed_used = self.pos_embed[:,
-                                        input_chans] if input_chans is not None else self.pos_embed
         if self.pos_embed is not None:
+            if input_chans is None or max(input_chans) >= self.pos_embed.shape[1]:
+                raise ValueError('Provide explicit electrodes within the learned spatial table; the full catalog exceeds its 128 electrode slots.')
+            pos_embed_used = self.pos_embed[:, input_chans]
             pos_embed = pos_embed_used[:, 1:, :].unsqueeze(2).expand(
                 batch_size, -1, input_time_window, -1).flatten(1, 2)
             pos_embed = torch.cat((pos_embed_used[:, 0:1, :].expand(
@@ -450,28 +456,75 @@ class LaBraM(nn.Module):
         x = self.head(x)
         return x
 
-    def load_pretrained(self, checkpoint_path):
-        model_key = 'model|module'
-        model_filter_name = 'gzp'
-        checkpoint = torch.load(checkpoint_path, map_location='cpu')
-        checkpoint_model = None
-        for model_key in model_key.split('|'):
-            if model_key in checkpoint:
-                checkpoint_model = checkpoint[model_key]
-                print("Load state_dict by model_key = %s" % model_key)
-                break
-        if checkpoint_model is None:
-            checkpoint_model = checkpoint
-        if (checkpoint_model is not None) and (model_filter_name != ''):
-            all_keys = list(checkpoint_model.keys())
-            new_dict = OrderedDict()
-            for key in all_keys:
-                if key.startswith('student.'):
-                    new_dict[key[8:]] = checkpoint_model[key]
-                else:
-                    pass
-            checkpoint_model = new_dict
-        self.load_state_dict(checkpoint_model, strict=False)
+    def load_pretrained(self, checkpoint_path, *, strict=False, prefix=None,
+                        exclude_head=False, allow_training_metadata=False):
+        r'''Restore local legacy-classifier weights with explicit loading reports.
+
+        Accept a tensor state dictionary or one model/module/state_dict
+        container. By default select student. when present; otherwise retain
+        raw state keys. An explicit prefix selects and strips exactly that
+        prefix. Empty or wholly unrelated selections fail before mutation.
+
+        strict=False permits transfer loading and warns about every missing
+        or unexpected key. strict=True requires complete classifier state.
+        Matching tensors must have valid shapes, real floating values and
+        finite entries before any parameter is copied. exclude_head=True
+        deliberately leaves the classification head fresh. Native norm and
+        downstream fc_norm are not renamed: their mismatch is reported.
+
+        Deserialization always uses weights_only=True. Explicit metadata
+        opt-in scopes only the known author Namespace/NumPy scalar types;
+        runtimes without safe_globals require verified tensor-only conversion.
+        No download or unsafe pickle fallback occurs. This method belongs to
+        the existing classification API, separate from LaBraMEncoder.
+
+        Args:
+            checkpoint_path (str or file-like): Local checkpoint accepted by torch.load.
+            strict (bool): Require complete matching classifier state. (default: :obj:`False`)
+            prefix (str, optional): Explicit prefix; None automatically selects student. or raw keys. (default: :obj:`None`)
+            exclude_head (bool): Remove head.* tensors before transfer loading. (default: :obj:`False`)
+            allow_training_metadata (bool): Explicit known-author metadata opt-in. (default: :obj:`False`)
+
+        Returns:
+            NamedTuple: The missing_keys and unexpected_keys returned by load_state_dict.
+        '''
+        if not isinstance(strict, bool) or not isinstance(exclude_head, bool):
+            raise ValueError('strict and exclude_head must be booleans.')
+        if prefix is not None and not isinstance(prefix, str):
+            raise ValueError('prefix must be a string or None.')
+        checkpoint = _load_checkpoint(checkpoint_path, allow_training_metadata)
+        if not isinstance(checkpoint, Mapping):
+            raise ValueError('Checkpoint must be a tensor dictionary or supported container.')
+        containers = [key for key in ('model', 'module', 'state_dict') if key in checkpoint]
+        if len(containers) > 1:
+            raise ValueError('Ambiguous checkpoint containers; supply one state dictionary.')
+        state = checkpoint[containers[0]] if containers else checkpoint
+        if not isinstance(state, Mapping) or not all(isinstance(key, str) for key in state):
+            raise ValueError('Checkpoint state keys must be strings.')
+        if prefix is None:
+            prefix = 'student.' if any(key.startswith('student.') for key in state) else ''
+        selected = {key[len(prefix):]: value for key, value in state.items() if key.startswith(prefix)}
+        if exclude_head:
+            selected = {key: value for key, value in selected.items() if not key.startswith('head.')}
+        if not selected or not all(isinstance(value, torch.Tensor) for value in selected.values()):
+            raise ValueError('Selected checkpoint state must be a nonempty tensor dictionary.')
+        expected = self.state_dict()
+        matching = set(expected) & set(selected)
+        if not matching:
+            raise ValueError('Selected checkpoint has no matching classifier tensors.')
+        missing, extra = sorted(set(expected) - set(selected)), sorted(set(selected) - set(expected))
+        for key in matching:
+            value = selected[key]
+            if not value.is_floating_point() or value.shape != expected[key].shape:
+                raise ValueError(f'Checkpoint tensor shape/type mismatch: {key}.')
+            if not torch.isfinite(value).all():
+                raise ValueError(f'Checkpoint tensor contains nonfinite values: {key}.')
+        if missing or extra:
+            message = f'Incomplete LaBraM classifier state: missing={missing}, unexpected={extra}.'
+            if strict:
+                raise ValueError(message)
+            warnings.warn(message, UserWarning, stacklevel=2)
+        return self.load_state_dict(selected, strict=strict)
 
     @staticmethod
     def base_patch200_200(**kwargs):
