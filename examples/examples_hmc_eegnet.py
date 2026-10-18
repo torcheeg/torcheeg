@@ -44,7 +44,8 @@ from torcheeg.models import EEGNet
 from torcheeg.trainers import ClassifierTrainer
 
 
-MODEL_CONFIG = dict(num_electrodes=2, chunk_size=3000, num_classes=5)
+MODEL_CONFIG = dict(num_electrodes=2, chunk_size=3000, num_classes=5,
+                    F1=8, F2=16, D=2, kernel_1=64, kernel_2=16, dropout=.25)
 CHANNELS = ['EEG C4-M1', 'EOG E1-M2']
 LABELS = {'Sleep stage W': 0, 'Sleep stage N1': 1, 'Sleep stage N2': 2,
           'Sleep stage N3': 3, 'Sleep stage R': 4}

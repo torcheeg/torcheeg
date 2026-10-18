@@ -1,6 +1,7 @@
 from contextlib import redirect_stdout
 import importlib.util
 import io
+import inspect
 import json
 from pathlib import Path
 import tempfile
@@ -71,6 +72,7 @@ class TestHMCEEGNetExample(unittest.TestCase):
             self.assertTrue(report['strict_reload_equal'])
             self.assertEqual(json.loads(payload['partitions_json']), report['partitions'])
             self.assertEqual(constructor.call_args.kwargs, EXAMPLE.MODEL_CONFIG)
+            self.assertEqual(set(json.loads(payload['model_config_json'])), set(inspect.signature(EEGNet).parameters))
             restored = EEGNet(**json.loads(payload['model_config_json'])).requires_grad_(False).eval()
             restored.load_state_dict(payload['state_dict'], strict=True)
             self.assertTrue(all(torch.isfinite(value).all() for value in restored.state_dict().values()))
