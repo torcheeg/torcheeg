@@ -20,7 +20,8 @@ class KFoldGroupbyTrial:
 
     :obj:`KFoldGroupbyTrial` devides subsets at the dimension of trials. Take the first partition with :obj:`k=5` as an example, the first 80% of samples of each trial are used for training, and the last 20% of samples are used for testing. It is more consistent with real applications and can test the generalization of the model to a certain extent.
 
-    .. image:: _static/KFoldGroupbyTrial.png
+    .. image:: _static/splits/KFoldGroupbyTrial.svg
+        :width: 100%
         :alt: The schematic diagram of KFoldGroupbyTrial
         :align: center
 

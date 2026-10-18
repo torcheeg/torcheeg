@@ -19,7 +19,8 @@ class KFoldCrossSubject:
     r'''
     A tool class for k-fold cross-validations, to divide the training set and the test set. One of the most commonly used data partitioning methods, where the data set is divided into k subsets of subjects, with one subset subjects being retained as the test set and the remaining k-1 subset subjects being used as training data. In most of the literature, K is chosen as 5 or 10 according to the size of the data set.
 
-    .. image:: _static/KFoldCrossSubject.png
+    .. image:: _static/splits/KFoldCrossSubject.svg
+        :width: 100%
         :alt: The schematic diagram of KFoldCrossSubject
         :align: center
 
