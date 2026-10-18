@@ -7,7 +7,7 @@ import numpy as np
 from ....utils import get_random_dir_path
 from ..base_dataset import BaseDataset
 
-VALENCE_DICT = {
+_VALENCE_DICT = {
     1: -1,  # negative
     2: -1,
     3: -1,
@@ -38,7 +38,7 @@ VALENCE_DICT = {
     28: 1
 }
 
-EMOTION_DICT = {
+_EMOTION_DICT = {
     1: 0,  # anger
     2: 0,
     3: 0,
@@ -107,14 +107,10 @@ class FACEDDataset(BaseDataset):
                                    transforms.ToGrid(FACED_CHANNEL_LOCATION_DICT)
                                ]),
                                online_transform=transforms.ToTensor(),
-                               label_transform=transforms.Compose([
-                                   transforms.Select('emotion'),
-                                   transforms.Lambda(lambda x: x + 1)
-                               ]))
+                               label_transform=transforms.Select('emotion'))
 
         print(dataset[0])
         # EEG signal (torch.Tensor[4, 8, 9]),
-        # coresponding baseline signal (torch.Tensor[4, 8, 9]),
         # label (int)
 
     Another example dataset for CNN-based methods:
@@ -128,14 +124,10 @@ class FACEDDataset(BaseDataset):
                                online_transform=transforms.Compose(
                                    [transforms.ToTensor(),
                                     transforms.To2d()]),
-                               label_transform=transforms.Compose([
-                                   transforms.Select('emotion'),
-                                   transforms.Lambda(lambda x: x + 1)
-                               ]))
+                               label_transform=transforms.Select('emotion'))
 
         print(dataset[0])
         # EEG signal (torch.Tensor[1, 30, 250]),
-        # coresponding baseline signal (torch.Tensor[1, 30, 250]),
         # label (int)
 
     An example dataset for GNN-based methods:
@@ -145,17 +137,14 @@ class FACEDDataset(BaseDataset):
         from torcheeg.datasets import FACEDDataset
         from torcheeg import transforms
         from torcheeg.datasets.constants import FACED_ADJACENCY_MATRIX
-        from torcheeg.transforms.pyg import ToG
+        from torcheeg.transforms import ToG
 
         dataset = FACEDDataset(root_path='./Processed_data',
                                online_transform=transforms.Compose([ToG(FACED_ADJACENCY_MATRIX)]),
-                               label_transform=transforms.Compose(
-                                    [transforms.Select('emotion'),
-                                    transforms.Lambda(lambda x: x + 1)]))
+                               label_transform=transforms.Select('emotion'))
 
         print(dataset[0])
         # EEG signal (torch_geometric.data.Data),
-        # coresponding baseline signal (torch_geometric.data.Data),
         # label (int)
 
     Args:
@@ -237,7 +226,7 @@ class FACEDDataset(BaseDataset):
         sampling_rate = 250
         duration = 30
         time_points = duration * sampling_rate
-        
+
         samples = np.random.randn(num_trials, num_channels, time_points)
 
         return {
@@ -272,8 +261,8 @@ class FACEDDataset(BaseDataset):
             trial_meta_info = {
                 'subject_id': subject_id,
                 'trial_id': trial_id,
-                'valence': VALENCE_DICT[trial_id + 1],
-                'emotion': EMOTION_DICT[trial_id + 1],
+                'valence': _VALENCE_DICT[trial_id + 1],
+                'emotion': _EMOTION_DICT[trial_id + 1],
             }
             start_at = 0
             if chunk_size <= 0:
@@ -309,9 +298,10 @@ class FACEDDataset(BaseDataset):
                 end_at = start_at + dynamic_chunk_size
 
     def set_records(self, root_path: str = './Processed_data', **kwargs):
-        assert os.path.exists(
-            root_path
-        ), f'root_path ({root_path}) does not exist. Please download the dataset and set the root_path to the downloaded path.'
+        if not (os.path.exists(root_path)):
+            raise FileNotFoundError(
+                f'root_path ({root_path}) does not exist. Please download the dataset and set the root_path to the downloaded path.'
+            )
         file_path_list = os.listdir(root_path)
         file_path_list.sort()
         file_path_list = [

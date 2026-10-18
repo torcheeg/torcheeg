@@ -89,7 +89,7 @@ class MNERawDataset(BaseDataset):
     @staticmethod
     def read_record(record: str, **kwargs) -> Dict:
         return {}
-    
+
     @staticmethod
     def process_record(record: Tuple,
                        offline_transform: Union[None, Callable] = None,
@@ -98,26 +98,26 @@ class MNERawDataset(BaseDataset):
                        **kwargs):
         raw, info = record
         data, times = raw[:, :]
-        
+
         # Calculate the step size
         step = chunk_size - overlap
-        
+
         # Generate chunks
         for i in range(0, data.shape[1] - chunk_size + 1, step):
             chunk = data[:, i:i+chunk_size]
-            
+
             if offline_transform is not None:
                 chunk = offline_transform(eeg=chunk)['eeg']
-            
+
             clip_id = f"{info['subject_id']}_{info['trial_id']}_{i}"
-            
+
             record_info = {
                 **info,
                 'start_at': times[i],
                 'end_at': times[i+chunk_size-1],
                 'clip_id': clip_id
             }
-            
+
             yield {'eeg': chunk, 'key': clip_id, 'info': record_info}
 
     def set_records(self, raw_list: List[mne.io.BaseRaw], info_list: List[Dict[str, Any]], **kwargs):

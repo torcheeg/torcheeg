@@ -14,7 +14,7 @@ from .utils import FrechetInceptionDistance
 
 _EVALUATE_OUTPUT = List[Dict[str, float]]  # 1 dict per DataLoader
 
-log = logging.getLogger('torcheeg')
+_log = logging.getLogger('torcheeg')
 
 
 class BetaVAETrainer(pl.LightningModule):
@@ -92,19 +92,22 @@ class BetaVAETrainer(pl.LightningModule):
         self.test_kld_loss = torchmetrics.MeanMetric()
 
         if 'fid' in metrics:
-            assert not self.metric_extractor is None, 'The metric_extractor should be specified.'
+            if not (not self.metric_extractor is None):
+                raise ValueError('The metric_extractor should be specified.')
             if hasattr(self.metric_extractor,
                        'in_channels') and self.metric_num_features is None:
                 warnings.warn(
                     f'No metric_num_features specified, use metric_extractor.in_channels ({self.metric_extractor.in_channels}) as metric_num_features.'
                 )
                 self.metric_num_features = self.metric_extractor.in_channels
-            assert not self.metric_num_features is None, 'The metric_num_features should be specified.'
+            if not (not self.metric_num_features is None):
+                raise ValueError('The metric_num_features should be specified.')
             self.test_fid = FrechetInceptionDistance(self.metric_extractor,
                                                      self.metric_num_features)
 
         if 'is' in metrics:
-            assert not self.metric_extractor is None, 'The metric_classifier should be specified.'
+            if not (not self.metric_extractor is None):
+                raise ValueError('The metric_classifier should be specified.')
             self.test_is = InceptionScore(self.metric_classifier)
 
     def fit(self,
@@ -223,7 +226,7 @@ class BetaVAETrainer(pl.LightningModule):
         for key, value in self.trainer.logged_metrics.items():
             if key.startswith("train_"):
                 str += f"{key}: {value:.3f} "
-        log.info(str + '\n')
+        _log.info(str + '\n')
 
         # reset the metrics
         self.train_rec_loss.reset()
@@ -274,7 +277,7 @@ class BetaVAETrainer(pl.LightningModule):
         for key, value in self.trainer.logged_metrics.items():
             if key.startswith("val_"):
                 str += f"{key}: {value:.3f} "
-        log.info(str + '\n')
+        _log.info(str + '\n')
 
         # reset the metrics
         self.val_rec_loss.reset()
@@ -351,7 +354,7 @@ class BetaVAETrainer(pl.LightningModule):
         for key, value in self.trainer.logged_metrics.items():
             if key.startswith("test_"):
                 str += f"{key}: {value:.3f} "
-        log.info(str + '\n')
+        _log.info(str + '\n')
 
         # reset the metrics
         self.test_rec_loss.reset()
