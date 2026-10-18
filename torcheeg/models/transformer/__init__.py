@@ -9,6 +9,7 @@ from .labram import LaBraM
 from .darnet import DARNet
 from .mhanet import MHANet
 from .ctnet import CTNet
+from .sleepdg import SleepDG
 
 from .eegpt import EEGPT
 from .eegpt_heads import EEGPTClassifier, EEGPTRegression, EEGPTEmbedding
