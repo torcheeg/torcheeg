@@ -90,11 +90,69 @@ restores a complete encoder and initializes a fresh task head. To restore
 a trained task, reconstruct both configurations and strictly load its whole
 tensor state. No remote download or unsafe pickle fallback occurs.
 
+Full and head-only fine-tuning
+------------------------------
+
+The archived full-model helper enabled every model parameter. Use ordinary
+PyTorch parameter control with the existing wrapper instead of a second
+helper API. Construct the wrapper with freeze_encoder=False and explicitly
+enable parameters before the optimizer::
+
+    backbone = LaBraMEncoder()
+    classifier = LaBraMClassifier(backbone, ['Fp1', 'C3', 'C4'], chunk_size=800,
+        sampling_rate=200, freeze_encoder=False)
+    classifier.requires_grad_(True)
+    optimizer = torch.optim.Adam(classifier.parameters(), lr=.0001)
+
+freeze_encoder=False preserves existing flags; it does not unfreeze a
+previously frozen backbone by itself. requires_grad_(True) supplies the full
+parameter policy. Normal train/eval calls then control the encoder and head.
+This includes native position, convolution, attention, MLP, residual-scale
+and final-norm parameters. It does not reinitialize pretrained weights.
+
+For head-only training, construct the wrapper with freeze_encoder=True.
+It freezes every native encoder parameter, including the learned final norm,
+and keeps the encoder in evaluation mode while the new task head trains.
+Input gradients remain available. The new wrapper has no separate proj_head;
+its configurable task_head contains all task-specific projections. The archived
+proj_head only removed CLS and reshaped tokens; it had no trainable parameters.
+A helper
+that blindly expects an additional projection head is unnecessary here.
+
+.. list-table:: Training policies
+   :header-rows: 1
+   :widths: 20 40 40
+
+   * - Policy
+     - Parameters
+     - Training mode
+   * - Head only
+     - Native encoder frozen; task head trainable
+     - Encoder eval; task head train
+   * - Full
+     - Complete encoder and task head trainable
+     - Encoder and task head train
+
+:doc:`/auto_examples/examples_eegmat_labram_classifier` provides head-only
+training at learning rate .001.
+:doc:`/auto_examples/examples_eegmat_labram_full_finetune` provides full
+training at learning rate .0001. Each is standalone, with fixed epochs and
+no model selection from held-out labels. Both save the policy, learning
+rate, exact trainable parameter names/count, full tensor state, both model
+configurations and every held-out output/target. Rebuild both configurations
+before strict restoration; the freeze_encoder setting reconstructs the
+parameter policy for these fresh models. Neither restores optimizer state.
+Their default flattened head can be substantial; pooling='mean' and
+head_channels=() specify a compact linear architecture when intended and
+must be recorded and validated separately.
+
 Standalone workflows
 ---------------------
 
 * :doc:`/auto_examples/examples_eegmat_labram_classifier`: background versus
-  arithmetic classification, holding out a whole subject.
+  arithmetic classification with a frozen encoder, holding out a whole subject.
+* :doc:`/auto_examples/examples_eegmat_labram_full_finetune`: the same task and
+  preprocessing, training the complete native encoder and task head.
 * :doc:`/auto_examples/examples_eegmat_labram_regression`: published subtraction
   counts from arithmetic windows. At least three subjects and two different
   training targets are required; divide by fixed factor 10 and report MAE in
@@ -105,7 +163,8 @@ Standalone workflows
 These use complete-recording 200 Hz resampling, .1--75 Hz bandpass and 50 Hz
 notch MNE FIR, four-second windows, source channel order/reference and
 microvolts divided by 100. They select per-token native norm, whole-window
-resampling (an identity at that rate) and a frozen encoder. Defaults use a
+resampling (an identity at that rate). The classification, regression and
+embedding workflows freeze the encoder; full fine-tuning trains it. Defaults use a
 small random encoder; the verified local author base checkpoint is optional.
 No data or weights are downloaded.
 
