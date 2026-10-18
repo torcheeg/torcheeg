@@ -31,12 +31,11 @@ def raw_record(path, preload):
     eeg = np.sin(2 * np.pi * 5 * time) + fixture['subject']
     eog = 2 * np.cos(2 * np.pi * 2 * time) - fixture['night']
     if fixture['kind'] == 'bare':
-        channels = ['F4', 'A1', 'LOC', 'A2']
-        data = np.stack([eeg, .2 * np.cos(2 * np.pi * 2 * time),
-                         eog, .1 * np.sin(2 * np.pi * 3 * time)])
+        channels = ['C3', 'A2', 'LOC']
+        data = np.stack([eeg, .2 * np.cos(2 * np.pi * 2 * time), eog])
     else:
         reference = 'A' if fixture['kind'] == 'A' else 'M'
-        channels = ['F4-' + reference + '1', 'LOC-' + reference + '2']
+        channels = ['C3-' + reference + '2', 'LOC-A2' if reference == 'A' else 'E1-M2']
         data = np.stack([eeg, eog])
     return mne.io.RawArray(data * 1e-6, mne.create_info(channels, 100, 'eeg'), verbose=False)
 
@@ -82,10 +81,10 @@ class TestISRUCEEGNetExample(unittest.TestCase):
                                                         test_subjects=['Subgroup_1_40']))
             self.assertEqual((report['train_epochs'], report['test_epochs'], report['optimizer_steps']), (12, 6, 3))
             provenance = report['preprocessing']['record_channels']
-            self.assertEqual(provenance['Subgroup_1_2_night1']['channel_names'], ['F4-M1', 'LOC-M2'])
+            self.assertEqual(provenance['Subgroup_1_2_night1']['channel_names'], ['C3-M2', 'E1-M2'])
             target = provenance['Subgroup_1_40_night1']
-            self.assertEqual(target['channel_names'], ['F4-A1', 'LOC-A2'])
-            self.assertEqual(target['derived_channels'], {'F4-A1': ['F4', 'A1'], 'LOC-A2': ['LOC', 'A2']})
+            self.assertEqual(target['channel_names'], ['C3-A2', 'LOC-A2'])
+            self.assertEqual(target['derived_channels'], {'C3-A2': ['C3', 'A2'], 'LOC-A2': ['LOC', 'A2']})
             self.assertEqual(target['zero_filled_channels'], [])
             payload = torch.load(root / 'model.pt', weights_only=True)
             config = json.loads(payload['model_config_json'])
@@ -96,7 +95,7 @@ class TestISRUCEEGNetExample(unittest.TestCase):
                 self.assertFalse(torch.equal(payload['state_dict'][name], initial[name]), name)
             raw = raw_record(records / 'Subgroup_1/40/40.rec', True)
             # Independent subtraction from recorded components, before filtering.
-            values = raw.get_data()[[0, 2]] - raw.get_data()[[1, 3]]
+            values = raw.get_data()[[0, 2]] - raw.get_data()[[1, 1]]
             raw = mne.io.RawArray(values, mne.create_info(['EEG', 'EOG'], 100, 'eeg'), verbose=False)
             raw.filter(.5, 30, verbose=False)
             values = raw.get_data().reshape(2, 6, 3000).transpose(1, 0, 2)

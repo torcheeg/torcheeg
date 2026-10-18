@@ -99,8 +99,9 @@ Standalone EEGNet training
 -----------------------------------
 
 :doc:`../auto_examples/examples_isruc_eegnet` trains EEGNet on a fixed
-F4 EEG / LOC EOG pair, with actual A1/A2 or M1/M2 names selected from the
-recorded candidates. Missing derivations are computed only from their
+C3 EEG / left EOG pair, with actual A2/M2 and LOC/E1 names selected from
+the recorded candidates. C3 avoids requiring frontal channels that can be
+absent in an original record. Missing derivations are computed only from their
 recorded components. There is no reference renaming or silent zero filling.
 The sidecar report preserves the actual channel and derivation metadata
 for every record.

@@ -6,9 +6,10 @@ Use the original ISRUC-Sleep REC/text pairs from
 https://sleeptight.isr.uc.pt/. Cite Khalighi et al. (2016) and the provider.
 Do not substitute the separately prepared MATLAB arrays.
 
-Select recorded F4-A1/F4-M1 EEG and LOC-A2/LOC-M2 EOG candidates. When only
+Select recorded C3-A2/C3-M2 EEG and LOC-A2/LOC-M2/E1-M2 EOG candidates. When only
 individual electrode/reference channels exist, compute their actual bipolar
-difference. Keep the recorded reference names and provenance; A and M names
+difference. C3 remains available when a frontal EEG channel is absent.
+Keep the recorded reference names and provenance; A and M names
 are not declared equivalent. Missing or ambiguous channels fail.
 
 Use 0.5--30 Hz FIR filtering, 100 Hz output and complete 30-second epochs
@@ -53,7 +54,7 @@ from torcheeg.trainers import ClassifierTrainer
 
 MODEL_CONFIG = dict(num_electrodes=2, chunk_size=3000, num_classes=5,
                     F1=8, F2=16, D=2, kernel_1=64, kernel_2=16, dropout=.25)
-CHANNELS = [('F4-A1', 'F4-M1'), ('LOC-A2', 'LOC-M2')]
+CHANNELS = [('C3-A2', 'C3-M2'), ('LOC-A2', 'LOC-M2', 'E1-M2')]
 LABELS = {'Sleep stage W': 0, 'Sleep stage N1': 1, 'Sleep stage N2': 2,
           'Sleep stage N3': 3, 'Sleep stage R': 4}
 
