@@ -209,7 +209,9 @@ class SHUMIDataset(BaseDataset):
         data, labels = _trials(mat['data'], mat['labels'], 1000)
         target_points = 4 * sfreq
         if target_points != 1000:
-            data = scipy_signal.resample(data, target_points, axis=2)
+            # Large published transients require float64 FFT arithmetic to retain
+            # small signal values without changing the physical amplitude scale.
+            data = scipy_signal.resample(data.astype(np.float64), target_points, axis=2)
         if not np.isfinite(data).all():
             raise ValueError('Resampling produced nonfinite trial values.')
         return {'data': data, 'labels': labels}

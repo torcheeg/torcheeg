@@ -9,7 +9,8 @@ archive from the `SHU Multi-session Dataset
 such as ``sub-001_ses-01_task_motorimagery_eeg.mat`` into one directory.
 Retain the provider's metadata and cite the paper and dataset.
 
-This entry reads trial MAT files directly without a MOABB dependency. MOABB's
+This entry reads trial MAT files directly without a MOABB dependency. Real-data validation uses
+the version 1 trial archive; retain the source version in experiment records. MOABB's
 Ma2022 dataset instead provides a continuous EDF/BIDS workflow. The two paths
 have different input and event handling; their outputs are not automatically
 interchangeable protocols.
@@ -36,7 +37,8 @@ Load trial windows
        label_transform=transforms.Select('label'))
    eeg, label = dataset[0]  # [32, 200], left=0 or right=1
 
-The reader uses SciPy FFT resampling along each trial's time axis. It does
+The reader uses SciPy FFT resampling along each trial's time axis, with
+float64 arithmetic to retain precision near large source transients. It does
 not add a filter, normalize amplitudes, divide by 100, or convert microvolts
 to volts. A rate of 250 Hz keeps the source values unchanged. All returned
 values remain in microvolts until an explicit user transform changes them.

@@ -32,11 +32,23 @@ class TestSHUMIDataset(unittest.TestCase):
                 savemat(Path(directory) / NAME, dict(data=data, labels=labels))
                 for rate in [200, 250, 128]:
                     actual = SHUMIDataset.read_record(NAME, root_path=directory, sfreq=rate)
-                    reference = data if rate == 250 else signal.resample(data, rate * 4, axis=2)
+                    reference = data if rate == 250 else signal.resample(data.astype(np.float64), rate * 4, axis=2)
                     np.testing.assert_array_equal(actual['data'], reference)
                     np.testing.assert_array_equal(actual['labels'], [1, 2, 1])
                     # No hidden division by 100 or conversion to volts.
                     self.assertGreater(abs(actual['data'][0, 31]).max(), 20)
+
+    def test_resampling_precision_with_large_published_style_transients(self):
+        data = trials(1)
+        data[0, 0, 0] = 1e6
+        with tempfile.TemporaryDirectory() as directory:
+            savemat(Path(directory) / NAME, dict(data=data, labels=[1]))
+            actual = SHUMIDataset.read_record(NAME, root_path=directory)['data']
+        spectrum = np.fft.rfft(data.astype(np.float64), axis=-1)[..., :401].copy()
+        spectrum[..., -1] *= 2
+        expected = np.fft.irfft(spectrum, n=800, axis=-1) * .8
+        self.assertEqual(actual.dtype, np.float64)
+        np.testing.assert_allclose(actual, expected, rtol=1e-12, atol=1e-9)
 
     def test_chunk_values_and_sample_offsets_remain_inside_trial(self):
         data = trials()[:, :, :800]
