@@ -103,7 +103,7 @@ and trial metadata. Use a **new cache path** when adopting this reader.
 Do not delete an earlier experiment's cache to migrate.
 
 Grid, graph and region constants
--------------------------------
+--------------------------------
 
 The legacy ``BCICIV2A_CHANNEL_LIST``, ``BCICIV2A_LOCATION_LIST`` and
 ``BCICIV2A_LOCATION_DICT`` retain their original aliases and grid. For example,
