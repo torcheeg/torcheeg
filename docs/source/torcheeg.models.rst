@@ -71,6 +71,7 @@ Transformer
    ATCNet
    Conformer
    LaBraM
+   LaBraMEncoder
    TCNet
    MHANet
    DARNet

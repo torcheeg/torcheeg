@@ -101,3 +101,21 @@ Fixture output, selected feature gradients and per-linear-layer weight-gradient
 sum/norm/first entries and complete bias gradients are checked. Pooling,
 flattening order, nonlinearities and all four head topologies are covered.
 No upstream checkpoint or patient signal is stored in the fixture.
+
+
+## LaBraM encoder
+
+`labram_reference.json` uses unmodified MIT modeling_finetune.py at
+c431221e6cfd23dbfa9950e0180682fb322b0548 and the author's timm0.4.12 dependency,
+loaded only in a separate reference directory. The tiny float64 encoder
+uses patch16, conv8, width16, MLP32, depth2, four heads and layer scale .1.
+Two cases cover qkv_bias=False/qk_norm=True and qkv_bias=True/qk_norm=False.
+For named parameter index i, values are sin(arange(numel)*.13+i*.4)*.08;
+one is added to norm weights. Input is linspace(-1.2,.8,128).reshape(2,2,2,16)
+plus .2*sin(arange(128)*.21); channel slots are [1,40], with CLS zero internal.
+All-token normed/raw outputs and native final-norm-after-mean pooling are
+weighted by linspace(-.7,1.1,numel). Complete input and parameter gradients
+are stored, including None for unused norm parameters in raw mode. A native
+norm pre-hook observes raw tokens without changing computation. No author
+weights, optimizer objects or patient signals are included. Tests do not
+require timm.
