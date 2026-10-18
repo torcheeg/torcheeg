@@ -35,50 +35,6 @@ pip install -e ".[test,example,pyg]"
 ```
 
 
-## Python naming and base classes
-
-Follow the [Google Python Style Guide naming conventions](https://google.github.io/styleguide/pyguide.html#s3.16-naming), with the following rules for TorchEEG:
-
-| Kind | Public API or subclass hook | Internal implementation |
-| --- | --- | --- |
-| Class | `ClassName` | `_ClassName` |
-| Function or method | `method_name` | `_method_name` |
-| Instance or module variable | `variable_name` | `_variable_name` |
-| Module or class constant | `CONSTANT_NAME` | `_CONSTANT_NAME` |
-
-Use public names for user-facing operations, constructor parameters and their exposed attributes, and methods intended for subclasses to override (for example, `apply`, `set_records`, `read_record`, `process_record`, `build`, and `split`). Use a single leading underscore for implementation helpers and internal state. Keep local variables and function parameters in `snake_case` without a leading underscore, except for intentionally unused values.
-
-Do not introduce double-leading-underscore names for private methods or attributes. Keep Python protocol methods such as `__init__` and `__repr__`, and names required by PyTorch, Lightning, or another upstream interface. Model submodule, parameter, and buffer names form part of the `state_dict` checkpoint interface; changing their spelling requires a checkpoint migration. Public imports and documented extension points also require a compatibility plan before renaming. Existing helpers exported through wildcard imports remain available until such a migration is made.
-
-A base-class method that requires a subclass implementation raises `NotImplementedError` and identifies the missing method and concrete class:
-
-```python
-def build(self, **kwargs):
-    raise NotImplementedError(
-        "Method build is not implemented in class "
-        + self.__class__.__name__
-    )
-```
-
-For a class-level hook, use `@classmethod` and `cls.__name__` in the message. Subclasses can still implement dataset record hooks as static methods. Keep working default implementations in base classes; returning an empty parameter dictionary or implementing `__repr__` does not require an exception. Exceptions for unsupported algorithm options are separate from required subclass hooks.
-
-## Input validation and exceptions
-
-Check arguments at the interface that owns their meaning. Constructors check configuration; methods check runtime inputs. Base classes own checks required by their shared workflow. Keep one-off checks inline; use `_validate_<name>` for a genuinely reusable helper inside a module, and `validate_<name>` in the relevant package's `utils.py` when multiple modules share the same rule. Existing public `check` hooks remain public. Do not add a validator section to every file or revalidate every argument in every helper.
-
-Use the following exception meanings consistently:
-
-| Exception | Meaning |
-| --- | --- |
-| `TypeError` | An explicitly checked argument has the wrong Python type. |
-| `ValueError` | An argument has an invalid shape, range, choice, or combination. |
-| `FileNotFoundError` | An input file or dataset directory does not exist. |
-| `KeyError` | A requested mapping or EEG sample key does not exist. |
-| `RuntimeError` | An operation cannot proceed because stored or computed state is invalid. |
-| `NotImplementedError` | A required subclass implementation or supported extension is missing. |
-
-Use explicit `if`/`raise` statements for caller-input checks so they still run under `python -O`. Reserve `assert` for internal invariants. Error messages identify the relevant argument and requirement; include actual values when useful. Preserve useful upstream exceptions rather than catching everything and replacing the cause with a generic message. Libraries such as scikit-learn may already validate their own arguments; delegate those checks instead of copying them or changing their exception contracts.
-
 ## Unit Testing
 
 The TorchEEG unit tests are located under `test/`. Run the all the unit tests with:
