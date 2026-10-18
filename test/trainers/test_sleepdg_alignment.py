@@ -217,6 +217,39 @@ class TestSleepDGAlignmentLoss(unittest.TestCase):
             with self.assertRaises((RuntimeError, IndexError)):
                 single_export(x.detach(), invalid)
 
+    @unittest.skipUnless(os.getenv('TORCHEEG_TEST_COMPILE') == '1'
+                         or os.getenv('GITHUB_ACTIONS') == 'true', 'Optional compiler check')
+    def test_dynamic_batch_compile_and_export_gradients_including_single_sequence(self):
+        if not hasattr(torch, 'compile') or not hasattr(torch, 'export'):
+            self.skipTest('Requires PyTorch compile and export')
+        loss = SleepDGAlignmentLoss(3)
+        compiled = torch.compile(loss, fullgraph=True, dynamic=True)
+        batch = torch.export.Dim('batch', min=1, max=8)
+        example, codes = torch.randn(4, 3, 8), torch.tensor([0, 1, 2, 0])
+        program = torch.export.export(loss, (example, codes), strict=True,
+                                      dynamic_shapes=({0: batch}, {0: batch}))
+        stream = io.BytesIO()
+        torch.export.save(program, stream)
+        stream.seek(0)
+        exported = torch.export.load(stream).module()
+        for size in (1, 4, 7):
+            for interface in (compiled, exported):
+                features = torch.randn(size, 3, 8, requires_grad=True)
+                domains = torch.arange(size) % 3
+                actual = interface(features, domains)
+                expected = loss(features, domains)
+                torch.testing.assert_close(actual, expected)
+                actual_grad, = torch.autograd.grad(actual, features)
+                expected_grad, = torch.autograd.grad(expected, features)
+                torch.testing.assert_close(actual_grad, expected_grad)
+                if size == 1:
+                    self.assertEqual(actual.item(), 0.)
+                    torch.testing.assert_close(actual_grad, torch.zeros_like(features), rtol=0, atol=0)
+        for interface in (compiled, exported):
+            for code in (-1, 3):
+                with self.assertRaises((RuntimeError, IndexError)):
+                    interface(torch.randn(1, 3, 8), torch.tensor([code]))
+
 
 
 if __name__ == '__main__':

@@ -102,9 +102,11 @@ class SleepDGAlignmentLoss(nn.Module):
             indices = torch.where(valid, domains, self.num_domains)
             assignments = torch.eye(self.num_domains, dtype=values.dtype,
                                     device=values.device).index_select(0, indices)
-            if self.num_domains == 1:
-                # Retain the lookup in the graph even when no pairs exist.
-                return values.sum() * 0. + (assignments - 1.).square().sum()
+            if self.num_domains == 1 or values.shape[0] == 1:
+                # One sequence cannot contain a pair of source domains. Avoid
+                # unnecessary covariance/correlation backward graphs, but keep
+                # the bounds-checked lookup even for this differentiable zero.
+                return values.sum() * 0. + (assignments.sum(dim=1) - 1.).square().sum()
             centered = values - values.mean(dim=2, keepdim=True)
             norms = torch.linalg.vector_norm(centered, dim=2, keepdim=True)
             denominator = torch.bmm(norms, norms.transpose(1, 2)).clamp_min(self.eps)

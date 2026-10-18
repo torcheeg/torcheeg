@@ -127,7 +127,9 @@ sequence term. It must not be applied to the epoch terms.
 Available source codes are ``0`` through ``num_domains - 1``. Configure the
 number of sources explicitly; absent codes in a batch are allowed and excluded
 from the pair count. At least two sources must be present for a nonzero
-alignment signal. A single source returns a differentiable zero. Integer
+alignment signal. A single source returns a differentiable zero. A batch with
+only one sequence takes this zero path directly, keeping its input gradient
+zero and its domain-code lookup checked without a covariance backward graph. Integer
 lookups reject negative and oversized domain codes in eager and tested CPU
 compiled/exported paths. The module owns no learned parameters or persistent
 statistics. Save ``num_domains`` and ``eps`` with the training configuration.
