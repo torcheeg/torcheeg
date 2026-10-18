@@ -32,9 +32,9 @@ transforms_plugin_requires = [
 
 dataset_plugin_requires = [
     'moabb>=0.5.0',
+    'h5py>=3.0.0',
 ]
 
-dataset_plugin_requires = ['moabb>=0.5.0']
 
 readme = open('README.rst').read()
 
