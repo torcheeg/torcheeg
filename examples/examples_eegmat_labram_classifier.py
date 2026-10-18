@@ -33,7 +33,8 @@ student pretraining-head removal with weights_only=True. Random outputs
 are not pretrained features; this teaching protocol is not a published
 benchmark or EEG-Arena reproduction.
 
-Save complete tensor state, both constructor configurations, preprocessing,
+Save complete tensor state, both constructor configurations, training parameter
+names/count, learning rate, preprocessing,
 channel/partition settings and all held-out predictions and targets.
 Rebuild LaBraMEncoder and the task wrapper with the saved settings, then
 strictly restore tensor state. No optimizer state is saved. Keep EEG-derived
@@ -123,6 +124,8 @@ def main():
     task_config = dict(channel_names=MENTAL_ARITHMETIC_CHANNEL_LIST, chunk_size=800, sampling_rate=200,
         num_classes=2, pooling='flatten', head_channels=None, dropout=.1, resample_mode='window', normalize_features=True, freeze_encoder=True)
     model = LaBraMClassifier(backbone, **task_config)
+    trainable_parameter_names = [name for name, p in model.named_parameters() if p.requires_grad]
+    trainable_parameters = sum(p.numel() for p in model.parameters() if p.requires_grad)
     trainer = ClassifierTrainer(model, num_classes=2, lr=.001,
         accelerator='cpu', devices=1, metrics=['accuracy'])
     trainer.fit(DataLoader(train, batch_size=args.batch_size, shuffle=True), None,
@@ -138,7 +141,8 @@ def main():
             targets.append(target.cpu())
     output = Path(args.output_path)
     output.parent.mkdir(parents=True, exist_ok=True)
-    torch.save(dict(state_dict=model.state_dict(), backbone_config=backbone_config, task_config=task_config,
+    torch.save(dict(fine_tuning='head', learning_rate=.001, trainable_parameters=trainable_parameters,
+        trainable_parameter_names=trainable_parameter_names, state_dict=model.state_dict(), backbone_config=backbone_config, task_config=task_config,
         source_channel_order=MENTAL_ARITHMETIC_CHANNEL_LIST, channel_order=MENTAL_ARITHMETIC_CHANNEL_LIST,
         sampling_rate=200, native_sampling_rate=200, patch_size=200, patches=4, window_seconds=4, scale_microvolts=100.,
         filters=dict(bandpass_hz=(.1, 75.), notch_hz=50., method='MNE FIR on full recordings after resampling'),
