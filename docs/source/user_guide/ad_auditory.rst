@@ -112,3 +112,42 @@ Layout constants
 ``AD_AUDITORY_ADJACENCY_LIST`` and ``AD_AUDITORY_ADJACENCY_MATRIX`` provide its
 hand-defined electrode graph. These constants describe a model layout;
 they are not subject-measured functional connectivity.
+
+
+Standalone EEGNet training
+--------------------------
+
+The gallery provides :doc:`../auto_examples/examples_ad_auditory_eegnet`.
+Run it on the downloaded, provider-cleaned release:
+
+.. code-block:: console
+
+   python examples/examples_ad_auditory_eegnet.py --root-path ./AD-Auditory --epochs 1 --batch-size 64 --output-path ./ad-auditory-eegnet.pt
+
+The script uses all 19 EEG channels, native 250 Hz and nonoverlapping
+one-second windows from both annotated conditions. It applies per-window,
+per-channel normalization, with no additional filter, reference or resampling
+and no statistics fitted across people. A constant channel becomes finite
+zeros. The diagnosis label is already 0/1/2; condition values are not targets.
+
+For each diagnosis class, hold out the last sorted participant ID and train
+on the others. Every record, condition, event and window from that participant
+stays in the held-out partition. The script requires all three classes and
+at least two participants per class. In the full 33-person labeled release,
+this gives 30 training people and three test people. The JSON records actual
+IDs, source labels, records, represented event counts and complete-window
+counts by condition. Participant selection uses labels for stratification
+and does not use model predictions.
+
+Training uses a fixed epoch count with no test-based model or epoch selection.
+Reported accuracy/F1 and cross-entropy pool the test windows. This is one fixed
+illustrative split; it provides neither participant-voted metrics nor full
+cross-validation. Retain that scope when reporting the output. A clinical or
+published benchmark result needs its own complete protocol and validation.
+
+The export includes all nine EEGNet constructor settings, all 20 state tensors,
+and preprocessing/partition JSON strings. It freezes constrained convolution
+weights and checks exactly equal inference after strict in-memory and safe
+``weights_only=True`` disk restoration. Existing model and sidecar files are
+preserved. Use a fresh cache after changing input data or offline processing.
+The gallery renders the script without executing its training run.
