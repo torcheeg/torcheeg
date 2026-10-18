@@ -198,7 +198,7 @@ class BCICIV2aDataset(BaseDataset):
     @staticmethod
     def read_record(record: str, sfreq: int = 250, num_channel: int = 22,
                     notch_freqs=None, l_freq=None, h_freq=None, ref_channels=None,
-                    **kwargs) -> Dict:
+                    before_trial=None, **kwargs) -> Dict:
         _identity(record)
         _settings(0, -1, 0, num_channel, sfreq, None, None,
                   notch_freqs, l_freq, h_freq, ref_channels)
@@ -226,18 +226,21 @@ class BCICIV2aDataset(BaseDataset):
             if len(onsets) and (np.any(onsets < 0) or np.any(np.diff(onsets) < 1750)
                                 or onsets[-1] + 1750 > len(values)):
                 raise ValueError('Seven-second trials must be ordered, complete and nonoverlapping.')
-            selected = values[:, :num_channel].T.copy()
+            # The released hook sees the full 25-channel run before the
+            # requested output channels are selected.
+            selected_channels = 25 if before_trial is not None else num_channel
+            selected = values[:, :selected_channels].T.copy()
             # EOG calibration runs contain no motor-imagery trials. Keep their
             # position in the run list without applying trial preprocessing.
             if len(onsets) and (sfreq != 250 or any(value is not None for value in
                     (notch_freqs, l_freq, h_freq, ref_channels))):
                 raw = mne.io.RawArray(selected.astype(np.float64) * 1e-6,
-                    mne.create_info(CHANNELS[:num_channel], 250,
-                                    (['eeg'] * 22 + ['eog'] * 3)[:num_channel]), verbose=False)
+                    mne.create_info(CHANNELS[:selected_channels], 250,
+                                    (['eeg'] * 22 + ['eog'] * 3)[:selected_channels]), verbose=False)
                 if notch_freqs is not None:
-                    raw.notch_filter(notch_freqs, picks=list(range(num_channel)), verbose=False)
+                    raw.notch_filter(notch_freqs, picks=list(range(selected_channels)), verbose=False)
                 if l_freq is not None or h_freq is not None:
-                    raw.filter(l_freq, h_freq, picks=list(range(num_channel)), verbose=False)
+                    raw.filter(l_freq, h_freq, picks=list(range(selected_channels)), verbose=False)
                 if ref_channels is not None:
                     raw.set_eeg_reference(ref_channels, verbose=False)
                 if sfreq != 250:
@@ -251,7 +254,7 @@ class BCICIV2aDataset(BaseDataset):
     @staticmethod
     def fake_record(**kwargs) -> Dict:
         rate = kwargs.get('sfreq', 250)
-        channels = kwargs.get('num_channel', 22)
+        channels = 25
         generator = np.random.default_rng(42)
         return dict(record='A01T.mat', a_data=[dict(X=generator.standard_normal((channels, 24 * rate)),
                     trial=np.array([0, 8 * 250, 16 * 250]), y=np.array([1, 2, 4]),
@@ -277,7 +280,7 @@ class BCICIV2aDataset(BaseDataset):
             if before_trial is not None:
                 values = np.asarray(before_trial(values))
             if (values.shape != np.shape(run['X']) or values.ndim != 2
-                    or values.shape[0] != num_channel or values.dtype.kind not in 'iuf'
+                    or not num_channel <= values.shape[0] <= 25 or values.dtype.kind not in 'iuf'
                     or not np.isfinite(values).all()):
                 raise ValueError('before_trial must preserve finite continuous-run geometry.')
             for trial_index, onset in enumerate(run['trial']):
@@ -289,7 +292,7 @@ class BCICIV2aDataset(BaseDataset):
                 trial_id = f'{filename}_r{run_id}_t{trial_index}'
                 for start in range(first, last - size + 1, size - overlap):
                     end = start + size
-                    clip = values[:, output_onset + start:output_onset + end].copy()
+                    clip = values[:num_channel, output_onset + start:output_onset + end].copy()
                     if offline_transform is not None:
                         clip = offline_transform(eeg=clip)['eeg']
                     key = f'{filename}_{pointer}'

@@ -132,9 +132,24 @@ class TestBCICIV2aDataset(unittest.TestCase):
                     before_trial=before, offline_transform=offline))
         self.assertEqual(calls, [original.shape])
         np.testing.assert_array_equal(values['a_data'][0]['X'], original)
-        np.testing.assert_array_equal(rows[1]['eeg'], original[:, 500:1500] + 2 + 3)
+        np.testing.assert_array_equal(rows[1]['eeg'], original[:22, 500:1500] + 2 + 3)
         with self.assertRaises(ValueError):
             list(BCICIV2aDataset.process_record(**values, before_trial=lambda x: x[:, :-1]))
+
+    def test_constructor_hook_retains_full_25_channel_run_before_selection(self):
+        with tempfile.TemporaryDirectory() as directory:
+            source = write_record(directory)
+            shapes = []
+            def hook(eeg):
+                shapes.append(eeg.shape)
+                eeg[0] -= eeg[24]
+                return eeg
+            dataset = BCICIV2aDataset(root_path=directory, num_channel=3,
+                before_trial=hook, io_mode='memory', verbose=False)
+            self.assertEqual(shapes, [(25, 6500), (25, 6500)])
+            expected = source[3]['X'][:1750, :3].T.copy()
+            expected[0] -= source[3]['X'][:1750, 24]
+            np.testing.assert_array_equal(dataset[0][0], expected)
 
     def test_invalid_settings_fail_before_cache_io(self):
         cases = [dict(overlap=1750), dict(overlap=-1), dict(sfreq=0), dict(sfreq=True),

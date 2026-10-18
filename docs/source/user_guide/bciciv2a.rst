@@ -1,5 +1,5 @@
 BCI Competition IV 2a MAT data
-=============================
+==============================
 
 ``BCICIV2aDataset`` reads the BNCI MATLAB release of dataset 001-2014.
 Download ``A01T.mat`` through ``A09E.mat`` from the
@@ -77,7 +77,8 @@ run, using the rounded resampled trial origin. ``source_start_seconds`` and
 ``source_end_seconds`` express those actual output-grid positions in seconds.
 ``channel_names``, ``sfreq`` and ``signal_unit`` record the returned geometry.
 For compatibility, ``before_trial`` still operates once on the complete
-motor-imagery run. It must preserve its shape and finite values. Each window
+motor-imagery run, retaining all 25 input channels before selecting
+``num_channel`` output channels. It must preserve its shape and finite values. Each window
 is copied before an offline transform, including overlapping windows.
 
 Evaluation and migration
