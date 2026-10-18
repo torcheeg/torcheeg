@@ -75,3 +75,40 @@ crop times, a constant trial ID, and potentially incorrect labels selected
 from overlapping marker annotations. Preserve old caches for reproducibility;
 they are not silently rewritten. Also use new cache paths after changing the
 crop, channels, filters or sampling rate.
+
+
+Standalone EEGNet training
+-------------------------------
+
+:doc:`../auto_examples/examples_hmc_eegnet` trains EEGNet on an explicit
+C4-M1 EEG / E1-M2 EOG pair with complete 30-second epochs at 100 Hz. It uses
+0.5--30 Hz FIR filtering and per-epoch channel normalization. The default
+reads the whole scored record, with optional explicit start/end limits.
+Missing measured channels fail rather than being replaced with zeros.
+
+The final sorted public SN group is held out. The same released record
+cannot appear in both training and testing, but the public SN identifier
+does not prove cross-night person identity. Training uses a fixed epoch
+count and no test-based parameter selection. This is a standalone workflow,
+not a published benchmark protocol or score.
+
+The example writes a complete EEGNet tensor state plus JSON constructor,
+preprocessing and partition metadata. It verifies strict safe loading and
+inference agreement. The adjacent JSON report records the actual crop,
+record groups, optimizer steps and evaluated epoch counts. Keep an existing
+artifact and choose a fresh output path for a new run.
+
+To restore an owned export::
+
+    import json
+    import torch
+    from torcheeg.models import EEGNet
+
+    payload = torch.load('hmc-eegnet.pt', map_location='cpu', weights_only=True)
+    model = EEGNet(**json.loads(payload['model_config_json']))
+    model.load_state_dict(payload['state_dict'], strict=True)
+    model.requires_grad_(False).eval()
+
+Freezing enables constrained-convolution inference without updating stored
+weights. Apply the recorded channel order and preprocessing to new samples;
+the model state does not filter, resample or normalize raw EDF signals.
