@@ -12,8 +12,12 @@ single-element configurations; no constructor-time dummy forward is used.
 forward follows the author's encoder-only inference path. forward_all runs
 the complete reconstruction path. No author trained weights are distributed.
 
-Independent reference modules under test/models/fixtures/sleepdg_reference
+Independent model reference modules under test/models/fixtures/sleepdg_reference/models
 retain the author's computational class bodies verbatim; only package-local
 imports are adapted. Original/adapted SHA256 hashes and the revision are
 recorded there. The model architecture alone does not implement the full
 multi-domain alignment training protocol or establish published performance.
+
+The domain-generalization alignment loss derives from losses/double_alignment.py.
+The independent test copy preserves its formulas and changes only the domain
+index tensor device; see the packaged alignment-manifest.json for file hashes.

@@ -51,7 +51,7 @@ setup(
     url=URL,
     packages=find_packages(),
     package_data={"test.models": ["fixtures/*.json", "fixtures/README.md"],
-                  "test.models.fixtures.sleepdg_reference": ["README.md", "source-manifest.json"]},
+                  "test.models.fixtures.sleepdg_reference": ["README.md", "source-manifest.json", "alignment-manifest.json"]},
     long_description=readme,
     python_requires='>=3.7',
     extras_require={
