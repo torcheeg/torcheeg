@@ -22,7 +22,7 @@ configuration:
      - Expected root
      - EEG then EOG
    * - --sleepedf-root
-     - Flat Sleep-EDF sleep-cassette EDF/hypnogram pairs
+     - Sleep-EDF root containing sleep-cassette EDF/hypnogram pairs
      - EEG Fpz-Cz; EOG horizontal
    * - --hmc-root
      - HMC recordings directory
@@ -142,7 +142,7 @@ Use a fresh output directory for a new experiment. It contains separate
 reader caches, ``run.json`` with data/configuration/partition/statistics,
 source-selected and last Lightning checkpoints, ``report.json`` with the
 actual evaluated scope, and ``model.pt`` with all native model tensors and
-the constructor configuration. Export checks strict state restoration and
+the constructor configuration as a JSON string for older safe loaders. Export checks strict state restoration and
 exact inference agreement on a target probe.
 
 Resume an owned, trusted end-of-epoch checkpoint with ``--resume PATH``.

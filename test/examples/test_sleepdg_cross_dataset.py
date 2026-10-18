@@ -204,8 +204,8 @@ class TestSleepDGWorkflow(unittest.TestCase):
                 partitions = report['partitions'][name]
                 self.assertFalse(set(partitions['train']['subjects']) & set(partitions['validation']['subjects']))
             payload = torch.load(output / 'model.pt', weights_only=True)
-            self.assertEqual(payload['model_config']['hid_channels'], 512)
-            self.assertEqual(payload['model_config']['sequence_length'], 20)
+            self.assertEqual(json.loads(payload['model_config_json'])['hid_channels'], 512)
+            self.assertEqual(json.loads(payload['model_config_json'])['sequence_length'], 20)
             self.assertEqual(len(payload['state_dict']), 74)
             for key in watched:
                 self.assertFalse(torch.equal(initial[key], payload['state_dict'][key]), key)
@@ -237,6 +237,8 @@ class TestSleepDGWorkflow(unittest.TestCase):
                 self.assertNotIn('online_transform', args)
                 if source in ('sleepedf', 'hmc', 'isruc'):
                     self.assertEqual(args['missing_channels'], 'raise')
+                if source == 'sleepedf':
+                    self.assertEqual(args['studies'], ['cassette'])
                 if source == 'isruc':
                     self.assertEqual(args['groups'], [0])
                 if source == 'hmc':

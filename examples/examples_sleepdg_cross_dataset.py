@@ -196,7 +196,7 @@ def source_dataset(name, root, cache):
     common = dict(root_path=root, io_path=str(cache), io_mode='pickle', num_worker=0,
                   label_transform=transforms.Compose([transforms.Select('label'), transforms.Mapping(LABELS)]))
     if name == 'sleepedf':
-        return SleepEDFxDataset(**common, channels=['EEG Fpz-Cz', 'EOG horizontal'],
+        return SleepEDFxDataset(**common, studies=['cassette'], channels=['EEG Fpz-Cz', 'EOG horizontal'],
                                 l_freq=.3, h_freq=35., sfreq=100, missing_channels='raise')
     if name == 'hmc':
         return HMCDataset(**common, channels=['EEG F4-M1', 'EOG E1-M2'],
@@ -316,8 +316,15 @@ def main():
     probe = next(iter(test_loader))[0][:1]
     with torch.no_grad():
         torch.testing.assert_close(restored(probe), trainer.model(probe), rtol=0, atol=0)
-    torch.save(dict(model_config=MODEL, state_dict=restored.state_dict(), target=args.target,
+    torch.save(dict(model_config_json=json.dumps(MODEL), state_dict=restored.state_dict(), target=args.target,
                     source_domains=domains, checkpoint=selected), output / 'model.pt')
+    # JSON configuration also works with the older weights-only unpickler,
+    # which cannot read Python floating metadata on Torch 1.13.
+    exported = torch.load(output / 'model.pt', map_location='cpu', weights_only=True)
+    roundtrip = SleepDG(**json.loads(exported['model_config_json'])).eval()
+    roundtrip.load_state_dict(exported['state_dict'], strict=True)
+    with torch.no_grad():
+        torch.testing.assert_close(roundtrip(probe), restored(probe), rtol=0, atol=0)
     report = dict(protocol='TorchEEG corrected five-source workflow; not published-score reproduction',
                   target=args.target, source_domains=domains, partitions=partitions,
                   normalization='retained-record statistics, including unlabeled target records',
