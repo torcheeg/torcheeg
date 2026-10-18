@@ -86,6 +86,7 @@ Transformer
    EEGPTInputAdapter
    EEGPTAdaptedModel
    CBraMod
+   STEEGFormer
    CBraModClassifier
    CBraModRegression
    CBraModEmbedding
