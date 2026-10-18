@@ -82,9 +82,11 @@ class _Attention(nn.Module):
         if self.q_bias is not None:
             qkv = qkv + torch.cat((self.q_bias, torch.zeros_like(self.v_bias), self.v_bias))
         q, k, v = qkv.reshape(batch, tokens, 3, self.num_heads, width // self.num_heads).permute(2, 0, 3, 1, 4).unbind(0)
+        # A two-dimensional normalization view avoids x86/ARM Inductor
+        # backward fusion conflicts without changing native per-head math.
         if self.q_norm is not None:
-            q = self.q_norm(q).to(v.dtype)
-            k = self.k_norm(k).to(v.dtype)
+            q = self.q_norm(q.flatten(0, 2)).reshape_as(q).to(v.dtype)
+            k = self.k_norm(k.flatten(0, 2)).reshape_as(k).to(v.dtype)
         attention = ((q * (width // self.num_heads) ** -.5) @ k.transpose(-2, -1)).softmax(dim=-1)
         x = self.attn_drop(attention) @ v
         return self.proj_drop(self.proj(x.transpose(1, 2).reshape(batch, tokens, width)))
