@@ -158,6 +158,19 @@ Auditory Attention Datasets
     AVEDDataset
     AVEDProcessedDataset
 
+Clinical Datasets
+-----------------
+
+.. autosummary::
+    :toctree: generated
+    :nosignatures:
+    :template: datasettemplate.rst
+
+    ADAuditoryDataset
+
+See :doc:`user_guide/ad_auditory` for the released SET/FDT format, labels,
+provider preprocessing and event/window clocks.
+
 Customized Datasets
 ---------------------------------------------------------
 
