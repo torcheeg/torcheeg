@@ -1,0 +1,9 @@
+{
+  "repository": "https://github.com/wjq-learning/SleepDG",
+  "revision": "01d209d4fda874933a277a88bccdca6e3835e884",
+  "original_path": "losses/double_alignment.py",
+  "original_sha256": "dfedc0b5e0890a8b7df1d46483097ed7ee3693c480780a892f0baeb54fedbaa5",
+  "adapted_path": "alignment_reference.py",
+  "adapted_sha256": "27caaedfbd0a79491e1d6d2e86b2a7287ea3b3b58de1f384a11b2ba60080c027",
+  "adaptation": "Only domain_pair index arange device changed from unconditional CUDA to features.device; loss formulas unchanged."
+}

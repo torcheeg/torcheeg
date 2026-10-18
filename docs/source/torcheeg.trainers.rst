@@ -1,5 +1,5 @@
 torcheeg.trainers
-===============================
+=================
 
 .. contents:: Extensive trainers used to implement different training strategies, such as vanilla classification, domain adaption, etc.
     :depth: 2
@@ -9,7 +9,7 @@ torcheeg.trainers
 .. currentmodule:: torcheeg.trainers
 
 Basic
-----------------------------------
+-----
 
 .. autosummary::
    :toctree: generated
@@ -20,7 +20,7 @@ Basic
    RegressorTrainer
 
 Cross-domain Classification
-----------------------------------
+---------------------------
 
 The individual differences and nonstationary of EEG signals make it difficult for deep learning models trained on the training set of subjects to correctly classify test samples from unseen subjects, since the training set and test set come from different data distributions. Domain adaptation is used to address the problem of distribution drift between training and test sets and thus achieves good performance in subject-independent (cross-subject) scenarios. 
 
@@ -36,6 +36,21 @@ The individual differences and nonstationary of EEG signals make it difficult fo
    ADATrainer
    DANNTrainer
    CenterLossTrainer
+
+Domain Generalization
+---------------------
+
+Domain generalization uses labeled source datasets without access to target
+features during training. SleepDG aligns epoch distributions and sequence
+relations between source datasets. See :doc:`user_guide/sleepdg` for the
+objective, domain codes and validation boundaries.
+
+.. autosummary::
+   :toctree: generated
+   :nosignatures:
+   :template: modeltemplate.rst
+
+   SleepDGAlignmentLoss
 
 Imbalance Learning for Classification
 -------------------------------------
@@ -54,7 +69,7 @@ EEG emotion datasets have the problem of sample class imbalance, and imbalance l
    WCELossTrainer
 
 EEG Generation
-----------------------------------------
+--------------
 
 Data scarcity and data imbalance are one of the important challenges in the analysis of EEG signals. TorchEEG provides different types of generative model trainers to help train generative models to augment EEG datasets. The trainer starting with "C" represents the trainer of the category conditioned generative models, allowing the user to control the category of the generated EEG signal. The others generate samples close to real EEG signals randomly without controlling the category.
 
