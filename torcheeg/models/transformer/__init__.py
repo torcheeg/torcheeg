@@ -19,3 +19,5 @@ from .eegpt_input import EEGPTResample, EEGPTInputAdapter, EEGPTAdaptedModel
 from .cbramod import CBraMod
 
 from .cbramod_heads import CBraModClassifier, CBraModRegression, CBraModEmbedding
+
+from .labram_encoder import LaBraMEncoder

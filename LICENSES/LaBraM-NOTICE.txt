@@ -1,0 +1,29 @@
+LaBraM encoder adaptation
+
+Upstream: https://github.com/935963004/LaBraM
+Revision: c431221e6cfd23dbfa9950e0180682fb322b0548
+Copyright (c) 2024 Weibang Jiang
+License: MIT, retained in LICENSES/LaBraM.txt
+
+The temporal convolution, query/key normalization, asymmetric query/value
+bias option, layer scales, channel/temporal embeddings, transformer blocks
+and tensor names follow modeling_finetune.py and modeling_pretrain.py.
+Upstream credits BEiT-v2, timm, DeiT and DINO:
+https://github.com/microsoft/unilm/tree/master/beitv2
+https://github.com/rwightman/pytorch-image-models/tree/master/timm
+https://github.com/facebookresearch/deit/
+https://github.com/facebookresearch/dino
+
+The channel catalog follows utils.py. Its 136 entries exceed the checkpoint's
+128 electrode slots; names without a native embedding slot are rejected.
+TorchEEG exposes raw and normalized tokens, strict shape/channel checks,
+explicit temporal-table interpolation and complete safe encoder loading.
+The native learned norm remains named norm. It is not silently renamed to
+a newly initialized downstream fc_norm. Native convolution and attention
+operation ordering is retained for numerical reproducibility.
+
+Neural spectrum tokenizer, masked-code prediction, contrastive projection,
+optimizer and trained downstream heads are not restored by encoder loading.
+No author checkpoint is redistributed. Independent fixtures use deterministic
+synthetic tensors and unmodified author computation, with timm0.4.12 only
+in the separate reference environment. TorchEEG has no timm dependency here.
