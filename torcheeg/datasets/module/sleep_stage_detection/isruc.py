@@ -121,27 +121,23 @@ class ISRUCDataset(BaseDataset):
         verbose (bool): Whether to display logs during processing, such as progress bars, etc. (default: :obj:`True`)
     '''
 
-    def __init__(self,
-                 root_path: str = './ISRUC-SLEEP',
-                 groups: List = [0, 1, 2],
-                 channels: List = ['F3-M2',
-                                   'C3-M2',
-                                   'O1-M2',
-                                   'F4-M1',
-                                   'C4-M1',
-                                   'O2-M1'],
-                 l_freq: float = 0.5,
-                 h_freq: float = 30,
-                 sfreq: int = 100,
-                 online_transform: Union[None, Callable] = None,
-                 offline_transform: Union[None, Callable] = None,
-                 label_transform: Union[None, Callable] = None,
-                 io_path: Union[None, str] = None,
-                 io_size: int = 1048576,
-                 io_mode: str = 'lmdb',
-                 num_worker: int = 0,
-                 verbose: bool = True,
-                 **kwargs):
+    def __init__(
+            self,
+            root_path: str = './ISRUC-SLEEP',
+            groups: List = [0, 1, 2],
+            channels: List = ['F3-M2', 'C3-M2', 'O1-M2', 'F4-M1', 'C4-M1', 'O2-M1'],
+            l_freq: float = 0.5,
+            h_freq: float = 30,
+            sfreq: int = 100,
+            online_transform: Union[None, Callable] = None,
+            offline_transform: Union[None, Callable] = None,
+            label_transform: Union[None, Callable] = None,
+            io_path: Union[None, str] = None,
+            io_size: int = 1048576,
+            io_mode: str = 'lmdb',
+            num_worker: int = 0,
+            verbose: bool = True,
+            **kwargs):
         if io_path is None:
             io_path = get_random_dir_path(dir_prefix='datasets')
 

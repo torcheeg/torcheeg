@@ -111,10 +111,7 @@ class HMCDataset(BaseDataset):
 
     def __init__(self,
                  root_path: str = './HMC/recordings',
-                 channels: List = ['EEG F4-M1',
-                                   'EEG C4-M1',
-                                   'EEG O2-M1',
-                                   'EEG C3-M2'],
+                 channels: List = ['EEG F4-M1', 'EEG C4-M1', 'EEG O2-M1', 'EEG C3-M2'],
                  l_freq: float = 0.5,
                  h_freq: float = 30,
                  sfreq: int = 100,

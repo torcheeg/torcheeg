@@ -68,13 +68,18 @@ class MOABBDataset(BaseDataset):
                  after_trial: Union[Callable, None] = None,
                  after_session: Union[Callable, None] = None,
                  after_subject: Union[Callable, None] = None,
-                 io_path: str = '.torcheeg/io/moabb',
+                 io_path: Union[None, str] = None,
                  io_size: int = 1048576,
                  io_mode: str = 'lmdb',
                  download_path: str = None,
                  num_worker: int = 0,
                  verbose: bool = True,
-                                  **kwargs):
+                 **kwargs):
+        if download_path is None:
+            from ...utils import get_random_dir_path
+            if io_path is None:
+                io_path = get_random_dir_path(dir_prefix='datasets')
+            download_path = os.fspath(io_path) + '_raw'
         # pass all arguments to super class
         params = {
             'dataset': dataset,
