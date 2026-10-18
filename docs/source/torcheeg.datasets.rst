@@ -168,10 +168,12 @@ Clinical Datasets
 
     ADAuditoryDataset
     ADFTDRSDataset
+    ADFTDPSDataset
 
 See :doc:`user_guide/ad_auditory` for the released SET/FDT format, labels,
 provider preprocessing and event/window clocks.
-See :doc:`user_guide/adftd_rs` for ADFTD source selection, units and discontinuities.
+See :doc:`user_guide/adftd_rs` and :doc:`user_guide/adftd_ps` for ADFTD
+source selection, cohort linkage, units and discontinuities.
 
 Customized Datasets
 ---------------------------------------------------------

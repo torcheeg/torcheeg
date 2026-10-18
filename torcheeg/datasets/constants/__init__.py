@@ -5,3 +5,4 @@ from .mental_workload import *
 from .motor_imagery.physionet_mi import *
 from .clinical.ad_auditory import *
 from .clinical.adftd_rs import *
+from .clinical.adftd_ps import *
