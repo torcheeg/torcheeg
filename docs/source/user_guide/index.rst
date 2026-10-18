@@ -58,3 +58,4 @@ the same library workflow as a reusable assistant skill.
    cbramod
    fourier_resampling
    cbramod_heads
+   cbramod_tuning
