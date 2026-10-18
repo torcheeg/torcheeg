@@ -101,3 +101,35 @@ fits after an offset or resampling raises an error; use ``chunk_size=-1``
 or an explicit output size. These correctness fixes change cached values
 and trial metadata. Use a **new cache path** when adopting this reader.
 Do not delete an earlier experiment's cache to migrate.
+
+Standalone EEGNet training
+--------------------------
+
+The gallery provides :doc:`../auto_examples/examples_bciciv2a_native_eegnet`.
+Run one participant with a fixed epoch count:
+
+.. code-block:: console
+
+   python examples/examples_bciciv2a_native_eegnet.py --root-path ./BCICIV_2a_mat --subject 1 --epochs 1 --output-path ./a01-native-eegnet.pt
+
+The script selects the same person's T recording for training and E recording
+for evaluation. Both must retain six imagery runs. It uses all 22 EEG channels,
+whole-run 4--38 Hz FIR filtering, 128 Hz output and a 2--6 second source window.
+Each trial yields one ``[1, 22, 512]`` input, normalized per channel within that
+window. It adds no notch, average reference or learned cross-trial statistics.
+Labels 1/2/3/4 map to 0/1/2/3. The E recording does not select training epochs
+or model settings. This is an offline trial holdout protocol, not a claim of
+original causal competition kappa performance.
+
+Expert-marked trials remain by default. ``--skip-artifacts`` excludes them in
+both partitions. Select a fresh ``--cache-path`` when changing this policy.
+The JSON report records actual T/E recordings, original run indices, trial
+counts, retained artifact flags and optimizer steps. A04T's shorter calibration
+block therefore does not change or hide its original run indices.
+
+The export stores all nine EEGNet constructor settings, all 20 state tensors,
+and preprocessing/partition JSON strings. It freezes constrained convolutions
+for inference and checks equal predictions after strict in-memory and disk
+restoration with ``weights_only=True``. It preserves existing model and JSON
+files. The gallery renders the script without running it; execute it separately
+on the downloaded MAT release and retain the report with any measured result.
