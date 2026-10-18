@@ -66,3 +66,4 @@ the same library workflow as a reusable assistant skill.
    isruc
    p2018
    shhs
+   sleepdg_workflow
