@@ -42,6 +42,8 @@ The TorchEEG unit tests are located under `test/`. Run the all the unit tests wi
 ```bash
 # please skip test/datasets if you don't have dataset folder in tmp_in/
 python -m unittest discover -s test -t .
+# run IO tests by their package names
+python -m unittest test.io.test_eeg_signal test.io.test_meta_info
 # save to file
 python -m unittest discover -s test -t . > log.txt 2>&1
 ```
