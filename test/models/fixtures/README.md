@@ -163,3 +163,27 @@ linspace(-.7,1.1,numel). Complete input and parameter gradients are stored.
 The public zero-up initialization is separately checked for exact identity
 in deterministic evaluation. No patient signal or author checkpoint is
 stored, and runtime tests do not require timm.
+
+
+## LaBraM attention prefixes
+
+`labram_prefix_reference.json` combines the unmodified official encoder at
+c431221e6cfd23dbfa9950e0180682fb322b0548 (timm0.4.12 in a separate reference
+environment) with the archived workspace's unmodified PrefixLayer,
+add_prefix_to_attention and get_prefix_model. The archived file SHA256 is
+recorded in the fixture. Two architectures use the matching deterministic
+states from labram_reference.json: qkv_bias=False/qk_norm=True and
+qkv_bias=True/qk_norm=False. The native encoder receives its original CLS
+and channel positions. Its query/key normalization occurs before inserting
+prefixes; learned keys bypass normalization.
+
+All layers use prefix length3. After installing the original helpers,
+float64/eval/all-parameter-gradient mode is set explicitly. Prefix entries
+in block i are sin(arange(numel)*.11+i*.4)*.23, deliberately nonzero.
+Input is linspace(-1.2,.8,128).reshape(2,2,2,16) plus
+.2*sin(arange(128)*.21), native channel slots [1,40], internal CLS zero.
+All normalized output tokens are weighted by linspace(-.7,1.1,numel).
+Full state, output, input and every parameter gradient are recorded.
+Only the storage path is mapped from blocks.i.prefix.prefix_tokens to
+blocks.i.attn.prefix_tokens; computation is unchanged. No recordings or
+author checkpoint is included. Tests require no timm dependency.

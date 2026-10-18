@@ -109,6 +109,8 @@ LaBraM parameter-efficient tuning
 
 .. autofunction:: add_labram_adapters
 
+.. autofunction:: add_labram_prefix
+
 Signal processing layers
 -------------------------
 

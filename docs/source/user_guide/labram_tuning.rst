@@ -104,3 +104,66 @@ native/adapter/head state, all three constructor configurations,
 preprocessing/channel/partition settings, trainable parameter count and every
 held-out output/target. This verifies functionality and restoration, not a
 published adapter or EEG-Arena score.
+
+
+Attention prefixes
+------------------
+
+:func:`torcheeg.models.add_labram_prefix` prepends learned keys and values to
+selected attention layers. Each layer owns independent prefix_tokens with
+shape [prefix_length, 2, heads, head_width], initialized from a normal
+distribution with standard deviation .02. Native queries and keys undergo
+optional native per-head normalization before insertion. Learned prefix
+keys bypass that normalization, preserving the archived workspace's order.
+
+Prefixes do not receive channel/time positions or produce queries. The
+attention probability matrix has N query rows and prefix_length + N key
+columns; the output still has N tokens, including the original CLS token.
+Even zero prefixes change the softmax denominator, so prefix insertion is
+not an identity transformation. The helper does not claim an unchanged base
+output or pretrained prefix weights.
+
+Use the same explicit block selection, freezing and restoration rules as
+for adapters. Native modules and parameter objects retain their paths.
+Prefix state is registered under blocks.<index>.attn.prefix_tokens; this
+replaces the archived closure's block-level prefix storage with ordinary
+module ownership. Device/dtype moves, copying, strict state restoration,
+fixed-window compilation and export include this state. Attention dropout
+follows normal train/eval calls; there is no extra prefix dropout.
+
+For example::
+
+    backbone = LaBraMEncoder()
+    classifier = LaBraMClassifier(backbone, ['Fp1', 'C3', 'C4'], chunk_size=800,
+        sampling_rate=200, pooling='mean', head_channels=(), freeze_encoder=False)
+    add_labram_prefix(classifier, prefix_length=10, blocks=[0, 3])
+    optimizer = torch.optim.Adam(
+        [p for p in classifier.parameters() if p.requires_grad], lr=.001)
+
+Adapters and prefixes can be installed in either order. Both helpers keep
+all installed tuning parameters trainable when freeze_base=True, including
+prior disjoint installations. Native encoder parameters are frozen and
+head flags are preserved. freeze_base=False preserves existing flags and
+makes new prefix parameters trainable. Duplicate/custom attention selection
+or invalid arguments raise before any selected attention is replaced.
+Install all modules before constructing the optimizer. Reconstruct the same
+adapter/prefix selections and configurations before strict restoration;
+loading native-only weights does not restore a trained augmented task.
+
+:doc:`/auto_examples/examples_eegmat_labram_prefixes` supplies a standalone
+subject-held-out workflow with the same explicit native preprocessing as
+the adapter example. It trains prefixes and the default flattened task
+head, whose parameter count can dominate the prefixes. It saves complete
+native/prefix/head state, all three constructor configurations, preprocessing,
+partition settings and every held-out logit/target. A local verified base
+checkpoint is optional; the default small encoder is random. This is a
+teaching and restoration check, not a published score.
+
+
+For float16 training, prefer autocast with float32 stored parameters and
+GradScaler. Calling model.half() also stores parameter gradients in float16:
+small prefix-key gradients can underflow, and small updates can round away.
+Loss scale and optimizer epsilon therefore matter even when outputs are
+finite. Verify actual updates to both prefix keys and values. The teaching
+example uses float32 and does not claim that every pure-float16 objective
+will train successfully without appropriate scaling.

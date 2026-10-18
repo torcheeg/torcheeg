@@ -24,4 +24,4 @@ from .labram_encoder import LaBraMEncoder
 
 from .labram_heads import LaBraMClassifier, LaBraMRegression, LaBraMEmbedding
 
-from .labram_tuning import add_labram_adapters
+from .labram_tuning import add_labram_adapters, add_labram_prefix

@@ -1,6 +1,7 @@
+import torch
 from torch import nn
 
-from .labram_encoder import LaBraMEncoder, _Block
+from .labram_encoder import LaBraMEncoder, _Attention, _Block
 from .labram_heads import _LaBraMDownstream
 from ._tuning import _Adapter
 from ._utils import _positive_int, _probability
@@ -30,6 +31,51 @@ class _AdapterBlock(_Block):
         return self.adapter_mlp(
             x + self.drop_path(update if self.gamma_2 is None else self.gamma_2 * update)
         )
+
+
+class _PrefixAttention(_Attention):
+    def __init__(self, attention, prefix_length):
+        nn.Module.__init__(self)
+        self.num_heads = attention.num_heads
+        self.qkv = attention.qkv
+        self.q_bias = attention.q_bias
+        self.v_bias = attention.v_bias
+        self.q_norm = attention.q_norm
+        self.k_norm = attention.k_norm
+        self.attn_drop = attention.attn_drop
+        self.proj = attention.proj
+        self.proj_drop = attention.proj_drop
+        width = attention.qkv.in_features
+        self.prefix_tokens = nn.Parameter(
+            attention.qkv.weight.new_empty(
+                prefix_length, 2, self.num_heads, width // self.num_heads
+            )
+        )
+        nn.init.normal_(self.prefix_tokens, std=0.02)
+        self.training = attention.training
+
+    def forward(self, x):
+        batch, tokens, width = x.shape
+        qkv = self.qkv(x)
+        if self.q_bias is not None:
+            qkv = qkv + torch.cat((self.q_bias, torch.zeros_like(self.v_bias), self.v_bias))
+        q, k, v = (
+            qkv.reshape(batch, tokens, 3, self.num_heads, width // self.num_heads)
+            .permute(2, 0, 3, 1, 4)
+            .unbind(0)
+        )
+        if self.q_norm is not None:
+            q = self.q_norm(q.flatten(0, 2)).reshape_as(q).to(v.dtype)
+            k = self.k_norm(k.flatten(0, 2)).reshape_as(k).to(v.dtype)
+        # Native keys are normalized first. Learned prefix keys bypass k_norm.
+        prefix = self.prefix_tokens.to(dtype=v.dtype)
+        prefix_k = prefix[:, 0].unsqueeze(0).expand(batch, -1, -1, -1).transpose(1, 2)
+        prefix_v = prefix[:, 1].unsqueeze(0).expand(batch, -1, -1, -1).transpose(1, 2)
+        k = torch.cat((prefix_k, k), dim=2)
+        v = torch.cat((prefix_v, v), dim=2)
+        attention = ((q * (width // self.num_heads) ** -0.5) @ k.transpose(-2, -1)).softmax(dim=-1)
+        x = self.attn_drop(attention) @ v
+        return self.proj_drop(self.proj(x.transpose(1, 2).reshape(batch, tokens, width)))
 
 
 def _select_blocks(model, blocks, freeze_base):
@@ -70,6 +116,8 @@ def _freeze_base(encoder, freeze_base):
     for module in encoder.modules():
         if isinstance(module, _Adapter):
             module.requires_grad_(True)
+        elif isinstance(module, _PrefixAttention):
+            module.prefix_tokens.requires_grad_(True)
 
 
 def add_labram_adapters(model, adapter_size=64, dropout=0.1, blocks=None, freeze_base=True):
@@ -124,5 +172,59 @@ def add_labram_adapters(model, adapter_size=64, dropout=0.1, blocks=None, freeze
     ]
     for index, block in replacements:
         encoder.blocks[index] = block
+    _freeze_base(encoder, freeze_base)
+    return model
+
+
+def add_labram_prefix(model, prefix_length=10, blocks=None, freeze_base=True):
+    r"""Prepend learned attention keys and values to selected LaBraM blocks.
+
+    Native query/key normalization occurs before prefix insertion. Learned
+    prefix keys bypass key normalization, matching the archived workspace
+    implementation. Prefix vectors are not input tokens: they receive no
+    temporal/channel positions, generate no queries, and do not change the
+    output token count. Even zero prefix vectors change the softmax
+    denominator; insertion does not preserve the base function.
+
+    Each selected attention layer owns an independent prefix_tokens parameter
+    of shape [prefix_length, 2, heads, head_width], initialized with normal
+    standard deviation 0.02. Native modules, parameters, checkpoint paths and
+    mixed child modes are preserved. Prefixes inherit the attention dtype and
+    device; attention dropout follows normal train/eval calls.
+
+    Install modules before the optimizer. Load native state before insertion,
+    or rebuild the same augmented structure before strict restoration. Task
+    models require freeze_encoder=False. Frozen base weights still transmit
+    input gradients. This helper supports LaBraMEncoder and its task wrappers;
+    the existing LaBraM classification API remains separate.
+
+    - Reference: Li and Liang, Prefix-Tuning, ACL 2021.
+    - URL: https://aclanthology.org/2021.acl-long.353/
+
+    .. code-block:: python
+
+        from torcheeg.models import LaBraMEncoder, LaBraMClassifier, add_labram_prefix
+
+        model = LaBraMClassifier(LaBraMEncoder(), ['Fp1', 'C3', 'C4'], chunk_size=800)
+        add_labram_prefix(model, prefix_length=10)
+
+    Args:
+        model (nn.Module): LaBraMEncoder or LaBraM task wrapper; tasks require freeze_encoder=False.
+        prefix_length (int): Positive learned key/value length per layer. (default: :obj:`10`)
+        blocks (list of int, optional): Unique zero-based indices, or all blocks. (default: :obj:`None`)
+        freeze_base (bool): Freeze native encoder parameters and keep installed prefixes/adapters trainable. Preserve task-head flags. False preserves existing flags. (default: :obj:`True`)
+
+    Returns:
+        nn.Module: The supplied model, modified in place.
+    """
+    _positive_int('prefix_length', prefix_length)
+    encoder, indices = _select_blocks(model, blocks, freeze_base)
+    if any(type(encoder.blocks[index].attn) is not _Attention for index in indices):
+        raise ValueError('Selected attention already has prefixes or uses a custom implementation.')
+    replacements = [
+        (index, _PrefixAttention(encoder.blocks[index].attn, prefix_length)) for index in indices
+    ]
+    for index, attention in replacements:
+        encoder.blocks[index].attn = attention
     _freeze_base(encoder, freeze_base)
     return model
