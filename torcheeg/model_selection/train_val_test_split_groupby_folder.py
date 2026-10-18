@@ -25,16 +25,9 @@ class TrainValTestSplitGroupbyFolder(BaseModelSelection):
         for train_dataset, val_dataset, test_dataset in splitter.split(dataset):
             ...
 
-    Each row must have one of the three split values, and all three subsets
-    must be nonempty. Folder labels determine the split; this does not itself
-    guarantee that subjects or trials are disjoint across the source folders.
-
     Args:
-        split_path (str): The path to data partition information. If the path
-            exists, read the existing partition from the path. If the path does
-            not exist, the current division method will be saved for next use.
-            If set to None, a random path will be generated.
-            (default: :obj:`None`)
+        split_path (str, optional): Directory for saved splits.
+            If None, generate a random path. (default: :obj:`None`)
     '''
 
     def __init__(self, split_path: Union[None, str] = None) -> None:

@@ -31,18 +31,12 @@ class TrainValTestSplitCrossSubject(BaseModelSelection):
         for train_dataset, val_dataset, test_dataset in splitter.split(dataset):
             ...
 
-    The three ID lists must be nonempty, unique, disjoint and present in the
-    dataset. IDs not assigned to any list are intentionally excluded.
-
     Args:
         train_subjects (list): List of subject IDs for the training set.
         val_subjects (list): List of subject IDs for the validation set.
         test_subjects (list): List of subject IDs for the test set.
-        split_path (str): The path to data partition information. If the path
-            exists, read the existing partition from the path. If the path does
-            not exist, the current division method will be saved for next use.
-            If set to None, a random path will be generated.
-            (default: :obj:`None`)
+        split_path (str, optional): Directory for saved splits.
+            If None, generate a random path. (default: :obj:`None`)
     '''
 
     def __init__(self,

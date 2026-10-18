@@ -53,7 +53,8 @@ class KFoldCrossSubject(BaseModelSelection):
         shuffle (bool): Whether to shuffle the data before splitting into batches. Note that samples within each split will not be shuffled. (default: :obj:`False`)
         label_transform (Callable, optional): Function that returns the stratified label for each sample. If set to None, it will not be stratified. (default: :obj:`None`)
         random_state (int, optional): When shuffle is :obj:`True`, :obj:`random_state` affects the ordering of the indices, which controls the randomness of each fold. If shuffle is :obj:`False`, this parameter has no effect. (default: :obj:`None`)
-        split_path (str): Path to data partition information. If the path exists, the existing partition will be read from it. If the path does not exist, the current division method will be saved for future use. If set to None, a random path will be generated. (default: :obj:`None`)
+        split_path (str, optional): Directory for saved splits.
+            If None, generate a random path. (default: :obj:`None`)
     '''
 
     def __init__(self,

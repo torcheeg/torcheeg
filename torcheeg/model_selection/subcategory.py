@@ -94,7 +94,8 @@ class Subcategory(BaseModelSelection):
 
     Args:
         criteria (str): The classification criteria according to which we extract subsets of data for the including categories. (default: :obj:`'task'`)
-        split_path (str): The path to data partition information. If the path exists, read the existing partition from the path. If the path does not exist, the current division method will be saved for next use. If set to None, a random path will be generated. (default: :obj:`None`)
+        split_path (str, optional): Directory for saved splits.
+            If None, generate a random path. (default: :obj:`None`)
     '''
 
     def __init__(self,

@@ -62,7 +62,8 @@ def train_test_split_cross_subject(
         shuffle (bool): Whether to shuffle the subjects before splitting. (default: :obj:`False`)
         label_transform (Callable, optional): Function that returns the stratified label for each sample. If set to None, it will not be stratified. (default: :obj:`None`)
         random_state (int, optional): When shuffle is :obj:`True`, :obj:`random_state` affects the ordering of the subjects, which controls the randomness of the split. Otherwise, this parameter has no effect. (default: :obj:`None`)
-        split_path (str): The path to data partition information. If the path exists, read the existing partition from the path. If the path does not exist, the current division method will be saved for next use. If set to None, a random path will be generated. (default: :obj:`None`)
+        split_path (str, optional): Directory for saved splits.
+            If None, generate a random path. (default: :obj:`None`)
     '''
     if split_path is None:
         split_path = get_random_dir_path(dir_prefix='model_selection')

@@ -74,8 +74,6 @@ def _hash_file(path):
 
 
 def _fingerprint_dataset(info, column):
-    # Index labels do not affect iloc positions. Include sample identities when
-    # available so reordered datasets cannot silently reuse old positions.
     columns = [column] if isinstance(column, str) else list(column)
     if not any(name in info for name in ('_record_id', 'clip_id')):
         columns = list(info.columns)

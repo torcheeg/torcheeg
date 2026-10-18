@@ -32,14 +32,11 @@ class KFoldCrossSubjectTrainValTest(BaseModelSelection):
         for train_dataset, val_dataset, test_dataset in cv.split(dataset):
             ...
 
-    Use at least three folds and at least one subject per fold. Subject IDs
-    must be unique and match the dataset; filter the dataset first to evaluate
-    a selected group of subjects.
-
     Args:
         all_subjects (list): The list of all subject ids to be partitioned into folds.
         n_folds (int): The number of folds. (default: :obj:`5`)
-        split_path (str): The path to data partition information. If the path already exists, the existing partition is reused; otherwise, a new partition is created and saved there. (default: :obj:`None`)
+        split_path (str, optional): Directory for saved splits.
+            If None, generate a random path. (default: :obj:`None`)
         shuffle (bool): Whether to shuffle the subjects before splitting them into folds. (default: :obj:`True`)
         random_state (int): The random seed used to shuffle the subjects when :obj:`shuffle` is :obj:`True`. (default: :obj:`42`)
     '''

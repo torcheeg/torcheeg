@@ -36,7 +36,7 @@ class TrainTestSplitPerSubjectGroupbyTrial(BaseModelSelection):
             (default: :obj:`False`)
         random_state (int, optional): Seed for local shuffling.
             (default: :obj:`None`)
-        split_path (str, optional): Directory for reusable split information.
+        split_path (str, optional): Directory for saved splits.
             If None, generate a random path. (default: :obj:`None`)
     '''
 
