@@ -25,7 +25,11 @@ class MeanStdNormalize(EEGTransform):
 
     Zero standard deviations use a divisor of one. Statistics supplied by the
     caller are not modified. For a constant sample whose statistics are computed
-    by this transform, the output is zero.
+    by this transform, the output is zero. Constant axes are identified by
+    equal minimum and maximum values, including when floating-point rounding
+    makes a computed standard deviation nonzero. Variable axes retain the
+    existing calculation and output dtype; supplied statistics retain their
+    requested centering.
 
     To reuse training statistics on held-out samples, compute one mean and
     standard deviation per channel from the training set and pass
@@ -74,6 +78,13 @@ class MeanStdNormalize(EEGTransform):
             else:
                 mean = eeg.mean(axis=self.axis, keepdims=True)
                 std = eeg.std(axis=self.axis, keepdims=True)
+            if eeg.size:
+                # A rounded mean can give a constant channel a nonzero std.
+                # Center those axes on their exact input value instead.
+                maximum = eeg.max(axis=self.axis, keepdims=self.axis is not None)
+                constant = maximum == eeg.min(axis=self.axis, keepdims=self.axis is not None)
+                mean = np.where(constant, maximum, mean)
+                std = np.where(constant, 1, std)
         else:
             if self.axis is None:
                 axis = 1
