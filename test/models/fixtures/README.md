@@ -140,3 +140,26 @@ Outputs are weighted by linspace(-.7,1.1,6).reshape(2,3). All preprocessed
 signals, features, outputs and complete encoder/head/input gradients are
 recorded. No author task weights or EEG recordings are included. Tests do
 not require timm.
+
+
+## LaBraM two-position adapters
+
+`labram_adapter_reference.json` combines the unmodified native encoder at
+c431221e6cfd23dbfa9950e0180682fb322b0548/timm0.4.12 with the archived workspace's
+unmodified AdapterLayer/get_adapter_model reference helpers. Their source
+hash is stored in the fixture. The encoder state is the first architecture
+from labram_reference.json. All layers receive two width4 adapters, after
+the attention and MLP residuals including native learned scales. Reference
+helpers are converted to float64/eval and all parameters are made trainable
+for gradient comparison; this does not claim the archived helpers correctly
+place new modules for every device or dtype.
+
+For adapter named-parameter index i, entries are
+sin(arange(numel)*.11+i*.4)*.09, including nonzero up-projections. Input is
+linspace(-1.2,.8,128).reshape(2,2,2,16) plus
+.2*sin(arange(128)*.21). Native slots [1,40] preserve channel order, with CLS
+zero internal. All normalized output tokens are weighted by
+linspace(-.7,1.1,numel). Complete input and parameter gradients are stored.
+The public zero-up initialization is separately checked for exact identity
+in deterministic evaluation. No patient signal or author checkpoint is
+stored, and runtime tests do not require timm.
