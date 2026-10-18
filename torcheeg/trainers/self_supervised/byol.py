@@ -10,7 +10,7 @@ import torch.nn.functional as F
 import torchmetrics
 from torch.utils.data import DataLoader
 
-log = logging.getLogger('torcheeg')
+_log = logging.getLogger('torcheeg')
 
 
 class BYOLTrainer(pl.LightningModule):
@@ -100,9 +100,9 @@ class BYOLTrainer(pl.LightningModule):
         super().__init__()
 
         self.student_model = extractor
-        self.student_projector = self.MLP(extract_channels, proj_hid_channels,
+        self.student_projector = self._build_mlp(extract_channels, proj_hid_channels,
                                           proj_channels)
-        self.student_predictor = self.MLP(proj_channels, proj_hid_channels,
+        self.student_predictor = self._build_mlp(proj_channels, proj_hid_channels,
                                           proj_channels)
 
         self.teacher_model, self.teacher_projector = self.teacher()
@@ -122,7 +122,7 @@ class BYOLTrainer(pl.LightningModule):
 
         self.init_metrics(metrics)
 
-    def MLP(self, in_channels: int, hid_channels: int, out_channels: int):
+    def _build_mlp(self, in_channels: int, hid_channels: int, out_channels: int):
         return nn.Sequential(
             nn.Linear(in_channels, hid_channels),
             nn.BatchNorm1d(hid_channels),
@@ -330,7 +330,7 @@ class BYOLTrainer(pl.LightningModule):
         for key, value in self.trainer.logged_metrics.items():
             if key.startswith("train_"):
                 str += f"{key}: {value:.3f} "
-        log.info(str + '\n')
+        _log.info(str + '\n')
 
         # reset the metrics
         self.train_loss.reset()
@@ -468,7 +468,7 @@ class BYOLTrainer(pl.LightningModule):
         for key, value in self.trainer.logged_metrics.items():
             if key.startswith("val_"):
                 str += f"{key}: {value:.3f} "
-        log.info(str + '\n')
+        _log.info(str + '\n')
 
         # reset the metrics
         self.val_loss.reset()

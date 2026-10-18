@@ -6,7 +6,7 @@ import numpy as np
 
 from ....utils import get_random_dir_path
 from ..base_dataset import BaseDataset
-from .faced import EMOTION_DICT, VALENCE_DICT
+from .faced import _EMOTION_DICT, _VALENCE_DICT
 
 
 class FACEDFeatureDataset(BaseDataset):
@@ -85,7 +85,7 @@ class FACEDFeatureDataset(BaseDataset):
         verbose (bool): Whether to display logs during processing, such as progress bars, etc. (default: :obj:`True`)    
     '''
 
-    def rename_pkl_files(self, root_path):
+    def _rename_pkl_files(self, root_path):
         for dirpath, dirnames, filenames in os.walk(root_path):
             for filename in filenames:
                 if filename.endswith('.pkl.pkl'):
@@ -112,7 +112,7 @@ class FACEDFeatureDataset(BaseDataset):
                  verbose: bool = True):
         if io_path is None:
             io_path = get_random_dir_path(dir_prefix='datasets')
-        self.rename_pkl_files(root_path)
+        self._rename_pkl_files(root_path)
         # pass all arguments to super class
         params = {
             'root_path': root_path,
@@ -196,8 +196,8 @@ class FACEDFeatureDataset(BaseDataset):
                     'end_at': (i + 1) *
                     250,  # The size of the sliding time windows for feature
                     'clip_id': clip_id,
-                    'valence': VALENCE_DICT[trial_id + 1],
-                    'emotion': EMOTION_DICT[trial_id + 1],
+                    'valence': _VALENCE_DICT[trial_id + 1],
+                    'emotion': _EMOTION_DICT[trial_id + 1],
                 }
                 record_info.update(trial_meta_info)
 

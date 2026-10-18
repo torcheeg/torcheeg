@@ -13,18 +13,30 @@ class _EEGSignalIO:
         return len(self)
 
     def keys(self):
-        raise NotImplementedError
+        raise NotImplementedError(
+            "Method keys is not implemented in class "
+            + self.__class__.__name__
+        )
 
     def eegs(self):
-        raise NotImplementedError
+        raise NotImplementedError(
+            "Method eegs is not implemented in class "
+            + self.__class__.__name__
+        )
 
     def read_eeg(self, key: str) -> any:
-        raise NotImplementedError
+        raise NotImplementedError(
+            "Method read_eeg is not implemented in class "
+            + self.__class__.__name__
+        )
 
     def write_eeg(self,
                   eeg: Union[any, torch.Tensor],
                   key: Union[str, None] = None) -> str:
-        raise NotImplementedError
+        raise NotImplementedError(
+            "Method write_eeg is not implemented in class "
+            + self.__class__.__name__
+        )
 
 
 class MemoryEEGSignalIO(_EEGSignalIO):

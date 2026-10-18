@@ -9,7 +9,7 @@ import scipy.io as scio
 from ....utils import get_random_dir_path
 from ..base_dataset import BaseDataset
 
-log = logging.getLogger('torcheeg')
+_log = logging.getLogger('torcheeg')
 
 
 class AMIGOSDataset(BaseDataset):
@@ -252,7 +252,7 @@ class AMIGOSDataset(BaseDataset):
             if (not sum(trial_samples.shape)) or (not sum(trial_rating.shape)):
                 # 3 of the participants (08,24,28<->32) of the previous experiment did not watch a set of 4 long affective
                 if sum(trial_samples.shape) != sum(trial_rating.shape):
-                    log.info(
+                    _log.info(
                         f'Find EEG signals without labels, or labels without EEG signals. Please check the {trial_id + 1}-th experiment of the {subject}-th subject in the file {record}. TorchEEG currently skipped the mismatched data.'
                     )
                 continue

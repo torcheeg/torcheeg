@@ -9,7 +9,7 @@ from ....utils import get_random_dir_path
 from ..base_dataset import BaseDataset
 
 
-def list_records(root_path):
+def _list_records(root_path):
     recording_files = []
     scoring_files = []
 
@@ -32,7 +32,7 @@ def list_records(root_path):
     return recording_scoring_pairs
 
 
-def interploate(raw: mne.io.BaseRaw, channels: List = ['EEG Fpz-Cz', 'EEG Pz-Oz']):
+def _interpolate(raw: mne.io.BaseRaw, channels: List = ['EEG Fpz-Cz', 'EEG Pz-Oz']):
     missing_channels = list(set(channels) - set(raw.ch_names))
     if missing_channels:
         info = mne.create_info(missing_channels, raw.info['sfreq'], 'eeg')
@@ -44,12 +44,12 @@ def interploate(raw: mne.io.BaseRaw, channels: List = ['EEG Fpz-Cz', 'EEG Pz-Oz'
     return raw
 
 
-def filter(raw: mne.io.BaseRaw, l_freq: float = 0.5, h_freq: float = 30):
+def _filter(raw: mne.io.BaseRaw, l_freq: float = 0.5, h_freq: float = 30):
     raw = raw.filter(l_freq=l_freq, h_freq=h_freq, fir_design='firwin')
     return raw
 
 
-def downsample(epochs: mne.Epochs, sfreq: int = 100):
+def _downsample(epochs: mne.Epochs, sfreq: int = 100):
     epochs = epochs.resample(sfreq)
     return epochs
 
@@ -172,9 +172,9 @@ class SleepEDFxDataset(BaseDataset):
         montage = mne.channels.make_standard_montage('standard_1020')
         raw.set_montage(montage, on_missing='ignore')
 
-        raw = filter(raw, l_freq, h_freq)
-        raw = downsample(raw, sfreq)
-        raw = interploate(raw, channels)
+        raw = _filter(raw, l_freq, h_freq)
+        raw = _downsample(raw, sfreq)
+        raw = _interpolate(raw, channels)
 
         annotation = mne.read_annotations(scoring_file)
         raw.set_annotations(annotation, emit_warning=False)
@@ -258,11 +258,11 @@ class SleepEDFxDataset(BaseDataset):
         recording_scoring_pairs = []
 
         if 'cassette' in self.studies:
-            recording_scoring_pairs += list_records(
+            recording_scoring_pairs += _list_records(
                 os.path.join(root_path, 'sleep-cassette'))
 
         if 'telemetry' in self.studies:
-            recording_scoring_pairs += list_records(
+            recording_scoring_pairs += _list_records(
                 os.path.join(root_path, 'sleep-telemetry'))
 
         return recording_scoring_pairs

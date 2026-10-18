@@ -156,7 +156,7 @@ class FBCNet(nn.Module):
 
         assert chunk_size % stride_factor == 0, f'chunk_size should be divisible by stride_factor, chunk_size={chunk_size},stride_factor={stride_factor} does not meet the requirements.'
 
-        self.scb = self.SCB(num_S,
+        self.scb = self._build_spatial_block(num_S,
                             num_electrodes,
                             self.in_channels,
                             weight_norm=weight_norm)
@@ -174,12 +174,12 @@ class FBCNet(nn.Module):
         else:
             raise NotImplementedError
 
-        self.last_layer = self.last_block(self.num_S * self.in_channels *
+        self.last_layer = self._build_classifier(self.num_S * self.in_channels *
                                           self.stride_factor,
                                           num_classes,
                                           weight_norm=weight_norm)
 
-    def SCB(self, num_S, num_electrodes, in_channels, weight_norm=True):
+    def _build_spatial_block(self, num_S, num_electrodes, in_channels, weight_norm=True):
         return nn.Sequential(
             Conv2dWithConstraint(in_channels,
                                  num_S * in_channels, (num_electrodes, 1),
@@ -189,7 +189,7 @@ class FBCNet(nn.Module):
                                  padding=0),
             nn.BatchNorm2d(num_S * in_channels), swish())
 
-    def last_block(self, in_channels, out_channels, weight_norm=True):
+    def _build_classifier(self, in_channels, out_channels, weight_norm=True):
         return nn.Sequential(
             LinearWithConstraint(in_channels,
                                  out_channels,

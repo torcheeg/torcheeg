@@ -7,7 +7,7 @@ import numpy as np
 from ....utils import get_random_dir_path
 from ..base_dataset import BaseDataset
 
-VALENCE_DICT = {
+_VALENCE_DICT = {
     1: -1,  # negative
     2: -1,
     3: -1,
@@ -38,7 +38,7 @@ VALENCE_DICT = {
     28: 1
 }
 
-EMOTION_DICT = {
+_EMOTION_DICT = {
     1: 0,  # anger
     2: 0,
     3: 0,
@@ -261,8 +261,8 @@ class FACEDDataset(BaseDataset):
             trial_meta_info = {
                 'subject_id': subject_id,
                 'trial_id': trial_id,
-                'valence': VALENCE_DICT[trial_id + 1],
-                'emotion': EMOTION_DICT[trial_id + 1],
+                'valence': _VALENCE_DICT[trial_id + 1],
+                'emotion': _EMOTION_DICT[trial_id + 1],
             }
             start_at = 0
             if chunk_size <= 0:

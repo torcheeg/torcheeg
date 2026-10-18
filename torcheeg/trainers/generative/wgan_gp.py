@@ -14,10 +14,10 @@ from .utils import FrechetInceptionDistance
 
 _EVALUATE_OUTPUT = List[Dict[str, float]]  # 1 dict per DataLoader
 
-log = logging.getLogger('torcheeg')
+_log = logging.getLogger('torcheeg')
 
 
-def gradient_penalty(model, real, fake, *args, **kwargs):
+def _gradient_penalty(model, real, fake, *args, **kwargs):
     device = real.device
     real = real.data
     fake = fake.data
@@ -212,7 +212,7 @@ class WGANGPTrainer(pl.LightningModule):
 
         real_loss = self.discriminator(x)
         fake_loss = self.discriminator(gen_x.detach())
-        gp_term = gradient_penalty(self.discriminator, x, gen_x)
+        gp_term = _gradient_penalty(self.discriminator, x, gen_x)
         d_loss = -torch.mean(real_loss) + torch.mean(
             fake_loss) + self.weight_gradient_penalty * gp_term
         d_loss.backward()
@@ -253,7 +253,7 @@ class WGANGPTrainer(pl.LightningModule):
         for key, value in self.trainer.logged_metrics.items():
             if key.startswith("train_"):
                 str += f"{key}: {value:.3f} "
-        log.info(str + '\n')
+        _log.info(str + '\n')
 
         # reset the metrics
         self.train_g_loss.reset()
@@ -274,7 +274,7 @@ class WGANGPTrainer(pl.LightningModule):
 
         real_loss = self.discriminator(x)
         fake_loss = self.discriminator(gen_x.detach())
-        gp_term = gradient_penalty(self.discriminator, x, gen_x)
+        gp_term = _gradient_penalty(self.discriminator, x, gen_x)
         d_loss = -torch.mean(real_loss) + torch.mean(
             fake_loss) + self.weight_gradient_penalty * gp_term
 
@@ -302,7 +302,7 @@ class WGANGPTrainer(pl.LightningModule):
         for key, value in self.trainer.logged_metrics.items():
             if key.startswith("val_"):
                 str += f"{key}: {value:.3f} "
-        log.info(str + '\n')
+        _log.info(str + '\n')
 
         # reset the metrics
         self.val_g_loss.reset()
@@ -323,7 +323,7 @@ class WGANGPTrainer(pl.LightningModule):
 
         real_loss = self.discriminator(x)
         fake_loss = self.discriminator(gen_x.detach())
-        gp_term = gradient_penalty(self.discriminator, x, gen_x)
+        gp_term = _gradient_penalty(self.discriminator, x, gen_x)
         d_loss = -torch.mean(real_loss) + torch.mean(
             fake_loss) + self.weight_gradient_penalty * gp_term
 
@@ -373,7 +373,7 @@ class WGANGPTrainer(pl.LightningModule):
         for key, value in self.trainer.logged_metrics.items():
             if key.startswith("test_"):
                 str += f"{key}: {value:.3f} "
-        log.info(str + '\n')
+        _log.info(str + '\n')
 
         # reset the metrics
         self.test_g_loss.reset()
@@ -453,7 +453,7 @@ class CWGANGPTrainer(WGANGPTrainer):
 
         real_loss = self.discriminator(x, y)
         fake_loss = self.discriminator(gen_x.detach(), y)
-        gp_term = gradient_penalty(self.discriminator, x, gen_x, y)
+        gp_term = _gradient_penalty(self.discriminator, x, gen_x, y)
         d_loss = -torch.mean(real_loss) + torch.mean(
             fake_loss) + self.weight_gradient_penalty * gp_term
         d_loss.backward()
@@ -490,7 +490,7 @@ class CWGANGPTrainer(WGANGPTrainer):
 
         real_loss = self.discriminator(x, y)
         fake_loss = self.discriminator(gen_x.detach(), y)
-        gp_term = gradient_penalty(self.discriminator, x, gen_x, y)
+        gp_term = _gradient_penalty(self.discriminator, x, gen_x, y)
         d_loss = -torch.mean(real_loss) + torch.mean(
             fake_loss) + self.weight_gradient_penalty * gp_term
 
@@ -514,7 +514,7 @@ class CWGANGPTrainer(WGANGPTrainer):
 
         real_loss = self.discriminator(x, y)
         fake_loss = self.discriminator(gen_x.detach(), y)
-        gp_term = gradient_penalty(self.discriminator, x, gen_x, y)
+        gp_term = _gradient_penalty(self.discriminator, x, gen_x, y)
         d_loss = -torch.mean(real_loss) + torch.mean(
             fake_loss) + self.weight_gradient_penalty * gp_term
 

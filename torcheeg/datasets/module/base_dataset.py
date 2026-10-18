@@ -13,7 +13,7 @@ from tqdm import tqdm
 
 from torcheeg.io import EEGSignalIO, MetaInfoIO
 
-log = logging.getLogger('torcheeg')
+_log = logging.getLogger('torcheeg')
 
 
 class BaseDataset(Dataset):
@@ -41,10 +41,10 @@ class BaseDataset(Dataset):
 
         # new IO
         if not self.exist(self.io_path) or self.io_mode == 'memory':
-            log.info(
+            _log.info(
                 f'🔍 | Processing EEG data. Processed EEG data has been cached to \033[92m{io_path}\033[0m.'
             )
-            log.info(
+            _log.info(
                 f'⏳ | Monitoring the detailed processing of a record for debugging. The processing of other records will only be reported in percentage to keep it clean.'
             )
             # make the root dictionary
@@ -100,10 +100,10 @@ class BaseDataset(Dataset):
                     raise e
 
             if not self.io_mode == 'memory':
-                log.info(
+                _log.info(
                     f'✅ | All processed EEG data has been cached to {io_path}.'
                 )
-                log.info(
+                _log.info(
                     f'😊 | Please set \033[92mio_path\033[0m to \033[92m{io_path}\033[0m for the next run, to directly read from the cache if you wish to skip the data processing step.'
                 )
 
@@ -123,7 +123,7 @@ class BaseDataset(Dataset):
                     shutil.rmtree(self.io_path)
                     raise e
         else:
-            log.info(
+            _log.info(
                 f'🔍 | Detected cached processing results, reading cache from {self.io_path}.'
             )
             self.init_io(
@@ -310,7 +310,9 @@ class BaseDataset(Dataset):
 
         '''
         raise NotImplementedError(
-            "Method set_records is not implemented in class BaseDataset")
+            "Method set_records is not implemented in class "
+            + self.__class__.__name__
+        )
 
     @staticmethod
     def handle_record(io_path: Union[None, str] = None,
@@ -372,8 +374,8 @@ class BaseDataset(Dataset):
             'record': f'_record_{_record_id}'
         }
 
-    @staticmethod
-    def read_record(record: Any, **kwargs) -> Dict:
+    @classmethod
+    def read_record(cls, record: Any, **kwargs) -> Dict:
         '''
         The IO method for reading the database. It is used to describe how the files are read. It is called in parallel by :obj:`joblib.Parallel` in :obj:`__init__` of the class, the output of this method will be passed to :obj:`process_record`.
 
@@ -392,11 +394,12 @@ class BaseDataset(Dataset):
         '''
 
         raise NotImplementedError(
-            "Method read_record is not implemented in class BaseDataset"
+            "Method read_record is not implemented in class "
+            + cls.__name__
         )
 
-    @staticmethod
-    def process_record(record: Any, **kwargs) -> Dict:
+    @classmethod
+    def process_record(cls, record: Any, **kwargs) -> Dict:
         '''
         The IO method for generating the database. It is used to describe how files are processed to generate the database. It is called in parallel by :obj:`joblib.Parallel` in :obj:`__init__` of the class.
 
@@ -425,7 +428,9 @@ class BaseDataset(Dataset):
         '''
 
         raise NotImplementedError(
-            "Method process_record is not implemented in class BaseDataset")
+            "Method process_record is not implemented in class "
+            + cls.__name__
+        )
 
     def update_record(self,
                       after_trial: Callable = None,
@@ -479,7 +484,7 @@ class BaseDataset(Dataset):
                 else:
                     trial_df = [(None, session_info)]
                     if not after_trial is None:
-                        log.info(
+                        _log.info(
                             "No trial_id column found in info, after_trial hook is ignored."
                         )
                 if after_trial is None:

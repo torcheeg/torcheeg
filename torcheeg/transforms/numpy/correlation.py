@@ -36,7 +36,10 @@ class CorrelationTransform(EEGTransform):
         return matrix[np.newaxis, ...]
 
     def opt(self, x: np.ndarray, y: np.ndarray) -> np.ndarray:
-        raise NotImplementedError
+        raise NotImplementedError(
+            "Method opt is not implemented in class "
+            + self.__class__.__name__
+        )
 
 
 class PearsonCorrelation(CorrelationTransform):

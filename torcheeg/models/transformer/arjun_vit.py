@@ -6,7 +6,7 @@ from einops.layers.torch import Rearrange
 from torch import nn
 
 
-def pair(t):
+def _pair(t):
     return t if isinstance(t, tuple) else (t, t)
 
 

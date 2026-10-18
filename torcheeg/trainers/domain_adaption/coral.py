@@ -6,7 +6,7 @@ import torch.nn as nn
 from .mmd_like import _MMDLikeTrainer
 
 
-def compute_covariance(data, eps: float = 1e-6):
+def _compute_covariance(data, eps: float = 1e-6):
     n = data.size(0)
 
     device = data.device
@@ -116,8 +116,8 @@ class CORALTrainer(_MMDLikeTrainer):
         d = x_source_feat.size(
             1)  # d-dimensional vectors (same for source, target)
 
-        source_covariance = compute_covariance(x_source_feat)
-        target_covariance = compute_covariance(x_target_feat)
+        source_covariance = _compute_covariance(x_source_feat)
+        target_covariance = _compute_covariance(x_target_feat)
 
         # take Frobenius norm (https://pytorch.org/docs/stable/torch.html)
         loss = torch.norm(torch.mul((source_covariance - target_covariance),

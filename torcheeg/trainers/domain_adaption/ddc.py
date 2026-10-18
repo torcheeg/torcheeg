@@ -6,7 +6,7 @@ import torch.nn as nn
 from .mmd_like import _MMDLikeTrainer
 
 
-def maximum_mean_discrepancy_linear(x_source, x_target):
+def _maximum_mean_discrepancy_linear(x_source, x_target):
     delta = x_source - x_target
     loss = torch.mean(torch.mm(delta, torch.transpose(delta, 0, 1)))
     return loss
@@ -107,4 +107,4 @@ class DDCTrainer(_MMDLikeTrainer):
             x_source_feat = x_source_feat[:batch_size]
             x_target_feat = x_target_feat[:batch_size]
 
-        return maximum_mean_discrepancy_linear(x_source_feat, x_target_feat)
+        return _maximum_mean_discrepancy_linear(x_source_feat, x_target_feat)

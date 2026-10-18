@@ -10,7 +10,7 @@ from ....utils import get_random_dir_path
 from ..base_dataset import BaseDataset
 
 
-def apply_notch_filter(eeg_data: np.ndarray, sampling_rate: float) -> np.ndarray:
+def _apply_notch_filter(eeg_data: np.ndarray, sampling_rate: float) -> np.ndarray:
     """
     Apply notch filter to remove 50 Hz power line interference.
 
@@ -26,7 +26,7 @@ def apply_notch_filter(eeg_data: np.ndarray, sampling_rate: float) -> np.ndarray
     return filtered_data
 
 
-def apply_bandpass_filter(eeg_data: np.ndarray, lowpass: float, highpass: float, sampling_rate: float) -> np.ndarray:
+def _apply_bandpass_filter(eeg_data: np.ndarray, lowpass: float, highpass: float, sampling_rate: float) -> np.ndarray:
     """
     Apply bandpass Butterworth filter to EEG data.
 
@@ -49,7 +49,7 @@ def apply_bandpass_filter(eeg_data: np.ndarray, lowpass: float, highpass: float,
     return filtered_data
 
 
-def apply_downsample(raw: mne.io.Raw, target_sr: float) -> mne.io.Raw:
+def _apply_downsample(raw: mne.io.Raw, target_sr: float) -> mne.io.Raw:
     """
     Downsample EEG data using MNE's resample method.
 
@@ -64,7 +64,7 @@ def apply_downsample(raw: mne.io.Raw, target_sr: float) -> mne.io.Raw:
     return raw_resampled
 
 
-def apply_common_average_reference(eeg_data: np.ndarray) -> np.ndarray:
+def _apply_common_average_reference(eeg_data: np.ndarray) -> np.ndarray:
     """
     Apply common average reference to EEG data.
 
@@ -227,19 +227,19 @@ class AVEDDataset(BaseDataset):
             original_sr = raw.info['sfreq']
             eeg_data = raw.get_data()
 
-            eeg_data = apply_notch_filter(eeg_data, original_sr)
+            eeg_data = _apply_notch_filter(eeg_data, original_sr)
 
-            eeg_data = apply_bandpass_filter(
+            eeg_data = _apply_bandpass_filter(
                 eeg_data, lowpass, highpass, original_sr)
 
             info = mne.create_info(ch_names=[f'CH{i}' for i in range(eeg_data.shape[0])],
                                    sfreq=original_sr,
                                    ch_types='eeg')
             raw_filtered = mne.io.RawArray(eeg_data, info, verbose=False)
-            raw_resampled = apply_downsample(raw_filtered, sampling_rate)
+            raw_resampled = _apply_downsample(raw_filtered, sampling_rate)
             eeg_data = raw_resampled.get_data()
 
-            eeg_data = apply_common_average_reference(eeg_data)
+            eeg_data = _apply_common_average_reference(eeg_data)
 
             eeg_data = eeg_data[:num_channel, :]
 

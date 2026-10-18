@@ -21,7 +21,10 @@ class RandomEEGTransform(EEGTransform):
         return self.random_apply(eeg, **kwargs)
 
     def random_apply(self, eeg: torch.Tensor, **kwargs) -> torch.Tensor:
-        raise NotImplementedError
+        raise NotImplementedError(
+            "Method random_apply is not implemented in class "
+            + self.__class__.__name__
+        )
 
     @property
     def repr_body(self) -> Dict:

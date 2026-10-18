@@ -9,7 +9,7 @@ from ....utils import get_random_dir_path
 from ..base_dataset import BaseDataset
 
 
-def apply_fir_filter(eeg_data: np.ndarray, lowpass: float, highpass: float, sampling_rate: int) -> np.ndarray:
+def _apply_fir_filter(eeg_data: np.ndarray, lowpass: float, highpass: float, sampling_rate: int) -> np.ndarray:
     """
     Apply bandpass FIR filter to EEG data.
 
@@ -39,7 +39,7 @@ def apply_fir_filter(eeg_data: np.ndarray, lowpass: float, highpass: float, samp
     return filtered_data
 
 
-def apply_rereference(eeg_data: np.ndarray, method: Union[None, str] = 'Cz') -> np.ndarray:
+def _apply_rereference(eeg_data: np.ndarray, method: Union[None, str] = 'Cz') -> np.ndarray:
     """
     Rereference EEG data.
 
@@ -67,7 +67,7 @@ def apply_rereference(eeg_data: np.ndarray, method: Union[None, str] = 'Cz') -> 
     return eeg_data
 
 
-def apply_downsample(eeg_data: np.ndarray, original_sr: float, target_sr: float) -> np.ndarray:
+def _apply_downsample(eeg_data: np.ndarray, original_sr: float, target_sr: float) -> np.ndarray:
     """
     Downsample EEG data using simple downsampling (no filtering).
 
@@ -260,12 +260,12 @@ class KULDataset(BaseDataset):
 
             raw_eeg = raw_eeg[:, :num_channel]
             if rereference:
-                raw_eeg = apply_rereference(raw_eeg, rereference)
+                raw_eeg = _apply_rereference(raw_eeg, rereference)
 
-            raw_eeg = apply_fir_filter(raw_eeg, lowpass, highpass, original_sr)
+            raw_eeg = _apply_fir_filter(raw_eeg, lowpass, highpass, original_sr)
 
             if original_sr != sampling_rate:
-                raw_eeg = apply_downsample(raw_eeg, original_sr, sampling_rate)
+                raw_eeg = _apply_downsample(raw_eeg, original_sr, sampling_rate)
 
             eeg_data.append(raw_eeg)
             attended_ear_data.append(attended_ear)

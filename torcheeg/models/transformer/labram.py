@@ -9,7 +9,7 @@ import torch.nn.functional as F
 from einops import rearrange
 
 
-def drop_path(x, drop_prob: float = 0., training: bool = False, scale_by_keep: bool = True):
+def _drop_path(x, drop_prob: float = 0., training: bool = False, scale_by_keep: bool = True):
     if drop_prob == 0. or not training:
         return x
     keep_prob = 1 - drop_prob
@@ -20,7 +20,7 @@ def drop_path(x, drop_prob: float = 0., training: bool = False, scale_by_keep: b
     return x * random_tensor
 
 
-def _trunc_normal_(tensor, mean, std, a, b):
+def _fill_truncated_normal_(tensor, mean, std, a, b):
     def norm_cdf(x):
         return (1. + math.erf(x / math.sqrt(2.))) / 2.
 
@@ -42,12 +42,12 @@ def _trunc_normal_(tensor, mean, std, a, b):
     return tensor
 
 
-def trunc_normal_(tensor, mean=0., std=1., a=-2., b=2.):
+def _trunc_normal_(tensor, mean=0., std=1., a=-2., b=2.):
     with torch.no_grad():
-        return _trunc_normal_(tensor, mean, std, a, b)
+        return _fill_truncated_normal_(tensor, mean, std, a, b)
 
 
-standard_1020 = [
+_STANDARD_1020 = [
     'FP1', 'FPZ', 'FP2',
     'AF9', 'AF7', 'AF5', 'AF3', 'AF1', 'AFZ', 'AF2', 'AF4', 'AF6', 'AF8', 'AF10',
     'F9', 'F7', 'F5', 'F3', 'F1', 'FZ', 'F2', 'F4', 'F6', 'F8', 'F10',
@@ -65,10 +65,10 @@ standard_1020 = [
 ]
 
 
-def get_input_chans(ch_names):
+def _get_input_chans(ch_names):
     input_chans = [0]
     for ch_name in ch_names:
-        input_chans.append(standard_1020.index(ch_name) + 1)
+        input_chans.append(_STANDARD_1020.index(ch_name) + 1)
     return input_chans
 
 
@@ -78,7 +78,7 @@ class DropPath(nn.Module):
         self.drop_prob = drop_prob
 
     def forward(self, x):
-        return drop_path(x, self.drop_prob, self.training)
+        return _drop_path(x, self.drop_prob, self.training)
 
     def extra_repr(self) -> str:
         return 'p={}'.format(self.drop_prob)
@@ -362,12 +362,12 @@ class LaBraM(nn.Module):
             embed_dim, num_classes) if num_classes > 0 else nn.Identity()
 
         if self.pos_embed is not None:
-            trunc_normal_(self.pos_embed, std=.02)
+            _trunc_normal_(self.pos_embed, std=.02)
         if self.time_embed is not None:
-            trunc_normal_(self.time_embed, std=.02)
-        trunc_normal_(self.cls_token, std=.02)
+            _trunc_normal_(self.time_embed, std=.02)
+        _trunc_normal_(self.cls_token, std=.02)
         if isinstance(self.head, nn.Linear):
-            trunc_normal_(self.head.weight, std=.02)
+            _trunc_normal_(self.head.weight, std=.02)
         self.apply(self._init_weights)
         self.fix_init_weight()
 
@@ -385,7 +385,7 @@ class LaBraM(nn.Module):
 
     def _init_weights(self, m):
         if isinstance(m, nn.Linear):
-            trunc_normal_(m.weight, std=.02)
+            _trunc_normal_(m.weight, std=.02)
             if isinstance(m, nn.Linear) and m.bias is not None:
                 nn.init.constant_(m.bias, 0)
         elif isinstance(m, nn.LayerNorm):
@@ -396,11 +396,11 @@ class LaBraM(nn.Module):
         input_chans = None
         if len(electrodes):
             for electrode in electrodes:
-                assert electrode in standard_1020, f"{electrode} not in standard_1020"
+                assert electrode in _STANDARD_1020, f"{electrode} not in standard_1020"
             assert len(electrodes) == x.shape[1], f"Number of electrodes {len(electrodes)} should match input ({x.shape[1]})."
-            input_chans = get_input_chans(electrodes)
+            input_chans = _get_input_chans(electrodes)
         else:
-            assert len(standard_1020) == x.shape[1], f"You must provide electrodes for the input. Expected default channels {standard_1020} are used."
+            assert len(_STANDARD_1020) == x.shape[1], f"You must provide electrodes for the input. Expected default channels {_STANDARD_1020} are used."
 
         batch_size, n, a, t = x.shape
         input_time_window = a if t == self.patch_size else t

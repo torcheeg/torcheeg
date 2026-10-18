@@ -6,7 +6,7 @@ import torch.nn.functional as F
 from torch_scatter import scatter_add
 
 
-class LazyLoader:
+class _LazyLoader:
     def __init__(self, lib_name):
         self._lib_name = lib_name
         self._module = None
@@ -23,18 +23,18 @@ class LazyLoader:
         return getattr(self._module, name)
 
 
-pyg = LazyLoader('torch_geometric')
+_pyg = _LazyLoader('torch_geometric')
 
 
-def maybe_num_electrodes(index: torch.Tensor, num_electrodes: Union[int, None] = None) -> int:
+def _maybe_num_electrodes(index: torch.Tensor, num_electrodes: Union[int, None] = None) -> int:
     return index.max().item() + 1 if num_electrodes is None else num_electrodes
 
 
-def add_remaining_self_loops(edge_index: torch.Tensor,
+def _add_remaining_self_loops(edge_index: torch.Tensor,
                              edge_weight: Union[torch.Tensor, None] = None,
                              fill_value: float = 1.0,
                              num_electrodes: Union[int, None] = None) -> Tuple[torch.Tensor, torch.Tensor]:
-    num_electrodes = maybe_num_electrodes(edge_index, num_electrodes)
+    num_electrodes = _maybe_num_electrodes(edge_index, num_electrodes)
     row, col = edge_index
 
     mask = row != col
@@ -142,7 +142,7 @@ class RGNN(torch.nn.Module):
             self.xs, self.ys]  # strict lower triangular values
         self.adj = nn.Parameter(adj, requires_grad=learn_edge_weights)
 
-        class NewSGConv(pyg.nn.SGConv):
+        class NewSGConv(_pyg.nn.SGConv):
             def __init__(self,
                          in_channels: int,
                          out_channels: int,
@@ -164,7 +164,7 @@ class RGNN(torch.nn.Module):
                                      dtype=dtype, device=edge_index.device)
 
                 fill_value = 1 if not improved else 2
-                edge_index, adj = add_remaining_self_loops(
+                edge_index, adj = _add_remaining_self_loops(
                     edge_index, adj, fill_value, num_electrodes)
                 row, col = edge_index
                 deg = scatter_add(torch.abs(adj), row, dim=0,
@@ -214,7 +214,7 @@ class RGNN(torch.nn.Module):
         adj = adj.reshape(-1).repeat(batch_size)
         x = F.relu(self.conv1(x, edge_index, adj))
 
-        x = pyg.nn.global_add_pool(x, data.batch, size=batch_size)
+        x = _pyg.nn.global_add_pool(x, data.batch, size=batch_size)
         x = F.dropout(x, p=self.dropout, training=self.training)
         x = self.fc(x)
 

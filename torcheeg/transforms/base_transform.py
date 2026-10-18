@@ -51,10 +51,16 @@ class BaseTransform:
 
     @property
     def targets(self) -> Dict[str, Callable]:
-        raise NotImplementedError("Method targets is not implemented in class " + self.__class__.__name__)
+        raise NotImplementedError(
+            "Method targets is not implemented in class "
+            + self.__class__.__name__
+        )
 
     def apply(self, *args, **kwargs) -> any:
-        raise NotImplementedError("Method apply is not implemented in class " + self.__class__.__name__)
+        raise NotImplementedError(
+            "Method apply is not implemented in class "
+            + self.__class__.__name__
+        )
 
     @property
     def repr_body(self) -> Dict:
@@ -87,7 +93,10 @@ class EEGTransform(BaseTransform):
         return {"eeg": self.apply}
 
     def apply(self, eeg: any, baseline: Union[any, None] = None, **kwargs) -> any:
-        raise NotImplementedError("Method apply is not implemented in class " + self.__class__.__name__)
+        raise NotImplementedError(
+            "Method apply is not implemented in class "
+            + self.__class__.__name__
+        )
 
     @property
     def repr_body(self) -> Dict:
@@ -100,4 +109,7 @@ class LabelTransform(BaseTransform):
         return {"y": self.apply}
 
     def apply(self, y: any, **kwargs) -> any:
-        raise NotImplementedError("Method apply is not implemented in class " + self.__class__.__name__)
+        raise NotImplementedError(
+            "Method apply is not implemented in class "
+            + self.__class__.__name__
+        )

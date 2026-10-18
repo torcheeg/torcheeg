@@ -6,7 +6,7 @@ from einops.layers.torch import Rearrange
 from torch import nn
 
 
-def pair(t):
+def _pair(t):
     return t if isinstance(t, tuple) else (t, t)
 
 
@@ -209,8 +209,8 @@ class ViT(nn.Module):
         self.embed_dropout = embed_dropout
         self.num_classes = num_classes
 
-        grid_height, grid_width = pair(grid_size)
-        patch_height, patch_width = pair(s_patch_size)
+        grid_height, grid_width = _pair(grid_size)
+        patch_height, patch_width = _pair(s_patch_size)
 
         assert grid_height % patch_height == 0 and grid_width % patch_width == 0, f'EEG grid size {grid_size} must be divisible by the spatial patch size {s_patch_size}.'
         assert chunk_size % t_patch_size == 0, f'EEG chunk size {chunk_size} must be divisible by the temporal patch size {t_patch_size}.'
