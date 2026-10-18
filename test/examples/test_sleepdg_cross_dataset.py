@@ -7,6 +7,7 @@ from pathlib import Path
 import unittest
 from unittest.mock import patch
 
+import mne
 import numpy as np
 import pandas as pd
 import torch
@@ -225,6 +226,29 @@ class TestSleepDGWorkflow(unittest.TestCase):
             optimizer = state['optimizer_states'][0]['state']
             self.assertTrue(all(float(item['step']) == 2 for item in optimizer.values()))
 
+    def test_isruc_reader_accepts_e1_names_and_records_without_frontal_channels(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            for subject in (1, 2):
+                folder = root / 'source/Subgroup_1' / str(subject)
+                folder.mkdir(parents=True)
+                (folder / f'{subject}.rec').write_text('A' if subject == 1 else 'M')
+                (folder / f'{subject}_1.txt').write_text(('0\n1\n2\n3\n5\n') * 4)
+            def reader(path, preload):
+                self.assertTrue(preload)
+                names = ['C3-A2', 'LOC-A2'] if Path(path).read_text() == 'A' else ['C3-M2', 'E1-M2']
+                time = np.arange(60000) / 100.
+                values = np.stack([np.sin(time), np.cos(time)]) * 1e-6
+                return mne.io.RawArray(values, mne.create_info(names, 100, 'eeg'), verbose=False)
+            with patch('torcheeg.datasets.module.sleep_stage_detection.isruc.read_raw_edf', side_effect=reader):
+                dataset = EXAMPLE.source_dataset('isruc', str(root / 'source'), root / 'cache')
+            self.assertEqual(len(dataset), 40)
+            self.assertEqual(json.loads(dataset.info.iloc[-1]['channel_names']), ['C3-M2', 'E1-M2'])
+            self.assertTrue(all(json.loads(value) == [] for value in dataset.info.zero_filled_channels))
+            sequences, _ = EXAMPLE.prepare_sequences(dataset, 'isruc', domain=2)
+            self.assertEqual(tuple(sequences[0][0].shape), (20, 2, 3000))
+            self.assertEqual(sequences[1][2], 2)
+
     def test_all_five_reader_settings_are_explicit_and_do_not_request_zero_filling(self):
         mapping = dict(sleepedf='SleepEDFxDataset', hmc='HMCDataset', isruc='ISRUCDataset',
                        shhs='SHHSDataset', p2018='P2018Dataset')
@@ -241,6 +265,7 @@ class TestSleepDGWorkflow(unittest.TestCase):
                     self.assertEqual(args['studies'], ['cassette'])
                 if source == 'isruc':
                     self.assertEqual(args['groups'], [0])
+                    self.assertEqual(args['channels'], [('C3-A2', 'C3-M2'), ('LOC-A2', 'LOC-M2', 'E1-M2')])
                 if source == 'hmc':
                     self.assertIsNone(args['l_freq'])
                     self.assertIsNone(args['h_freq'])

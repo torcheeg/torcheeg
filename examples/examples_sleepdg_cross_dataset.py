@@ -203,7 +203,7 @@ def source_dataset(name, root, cache):
                           l_freq=None, h_freq=None, sfreq=100, start_at=0, end_at=None,
                           missing_channels='raise')
     if name == 'isruc':
-        return ISRUCDataset(**common, groups=[0], channels=[('F4-A1', 'F4-M1'), ('LOC-A2', 'LOC-M2')],
+        return ISRUCDataset(**common, groups=[0], channels=[('C3-A2', 'C3-M2'), ('LOC-A2', 'LOC-M2', 'E1-M2')],
                             l_freq=.3, h_freq=35., sfreq=100, missing_channels='raise', derive_channels=True)
     if name == 'shhs':
         return SHHSDataset(**common, visits=[1], channels=['EEG', 'EOG(L)'],
@@ -270,7 +270,7 @@ def main():
     limits = {phase: getattr(args, phase + '_batches') for phase in ('train', 'val', 'test')}
     steps_per_epoch = min(len(sampler), args.train_batches) if args.train_batches else len(sampler)
     horizon = args.scheduler_steps if args.scheduler_steps is not None else args.epochs * steps_per_epoch
-    configuration = dict(protocol='torcheeg-sleepdg-five-source-v1', target=args.target, source_domains=domains, partitions=partitions,
+    configuration = dict(protocol='torcheeg-sleepdg-five-source-v2', target=args.target, source_domains=domains, partitions=partitions,
                          model_config=MODEL, seed=args.seed, batch_size=args.batch_size,
                          batch_limits=limits, scheduler_steps=horizon,
                          roots={name: str(Path(getattr(args, name + '_root')).resolve()) for name in SOURCES})

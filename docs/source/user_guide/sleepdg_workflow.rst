@@ -29,7 +29,7 @@ configuration:
      - EEG F4-M1; EOG E1-M2
    * - --isruc-root
      - Directory containing Subgroup_1
-     - F4-A1 or F4-M1; LOC-A2 or LOC-M2
+     - C3-A2 or C3-M2; LOC-A2, LOC-M2 or E1-M2
    * - --shhs-root
      - SHHS directory or polysomnography subdirectory
      - EEG; EOG(L), visit 1
@@ -37,7 +37,10 @@ configuration:
      - P2018 training directory
      - C3-M2; E1-M2
 
-ISRUC uses subgroup code 0 (Subgroup_1). Candidate names select the actual
+ISRUC uses subgroup code 0 (Subgroup_1). Its central C3 channel avoids
+requiring frontal F4, which is absent in one original recording. The
+left-EOG candidates include the recorded E1-M2 name; it is not renamed
+to LOC. Candidate names select the actual
 recorded reference. Bare-channel differences are computed only when the
 required components exist, and the reader records the derivation. They do
 not assert that A1 and M1 references are interchangeable. A missing or
@@ -80,7 +83,9 @@ crop that can misalign stage labels. Its SHHS script reads Profusion XML,
 maps unscored code 9 to wake, and slices the first 150 recordings. The
 TorchEEG readers keep the corrected stage clock, omit unscored intervals,
 use stable SOS coefficients and read the selected source directory in full.
-These are declared differences, not an exact published-score reproduction.
+ISRUC uses the available central C3 channel rather than the prototype's
+positional frontal selection. These are declared differences, not an exact
+published-score reproduction.
 
 Sleep-EDF retains scored sleep plus up to 60 complete wake epochs on each
 side. This fixed offline data-selection rule uses the supplied hypnogram;
@@ -148,6 +153,8 @@ exact inference agreement on a target probe.
 Resume an owned, trusted end-of-epoch checkpoint with ``--resume PATH``.
 The saved checkpoint and run manifest must match the current target, source
 roots, partitions, statistics, batch settings, seed and scheduler horizon.
+The corrected ISRUC channel configuration uses workflow protocol version 2;
+version-1 manifests/checkpoints do not match and need a fresh experiment.
 The example restores optimizer/scheduler state through Lightning and starts
 the deterministic source sampler at the following epoch. It does not promise
 exact mid-epoch recovery. Keep ``--epochs`` unchanged when resuming an
