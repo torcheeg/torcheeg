@@ -4,6 +4,7 @@ import copy
 import os
 import tempfile
 from pathlib import Path
+from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
@@ -89,6 +90,22 @@ class FiniteGradientRecorder(pl.Callback):
             assert parameter.grad is not None, name
             assert torch.isfinite(parameter.grad).all(), name
         self.checks += 1
+
+
+class RestoredStateRecorder(pl.Callback):
+    def __init__(self, module, optimizer, scheduler):
+        self.module_state = copy.deepcopy(module.state_dict())
+        self.optimizer_state = copy.deepcopy(optimizer.state_dict())
+        self.scheduler_state = copy.deepcopy(scheduler.state_dict())
+        self.checked = False
+
+    def on_train_start(self, trainer, module):
+        # Inspect the actual checkpoint restoration before the next update.
+        torch.testing.assert_close(module.state_dict(), self.module_state, rtol=0, atol=0)
+        torch.testing.assert_close(trainer.optimizers[0].state_dict(), self.optimizer_state, rtol=0, atol=0)
+        torch.testing.assert_close(trainer.lr_scheduler_configs[0].scheduler.state_dict(),
+                                   self.scheduler_state, rtol=0, atol=0)
+        self.checked = True
 
 
 class TestSleepDGTrainer(unittest.TestCase):
@@ -288,13 +305,14 @@ class TestSleepDGTrainer(unittest.TestCase):
             fit_options.pop('enable_checkpointing')
             trainer.fit(train, val, max_epochs=1, callbacks=[callback], **fit_options)
             self.assertTrue(callback.best_model_path)
-            saved = torch.load(callback.best_model_path, weights_only=True)['state_dict']
+            # One validation epoch selects the same model state captured here.
+            saved = copy.deepcopy(trainer.model.state_dict())
             with torch.no_grad():
                 trainer.model.classifier.weight.add_(3.)
             trainer.test(val, ckpt_path=callback.best_model_path, logger=False,
                          enable_progress_bar=False, enable_model_summary=False)
             for name, value in trainer.model.state_dict().items():
-                torch.testing.assert_close(value, saved['model.' + name], rtol=0, atol=0)
+                torch.testing.assert_close(value, saved[name], rtol=0, atol=0)
 
     def test_lightning_checkpoint_restores_optimizer_scheduler_and_full_model(self):
         train, val = loaders()
@@ -304,15 +322,15 @@ class TestSleepDGTrainer(unittest.TestCase):
             state = copy.deepcopy(first.model.state_dict())
             path = Path(root, 'step.ckpt')
             first.trainer.save_checkpoint(path)
-            payload = torch.load(path, weights_only=True)
-            self.assertEqual(payload['global_step'], 1)
-            self.assertTrue(payload['optimizer_states'][0]['state'])
-            self.assertEqual(payload['lr_schedulers'][0]['last_epoch'], 1)
+            self.assertEqual(first.trainer.global_step, 1)
+            self.assertTrue(first.trainer.optimizers[0].state_dict()['state'])
+            scheduler = first.trainer.lr_scheduler_configs[0].scheduler
+            self.assertEqual(scheduler.last_epoch, 1)
+            recorder = RestoredStateRecorder(first, first.trainer.optimizers[0], scheduler)
             restored = SleepDGTrainer(model(), verbose=False, scheduler_steps=4)
-            restored.load_state_dict(payload['state_dict'], strict=True)
-            for name, value in restored.model.state_dict().items():
-                torch.testing.assert_close(value, state[name], rtol=0, atol=0)
-            restored.fit(train, val, max_epochs=2, max_steps=2, ckpt_path=str(path), **options())
+            restored.fit(train, val, max_epochs=2, max_steps=2, ckpt_path=str(path),
+                         callbacks=[recorder], **options())
+            self.assertTrue(recorder.checked)
             restarted = restored.trainer
             self.assertEqual(restarted.global_step, 2)
             self.assertEqual(restarted.lr_scheduler_configs[0].scheduler.last_epoch, 2)
@@ -324,7 +342,38 @@ class TestSleepDGTrainer(unittest.TestCase):
             self.assertTrue(any(not torch.equal(restored.model.state_dict()[name], value)
                                 for name, value in state.items() if value.is_floating_point()))
 
+    def test_lightning_hook_arguments_and_overflow_forwarding(self):
+        trainer = SleepDGTrainer(TinySequenceModel(), verbose=False)
+        scaler = SimpleNamespace(get_scale=lambda: 32.)
+        trainer._trainer = SimpleNamespace(precision_plugin=SimpleNamespace(scaler=scaler))
+        optimizer, closure, scheduler = object(), object(), object()
+        # Exercise both Lightning 2.x and 1.x positional and keyword calls.
+        optimizer_calls = [((0, 1, optimizer, closure), {}),
+                           ((0, 1, optimizer, 0, closure, False, False), {}),
+                           ((0, 1, optimizer), dict(optimizer_idx=0, optimizer_closure=closure))]
+        scheduler_calls = [((scheduler, None), {}), ((scheduler, 0, None), {}),
+                           ((scheduler,), dict(optimizer_idx=0, metric=None))]
+        for args, kwargs in optimizer_calls:
+            with patch.object(pl.LightningModule, 'optimizer_step', return_value='updated') as parent:
+                self.assertEqual(trainer.optimizer_step(*args, **kwargs), 'updated')
+                parent.assert_called_once_with(*args, **kwargs)
+                self.assertFalse(trainer._optimizer_step_skipped)
+        for args, kwargs in scheduler_calls:
+            with patch.object(pl.LightningModule, 'lr_scheduler_step') as parent:
+                trainer.lr_scheduler_step(*args, **kwargs)
+                parent.assert_called_once_with(*args, **kwargs)
+        with patch.object(scaler, 'get_scale', side_effect=[32., 16.]), \
+                patch.object(pl.LightningModule, 'optimizer_step') as parent:
+            trainer.optimizer_step(*optimizer_calls[1][0])
+            self.assertTrue(trainer._optimizer_step_skipped)
+            parent.assert_called_once_with(*optimizer_calls[1][0])
+        with patch.object(pl.LightningModule, 'lr_scheduler_step') as parent:
+            trainer.lr_scheduler_step(*scheduler_calls[1][0])
+            parent.assert_not_called()
+
     def test_amp_overflow_skips_parameter_and_learning_rate_updates(self):
+        if not hasattr(torch, 'amp') or not hasattr(torch.amp, 'GradScaler'):
+            self.skipTest('Requires CPU GradScaler support')
         from pytorch_lightning.plugins.precision import MixedPrecision
 
         torch.manual_seed(42)

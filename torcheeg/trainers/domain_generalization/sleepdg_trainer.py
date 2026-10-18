@@ -251,18 +251,20 @@ class SleepDGTrainer(ClassifierTrainer):
                              *args, **kwargs)
         return trainer.test(self, test_loader, ckpt_path=ckpt_path)
 
-    def optimizer_step(self, epoch, batch_idx, optimizer, optimizer_closure=None):
+    def optimizer_step(self, *args, **kwargs):
         scaler = getattr(self.trainer.precision_plugin, 'scaler', None)
         previous_scale = scaler.get_scale() if scaler is not None else None
-        result = super().optimizer_step(epoch, batch_idx, optimizer, optimizer_closure)
+        # Forward the installed Lightning version's hook arguments unchanged.
+        # Lightning 1.x includes optimizer_idx and additional optimizer flags.
+        result = super().optimizer_step(*args, **kwargs)
         # Lightning counts AMP attempts as steps even when GradScaler skips Adam.
         self._optimizer_step_skipped = (scaler is not None
                                         and scaler.get_scale() < previous_scale)
         return result
 
-    def lr_scheduler_step(self, scheduler, metric):
+    def lr_scheduler_step(self, *args, **kwargs):
         if not self._optimizer_step_skipped:
-            super().lr_scheduler_step(scheduler, metric)
+            super().lr_scheduler_step(*args, **kwargs)
 
     def configure_optimizers(self):
         optimizer = torch.optim.Adam((p for p in self.model.parameters() if p.requires_grad),

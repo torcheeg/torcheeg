@@ -212,6 +212,14 @@ consistently. FP16/BF16 CE, MSE and alignment statistics use FP32; FP64 loss
 inputs preserve their precision. Follow the actual tested precision and loss
 scales when changing optimizer epsilon or native model dtype.
 
+The training, source-checkpoint selection and full optimizer/scheduler resume
+paths are also tested with PyTorch 1.13.1 and Lightning 1.9.5 on Python 3.10.
+The optimization hooks forward the installed Lightning version's arguments,
+including the extra optimizer index in Lightning 1.x. CPU float16 GradScaler
+and compilation tests require newer PyTorch APIs and are skipped in that old
+environment. This check does not establish support for every older dependency
+combination; use precision and device options supported by your installation.
+
 Training calls ``model.forward_all``; compile that callable when compiling the
 complete architecture. The validation/prediction path uses ``model.forward``.
 For compiled FP64 CPU execution, select the public math SDPA backend with
