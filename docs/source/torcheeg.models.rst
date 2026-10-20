@@ -85,6 +85,8 @@ Transformer
    EEGPTResample
    EEGPTInputAdapter
    EEGPTAdaptedModel
+   BIOT
+   BIOTClassifier
    CBraMod
    CBraModClassifier
    CBraModRegression

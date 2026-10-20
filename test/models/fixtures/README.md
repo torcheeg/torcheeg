@@ -101,3 +101,20 @@ Fixture output, selected feature gradients and per-linear-layer weight-gradient
 sum/norm/first entries and complete bias gradients are checked. Pooling,
 flattening order, nonlinearities and all four head topologies are covered.
 No upstream checkpoint or patient signal is stored in the fixture.
+
+## BIOT
+
+`biot_reference.json` was generated from unmodified official `model/biot.py`
+at d138e32634e52ae9fa6ec98ac9c4087b14ca869a with the PyPI
+linear-attention-transformer 0.19.1 noncausal global attention implementation.
+Both source SHA256 values are in the fixture. PyTorch 2.6 CPU, float64, two
+threads. Canonical width256/heads8/depth4/18 channels, two input channels,
+400 samples; deterministic `reference_state` from test_eegpt except native
+index/position buffers. Input is sin(arange/17)+cos(arange/31), seed913 before
+forward; loss is mean((output*sin(arange/13))**2). Cases cover eval, training
+with native dropout, zero EEG, and native channel offset2. Store all outputs
+and first8/sum/norm summaries for input and every trainable parameter gradient.
+No upstream package, network or pretrained weights are needed by CI. This
+fixture is an architecture regression test, not a pretrained accuracy claim.
+The three actual official checkpoints were separately loaded and compared
+against the reference, including every parameter gradient; see the BIOT guide.
