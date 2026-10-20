@@ -97,6 +97,8 @@ Transformer
    TFMTokenizer
    TFMEncoder
    TFMClassifier
+   LEAD
+   LEADClassifier
    BENDR
    BENDREncoder
    BENDRContextualizer
