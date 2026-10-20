@@ -111,8 +111,14 @@ Both source SHA256 values are in the fixture. PyTorch 2.6 CPU, float64, two
 threads. Canonical width256/heads8/depth4/18 channels, two input channels,
 400 samples; deterministic `reference_state` from test_eegpt except native
 index/position buffers. Input is sin(arange/17)+cos(arange/31), seed913 before
-forward; loss is mean((output*sin(arange/13))**2). Cases cover eval, training
-with native dropout, zero EEG, and native channel offset2. Store all outputs
+forward; loss is mean((output*sin(arange/13))**2). The first three position
+rows are copied verbatim from the author model into the fixture, so platform
+trigonometric rounding does not change the reference input. Cases cover eval,
+training with controlled dropout, zero EEG, and native channel offset2.
+For training, both reference and test use mask arange(numel)%10 >= p*10
+and division by 1-p, checking placement/scaling independently of version-specific
+RNG kernels. A separate test checks actual random dropout reproducibility,
+training variation, and deterministic evaluation on each supported runtime. Store all outputs
 and first8/sum/norm summaries for input and every trainable parameter gradient.
 No upstream package, network or pretrained weights are needed by CI. This
 fixture is an architecture regression test, not a pretrained accuracy claim.

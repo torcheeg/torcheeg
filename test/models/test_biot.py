@@ -2,6 +2,7 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
 
 import torch
 from torch import nn
@@ -9,6 +10,15 @@ from torch import nn
 from torcheeg.models import BIOT, BIOTClassifier
 from torcheeg.models.transformer.biot import _LinearAttention
 from test.models.test_eegpt import reference_state
+
+
+def controlled_dropout(module, x):
+    if not module.training or module.p == 0:
+        return x
+    # Fixed Bernoulli masks isolate dropout placement/scaling from differences
+    # in the random number kernels used by supported PyTorch versions.
+    keep = (torch.arange(x.numel(), device=x.device).reshape(x.shape) % 10).to(x.dtype) >= module.p * 10
+    return x * keep / (1 - module.p)
 
 
 class TestBIOT(unittest.TestCase):
@@ -42,13 +52,15 @@ class TestBIOT(unittest.TestCase):
                         for name, value in model.state_dict().items():
                             if name not in ('index', 'positional_encoding.pe'):
                                 value.copy_(reference_state(name, value))
+                        model.positional_encoding.pe[:, :3].copy_(torch.tensor(fixture['position_prefix'], dtype=torch.float64))
                     values = torch.arange(2 * 2 * 400, dtype=torch.float64)
                     x = (torch.sin(values / 17) + torch.cos(values / 31)).reshape(2, 2, 400)
                     if case['mode'] == 'zero':
                         x.zero_()
                     x.requires_grad_()
                     torch.manual_seed(913)
-                    y = model(x, channel_ids=[2, 3] if case['mode'] == 'offset' else None)
+                    with patch.object(nn.Dropout, 'forward', controlled_dropout):
+                        y = model(x, channel_ids=[2, 3] if case['mode'] == 'offset' else None)
                     torch.testing.assert_close(y, torch.tensor(case['output'], dtype=torch.float64), rtol=1e-9, atol=1e-9)
                     coefficients = torch.sin(torch.arange(y.numel(), dtype=torch.float64) / 13).reshape(y.shape)
                     (y * coefficients).square().mean().backward()
@@ -59,6 +71,18 @@ class TestBIOT(unittest.TestCase):
                             self.assert_summary(parameter.grad, case['parameter_gradients'][name])
         finally:
             torch.set_num_threads(previous)
+
+    def test_native_random_dropout_training_and_eval(self):
+        model = self.model().train()
+        x = torch.randn(2, 3, 80)
+        torch.manual_seed(47)
+        first = model(x)
+        torch.manual_seed(47)
+        torch.testing.assert_close(first, model(x), rtol=0, atol=0)
+        self.assertFalse(torch.equal(first, model(x)))
+        model.eval()
+        torch.testing.assert_close(model(x), model(x), rtol=0, atol=0)
+        self.assertFalse(torch.equal(first, model(x)))
 
     def test_linear_attention_matches_explicit_factorization(self):
         attention = _LinearAttention(16, 4, 0.).double().eval()

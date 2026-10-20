@@ -115,7 +115,10 @@ BIOT and the used noncausal global attention subset from
 in ``LICENSES/BIOT.txt``. The architecture regression fixture independently
 uses the unmodified author implementation and records both source hashes.
 It checks full-width outputs and every trainable parameter/input gradient
-in evaluation, training with dropout, zero-input and offset-channel cases.
+in evaluation, training with controlled dropout masks, zero-input and
+offset-channel cases. Position rows are pinned to remove platform
+trigonometric rounding from the fixture; actual stochastic dropout has a
+separate functional test.
 The three official checkpoints were separately checked against that source;
 all output and input-gradient maximum errors were zero on PyTorch 2.6 CPU,
 with every parameter gradient also matching. These checks establish native
