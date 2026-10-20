@@ -19,6 +19,7 @@ model_plugin_requires = [
     'torch-scatter',
     'torch-sparse',
     'torch_geometric>=2.0.3',
+    'safetensors>=0.4.3',
 ]
 
 trainer_plugin_requires = [
@@ -56,6 +57,7 @@ setup(
     extras_require={
         'test': test_requires,
         'model': model_plugin_requires,
+        'foundation': ['safetensors>=0.4.3'],
         'dataset': dataset_plugin_requires,
         'trainer': trainer_plugin_requires,
         'transforms': transforms_plugin_requires
