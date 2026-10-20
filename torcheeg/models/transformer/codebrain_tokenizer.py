@@ -45,13 +45,21 @@ def _discard_scalar_new(*args):
     return None
 
 
+def _metadata_bytes(value, encoding):
+    # Protocol-2 NumPy scalar metadata stores bytes through this Latin-1 codec.
+    if type(value) is not str or encoding != 'latin1':
+        raise ValueError('Checkpoint metadata only supports Latin-1 byte strings.')
+    return value.encode('latin1')
+
+
 # These inert replacements discard training-only metadata. They do not call
 # NumPy reconstruction functions, create dtypes or invoke argparse constructors.
 # Naming aliases also work with the original safe_globals API in PyTorch2.4.
 for _value, _module, _name in [(_DiscardNamespace, 'argparse', 'Namespace'),
                               (_DiscardDType, 'numpy', 'dtype'),
                               (_discard_scalar, 'numpy.core.multiarray', 'scalar'),
-                              (_discard_scalar_new, 'numpy._core.multiarray', 'scalar')]:
+                              (_discard_scalar_new, 'numpy._core.multiarray', 'scalar'),
+                              (_metadata_bytes, '_codecs', 'encode')]:
     _value.__module__ = _module
     _value.__name__ = _value.__qualname__ = _name
 
@@ -63,7 +71,7 @@ def _read_tensor_state(path):
         except ImportError as error:
             raise ImportError('Install torcheeg[foundation] to load safetensors.') from error
         return load_file(str(path), device='cpu')
-    metadata = [_DiscardNamespace, _DiscardDType, _discard_scalar, _discard_scalar_new]
+    metadata = [_DiscardNamespace, _DiscardDType, _discard_scalar, _discard_scalar_new, _metadata_bytes]
     context = torch.serialization.safe_globals(metadata) if hasattr(torch.serialization, 'safe_globals') else nullcontext()
     with _checkpoint_lock, context:
         checkpoint = torch.load(path, weights_only=True, map_location='cpu')

@@ -18,7 +18,7 @@ import torch.multiprocessing as multiprocessing
 from safetensors.torch import save_file
 
 from torcheeg.models import CodeBrain, CodeBrainTokenizer
-from torcheeg.models.transformer.codebrain_tokenizer import _contrastive_loss, _NormQuantizer
+from torcheeg.models.transformer.codebrain_tokenizer import _contrastive_loss, _metadata_bytes, _NormQuantizer
 
 
 SMALL = dict(encoder_depth=1, decoder_depth=1, code_dim=8, num_time_tokens=7, num_frequency_tokens=9)
@@ -272,6 +272,12 @@ class TestCodeBrainTokenizer(unittest.TestCase):
                 with self.assertRaises(ValueError): TinyTokenizer.from_pretrained(path)
             torch.save({'teacher.'+name: value for name, value in state.items()}, path)
             TinyTokenizer.from_pretrained(path, prefix='teacher.')
+
+    def test_legacy_metadata_bytes(self):
+        self.assertEqual(_metadata_bytes('a\u00ff\x00', 'latin1'), b'a\xff\x00')
+        for value, encoding in [('a', 'utf-8'), (b'a', 'latin1'), ('a', None)]:
+            with self.assertRaises(ValueError):
+                _metadata_bytes(value, encoding)
 
     def test_invalid_input_and_configuration(self):
         for kwargs in [dict(code_dim=0), dict(encoder_depth=False), dict(decay=1), dict(track_usage=1), dict(contrastive_mode='bad')]:
