@@ -117,14 +117,19 @@ class TestSleepFMExamples(unittest.TestCase):
                 '--batch-size',
                 '2',
             ]
-            with (
-                patch.object(module, 'build_sleepfm_backend', side_effect=factory),
-                patch.object(
-                    MentalArithmeticDataset, 'read_record', side_effect=eegmat_record
-                ),
-                patch('sys.argv', args),
-                contextlib.redirect_stdout(io.StringIO()),
-            ):
+            with contextlib.ExitStack() as stack:
+                stack.enter_context(
+                    patch.object(module, 'build_sleepfm_backend', side_effect=factory)
+                )
+                stack.enter_context(
+                    patch.object(
+                        MentalArithmeticDataset,
+                        'read_record',
+                        side_effect=eegmat_record,
+                    )
+                )
+                stack.enter_context(patch('sys.argv', args))
+                stack.enter_context(contextlib.redirect_stdout(io.StringIO()))
                 module.main()
             saved = torch.load(output, weights_only=True)
             meta = json.loads(saved['metadata_json'])
@@ -190,12 +195,17 @@ class TestSleepFMExamples(unittest.TestCase):
                 '--max-windows',
                 '4',
             ]
-            with (
-                patch.object(module, 'build_backends', side_effect=factory),
-                patch.object(SleepEDFxDataset, 'read_record', side_effect=sleep_record),
-                patch('sys.argv', args),
-                contextlib.redirect_stdout(io.StringIO()),
-            ):
+            with contextlib.ExitStack() as stack:
+                stack.enter_context(
+                    patch.object(module, 'build_backends', side_effect=factory)
+                )
+                stack.enter_context(
+                    patch.object(
+                        SleepEDFxDataset, 'read_record', side_effect=sleep_record
+                    )
+                )
+                stack.enter_context(patch('sys.argv', args))
+                stack.enter_context(contextlib.redirect_stdout(io.StringIO()))
                 module.main()
             saved = torch.load(output, weights_only=True)
             meta = json.loads(saved['metadata_json'])
@@ -263,22 +273,25 @@ class TestSleepFMExamples(unittest.TestCase):
                 native.load_state_dict(state)
                 return SleepFMDiagnosis(native, modalities, demographics)
 
-            with (
-                patch.object(module, 'build_diagnosis', side_effect=factory),
-                patch(
-                    'sys.argv',
-                    [
-                        'example',
-                        '--input-path',
-                        str(inputs),
-                        '--backend-root',
-                        str(root),
-                        '--output-path',
-                        str(output),
-                    ],
-                ),
-                contextlib.redirect_stdout(io.StringIO()),
-            ):
+            with contextlib.ExitStack() as stack:
+                stack.enter_context(
+                    patch.object(module, 'build_diagnosis', side_effect=factory)
+                )
+                stack.enter_context(
+                    patch(
+                        'sys.argv',
+                        [
+                            'example',
+                            '--input-path',
+                            str(inputs),
+                            '--backend-root',
+                            str(root),
+                            '--output-path',
+                            str(output),
+                        ],
+                    )
+                )
+                stack.enter_context(contextlib.redirect_stdout(io.StringIO()))
                 module.main()
             saved = torch.load(output, weights_only=True)
             meta = json.loads(saved['metadata_json'])
