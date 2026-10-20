@@ -247,3 +247,38 @@ electrode/last patch. Eval-mode features, reconstruction, input gradients and
 every parameter's gradient summary use loss `reconstruction.square().mean() +
 features[...,::3].mean()*0.1`. The separate float64 recurrence test checks the
 SSD output and all five input gradients across multiple block lengths.
+
+### TFM tokenizer and encoder
+
+`tfm_reference.json` is generated from original class/function bodies at
+`Jathurshan0330/TFM-Tokenizer` revision
+`2d6da482b16dabbb2ebec808fa9f505fc6f367c4`, MIT, and the native
+`linear_attention_transformer==0.19.1` dependency. The released CHB-MIT
+checkpoint has a linear reconstruction head; that commented source
+configuration replaces the current MLP explicitly. No tensors are skipped.
+
+The fixture uses float64, width64, vocabulary23, encoder2+2/decoder8 and
+four token-encoder layers. It contains no released checkpoint values.
+Generate states with float64 sin(arange/17+offset)*.02, where offset is the
+first6 SHA256 hex digits of each key modulo97. Preserve deterministic
+source positional buffers and index rows; set cluster counts and1D norm
+weights to1, biases to0, and clone codebook vectors into ema_w.
+Inputs are sin(arange(1600,float64)/17) shaped[2,800] and
+abs(sin(arange(1400,float64)/31)) shaped[2,100,7]. Tokenizer eval/train run
+sequentially, retaining EMA state. The loss is mean squared reconstruction
+plus MSE(vectors, straight_through.detach()), the corrected EMA commitment
+term. All outputs, full waveform/spectrum gradients, every parameter's
+first8/sum/norm gradient summary and complete EMA state are retained.
+
+Token-encoder IDs are arange(42).reshape(2,3,7)*7%24, including mask row23.
+The seven source-generated float32 positional rows are stored as
+`position_prefix` and copied exactly into the float64 test state. This avoids
+changing the reference inputs when CPU sine implementations differ; the
+float64 gradient tolerances remain unchanged.
+Eval/train/token-prediction cases use output.square().mean() and retain
+complete outputs/every gradient summary. Portable dropout uses
+arange(numel)%10 >= p*10, then divides by1-p. Original full8192-codebook
+checkpoints are tested separately against every native output/gradient and
+EMA state in actual stochastic train/eval mode. Independent real EDF
+verification and complete canonical generated-checkpoint workflow tests
+are distinct from this numerical fixture.

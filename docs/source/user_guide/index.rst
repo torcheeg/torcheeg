@@ -71,3 +71,4 @@ the same library workflow as a reusable assistant skill.
    codebrain
    codebrain_tokenizer
    eegmamba
+   tfm
