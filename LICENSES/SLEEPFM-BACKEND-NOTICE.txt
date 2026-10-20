@@ -1,0 +1,24 @@
+SleepFM-Clinical explicit external backend integration
+
+Author source and pretrained models:
+https://github.com/zou-group/sleepfm-clinical
+Pinned revision: 2bcbae04c3592f61352addb7ac3d4193f0a3ca25
+Paper: https://doi.org/10.1038/s41591-025-04133-4
+
+The author repository supplies a Creative Commons Attribution-NonCommercial
+4.0 International LICENSE: https://creativecommons.org/licenses/by-nc/4.0/.
+Obtain and use source, pretrained weights and accompanying metadata
+separately under their original terms and attribution requirements.
+TorchEEG's MIT license does not replace the original authors' permissions.
+
+TorchEEG distributes independent interfaces, metadata handling and new-task
+classification code. It does not distribute author model implementation code,
+official weights, or the separately supplied disease-label mapping.
+Its library interfaces neither import nor download author source.
+The caller explicitly constructs a trusted local nn.Module backend.
+Standalone examples explicitly load separately obtained local author source;
+that action is separate from restricted tensor-only checkpoint loading.
+The optional external CI job obtains the fixed checkout and validates
+checkpoint hashes, retaining the original source/model license in that tree.
+The author demonstration data are expressly synthetic; numerical examples
+must not be presented as clinical validation or calibrated risk estimation.
