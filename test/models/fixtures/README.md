@@ -124,3 +124,22 @@ No upstream package, network or pretrained weights are needed by CI. This
 fixture is an architecture regression test, not a pretrained accuracy claim.
 The three actual official checkpoints were separately loaded and compared
 against the reference, including every parameter gradient; see the BIOT guide.
+
+## BENDR
+
+`bendr_reference.json` uses unchanged DN3 layers.py classes at revision
+4d477fe42d3d8ce64f3b790585bfa5c7acb84848 (full source hash in fixture).
+Extracted class definitions avoid unrelated legacy package imports; their
+bodies are unchanged. PyTorch2.6 CPU/float64/two threads, encoder3->16,
+context width16/mlp32/heads4/depth2, encoder dropout.1/context.15,
+input2x3x385 sin(arange/17)+cos(arange/31), reference_state per native
+component key. Loss mean((output*sin(arange/13))**2). Eval/train/zero/explicit
+time+channel masks; save all outputs and input/every parameter gradient
+summaries, including None for native unused parameters. Training dropout
+uses controlled scalar/channel masks arange%10>=p*10 divided by1-p for
+version-independent placement/scaling checks. Attention-probability dropout
+is set to zero in the training reference because fused SDPA RNG differs
+between supported Torch versions; its native probability.15 and stochastic
+behavior are separately tested. Full 512-wide/eight-layer actual released encoder24 and
+context76 tensors are compared independently against DN3, not represented
+as pretrained by these small synthetic fixtures. BSD notice LICENSES/BENDR.txt.

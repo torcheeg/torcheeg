@@ -21,3 +21,4 @@ from .cbramod import CBraMod
 from .cbramod_heads import CBraModClassifier, CBraModRegression, CBraModEmbedding
 
 from .biot import BIOT, BIOTClassifier
+from .bendr import BENDR, BENDREncoder, BENDRContextualizer, BENDRClassifier
