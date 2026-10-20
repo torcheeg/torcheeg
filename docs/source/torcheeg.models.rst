@@ -99,6 +99,8 @@ Transformer
    TFMClassifier
    LEAD
    LEADClassifier
+   NeuroRVQ
+   NeuroRVQClassifier
    BENDR
    BENDREncoder
    BENDRContextualizer

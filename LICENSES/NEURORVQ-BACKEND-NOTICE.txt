@@ -1,0 +1,18 @@
+NeuroRVQ explicit external backend integration
+
+Cite Konstantinos Barmpas et al., NeuroRVQ, https://arxiv.org/abs/2510.13068.
+Author source: https://github.com/KonstantinosBarmpas/NeuroRVQ
+Complete pretraining source revision: 27c3c134a53cc29c0d1696ebfe65f3e17ea9ab0c
+Official model: https://huggingface.co/ntinosbarmpas/NeuroRVQ
+Model revision: d944b87f44ae0ba2923b2f10d0518f23f6803b76
+Both repositories supply a Creative Commons Attribution-NonCommercial 4.0
+International LICENSE: https://creativecommons.org/licenses/by-nc/4.0/.
+Use those separately obtained materials under their original terms.
+TorchEEG does not distribute author implementation code or model weights.
+Its independent interface does not import, download or install that source.
+The user explicitly supplies a trusted constructed local nn.Module backend.
+The standalone example explicitly imports a separately installed author
+checkout. This is separate from restricted tensor-only weight loading.
+The external CI job obtains source and weights separately with pinned
+revisions and preserves their source license alongside the cached weights.
+The original authors' permissions are not replaced by TorchEEG's MIT license.
