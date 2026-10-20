@@ -4,7 +4,8 @@ CodeBrain pretrained encoder
 CodeBrain EEGSSM combines temporal and spectral patch embeddings, structured
 global convolution, local attention and gated residual blocks. TorchEEG keeps
 the complete released EEGSSM state, including both token prediction heads.
-The separate TFDual tokenizer is not included in this encoder interface.
+The separate :doc:`TFDual tokenizer <codebrain_tokenizer>` has its own complete
+interface and checkpoint; it is not part of this encoder checkpoint.
 
 Source and checkpoint
 ---------------------

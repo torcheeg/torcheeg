@@ -91,6 +91,7 @@ Transformer
    REVEClassifier
    CodeBrain
    CodeBrainClassifier
+   CodeBrainTokenizer
    BENDR
    BENDREncoder
    BENDRContextualizer

@@ -200,3 +200,27 @@ verified separately against source; CI tests real dropout/optimizer behavior
 without pinning version-dependent random masks. Current native channel-wise
 Dropout2d behavior is represented by Dropout1d. Numerical contraction and
 complex multiplication order are preserved without opt_einsum at runtime.
+
+`codebrain_tokenizer_reference.json` uses unchanged CodeBrain source
+22d350caf68246d2fda4f630ef837420db3fb130; source hashes are included. Torch2.6
+CPU/float32/two threads, encoder1block/eachdecoder1block, fixedwidth200,
+codewidth8, vocabularies7and9. No official weights or EEG are included.
+`reference_state` in test_codebrain_tokenizer.py specifies every generated
+tensor: float64 sin(arange/17+offset)*.02 then cast, offset first6SHA256hex of
+name modulo97; norm weights/running variances/initted flags1, biases/running
+means/counters0, normalized codebook rows and cloned embed_avg. Input is
+sin(arange/17)+cos(arange/31), shaped[2,3,4,200]. Native positional rows0..3
+include CLS0; library channel_ids1..3 reserve CLS internally.
+
+Cases run sequentially: eval/no_grad, eval/grad, train/grad, retaining EMA
+buffers between cases. Complete six-term native loss/logs, full EEG gradients
+and every parameter gradient's first8/sum/norm (None where frozen) are stored.
+Training CNN dropout uses arange%10>=3 divided by.7; zero-probability modules
+remain identity. Separate actual stochastic full-checkpoint comparisons are
+not represented as portable masks. The final eval also stores both complete
+ID arrays, quantized latents and all three reconstructions. Full canonical
+325tensor comparisons include every gradient and state update separately.
+The fixture deliberately selects contrastive_mode='native' to test source
+reproduction; independent analytic tests establish the corrected default
+InfoNCE denominator. One-patch decoding and constant-target standardization
+fixes have separate regression tests because the native source fails there.

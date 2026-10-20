@@ -9,6 +9,7 @@ repository features are not part of a released package.
 ## Documentation
 
 - [Install](https://torcheeg.readthedocs.io/en/latest/installation.html): Dependencies and package installation.
+- [User guide](https://torcheeg.readthedocs.io/en/latest/user_guide/index.html): Data protocols, pretrained models and complete training workflows.
 - [Datasets](https://torcheeg.readthedocs.io/en/latest/torcheeg.datasets.html): Dataset inputs, metadata and preprocessing.
 - [Transforms](https://torcheeg.readthedocs.io/en/latest/torcheeg.transforms.html): Signal and label transforms.
 - [Partitions](https://torcheeg.readthedocs.io/en/latest/torcheeg.model_selection.html): Subject, trial and sample splits.
