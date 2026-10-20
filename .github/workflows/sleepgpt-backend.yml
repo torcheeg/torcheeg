@@ -1,0 +1,61 @@
+name: SleepGPT external backend
+
+on:
+  pull_request:
+    paths:
+      - 'torcheeg/models/transformer/sleepgpt.py'
+      - 'test/models/test_sleepgpt*.py'
+      - 'examples/examples_eegmat_sleepgpt.py'
+      - 'docs/source/user_guide/sleepgpt.rst'
+      - '.github/workflows/sleepgpt-backend.yml'
+      - 'setup.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  native:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      OMP_NUM_THREADS: '2'
+      MPLBACKEND: Agg
+      TORCHEEG_SLEEPGPT_BACKEND_ROOT: ${{ github.workspace }}/external/sleepgpt
+      TORCHEEG_SLEEPGPT_CHECKPOINT: ${{ github.workspace }}/external/epoch79.ckpt
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: LordXX505/SleepGPT
+          ref: fcbb2c7a6489b5742ab77d66483661e45a4aadf2
+          path: external/sleepgpt
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: setup.py
+      - name: Install CPU runtime and explicit author dependencies
+        run: |
+          python -m pip install torch==2.6.0 torchvision==0.21.0 --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install torch-scatter==2.1.2 torch-sparse==0.6.18 --only-binary=:all: --find-links https://data.pyg.org/whl/torch-2.6.0+cpu.html
+          python -m pip install -e '.[foundation,model,dataset]' 'lightning==2.6.6' 'transformers>=4,<5' timm nvidia-ml-py matplotlib
+      - name: Obtain and verify complete separately released weight file
+        run: |
+          curl --fail --location --retry 3 https://ndownloader.figshare.com/files/59576246 --output "$TORCHEEG_SLEEPGPT_CHECKPOINT"
+          python - <<'PY'
+          import hashlib
+          import os
+          from pathlib import Path
+          path = Path(os.environ['TORCHEEG_SLEEPGPT_CHECKPOINT'])
+          assert path.stat().st_size == 1647356391
+          sha, md5 = hashlib.sha256(), hashlib.md5()
+          with path.open('rb') as stream:
+              for block in iter(lambda: stream.read(1024 * 1024), b''):
+                  sha.update(block)
+                  md5.update(block)
+          assert sha.hexdigest() == 'a30c53422eaea0bdcd6a1064505bc4ab27a4e4c5bbb6f47ba602e2e10021ed83'
+          assert md5.hexdigest() == 'c50548d45b6480701364dee0653b3eec'
+          PY
+      - name: Compare complete native model, both heads and every gradient
+        run: python -m unittest test.models.test_sleepgpt test.models.test_sleepgpt_example test.models.test_sleepgpt_native

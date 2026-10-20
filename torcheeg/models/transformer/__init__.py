@@ -31,3 +31,4 @@ from .tfm_tokenizer import TFMTokenizer, TFMEncoder, TFMClassifier
 from .lead import LEAD, LEADClassifier
 from .neurorvq import NeuroRVQ, NeuroRVQClassifier
 from .sleepfm import SleepFM, SleepFMStaging, SleepFMDiagnosis, SleepFMClassifier
+from .sleepgpt import SleepGPT, SleepGPTClassifier
