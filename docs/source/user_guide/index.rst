@@ -70,3 +70,4 @@ the same library workflow as a reusable assistant skill.
    reve
    codebrain
    codebrain_tokenizer
+   eegmamba

@@ -26,3 +26,4 @@ from .luna import LUNA, LUNAClassifier
 from .reve import REVE, REVEClassifier
 from .codebrain import CodeBrain, CodeBrainClassifier
 from .codebrain_tokenizer import CodeBrainTokenizer
+from .eegmamba import EEGMamba, EEGMambaClassifier

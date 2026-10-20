@@ -224,3 +224,26 @@ The fixture deliberately selects contrastive_mode='native' to test source
 reproduction; independent analytic tests establish the corrected default
 InfoNCE denominator. One-patch decoding and constant-target standardization
 fixes have separate regression tests because the native source fails there.
+
+### EEGMamba
+
+`eegmamba_reference.json` uses the complete 12-layer/64-state/50-head-dimension
+EEGMamba model from `wjq-learning/EEGMamba` revision
+`dbc83fa072744201e8897aeb9f65007b952ad323` (MIT), with Mamba2 and its published
+CPU SSD listing from `state-spaces/mamba` revision
+`8ffd905c91d207f5c0cc84fc2a2fb748655094f0` (Apache-2.0). Original model and
+block bodies are evaluated with CPU convolution, original RMSNorm reference
+functions and the unmodified `ssd_minimal_discrete` listing as backend
+substitutions. CUDA/Triton kernels are not executed by this fixture.
+
+No official checkpoint values are stored. For each state key, the first six
+SHA256 hex digits modulo 97 set an offset. Fill with
+`sin(arange(numel, float64)/17 + offset)*0.02`, then cast to float32 and reshape.
+Biases and mask encoding are zero; dt_bias is -3; D and one-dimensional norm
+weights are one. The SSD reference block length is eight. The input is
+`sin(arange(2400)/17)+cos(arange(2400)/31)` in float32, shaped `[2,2,3,200]`.
+Mask each example's first electrode/first patch and example zero's second
+electrode/last patch. Eval-mode features, reconstruction, input gradients and
+every parameter's gradient summary use loss `reconstruction.square().mean() +
+features[...,::3].mean()*0.1`. The separate float64 recurrence test checks the
+SSD output and all five input gradients across multiple block lengths.
