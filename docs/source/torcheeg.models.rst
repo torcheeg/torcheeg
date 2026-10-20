@@ -92,6 +92,8 @@ Transformer
    CodeBrain
    CodeBrainClassifier
    CodeBrainTokenizer
+   EEGMamba
+   EEGMambaClassifier
    BENDR
    BENDREncoder
    BENDRContextualizer
