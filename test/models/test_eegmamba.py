@@ -106,7 +106,11 @@ class TestEEGMamba(unittest.TestCase):
         self.assertEqual(x.grad[1].count_nonzero().item(), 0)
         self.assertEqual(x.grad[mask].count_nonzero().item(), 0)
         with torch.no_grad():
-            torch.testing.assert_close(model(x[:1]), model(x)[:1], rtol=1e-5, atol=2e-6)
+            # Keep the same batch/GEMM layout when testing sample isolation.
+            # Different batch sizes may select different float32 CPU kernels.
+            other_sample = x.detach().clone()
+            other_sample[1] = other_sample[1]*13+7
+            torch.testing.assert_close(model(other_sample)[:1], model(x)[:1], rtol=0, atol=0)
         self.assertEqual(model(x[:1, :1, :1]).shape, (1, 1, 1, 200))
 
     def test_training_dropout_optimizer_and_round_trip(self):
