@@ -22,3 +22,4 @@ from .cbramod_heads import CBraModClassifier, CBraModRegression, CBraModEmbeddin
 
 from .biot import BIOT, BIOTClassifier
 from .bendr import BENDR, BENDREncoder, BENDRContextualizer, BENDRClassifier
+from .luna import LUNA, LUNAClassifier

@@ -143,3 +143,27 @@ between supported Torch versions; its native probability.15 and stochastic
 behavior are separately tested. Full 512-wide/eight-layer actual released encoder24 and
 context76 tensors are compared independently against DN3, not represented
 as pretrained by these small synthetic fixtures. BSD notice LICENSES/BENDR.txt.
+
+## LUNA
+
+`luna_reference.json` uses unchanged BioFoundation source at revision
+d4484feccf62eeec666380cb55b5d5b1d517cd71, with timm1.0.10 and
+rotary-embedding-torch0.8.9. Source hashes in fixture. Torch2.6 CPU/float64/2threads,
+querywidth16/queries2/depth2/heads2/patch40, deterministic reference_state
+except native rotary frequencies/frozen temperature. Input1x3x80 is
+sin(arange/17)+cos(arange/31), coordinates[[.1,.2,.3],[.5,0,.9],[.2,.8,.4]],
+channel names FP1/C3/PZ. Loss mean((reconstruction*sin(arange/13))**2) plus
+.03*mean(attention**2). Eval/train/zero/masked cases. Store all outputs and
+attention plus first8/sum/norm EEG, coordinate and every parameter gradient,
+including None for native frozen/unused parameters. Module dropout uses
+controlled arange%10>=p*10 divided by1-p, MHA probability dropout is disabled
+in training reference, position noise is suppressed. Actual stochastic
+behavior is tested separately. Masking is after shared GroupNorm as native;
+masked raw input gradients need not be zero through visible-token statistics.
+
+Reference uses one example to avoid the author's known heterogeneous-batch
+repeat error; separate tests require batching to match individual examples
+and zero cross-example coordinate gradients. Full224/254/464 official
+canonical states are separately compared against the author model, including
+every gradient. No official weight values or adapted weights are in this
+fixture; states are independently generated mathematical test values.

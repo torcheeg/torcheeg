@@ -85,6 +85,8 @@ Transformer
    EEGPTResample
    EEGPTInputAdapter
    EEGPTAdaptedModel
+   LUNA
+   LUNAClassifier
    BENDR
    BENDREncoder
    BENDRContextualizer

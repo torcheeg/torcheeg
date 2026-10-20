@@ -66,3 +66,4 @@ the same library workflow as a reusable assistant skill.
    adsz
    biot
    bendr
+   luna
