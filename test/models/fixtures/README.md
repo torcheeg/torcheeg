@@ -167,3 +167,19 @@ and zero cross-example coordinate gradients. Full224/254/464 official
 canonical states are separately compared against the author model, including
 every gradient. No official weight values or adapted weights are in this
 fixture; states are independently generated mathematical test values.
+
+`reve_reference.json` uses the official brain-bzh/reve-base modeling_reve.py
+at dc2a075c287bb2f6c04ee5875bd79535a0f7dba6 and Torch2.6 CPU, two threads.
+Only reviewed class/function bodies are loaded; the Transformers base class
+is replaced by a no-op nn.Module adapter (state is subsequently copied),
+and no import or remote loader executes. Complete model/attention/positional
+equations remain unchanged. Width16/depth2/heads2/headwidth8/frequencies2,
+patch200/overlap20, MLP2.66/GEGLU, manual seed31. EEG is linspace(-1,1) shaped
+[2,3,420], coordinates linspace(-.1,.1) shaped[2,3,3]. Float32 state, native
+features and pretrained-query pooling plus EEG, coordinate and every
+parameter gradient are stored; loss is mean(pooled**2). All model weights
+are randomly generated test values, with no official checkpoint data.
+Full canonical69M/390M states are separately checked against the author
+implementation, including all140tensors and every gradient per variant.
+The training repository has MIT-licensed source; official weights separately
+use REVE Responsible Use License v1.0 and are not part of this fixture.

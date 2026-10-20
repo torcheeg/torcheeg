@@ -87,6 +87,8 @@ Transformer
    EEGPTAdaptedModel
    LUNA
    LUNAClassifier
+   REVE
+   REVEClassifier
    BENDR
    BENDREncoder
    BENDRContextualizer
