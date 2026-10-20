@@ -1,0 +1,62 @@
+name: SleepFM external backends
+
+on:
+  pull_request:
+    paths:
+      - 'torcheeg/models/transformer/sleepfm.py'
+      - 'test/models/test_sleepfm*.py'
+      - 'examples/examples_eegmat_sleepfm.py'
+      - 'examples/examples_sleepedfx_sleepfm_staging.py'
+      - 'examples/examples_sleepfm_diagnosis.py'
+      - 'docs/source/user_guide/sleepfm.rst'
+      - '.github/workflows/sleepfm-backend.yml'
+      - 'setup.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  native:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      OMP_NUM_THREADS: '2'
+      MPLBACKEND: Agg
+      TORCHEEG_SLEEPFM_BACKEND_ROOT: ${{ github.workspace }}/external/sleepfm
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: zou-group/sleepfm-clinical
+          ref: 2bcbae04c3592f61352addb7ac3d4193f0a3ca25
+          path: external/sleepfm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: setup.py
+      - name: Install CPU runtime and integration dependencies
+        run: |
+          python -m pip install torch==2.6.0 torchvision==0.21.0 --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install torch-scatter==2.1.2 torch-sparse==0.6.18 --only-binary=:all: --find-links https://data.pyg.org/whl/torch-2.6.0+cpu.html
+          python -m pip install -e '.[foundation,model,dataset]' 'loguru>=0.7,<1' matplotlib
+      - name: Verify separately obtained official checkpoints and license
+        run: |
+          python - <<'PY'
+          import hashlib
+          import os
+          from pathlib import Path
+          root = Path(os.environ['TORCHEEG_SLEEPFM_BACKEND_ROOT'])
+          expected = {
+              'model_base/best.pt': 'ffc9fc10233ebc4d0aae71abce87070db51b8bac6e4b16a5c1b4401a5f73f799',
+              'model_sleep_staging/best.pth': 'a742faf4dd9a1f5ebcccc464894081480217e683974750eb3f10e6c4d1b0fde9',
+              'model_diagnosis/best.pth': '78e4744c5b23e98dbfd779dd523e2f666cdb646db40c6cc56d21060aae3706df',
+          }
+          for name, digest in expected.items():
+              path = root / 'sleepfm/checkpoints' / name
+              assert hashlib.sha256(path.read_bytes()).hexdigest() == digest, name
+          assert 'Attribution-NonCommercial 4.0' in (root / 'LICENSE').read_text()
+          PY
+      - name: Validate all three complete native models and gradients
+        run: python -m unittest test.models.test_sleepfm_native

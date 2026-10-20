@@ -101,6 +101,10 @@ Transformer
    LEADClassifier
    NeuroRVQ
    NeuroRVQClassifier
+   SleepFM
+   SleepFMClassifier
+   SleepFMStaging
+   SleepFMDiagnosis
    BENDR
    BENDREncoder
    BENDRContextualizer
