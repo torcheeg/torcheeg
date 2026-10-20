@@ -65,3 +65,4 @@ the same library workflow as a reusable assistant skill.
    adftd_ps
    adsz
    biot
+   bendr

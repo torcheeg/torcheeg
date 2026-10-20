@@ -85,6 +85,10 @@ Transformer
    EEGPTResample
    EEGPTInputAdapter
    EEGPTAdaptedModel
+   BENDR
+   BENDREncoder
+   BENDRContextualizer
+   BENDRClassifier
    BIOT
    BIOTClassifier
    CBraMod
