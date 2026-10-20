@@ -32,3 +32,5 @@ repository features are not part of a released package.
 Use subject- or trial-based partitions when the protocol requires isolated groups.
 Fit data-dependent preprocessing on training data only. A synthetic smoke test
 does not establish EEG accuracy or reproduction of a published benchmark.
+
+- [NeuroRVQ external backend](https://torcheeg.readthedocs.io/en/latest/user_guide/neurorvq.html): Complete separately supplied author model, strict checkpoint loading, electrode metadata and real EEGMat workflow.

@@ -73,3 +73,4 @@ the same library workflow as a reusable assistant skill.
    eegmamba
    tfm
    lead
+   neurorvq
