@@ -271,6 +271,10 @@ term. All outputs, full waveform/spectrum gradients, every parameter's
 first8/sum/norm gradient summary and complete EMA state are retained.
 
 Token-encoder IDs are arange(42).reshape(2,3,7)*7%24, including mask row23.
+The seven source-generated float32 positional rows are stored as
+`position_prefix` and copied exactly into the float64 test state. This avoids
+changing the reference inputs when CPU sine implementations differ; the
+float64 gradient tolerances remain unchanged.
 Eval/train/token-prediction cases use output.square().mean() and retain
 complete outputs/every gradient summary. Portable dropout uses
 arange(numel)%10 >= p*10, then divides by1-p. Original full8192-codebook

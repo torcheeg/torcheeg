@@ -115,7 +115,11 @@ class TestTFMTokenizer(unittest.TestCase):
 
     def test_native_encoder_logits_token_predictions_and_every_gradient(self):
         model = SmallEncoder().double()
-        model.load_state_dict(reference_state(model.state_dict()))
+        state = reference_state(model.state_dict())
+        # Native positions originate in float32; freeze the seven actual
+        # fixture inputs rather than compare different CPU sine tables.
+        state['temporal_pos_embed.pe'][:, :7].copy_(torch.tensor(self.fixture['position_prefix'], dtype=torch.float64))
+        model.load_state_dict(state)
         self.assertEqual(len(model.state_dict()), 59)
         ids = torch.arange(42).reshape(2, 3, 7)*7 % 24
         for mode in ['eval', 'train', 'masked_prediction']:
