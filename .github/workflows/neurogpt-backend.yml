@@ -1,0 +1,61 @@
+name: NeuroGPT external backend
+
+on:
+  pull_request:
+    paths:
+      - 'torcheeg/models/transformer/neurogpt.py'
+      - 'test/models/test_neurogpt*.py'
+      - 'examples/examples_bciciv2a_neurogpt.py'
+      - 'docs/source/user_guide/neurogpt.rst'
+      - '.github/workflows/neurogpt-backend.yml'
+      - 'setup.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  native:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      OMP_NUM_THREADS: '2'
+      MPLBACKEND: Agg
+      TORCHEEG_NEUROGPT_BACKEND_ROOT: ${{ github.workspace }}/external/neurogpt
+      TORCHEEG_NEUROGPT_CHECKPOINT: ${{ github.workspace }}/external/pytorch_model.bin
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: wenhui0206/NeuroGPT
+          ref: 230571d45ca4369b82f33ab42fc00863c2f95598
+          path: external/neurogpt
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: setup.py
+      - name: Install CPU runtime and explicit author dependencies
+        run: |
+          python -m pip install torch==2.6.0 torchvision==0.21.0 --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install torch-scatter==2.1.2 torch-sparse==0.6.18 --only-binary=:all: --find-links https://data.pyg.org/whl/torch-2.6.0+cpu.html
+          python -m pip install -e '.[foundation,model,dataset]' 'transformers==4.57.6' 'torchinfo==1.8.0' matplotlib
+      - name: Obtain and verify complete separately supplied weights and source license
+        run: |
+          curl --fail --location --retry 3 'https://huggingface.co/wenhuic/Neuro-GPT/resolve/2e0b940580db95e6237227c27c13b2319909d0fc/pretrained_model/pytorch_model.bin?download=true' --output "$TORCHEEG_NEUROGPT_CHECKPOINT"
+          python - <<'PY'
+          import hashlib
+          import os
+          from pathlib import Path
+          path = Path(os.environ['TORCHEEG_NEUROGPT_CHECKPOINT'])
+          assert path.stat().st_size == 318189905
+          digest = hashlib.sha256()
+          with path.open('rb') as stream:
+              for block in iter(lambda: stream.read(1024 * 1024), b''):
+                  digest.update(block)
+          assert digest.hexdigest() == '2ea7d931a812baf107cdfb41bf0f7b5568043ae2758e30b4b1b0e9fae3ff3f1a'
+          license_text = (Path(os.environ['TORCHEEG_NEUROGPT_BACKEND_ROOT']) / 'LICENSE').read_text()
+          assert 'GNU GENERAL PUBLIC LICENSE' in license_text and 'Version 3' in license_text
+          PY
+      - name: Validate complete original encoder, GPT, reconstruction and every gradient
+        run: python -m unittest test.models.test_neurogpt test.models.test_neurogpt_example test.models.test_neurogpt_native

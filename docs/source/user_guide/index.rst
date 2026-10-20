@@ -78,3 +78,4 @@ the same library workflow as a reusable assistant skill.
    sleepgpt
    unidmfm
    bciciv2a
+   neurogpt

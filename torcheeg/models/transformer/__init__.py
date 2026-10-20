@@ -33,3 +33,4 @@ from .neurorvq import NeuroRVQ, NeuroRVQClassifier
 from .sleepfm import SleepFM, SleepFMStaging, SleepFMDiagnosis, SleepFMClassifier
 from .sleepgpt import SleepGPT, SleepGPTClassifier
 from .unidmfm import UniDMFM, UniDMFMClassifier
+from .neurogpt import NeuroGPT, NeuroGPTClassifier

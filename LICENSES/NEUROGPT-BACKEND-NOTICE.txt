@@ -1,0 +1,29 @@
+NeuroGPT explicit external backend integration
+
+Author source: https://github.com/wenhui0206/NeuroGPT
+Pinned revision: 230571d45ca4369b82f33ab42fc00863c2f95598
+Paper: Neuro-GPT: Towards A Foundation Model for EEG
+https://arxiv.org/abs/2311.03764
+Official author weight release: https://huggingface.co/wenhuic/Neuro-GPT
+Pinned weight revision: 2e0b940580db95e6237227c27c13b2319909d0fc
+File: pretrained_model/pytorch_model.bin (318,189,905 bytes)
+SHA256: 2ea7d931a812baf107cdfb41bf0f7b5568043ae2758e30b4b1b0e9fae3ff3f1a
+
+The author repository has a GNU General Public License version 3 LICENSE;
+the official Hugging Face model card also specifies GPL-3.0. Obtain and use
+those materials separately under their original terms and attribution.
+TorchEEG's MIT license does not replace those original terms.
+
+TorchEEG distributes independent interfaces, validation, physical metadata
+handling and a new task classification head. It does not distribute author
+implementation code or pretrained weights. Library imports neither import
+nor download author source. The caller supplies an explicitly constructed
+trusted complete nn.Module backend. Standalone examples explicitly import
+separately obtained local source; that action is separate from restricted
+tensor-only checkpoint loading. The optional native CI obtains the pinned
+source, verifies its license and validates the complete weight SHA256.
+No author source or weights are included in wheels or source distributions.
+
+The author source identifies code derived from learning-from-brains and
+EEG-Conformer/Braindecode, including original BSD-3 notices in encoder files.
+Retain the original source tree and its notices when obtaining that backend.
