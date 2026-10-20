@@ -1,0 +1,24 @@
+LEAD optional external backend
+=============================
+
+No LEAD author implementation or official checkpoint is bundled with this
+TorchEEG adapter. The caller supplies a trusted, separately obtained local
+backend and checkpoint. The adapter code is part of TorchEEG; it does not
+change the terms applicable to those external materials.
+
+Author source: https://github.com/DL4mHealth/LEAD
+Revision: c7e21e112a3965b09604b2098e93095880a940dd
+Source license: Creative Commons Attribution-NonCommercial-ShareAlike 4.0
+International, Copyright (c) 2026 Deep Learning for Mobile Health Lab.
+
+Official checkpoint: https://huggingface.co/YiheWang/LEAD
+Revision: 8ac42d5a595a3c080c36a6f84932ac1ba10ee857
+The official model card specifies CC-BY-NC-SA-4.0.
+License terms: https://creativecommons.org/licenses/by-nc-sa/4.0/
+P-Base checkpoint SHA256:
+3232e93b5a67a7f3141b16b5ae70b09ae94e65163ccff79755119fbfa598c8db
+
+Citation: Yihe Wang, Nan Huang, Nadia Mammone, Marco Cecchi, Xiang Zhang.
+LEAD: An EEG Foundation Model for Alzheimer's Disease Detection. TMLR, 2026.
+https://openreview.net/forum?id=AigNTyxcvH
+https://arxiv.org/abs/2502.01678

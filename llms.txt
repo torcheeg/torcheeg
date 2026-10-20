@@ -12,6 +12,7 @@ repository features are not part of a released package.
 - [User guide](https://torcheeg.readthedocs.io/en/latest/user_guide/index.html): Data protocols, pretrained models and complete training workflows.
 - [EEGMamba](https://torcheeg.readthedocs.io/en/latest/user_guide/eegmamba.html): Complete pretrained encoder, masked reconstruction and EEGMat workflow.
 - [TFM tokenizer and encoder](https://torcheeg.readthedocs.io/en/latest/user_guide/tfm.html): Complete paired CHB-MIT checkpoints, reconstruction, EMA training and EEGMat probe.
+- [LEAD external backend](https://torcheeg.readthedocs.io/en/latest/user_guide/lead.html): Explicit local author backend, complete checkpoint, geometry persistence and EEGMat probe.
 - [Datasets](https://torcheeg.readthedocs.io/en/latest/torcheeg.datasets.html): Dataset inputs, metadata and preprocessing.
 - [Transforms](https://torcheeg.readthedocs.io/en/latest/torcheeg.transforms.html): Signal and label transforms.
 - [Partitions](https://torcheeg.readthedocs.io/en/latest/torcheeg.model_selection.html): Subject, trial and sample splits.
