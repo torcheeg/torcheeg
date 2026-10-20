@@ -101,6 +101,8 @@ Transformer
    LEADClassifier
    NeuroRVQ
    NeuroRVQClassifier
+   SleepGPT
+   SleepGPTClassifier
    SleepFM
    SleepFMClassifier
    SleepFMStaging

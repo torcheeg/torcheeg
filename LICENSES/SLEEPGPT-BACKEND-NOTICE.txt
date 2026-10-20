@@ -1,0 +1,25 @@
+SleepGPT explicit external backend integration
+
+Author source: https://github.com/LordXX505/SleepGPT
+Pinned revision: fcbb2c7a6489b5742ab77d66483661e45a4aadf2
+Title: SleepGPT: A Unified Time-Frequency Foundation Model for Sleep Decoding
+Released checkpoint: https://doi.org/10.6084/m9.figshare.30626870.v1
+Figshare author: weixuan huang
+File ID: 59576246
+SHA256: a30c53422eaea0bdcd6a1064505bc4ab27a4e4c5bbb6f47ba602e2e10021ed83
+MD5: c50548d45b6480701364dee0653b3eec
+
+The pinned author source has no stated license. The separate Figshare weight
+release specifies Creative Commons Attribution 4.0 International (CC BY 4.0).
+That weight license does not establish permission to redistribute the source.
+Obtain and use these materials separately under their applicable terms.
+TorchEEG's MIT license does not replace the original authors' permissions.
+
+TorchEEG distributes independent interfaces, validation, physical metadata
+handling and new-task classification code. It distributes neither author
+implementation code nor pretrained weights. The library interface neither
+imports nor downloads author source. Callers explicitly supply a trusted
+complete nn.Module backend. The standalone example explicitly imports local
+author code, separately from restricted tensor-only checkpoint loading.
+The optional native CI obtains the pinned source and validates the separate
+weight file hash; it does not redistribute those materials in package files.

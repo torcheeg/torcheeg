@@ -36,3 +36,5 @@ does not establish EEG accuracy or reproduction of a published benchmark.
 - [NeuroRVQ external backend](https://torcheeg.readthedocs.io/en/latest/user_guide/neurorvq.html): Complete separately supplied author model, strict checkpoint loading, electrode metadata and real EEGMat workflow.
 
 - [SleepFM external backends](https://torcheeg.readthedocs.io/en/latest/user_guide/sleepfm.html): Complete upstream, staging and diagnosis models supplied separately, explicit physical metadata, strict checkpoints and standalone workflows.
+
+- [SleepGPT external backend](https://torcheeg.readthedocs.io/en/latest/user_guide/sleepgpt.html): Complete dual-domain author model, both native reconstruction heads, strict checkpoints and real EEGMat transfer workflow.
