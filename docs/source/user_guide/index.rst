@@ -67,3 +67,4 @@ the same library workflow as a reusable assistant skill.
    biot
    bendr
    luna
+   reve
