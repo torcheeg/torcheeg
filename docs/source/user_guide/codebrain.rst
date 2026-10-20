@@ -43,7 +43,7 @@ export. A mismatched or missing state raises an error instead of silently
 using randomly initialized parameters.
 
 Signals, features and masks
---------------------------
+---------------------------
 
 Supply floating ``[batch,electrodes,patches,200]`` tensors, with one-second
 nonoverlapping patches at 200 Hz. Channel order matters to the positional
