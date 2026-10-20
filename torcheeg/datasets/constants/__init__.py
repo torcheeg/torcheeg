@@ -6,3 +6,4 @@ from .motor_imagery.physionet_mi import *
 from .clinical.ad_auditory import *
 from .clinical.adftd_rs import *
 from .clinical.adftd_ps import *
+from .clinical.adsz import *
