@@ -74,7 +74,7 @@ published SSD listing and original model bodies. They do not establish
 CUDA/Triton execution, GPU throughput or bitwise equality to fused kernels.
 
 Masked reconstruction and downstream training
---------------------------------------------
+---------------------------------------------
 
 ``mask`` is boolean ``[batch,electrodes,patches]`` on the input device.
 True patches are replaced with the checkpoint's frozen mask vector before
@@ -119,7 +119,9 @@ The complete official model was checked on Torch 2.6 CPU with
 ``torch.compile(backend='aot_eager', fullgraph=True)``. Outputs, EEG
 gradients and all parameter gradients agree with eager execution. That
 fixed-shape eval check is a compatibility check, not an optimized-backend
-performance measurement.
+performance measurement. A separate CPU bfloat16 autocast training check
+produced finite outputs, loss, input gradients and all parameter gradients
+with the complete official model.
 
 See :doc:`../auto_examples/examples_eegmat_eegmamba` for an independent
 real EEGMat workflow. It holds out the last complete subject and trains
