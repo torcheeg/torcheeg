@@ -183,3 +183,20 @@ Full canonical69M/390M states are separately checked against the author
 implementation, including all140tensors and every gradient per variant.
 The training repository has MIT-licensed source; official weights separately
 use REVE Responsible Use License v1.0 and are not part of this fixture.
+
+`codebrain_reference.json` uses unchanged author SGConv/SSSM class/function
+bodies at22d350caf68246d2fda4f630ef837420db3fb130, with exactly one device-only
+change: attention-mask `.cuda()` becomes `.to(x.device)` for CPU reference.
+Source hashes are included. Torch2.6 CPU/float32/two threads, opt_einsum3.4.0,
+seed41; residual width8/depth2/kernel max16/vocabularies7and9. EEG linspace(-1,1)
+shaped[2,3,2,200]. Cases eval/masked contain complete outputs, EEG gradients
+and every parameter gradient's first8/sum/norm (None where unused/frozen).
+Eval loss mean((output*sin(arange/13))**2); masked loss mean(time_logits**2)
+plus mean(frequency_logits**2). Both native kernel buffers persist between
+cases. Generated initial state is a base64-encoded compressed NumPy archive,
+loaded with allow_pickle=False; there are no official checkpoint values.
+Train-mode seed59 parity and all complete official269tensors/gradients are
+verified separately against source; CI tests real dropout/optimizer behavior
+without pinning version-dependent random masks. Current native channel-wise
+Dropout2d behavior is represented by Dropout1d. Numerical contraction and
+complex multiplication order are preserved without opt_einsum at runtime.
