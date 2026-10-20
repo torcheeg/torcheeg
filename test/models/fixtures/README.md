@@ -137,7 +137,9 @@ component key. Loss mean((output*sin(arange/13))**2). Eval/train/zero/explicit
 time+channel masks; save all outputs and input/every parameter gradient
 summaries, including None for native unused parameters. Training dropout
 uses controlled scalar/channel masks arange%10>=p*10 divided by1-p for
-version-independent placement/scaling checks; native stochastic behavior is
-separately tested. Full 512-wide/eight-layer actual released encoder24 and
+version-independent placement/scaling checks. Attention-probability dropout
+is set to zero in the training reference because fused SDPA RNG differs
+between supported Torch versions; its native probability.15 and stochastic
+behavior are separately tested. Full 512-wide/eight-layer actual released encoder24 and
 context76 tensors are compared independently against DN3, not represented
 as pretrained by these small synthetic fixtures. BSD notice LICENSES/BENDR.txt.

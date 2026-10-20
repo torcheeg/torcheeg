@@ -105,7 +105,9 @@ native names and operations without private transformer helpers.
 
 Independent regression fixtures check evaluation, controlled-dropout training,
 zero signals, masking, outputs and every input/parameter gradient against
-unchanged DN3 class bodies. Native random dropout is checked separately.
+unchanged DN3 class bodies. The portable training reference disables attention-probability dropout
+while controlling scalar/channel masks; native probability 0.15 and random
+behavior are checked separately.
 Full actual 512-wide/eight-layer author weights also match that source's
 complete sequence and every gradient; output/input-gradient maximum errors
 were zero on PyTorch2.6 CPU. Component tests, real-data execution, GitHub CI,

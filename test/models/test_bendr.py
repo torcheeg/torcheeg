@@ -46,6 +46,12 @@ class TestBENDR(unittest.TestCase):
             with self.subTest(mode=case['mode']):
                 model = TinyBENDR().double()
                 model.train(case['mode'] == 'train')
+                if case['mode'] == 'train':
+                    # SDPA uses version-specific fused attention dropout RNG.
+                    # Control that probability separately from module dropout.
+                    for module in model.contextualizer.modules():
+                        if isinstance(module, nn.MultiheadAttention):
+                            module.dropout = 0.
                 with torch.no_grad():
                     for prefix, module in [('encoder', model.encoder), ('contextualizer', model.contextualizer)]:
                         for name, value in module.state_dict().items():
@@ -115,6 +121,8 @@ class TestBENDR(unittest.TestCase):
 
     def test_random_training_dropout_and_layer_drop_eval(self):
         model = TinyBENDR().train()
+        self.assertTrue(all(module.dropout == .15 for module in model.contextualizer.modules()
+                            if isinstance(module, nn.MultiheadAttention)))
         x = torch.randn(2, 3, 385)
         torch.manual_seed(17); y = model(x)
         torch.manual_seed(17); torch.testing.assert_close(y, model(x), rtol=0, atol=0)
