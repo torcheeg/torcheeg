@@ -1,5 +1,5 @@
 NeuroRVQ with an external backend
-================================
+=================================
 
 ``NeuroRVQ`` wraps a complete explicitly supplied author backend.
 ``NeuroRVQClassifier`` adds a new task head for either frozen features or
