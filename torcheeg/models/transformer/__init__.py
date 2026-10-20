@@ -25,3 +25,4 @@ from .bendr import BENDR, BENDREncoder, BENDRContextualizer, BENDRClassifier
 from .luna import LUNA, LUNAClassifier
 from .reve import REVE, REVEClassifier
 from .codebrain import CodeBrain, CodeBrainClassifier
+from .codebrain_tokenizer import CodeBrainTokenizer

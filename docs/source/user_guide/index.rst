@@ -69,3 +69,4 @@ the same library workflow as a reusable assistant skill.
    luna
    reve
    codebrain
+   codebrain_tokenizer
