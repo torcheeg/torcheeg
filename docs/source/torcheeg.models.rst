@@ -101,6 +101,8 @@ Transformer
    LEADClassifier
    NeuroRVQ
    NeuroRVQClassifier
+   UniDMFM
+   UniDMFMClassifier
    SleepGPT
    SleepGPTClassifier
    SleepFM

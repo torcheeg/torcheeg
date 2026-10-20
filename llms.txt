@@ -38,3 +38,5 @@ does not establish EEG accuracy or reproduction of a published benchmark.
 - [SleepFM external backends](https://torcheeg.readthedocs.io/en/latest/user_guide/sleepfm.html): Complete upstream, staging and diagnosis models supplied separately, explicit physical metadata, strict checkpoints and standalone workflows.
 
 - [SleepGPT external backend](https://torcheeg.readthedocs.io/en/latest/user_guide/sleepgpt.html): Complete dual-domain author model, both native reconstruction heads, strict checkpoints and real EEGMat transfer workflow.
+
+- [Uni-DMFM external backend](https://torcheeg.readthedocs.io/en/latest/user_guide/unidmfm.html): Complete separately supplied model, all three native pretraining heads, strict complete checkpoints and real EEGMat mean-token transfer workflow.

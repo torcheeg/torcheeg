@@ -1,0 +1,91 @@
+name: Uni-DMFM external backend
+
+on:
+  pull_request:
+    paths:
+      - 'torcheeg/models/transformer/unidmfm.py'
+      - 'test/models/test_unidmfm*.py'
+      - 'examples/examples_eegmat_unidmfm.py'
+      - 'docs/source/user_guide/unidmfm.rst'
+      - '.github/workflows/unidmfm-backend.yml'
+      - 'setup.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  native:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      OMP_NUM_THREADS: '2'
+      MPLBACKEND: Agg
+      TORCHEEG_UNIDMFM_BACKEND_ROOT: ${{ github.workspace }}/external/unidmfm
+      TORCHEEG_UNIDMFM_CHECKPOINT: ${{ github.workspace }}/external/pretrained_weights.pth
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: ichenws/Uni-DMFM
+          ref: 522f9fc09b6d5f3d1051e6941d1bff548d8f10de
+          path: external/unidmfm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: setup.py
+      - name: Install CPU runtime and explicit author dependencies
+        run: |
+          python -m pip install torch==2.6.0 torchvision==0.21.0 --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install torch-scatter==2.1.2 torch-sparse==0.6.18 --only-binary=:all: --find-links https://data.pyg.org/whl/torch-2.6.0+cpu.html
+          python -m pip install -e '.[foundation,model,dataset]' timm matplotlib
+      - name: Obtain and verify the complete separately released checkpoint
+        run: |
+          python - <<'PY'
+          import hashlib
+          from html.parser import HTMLParser
+          import os
+          from pathlib import Path
+          import subprocess
+          from urllib.parse import urlencode
+          checkpoint = Path(os.environ['TORCHEEG_UNIDMFM_CHECKPOINT'])
+          file_id = '1Dlk6X3YYmJfOjNKu7xaehzLFAIgnATIM'
+          initial = checkpoint.with_suffix('.download')
+          subprocess.run(['curl','--fail','--location','--retry','3',
+                          'https://drive.google.com/uc?export=download&id=' + file_id,
+                          '--output',str(initial)],check=True)
+          if initial.stat().st_size > 1024 * 1024:
+              initial.replace(checkpoint)
+          else:
+              class DownloadForm(HTMLParser):
+                  action = None
+                  fields = None
+                  active = False
+                  def handle_starttag(self, tag, attrs):
+                      attrs = dict(attrs)
+                      if tag == 'form' and attrs.get('id') == 'download-form':
+                          self.active = True
+                          self.action, self.fields = attrs['action'], {}
+                      if tag == 'input' and self.active and attrs.get('type') == 'hidden':
+                          self.fields[attrs['name']] = attrs['value']
+                  def handle_endtag(self, tag):
+                      if tag == 'form':
+                          self.active = False
+              form = DownloadForm()
+              form.feed(initial.read_text())
+              assert form.action == 'https://drive.usercontent.google.com/download'
+              assert form.fields['id'] == file_id and form.fields['export'] == 'download'
+              assert set(form.fields) <= {'id','export','confirm','uuid'}
+              subprocess.run(['curl','--fail','--location','--retry','3',
+                              form.action + '?' + urlencode(form.fields),
+                              '--output',str(checkpoint)],check=True)
+          assert checkpoint.stat().st_size == 353402773
+          digest = hashlib.sha256()
+          with checkpoint.open('rb') as stream:
+              for block in iter(lambda: stream.read(1024 * 1024), b''):
+                  digest.update(block)
+          assert digest.hexdigest() == '92fc5f59cd3ffc1c25898f1a573db8d8194935a163bbcb9c68d45f86ba81d5fe'
+          PY
+      - name: Compare complete native features, all heads and every gradient
+        run: python -m unittest test.models.test_unidmfm test.models.test_unidmfm_example test.models.test_unidmfm_native

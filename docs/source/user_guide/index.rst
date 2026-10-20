@@ -76,3 +76,4 @@ the same library workflow as a reusable assistant skill.
    neurorvq
    sleepfm
    sleepgpt
+   unidmfm
