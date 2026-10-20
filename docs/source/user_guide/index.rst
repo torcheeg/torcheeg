@@ -77,3 +77,4 @@ the same library workflow as a reusable assistant skill.
    sleepfm
    sleepgpt
    unidmfm
+   bciciv2a

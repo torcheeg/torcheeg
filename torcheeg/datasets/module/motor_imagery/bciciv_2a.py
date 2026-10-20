@@ -1,6 +1,6 @@
 import os
 import logging
-from typing import Any, Callable, Dict, Tuple, Union
+from typing import Callable, Dict, Tuple, Union
 import numpy as np
 import scipy.io as scio
 
@@ -18,7 +18,7 @@ class BCICIV2aDataset(BaseDataset):
     - Year: 2012
     - Download URL: http://bnci-horizon-2020.eu/database/data-sets
     - Reference: Tangermann M, Müller K R, Aertsen A, et al. Review of the BCI competition IV[J]. Frontiers in neuroscience, 2012: 55.
-    - Signals: Electroencephalogram (22 channels at 250Hz) and electrocardiogram (3 channels at 250Hz) of 9 subjects. Two sessions on different days were recorded for each subject. Each session is comprised of 6 runs separated by short breaks. One run consists of 48 trials (12 for each of the four possible classes), yielding a total of 288 trials per session. For more detail, please refer to https://www.bbci.de/competition/iv/desc_2a.pdf
+    - Signals: Electroencephalogram (22 channels at 250Hz) and electrooculogram (3 channels at 250Hz) of 9 subjects. Two sessions on different days were recorded for each subject. Each session is comprised of 6 runs separated by short breaks. One run consists of 48 trials (12 for each of the four possible classes), yielding a total of 288 trials per session. For more detail, please refer to https://www.bbci.de/competition/iv/desc_2a.pdf
     - Category: The imagination of movement of the left hand (class 1), right hand (class 2), both feet (class 3), and tongue (class 4).
 
     In order to use this dataset, the download folder :obj:`BCICIV_2a_mat` is required, containing the following files:
@@ -56,7 +56,7 @@ class BCICIV2aDataset(BaseDataset):
         offset (int): The number of data points to be discarded at the beginning of each trial. (default: :obj:`0`)
         chunk_size (int): Number of data points included in each EEG chunk as training or test samples. If set to -1, the EEG signal of a trial is used as a sample of a chunk. (default: :obj:`7 * 250`)
         overlap (int): The number of overlapping data points between different chunks when dividing EEG chunks. (default: :obj:`0`)
-        num_channel (int): Number of channels used, of which the first 14 channels are EEG signals. (default: :obj:`22`)
+        num_channel (int): Number of channels used, of which the first 22 channels are EEG signals. (default: :obj:`22`)
         skip_trial_with_artifacts (bool): Whether to skip trials with artifacts. (default: :obj:`False`)
         online_transform (Callable, optional): The transformation of the EEG signals and baseline EEG signals. The input is a :obj:`np.ndarray`, and the ouput is used as the first and second value of each element in the dataset. (default: :obj:`None`)
         offline_transform (Callable, optional): The usage is the same as :obj:`online_transform`, but executed before generating IO intermediate results. (default: :obj:`None`)
@@ -131,9 +131,9 @@ class BCICIV2aDataset(BaseDataset):
 
         for run_id in range(9):
             X = np.random.randn(10000, 25)
-            trials = np.array([0, 300, 600])
+            trials = np.array([1, 301, 601])
 
-            y = np.array([0, 1, 0])
+            y = np.array([1, 2, 1])
             artifacts = np.array([0, 0, 0])
 
             inner_struct = np.zeros((1, 1), dtype=object)
@@ -178,9 +178,21 @@ class BCICIV2aDataset(BaseDataset):
             a_data2 = [a_data1[0, 0]]
             a_data3 = a_data2[0]
             a_X = a_data3[0]
-            a_trial = a_data3[1]
-            a_y = a_data3[2]
-            a_artifacts = a_data3[5]
+            # The provider stores MATLAB vectors as rows or columns. Flatten
+            # before scalar indexing, including under recent NumPy versions.
+            a_trial = np.asarray(a_data3[1]).reshape(-1)
+            a_y = np.asarray(a_data3[2]).reshape(-1)
+            a_artifacts = np.asarray(a_data3[5]).reshape(-1)
+            if len(a_y) != len(a_trial) or len(a_artifacts) != len(a_trial):
+                raise ValueError('Trial onsets, labels and artifact flags must have matching lengths.')
+            if (not np.isfinite(a_trial).all() or (a_trial < 1).any()
+                    or (a_trial != np.floor(a_trial)).any()
+                    or (a_trial > a_X.shape[0]).any()
+                    or (np.diff(a_trial.astype(np.int64)) <= 0).any()):
+                raise ValueError('MATLAB trial onsets must be increasing one-based sample indices.')
+            # Python slices and cached start/end metadata are zero-based;
+            # end positions are exclusive, including the next trial boundary.
+            a_trial = a_trial.astype(np.int64) - 1
 
             a_X = np.transpose(a_X)  # to channel number, data point number
             if before_trial:
