@@ -1,0 +1,25 @@
+Uni-DMFM explicit external backend integration
+
+Author source: https://github.com/ichenws/Uni-DMFM
+Pinned revision: 522f9fc09b6d5f3d1051e6941d1bff548d8f10de
+Title: Uni-DMFM: A Universal Dynamic Multi-Scale Foundation Model for EEG
+Representation Learning
+Authors: Wensheng Chen, Yurong Li, Jiyu Tan, Xiaojing Xue, Zhenhua Zhao
+Paper: https://doi.org/10.1016/j.patcog.2026.114221
+Official checkpoint link from the author README:
+https://drive.google.com/file/d/1Dlk6X3YYmJfOjNKu7xaehzLFAIgnATIM/view
+File: pretrained_weights.pth (353,402,773 bytes)
+SHA256: 92fc5f59cd3ffc1c25898f1a573db8d8194935a163bbcb9c68d45f86ba81d5fe
+
+The pinned source and linked weight release have no stated license.
+Obtain and use them separately under applicable original terms.
+TorchEEG's MIT license does not establish permission to redistribute them.
+
+TorchEEG distributes independent interfaces, validation and physical metadata
+handling, and a new mean-token classification head. It distributes neither
+author implementation code nor pretrained weights. The library interface
+does not import or download source. The caller explicitly supplies a trusted
+complete nn.Module backend. The standalone example imports local author
+source explicitly, separately from restricted tensor-only checkpoint loading.
+The optional native CI obtains pinned source and verifies the separate weight
+hash. These materials are not added to wheels or source distributions.
