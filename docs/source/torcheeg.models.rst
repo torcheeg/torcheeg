@@ -89,6 +89,8 @@ Transformer
    LUNAClassifier
    REVE
    REVEClassifier
+   CodeBrain
+   CodeBrainClassifier
    BENDR
    BENDREncoder
    BENDRContextualizer
