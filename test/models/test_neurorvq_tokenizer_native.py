@@ -175,7 +175,14 @@ class TestNeuroRVQTokenizerNative(unittest.TestCase):
             )
             for key, value in captured.items():
                 torch.testing.assert_close(actual[key], value, rtol=0, atol=0, msg=key)
-            expected_loss = sum(captured.values())
+            # Match the author's expression, not callback insertion order:
+            # the source computes signal loss before amplitude and phase.
+            expected_loss = (
+                captured['code_loss']
+                + captured['amplitude_loss']
+                + captured['phase_loss']
+                + captured['signal_loss']
+            )
             torch.testing.assert_close(actual['loss'], expected_loss, rtol=0, atol=0)
             actual['loss'].backward()
             expected_loss.backward()
