@@ -79,3 +79,4 @@ the same library workflow as a reusable assistant skill.
    unidmfm
    bciciv2a
    neurogpt
+   csbrain

@@ -1,0 +1,25 @@
+CSBrain explicit external backend integration
+
+Author source: https://github.com/yuchen2199/CSBrain
+Pinned revision: 185aee55b24d0410a830df8dd08d03f675616998
+Paper: CSBrain: A Cross-scale Spatiotemporal Brain Foundation Model for EEG Decoding
+https://arxiv.org/abs/2506.23075
+
+The pinned author source contains no LICENSE file. No license statement was
+found in the linked Google Drive weight release. Obtain source and weights
+separately under terms appropriate for your intended use. This notice does
+not grant rights to the external code or pretrained weights.
+
+Author README weight folder: 1-GsVVewRM0B93H08yts5m53yU2whxYvj
+Observed pth subfolder: 1je-1TtdHv6klcd-kTlPNkiA1wLrxybva
+Original CSBrain.pth file: 1Z67je1HQhClyG9XER_zJzFMAKSVNmnF0
+Size: 35722626 bytes
+SHA256: cfcdf9dcb069905e5e02e92fe3d59bd3574e779bf554cc02cb701994a79e99cc
+
+TorchEEG bundles no author implementation or checkpoint. Library imports do
+not import or download external code. The explicit example factory loads
+trusted pinned local source only. The adapter retains all 295 original state
+tensors, adds a parameter-free view of the original projection, and exposes
+both physically aligned masking and the separately named original trainer
+mask/target convention. See the CSBrain user guide for their different
+semantics and validation limits.

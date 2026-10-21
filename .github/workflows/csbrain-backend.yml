@@ -1,0 +1,91 @@
+name: CSBrain external backend
+
+on:
+  pull_request:
+    paths:
+      - 'torcheeg/models/transformer/csbrain.py'
+      - 'test/models/test_csbrain*.py'
+      - 'examples/examples_eegmat_csbrain.py'
+      - 'docs/source/user_guide/csbrain.rst'
+      - '.github/workflows/csbrain-backend.yml'
+      - 'setup.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  native:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      OMP_NUM_THREADS: '2'
+      MPLBACKEND: Agg
+      TORCHEEG_CSBRAIN_BACKEND_ROOT: ${{ github.workspace }}/external/csbrain
+      TORCHEEG_CSBRAIN_CHECKPOINT: ${{ github.workspace }}/external/CSBrain.pth
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: yuchen2199/CSBrain
+          ref: 185aee55b24d0410a830df8dd08d03f675616998
+          path: external/csbrain
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: setup.py
+      - name: Install CPU runtime and explicit author dependencies
+        run: |
+          python -m pip install torch==2.6.0 torchvision==0.21.0 --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install torch-scatter==2.1.2 torch-sparse==0.6.18 --only-binary=:all: --find-links https://data.pyg.org/whl/torch-2.6.0+cpu.html
+          python -m pip install -e '.[foundation,model,dataset]' threadpoolctl matplotlib
+      - name: Obtain and verify the complete separately released checkpoint
+        run: |
+          python - <<'PY'
+          import hashlib
+          from html.parser import HTMLParser
+          import os
+          from pathlib import Path
+          import subprocess
+          from urllib.parse import urlencode
+          checkpoint = Path(os.environ['TORCHEEG_CSBRAIN_CHECKPOINT'])
+          file_id = '1Z67je1HQhClyG9XER_zJzFMAKSVNmnF0'
+          initial = checkpoint.with_suffix('.download')
+          subprocess.run(['curl','--fail','--location','--retry','3',
+                          'https://drive.google.com/uc?export=download&id=' + file_id,
+                          '--output',str(initial)],check=True)
+          if initial.stat().st_size > 1024 * 1024:
+              initial.replace(checkpoint)
+          else:
+              class DownloadForm(HTMLParser):
+                  action = None
+                  fields = None
+                  active = False
+                  def handle_starttag(self, tag, attrs):
+                      attrs = dict(attrs)
+                      if tag == 'form' and attrs.get('id') == 'download-form':
+                          self.active = True
+                          self.action, self.fields = attrs['action'], {}
+                      if tag == 'input' and self.active and attrs.get('type') == 'hidden':
+                          self.fields[attrs['name']] = attrs['value']
+                  def handle_endtag(self, tag):
+                      if tag == 'form':
+                          self.active = False
+              form = DownloadForm()
+              form.feed(initial.read_text())
+              assert form.action == 'https://drive.usercontent.google.com/download'
+              assert form.fields['id'] == file_id and form.fields['export'] == 'download'
+              assert set(form.fields) <= {'id','export','confirm','uuid'}
+              subprocess.run(['curl','--fail','--location','--retry','3',
+                              form.action + '?' + urlencode(form.fields),
+                              '--output',str(checkpoint)],check=True)
+          assert checkpoint.stat().st_size == 35722626
+          digest = hashlib.sha256()
+          with checkpoint.open('rb') as stream:
+              for block in iter(lambda: stream.read(1024 * 1024), b''):
+                  digest.update(block)
+          assert digest.hexdigest() == 'cfcdf9dcb069905e5e02e92fe3d59bd3574e779bf554cc02cb701994a79e99cc'
+          PY
+      - name: Compare complete native features, all heads and every gradient
+        run: python -m unittest test.models.test_csbrain test.models.test_csbrain_example test.models.test_csbrain_native
