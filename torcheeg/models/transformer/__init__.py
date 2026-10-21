@@ -34,3 +34,4 @@ from .sleepfm import SleepFM, SleepFMStaging, SleepFMDiagnosis, SleepFMClassifie
 from .sleepgpt import SleepGPT, SleepGPTClassifier
 from .unidmfm import UniDMFM, UniDMFMClassifier
 from .neurogpt import NeuroGPT, NeuroGPTClassifier
+from .csbrain import CSBrain, CSBrainClassifier

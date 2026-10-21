@@ -42,3 +42,5 @@ does not establish EEG accuracy or reproduction of a published benchmark.
 - [Uni-DMFM external backend](https://torcheeg.readthedocs.io/en/latest/user_guide/unidmfm.html): Complete separately supplied model, all three native pretraining heads, strict complete checkpoints and real EEGMat mean-token transfer workflow.
 
 - [NeuroGPT external backend](https://torcheeg.readthedocs.io/en/latest/user_guide/neurogpt.html): Complete Conformer, embedder, causal GPT and reconstruction model supplied separately, native prefix training and real BCI-IV 2a transfer workflow.
+
+- [CSBrain](https://torcheeg.readthedocs.io/en/latest/user_guide/csbrain.html): Complete external weights, physical sensor mapping, two explicit mask conventions, and EEGMat workflow.

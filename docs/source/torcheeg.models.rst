@@ -103,6 +103,8 @@ Transformer
    NeuroRVQClassifier
    NeuroGPT
    NeuroGPTClassifier
+   CSBrain
+   CSBrainClassifier
    UniDMFM
    UniDMFMClassifier
    SleepGPT
