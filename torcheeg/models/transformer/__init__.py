@@ -24,3 +24,6 @@ from .steegformer_heads import STEEGFormerClassifier, STEEGFormerRegression, STE
 from .steegformer_pretraining import STEEGFormerPretrainer
 
 from .tfm_pretraining import TFMTokenizerPretrainer, TFMMaskedTokenPretrainer
+
+from .neurorvq_tokenizer import NeuroRVQTokenizer
+from .neurorvq_pretraining import NeuroRVQMaskedTokenPretrainer

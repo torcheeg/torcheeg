@@ -117,6 +117,8 @@ Transformer
    SleepFMDiagnosis
    TFMTokenizerPretrainer
    TFMMaskedTokenPretrainer
+   NeuroRVQTokenizer
+   NeuroRVQMaskedTokenPretrainer
    BENDR
    BENDREncoder
    BENDRContextualizer
