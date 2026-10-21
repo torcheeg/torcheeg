@@ -22,3 +22,5 @@ from .cbramod_heads import CBraModClassifier, CBraModRegression, CBraModEmbeddin
 from .steegformer import STEEGFormer
 from .steegformer_heads import STEEGFormerClassifier, STEEGFormerRegression, STEEGFormerEmbedding
 from .steegformer_pretraining import STEEGFormerPretrainer
+
+from .tfm_pretraining import TFMTokenizerPretrainer, TFMMaskedTokenPretrainer

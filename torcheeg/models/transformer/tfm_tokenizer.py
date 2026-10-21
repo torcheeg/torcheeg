@@ -72,18 +72,27 @@ class _EMAQuantizer(nn.Module):
         indices = distances.argmin(-1)
         quantized = self.embedding(indices).reshape_as(x)
         if self.training and self.update:
-            with torch.no_grad():
-                assignments = F.one_hot(indices, self.count).to(flat.dtype)
-                counts, totals = assignments.sum(0), assignments.t() @ flat.detach()
-                if distributed.is_available() and distributed.is_initialized():
-                    distributed.all_reduce(counts)
-                    distributed.all_reduce(totals)
-                self.cluster_size.mul_(self.decay).add_(counts, alpha=1-self.decay)
-                self.ema_w.mul_(self.decay).add_(totals, alpha=1-self.decay)
-                total = self.cluster_size.sum()
-                smoothed = (self.cluster_size + 1e-5) / (total + self.count*1e-5) * total
-                self.embedding.weight.copy_(self.ema_w / smoothed[:, None])
+            self._update_ema(flat, indices)
         return quantized, indices.reshape(x.shape[:2])
+
+    @torch.no_grad()
+    def _update_ema(self, flat, indices):
+        assignments = F.one_hot(indices, self.count).to(flat.dtype)
+        counts, totals = assignments.sum(0), assignments.t() @ flat.detach()
+        if distributed.is_available() and distributed.is_initialized():
+            distributed.all_reduce(counts)
+            distributed.all_reduce(totals)
+        self.cluster_size.mul_(self.decay).add_(counts, alpha=1-self.decay)
+        self.ema_w.mul_(self.decay).add_(totals, alpha=1-self.decay)
+        total = self.cluster_size.sum()
+        smoothed = (self.cluster_size + 1e-5) / (total + self.count*1e-5) * total
+        self.embedding.weight.copy_(self.ema_w / smoothed[:, None])
+
+    # Keep the explicit state transaction between compiled neural branches.
+    # PyTorch 2.4 AOTAutograd cannot deduplicate twice-mutated EMA inputs.
+    if hasattr(torch, 'compiler') and hasattr(torch.compiler, 'disable'):
+        _update_ema = torch.compiler.disable(_update_ema)
+
 
 
 def _convolutions(width, temporal):
@@ -99,8 +108,8 @@ class TFMTokenizer(nn.Module):
 
     The released CHB-MIT model has width64, vocabulary8192, frequency/time
     encoders of two blocks each and an eight-block reconstruction decoder.
-    It uses the complete released linear reconstruction head. The current
-    author source also describes an MLP head; choose that configuration
+    It uses the complete released linear reconstruction head. The multi-dataset release and current
+    author source use an MLP head; choose that configuration
     explicitly rather than discarding mismatched reconstruction weights.
 
     Args:
@@ -184,7 +193,7 @@ class TFMTokenizer(nn.Module):
 
     @classmethod
     def from_pretrained(cls, checkpoint_path, prefix='', reconstruction_head='linear', update_codebook=True):
-        r'''Strictly load a complete local CHB-MIT tokenizer or matching export.'''
+        r'''Strictly load a complete local tokenizer with an explicit reconstruction head.'''
         return _load_complete(cls(reconstruction_head=reconstruction_head, update_codebook=update_codebook), checkpoint_path, prefix)
 
 
@@ -194,7 +203,8 @@ class TFMEncoder(nn.Module):
     Input token IDs are [batch,electrodes,time], including an optional last
     vocabulary row reserved for masking. Up to16sequential channel rows and
     1000temporal positions are available. The released CHB-MIT binary head
-    returns one logit, without sigmoid; it is not a pretrained vocabulary head.
+    returns one logit, without sigmoid. The separate multi-dataset MTP release
+    has a trained 8192-output head; select num_classes=8192 explicitly.
 
     Args:
         hid_channels (int): Embedding width, divisible by8. (default: :obj:`64`)
@@ -252,9 +262,14 @@ class TFMEncoder(nn.Module):
         return self.classification_head(self._tokens(ids, channel_ids)[:, 1:])
 
     @classmethod
-    def from_pretrained(cls, checkpoint_path, prefix=''):
-        r'''Strictly load all59tensors of the released CHB-MIT binary encoder.'''
-        return _load_complete(cls(), checkpoint_path, prefix)
+    def from_pretrained(cls, checkpoint_path, prefix='', num_classes=1):
+        r'''Strictly load every encoder tensor with an explicit original output width.
+
+        The CHB-MIT binary release uses num_classes=1. The multi-dataset MTP
+        release uses num_classes=8192, including its complete trained vocabulary
+        head. No head tensors are inferred, replaced or silently discarded.
+        '''
+        return _load_complete(cls(num_classes=num_classes), checkpoint_path, prefix)
 
 
 class TFMClassifier(nn.Module):
@@ -310,3 +325,26 @@ class TFMClassifier(nn.Module):
         r'''Return new-task logits, with no inferred normalization or filtering.'''
         ids = self.get_codebook_indices(x)
         return self.classifier(self.encoder.forward_features(ids, channel_ids))
+
+    @classmethod
+    def from_pretrained(cls, tokenizer_checkpoint, encoder_checkpoint, variant='multi-pretrained',
+                        num_classes=2, freeze_encoder=False, tokenizer_prefix='', encoder_prefix=''):
+        r'''Load a complete official tokenizer/encoder pair and add a new task head.
+
+        multi-pretrained retains the 191-state MLP tokenizer and 59-state,
+        8192-output MTP encoder. single-chbmit retains the 189-state linear
+        tokenizer and 59-state, one-output binary encoder. Both preserve all
+        original reconstruction and output heads, even though the new task
+        uses class-token features. The new classifier is randomly initialized.
+        Files must be supplied locally; weights and preprocessing are not
+        downloaded or inferred. Pair selection is explicit and shape checked.
+        '''
+        variants = {'multi-pretrained': ('mlp', 8192), 'single-chbmit': ('linear', 1)}
+        if not isinstance(variant, str) or variant not in variants:
+            raise ValueError('variant must be multi-pretrained or single-chbmit.')
+        reconstruction_head, original_classes = variants[variant]
+        tokenizer = TFMTokenizer.from_pretrained(tokenizer_checkpoint, prefix=tokenizer_prefix,
+            reconstruction_head=reconstruction_head, update_codebook=False)
+        encoder = TFMEncoder.from_pretrained(encoder_checkpoint, prefix=encoder_prefix,
+            num_classes=original_classes)
+        return cls(tokenizer, encoder, num_classes=num_classes, freeze_encoder=freeze_encoder)

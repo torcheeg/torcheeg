@@ -33,6 +33,12 @@ class TestTFMExample(unittest.TestCase):
             with self.assertRaises(ValueError): namespace['prepare_window'](invalid)
 
     def test_complete_canonical_generated_checkpoint_workflow(self):
+        self.check_generated_checkpoint_workflow('single-chbmit')
+
+    def test_complete_multi_pretrained_generated_checkpoint_workflow(self):
+        self.check_generated_checkpoint_workflow('multi-pretrained')
+
+    def check_generated_checkpoint_workflow(self, variant):
         # Full canonical architecture with generated weights; real official
         # checkpoint and EDF training are verified separately.
         with tempfile.TemporaryDirectory() as directory:
@@ -40,12 +46,13 @@ class TestTFMExample(unittest.TestCase):
             for subject in range(2):
                 for condition in (1, 2):
                     (source/f'Subject{subject:02d}_{condition}.edf').write_bytes(b'synthetic placeholder')
-            tokenizer, encoder = TFMTokenizer(), TFMEncoder()
+            head, classes = ('mlp', 8192) if variant == 'multi-pretrained' else ('linear', 1)
+            tokenizer, encoder = TFMTokenizer(reconstruction_head=head), TFMEncoder(num_classes=classes)
             tokenizer_state, encoder_state = tokenizer.state_dict(), encoder.state_dict()
             tokenizer_file, encoder_file, artifact = root/'tokenizer.pt', root/'encoder.pt', root/'probe.pt'
             torch.save(tokenizer_state, tokenizer_file)
             torch.save(encoder_state, encoder_file)
-            args = [str(EXAMPLE),'--root-path',str(source),
+            args = [str(EXAMPLE),'--root-path',str(source),'--variant',variant,
                     '--tokenizer-checkpoint',str(tokenizer_file),'--encoder-checkpoint',str(encoder_file),
                     '--cache-path',str(root/'cache'),'--output-path',str(artifact),'--epochs','1','--batch-size','2']
             with patch.object(MentalArithmeticDataset,'read_record',side_effect=synthetic_record),patch('sys.argv',args):
@@ -56,8 +63,10 @@ class TestTFMExample(unittest.TestCase):
             self.assertEqual(metadata['train_subjects'],['Subject00'])
             self.assertEqual(metadata['held_out_subject'],'Subject01')
             self.assertEqual(payload['test_logits'].shape,(3,2))
-            self.assertEqual(json.loads(payload['tokenizer_config_json'])['reconstruction_head'],'linear')
-            self.assertEqual(json.loads(payload['encoder_config_json'])['num_classes'],1)
+            self.assertEqual(json.loads(payload['tokenizer_config_json'])['reconstruction_head'],head)
+            self.assertEqual(json.loads(payload['encoder_config_json'])['num_classes'],classes)
+            self.assertEqual(metadata['variant'],variant)
+            self.assertEqual(payload['state_dict']['encoder.classification_head.weight'].shape,(classes,64))
             self.assertEqual(metadata['channel_order'],['Fp1','Fp2','F3','F4','F7','F8','T3','T4','C3','C4','T5','T6','P3','P4','O1','O2'])
             loss=torch.nn.functional.cross_entropy(payload['test_logits'],payload['test_targets']).item()
             accuracy=(payload['test_logits'].argmax(1)==payload['test_targets']).float().mean().item()

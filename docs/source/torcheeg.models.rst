@@ -115,6 +115,8 @@ Transformer
    SleepFMClassifier
    SleepFMStaging
    SleepFMDiagnosis
+   TFMTokenizerPretrainer
+   TFMMaskedTokenPretrainer
    BENDR
    BENDREncoder
    BENDRContextualizer
