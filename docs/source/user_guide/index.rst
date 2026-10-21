@@ -59,4 +59,26 @@ the same library workflow as a reusable assistant skill.
    cbramod
    fourier_resampling
    cbramod_heads
+   sleepedf
+   ad_auditory
+   adftd_rs
+   adftd_ps
+   adsz
+   biot
+   bendr
+   luna
+   reve
+   codebrain
+   codebrain_tokenizer
+   eegmamba
+   tfm
+   lead
+   neurorvq
+   sleepfm
+   sleepgpt
+   unidmfm
+   bciciv2a
+   neurogpt
+   csbrain
+   mdjpt
    steegformer

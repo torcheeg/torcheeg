@@ -109,6 +109,7 @@ Transformer
    MDJPTClassifier
    UniDMFM
    UniDMFMClassifier
+   UniDMFMPretrainer
    SleepGPT
    SleepGPTClassifier
    SleepFM
