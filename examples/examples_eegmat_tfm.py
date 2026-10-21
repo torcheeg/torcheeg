@@ -2,7 +2,7 @@
 Probe pretrained TFM on EEGMat
 ===============================
 
-Load the complete released CHB-MIT TFM tokenizer and encoder. Freeze both,
+Load an explicit complete released TFM tokenizer/encoder pair. Freeze both,
 then train a new two-logit classifier on EEGMat background=0 versus mental
 arithmetic=1. Cite Pradeepkumar et al., Tokenizing Single-Channel EEG with
 Time-Frequency Motif Learning (ICLR2026), and Zyma et al. (2019),
@@ -13,7 +13,12 @@ contains both weights under pretrained_weigths/single_dataset_settings/
 CHBMIT_tfm_tokenizer_2x2x8/. The tokenizer's complete released linear
 reconstruction head is loaded explicitly, not omitted for a shape mismatch.
 The encoder's original single-logit binary head is retained but unused by
-the new two-class task. No automatic download or random fallback.
+the new two-class task. Select --variant multi-pretrained for the author's
+multi-dataset pair: the complete191-state MLP tokenizer and59-state encoder
+with its full8192-class MTP head. These files are in multiple_dataset_settings/
+Pretrained_tfm_tokenizer_2x2x8/ and MTP_Pretrained_tfm_encoder_64x4/, respectively.
+The multi-dataset pair is EEG-Arena's default; the CLI default remains
+single-chbmit for compatibility. No automatic download or random fallback.
 
 Resample complete records500->200Hz, filter MNE FIR0.1--75Hz/notch50Hz, and
 split four-second windows. Select the FIRST16 EEGMat source electrodes,
@@ -25,7 +30,7 @@ not a claimed physical mapping to the pretrained CHB-MIT bipolar montage.
 This teaching transfer protocol does not reproduce CHB-MIT benchmark scores.
 
 Hold out the last complete subject and train all others for fixed epochs.
-Save all189tokenizer and59encoder tensors, the new head, model configuration,
+Save all189/191tokenizer and59encoder tensors, the new head, model configuration,
 source/checkpoint hashes and held-out predictions. Strictly restore and
 require identical predictions; all pretrained state stays unchanged.
 Use a fresh cache after changing preprocessing or sources.
@@ -80,8 +85,9 @@ def prepare_window(eeg):
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Train a frozen complete pretrained CHB-MIT TFM EEGMat probe.')
+    parser = argparse.ArgumentParser(description='Train a frozen complete pretrained TFM EEGMat probe.')
     parser.add_argument('--root-path', required=True)
+    parser.add_argument('--variant', choices=('single-chbmit', 'multi-pretrained'), default=VARIANT)
     parser.add_argument('--tokenizer-checkpoint', required=True)
     parser.add_argument('--encoder-checkpoint', required=True)
     parser.add_argument('--cache-path', default='./eegmat-tfm-200hz-4s')
@@ -92,9 +98,9 @@ def main():
     if args.epochs < 1 or args.batch_size < 1:
         parser.error('epochs and batch-size must be positive.')
     torch.manual_seed(42)
-    tokenizer = TFMTokenizer.from_pretrained(args.tokenizer_checkpoint, update_codebook=False)
-    encoder = TFMEncoder.from_pretrained(args.encoder_checkpoint)
-    model = TFMClassifier(tokenizer, encoder, num_classes=2, freeze_encoder=True)
+    model = TFMClassifier.from_pretrained(args.tokenizer_checkpoint, args.encoder_checkpoint,
+        variant=args.variant, num_classes=2, freeze_encoder=True)
+    tokenizer, encoder = model.tokenizer, model.encoder
     source = Path(args.root_path)
     source_hashes = {path.name: sha256(path) for path in sorted(source.glob('Subject*.edf'))}
     dataset = MentalArithmeticDataset(root_path=str(source), chunk_size=800,
@@ -137,7 +143,7 @@ def main():
         update_codebook=False, beta=tokenizer.beta)
     encoder_config = dict(hid_channels=encoder.hid_channels, num_tokens=encoder.num_tokens,
         num_layers=encoder.num_layers, num_classes=encoder.num_classes)
-    metadata = dict(variant=VARIANT, checkpoint_sha256={'tokenizer': sha256(args.tokenizer_checkpoint), 'encoder': sha256(args.encoder_checkpoint)},
+    metadata = dict(variant=args.variant, checkpoint_sha256={'tokenizer': sha256(args.tokenizer_checkpoint), 'encoder': sha256(args.encoder_checkpoint)},
         source_sha256=source_hashes, channel_order=MENTAL_ARITHMETIC_CHANNEL_LIST[:16], channel_ids=list(range(16)),
         sampling_rate=200, window_samples=800, input_unit='microvolts before normalization',
         normalization='per-window/channel abs95percentile+1e-8; no fitted population statistics',

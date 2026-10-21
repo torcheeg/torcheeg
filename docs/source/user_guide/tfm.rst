@@ -17,9 +17,11 @@ MIT. See ``LICENSES/TFMTokenizer.txt`` and the shared linear-attention notices
 in ``LICENSES/BIOT.txt``. The linear-attention implementation matches
 ``linear_attention_transformer==0.19.1`` without adding that runtime package.
 
-This integration targets the paired **single-dataset CHB-MIT** release in
+The original paired **single-dataset CHB-MIT** release is in
 ``pretrained_weigths/single_dataset_settings/CHBMIT_tfm_tokenizer_2x2x8/``.
-It does not establish support for every multi-dataset or fine-tuned release.
+The complete **multi-dataset MTP-pretrained** pair is also supported below.
+Other dataset-specific or seed-specific releases still require separate
+architecture and checkpoint validation.
 
 * ``tfm_tokenizer_last.pth``: all 189 tensors, SHA256
   ``093975d3eb391e5009036248e0aa94a682d47afb3a2108446be0901951075cf8``.
@@ -122,12 +124,15 @@ distinct rows from that range. Temporal positions restart for each channel.
 The final token-embedding row, ID 8192 in the release, is reserved for masking.
 
 ``forward_features`` returns the contextual class token ``[batch,64]``.
-The released encoder has a **single-logit binary classification head**;
+The single-CHB-MIT encoder has a **single-logit binary classification head**;
 ``forward`` returns ``[batch,1]`` without sigmoid. Use a suitable binary
 logit loss. ``masked_prediction`` applies the same configured head to each
-non-class token. The released head therefore returns width one, not 8192
-pretrained vocabulary logits. Constructors permit a separately trained
-vocabulary head; it cannot be inferred from this binary checkpoint.
+non-class token. This binary head returns width one; it cannot supply
+8192 pretrained vocabulary logits. The separate multi-dataset MTP checkpoint
+has an actual trained 8192-output head. Load it explicitly with
+``TFMEncoder.from_pretrained(path, num_classes=8192)``; its
+``masked_prediction`` returns ``[batch,electrodes * frames,8192]``.
+All vocabulary-head tensors and the learned mask row are retained.
 
 ``TFMClassifier`` freezes the complete tokenizer in eval mode and adds a new
 linear head over encoder features. Set ``freeze_encoder=True`` for a linear
@@ -157,3 +162,57 @@ remaining subjects without selecting settings on held-out labels. The
 example exports both complete frozen states, the new task head, configuration,
 source/checkpoint hashes and predictions, then strictly restores and checks
 identical predictions. Gallery rendering does not execute this workflow.
+
+
+Complete multi-dataset MTP pair
+-------------------------------
+
+EEG-Arena's default TFM variant uses the author's multi-dataset tokenizer
+and MTP-pretrained encoder. This differs from the single-CHB-MIT pair in
+both reconstruction and output heads. The complete models keep the same
+64-wide, 8192-codebook architecture, with two frequency and two temporal
+encoder blocks, eight tokenizer decoder blocks, and four token-encoder blocks.
+
+* ``multiple_dataset_settings/Pretrained_tfm_tokenizer_2x2x8/tfm_tokenizer_last.pth``:
+  191 state tensors, MLP Linear(64,64)/Tanh/Linear(64,100), 6881039 bytes;
+  SHA256 ``f7929eed0f8275d08a7e18743fdd188c7ba5b4722151333b4d386ca05b84d6d9``.
+* ``multiple_dataset_settings/MTP_Pretrained_tfm_encoder_64x4/tfm_encoder_mtp_last.pth``:
+  all 59 state tensors including the complete trained 8192-class head,
+  5308635 bytes; SHA256
+  ``738d56a2021dd363c9d21c4804c441b486b28e33f73883dcf49623f9db8ad973``.
+
+These paths are under the same pinned author's ``pretrained_weigths``
+directory. Verify source and exact hashes; no weights are distributed here.
+Load the explicit pair and a new downstream head::
+
+    from torcheeg.models import TFMClassifier
+
+    model = TFMClassifier.from_pretrained(
+        './tfm_tokenizer_last.pth', './tfm_encoder_mtp_last.pth',
+        variant='multi-pretrained', num_classes=2, freeze_encoder=True)
+
+The paired loader defaults to multi-pretrained. Select
+``variant='single-chbmit'`` for the old linear/binary pair. Both full heads
+remain in the exported state; the downstream classifier uses contextual
+class-token features and initializes its own new head. Tokenizer eval mode
+prevents codebook EMA and dropout changes, including after ``model.train()``.
+The loader rejects mismatched geometry and incomplete states. Verify the
+matching pair hashes: tensor shapes alone cannot establish checkpoint identity. Explicit common
+``tokenizer_prefix`` and ``encoder_prefix`` support exported key prefixes.
+The standalone encoder loader keeps num_classes=1 as its compatible default.
+
+Run the existing independent example with ``--variant multi-pretrained``
+and these two local checkpoints. Its default remains single-chbmit for
+compatibility. The exported variant, full constructor settings and both
+checkpoint hashes identify the chosen pair. Physical channel rows and
+preprocessing remain explicit; a multi-dataset pretraining origin does not
+make arbitrary montage or signal scaling equivalent.
+
+Both complete components were compared against the unmodified original
+classes with the matching actual weights. Eval/train reconstructions, IDs,
+input gradients and EMA states matched; full encoder outputs, vocabulary
+predictions and every used parameter gradient passed numerical checks,
+including ID8192 masking. Independent real-EDF preprocessing, tokenization,
+class features and a trained downstream head provide a separate teaching
+workflow check. Symmetric spectral-mask/token-prediction training workflows
+and additional released fine-tuning variants remain separate work.
