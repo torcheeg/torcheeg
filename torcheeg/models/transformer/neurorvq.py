@@ -11,27 +11,11 @@ from torch import nn
 from ._utils import _positive_int
 
 
-class NeuroRVQ(nn.Module):
-    r'''Complete external NeuroRVQ with explicit ordered electrode metadata.
+class _NeuroRVQInput(nn.Module):
+    """Shared physical metadata; no neural backend or feature semantics."""
 
-    The backend must retain all 32 released prediction heads. Construct it
-    from the documented pinned author pretraining source. Parameter-free
-    identity views expose the four raw feature branches; they add no random
-    normalization parameters. Input is [batch,electrodes,samples], sampled
-    at 200 Hz in the amplitude scale required by the chosen data workflow.
-    Temporal positions are right-aligned as in the original inference code.
-    Spatial positions use the original zero-based vocabulary without offset.
-
-    Args:
-        backend (nn.Module): Explicit complete local author backend.
-        channel_names (list or tuple): Ordered names matching the input.
-        channel_vocab (list or tuple): Original ordered electrode vocabulary.
-        sampling_rate (int): Physical sampling rate, must be 200 Hz.
-    '''
-    def __init__(self, backend, channel_names, channel_vocab, sampling_rate=200):
+    def __init__(self, channel_names, channel_vocab, sampling_rate=200):
         super().__init__()
-        if not isinstance(backend, nn.Module):
-            raise ValueError('Require an explicitly constructed nn.Module backend.')
         _positive_int('sampling_rate', sampling_rate)
         if sampling_rate != 200:
             raise ValueError('The released backend requires EEG sampled at 200 Hz.')
@@ -45,22 +29,8 @@ class NeuroRVQ(nn.Module):
         channel_names, channel_vocab = names(channel_names), names(channel_vocab)
         if any(name not in channel_vocab for name in channel_names):
             raise ValueError('Every input electrode must occur in the backend vocabulary.')
-        if getattr(backend, 'patch_size', None) != 200 or getattr(backend, 'embed_dim', None) != 200:
-            raise ValueError('Require the released 200-sample/200-wide backend.')
-        if not getattr(backend, 'use_as_encoder', False) or not getattr(backend, 'use_for_pretraining', False):
-            raise ValueError('Require the complete encoder with pretraining heads enabled.')
-        positions, times = getattr(backend, 'pos_embed', None), getattr(backend, 'time_embed', None)
-        if not isinstance(positions, torch.Tensor) or positions.shape != (len(channel_vocab)+1, 200):
-            raise ValueError('Vocabulary must match the complete spatial embedding table.')
-        if not isinstance(times, torch.Tensor) or times.shape != (256, 200):
-            raise ValueError('Require the complete 256-position temporal table.')
-        for index in range(1, 33):
-            head = getattr(backend, 'head_pre_'+str(index), None)
-            if not isinstance(head, nn.Linear) or (head.in_features, head.out_features) != (200, 8192):
-                raise ValueError('Require all 32 complete 8192-class prediction heads.')
-        self.backend = backend
         self.channel_names, self.channel_vocab = channel_names, channel_vocab
-        self.sampling_rate, self.num_electrodes, self.hid_channels = 200, len(channel_names), 800
+        self.sampling_rate, self.num_electrodes = 200, len(channel_names)
         self.patch_size, self.max_patches = 200, 256
         self._spatial_ids = tuple(channel_vocab.index(v) for v in channel_names)
         self._digest = hashlib.sha256(json.dumps([channel_names, channel_vocab, 200]).encode()).digest()
@@ -88,6 +58,44 @@ class NeuroRVQ(nn.Module):
         temporal = torch.arange(self.max_patches-patches, self.max_patches, device=x.device).repeat(channels).expand(batch, -1)
         spatial = self.spatial_ids.repeat_interleave(patches).expand(batch, -1)
         return x.reshape(batch, channels, patches, 200), temporal, spatial
+
+
+class NeuroRVQ(_NeuroRVQInput):
+    r'''Complete external NeuroRVQ with explicit ordered electrode metadata.
+
+    The backend must retain all 32 released prediction heads. Construct it
+    from the documented pinned author pretraining source. Parameter-free
+    identity views expose the four raw feature branches; they add no random
+    normalization parameters. Input is [batch,electrodes,samples], sampled
+    at 200 Hz in the amplitude scale required by the chosen data workflow.
+    Temporal positions are right-aligned as in the original inference code.
+    Spatial positions use the original zero-based vocabulary without offset.
+
+    Args:
+        backend (nn.Module): Explicit complete local author backend.
+        channel_names (list or tuple): Ordered names matching the input.
+        channel_vocab (list or tuple): Original ordered electrode vocabulary.
+        sampling_rate (int): Physical sampling rate, must be 200 Hz.
+    '''
+    def __init__(self, backend, channel_names, channel_vocab, sampling_rate=200):
+        if not isinstance(backend, nn.Module):
+            raise ValueError('Require an explicitly constructed nn.Module backend.')
+        super().__init__(channel_names, channel_vocab, sampling_rate)
+        if getattr(backend, 'patch_size', None) != 200 or getattr(backend, 'embed_dim', None) != 200:
+            raise ValueError('Require the released 200-sample/200-wide backend.')
+        if not getattr(backend, 'use_as_encoder', False) or not getattr(backend, 'use_for_pretraining', False):
+            raise ValueError('Require the complete encoder with pretraining heads enabled.')
+        positions, times = getattr(backend, 'pos_embed', None), getattr(backend, 'time_embed', None)
+        if not isinstance(positions, torch.Tensor) or positions.shape != (len(channel_vocab)+1, 200):
+            raise ValueError('Vocabulary must match the complete spatial embedding table.')
+        if not isinstance(times, torch.Tensor) or times.shape != (256, 200):
+            raise ValueError('Require the complete 256-position temporal table.')
+        for index in range(1, 33):
+            head = getattr(backend, 'head_pre_'+str(index), None)
+            if not isinstance(head, nn.Linear) or (head.in_features, head.out_features) != (200, 8192):
+                raise ValueError('Require all 32 complete 8192-class prediction heads.')
+        self.backend = backend
+        self.hid_channels = 800
 
     def forward(self, x, return_tokens=False):
         r'''Return mean features [B,800], or per-patch features [B,C,P,800].'''

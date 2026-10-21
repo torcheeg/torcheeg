@@ -30,3 +30,5 @@ from .eegmamba import EEGMamba, EEGMambaClassifier
 from .tfm_tokenizer import TFMTokenizer, TFMEncoder, TFMClassifier
 from .lead import LEAD, LEADClassifier
 from .neurorvq import NeuroRVQ, NeuroRVQClassifier
+
+from .neurorvq_tokenizer import NeuroRVQTokenizer
