@@ -103,6 +103,7 @@ Transformer
    NeuroRVQClassifier
    UniDMFM
    UniDMFMClassifier
+   UniDMFMPretrainer
    SleepGPT
    SleepGPTClassifier
    SleepFM
