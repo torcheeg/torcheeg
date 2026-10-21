@@ -282,3 +282,12 @@ checkpoints are tested separately against every native output/gradient and
 EMA state in actual stochastic train/eval mode. Independent real EDF
 verification and complete canonical generated-checkpoint workflow tests
 are distinct from this numerical fixture.
+
+
+`mdjpt_state_geometry.json` records only public checkpoint tensor names,
+shapes and requires-grad facts from original mdJPT revision
+`bb84e89df5d05928ef3aa8645cbc339b59ed59de`. It contains no author neural
+implementation or pretrained values. `test_mdjpt.py` uses it in an explicitly
+labeled independent protocol fixture. Complete actual-source/weight numerical
+validation is separate in `test_mdjpt_native.py`; a fixture pass alone cannot
+establish pretrained-model equivalence.

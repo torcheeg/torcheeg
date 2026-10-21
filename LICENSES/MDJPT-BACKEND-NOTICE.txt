@@ -1,0 +1,27 @@
+mdJPT explicit external backend integration
+
+Author source: https://github.com/ncclab-sustech/mdJPT_nips2025
+Pinned revision: bb84e89df5d05928ef3aa8645cbc339b59ed59de
+Paper: Multi-dataset Joint Pre-training of Emotional EEG Enables Generalizable Affective Computing
+Qingzhu Zhang, Jiani Zhong, Zongsheng Li, Xinke Shen, Quanying Liu
+https://arxiv.org/abs/2510.22197
+
+The pinned source has no LICENSE file. Obtain implementation and weights
+separately under terms appropriate for your intended use. This notice does
+not grant rights to the external source or pretrained weights. TorchEEG
+bundles neither and does not import or download them on library import.
+
+Complete log/pretrain/ckpt/epoch=19.ckpt: 6453928 bytes
+SHA256: 9a8da20e6ca4b4709251c13e16c88a155d3fa6a9b1a8411a37f019d6440e98b9
+Native channel_interpolate.npy SHA256:
+bc083c8b44d984b627d265a7ef500a9953347dfcfc7995184de0217581c6b8e2
+
+All 82 original state tensors and original neural class bodies are retained.
+The explicit factory redirects only the relative interpolation-table file
+through a module-local NumPy facade and installs an independently implemented
+device-neutral sliding-window helper instead of the source's hardcoded CUDA
+allocation. This is an explicit allocation port. CPU comparisons with the
+original loop helper and a redirected allocation do not establish execution
+of the original unmodified GPU helper. A separate actual CUDA oracle exists.
+See the guide for native half-batch grouping, explicit physical aliases and
+interpolation, sample-independent transfer context, and complete loading.

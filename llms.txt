@@ -44,3 +44,5 @@ does not establish EEG accuracy or reproduction of a published benchmark.
 - [NeuroGPT external backend](https://torcheeg.readthedocs.io/en/latest/user_guide/neurogpt.html): Complete Conformer, embedder, causal GPT and reconstruction model supplied separately, native prefix training and real BCI-IV 2a transfer workflow.
 
 - [CSBrain](https://torcheeg.readthedocs.io/en/latest/user_guide/csbrain.html): Complete external weights, physical sensor mapping, two explicit mask conventions, and EEGMat workflow.
+
+- [mdJPT](https://torcheeg.readthedocs.io/en/latest/user_guide/mdjpt.html): Complete external MLLA/CNN weights, physical projection and explicit sample-independent versus paired training protocols.

@@ -105,6 +105,8 @@ Transformer
    NeuroGPTClassifier
    CSBrain
    CSBrainClassifier
+   MDJPT
+   MDJPTClassifier
    UniDMFM
    UniDMFMClassifier
    SleepGPT
