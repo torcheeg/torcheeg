@@ -1,13 +1,15 @@
-ST-EEGFormer encoder
-====================
+ST-EEGFormer
+============
 
 :class:`torcheeg.models.STEEGFormer` provides the encoder from
 `Yang et al., ICLR 2026 <https://openreview.net/forum?id=5Xwm8e6vbh>`_.
 The adaptation follows the author's MIT-licensed
 `implementation <https://github.com/LiuyinYang1101/STEEGFormer>`_ at revision
 ``542ee17918c3c2c36ba1d4ea02bedff5eb149370``. It retains native encoder
-tensor names without requiring timm or torchvision. The full masked
-autoencoder decoder and task-specific pretrained heads are not included.
+tensor names without requiring timm or torchvision.
+:class:`torcheeg.models.STEEGFormerPretrainer` separately provides the complete
+masked autoencoder, including its native decoder. Task-specific pretrained
+heads are not included.
 
 Input and channel identities
 -----------------------------
@@ -208,3 +210,97 @@ Regression records the metadata hash, fixed target scale and MAE in original
 units. Every artifact includes complete tensor state, both constructor
 configurations, preprocessing and all predictions/targets or feature rows.
 No test target selects epochs or parameters; no benchmark result is implied.
+
+
+Complete masked autoencoder
+---------------------------
+
+Construct the full Small, Base or Large model with
+``STEEGFormerPretrainer.for_variant('small')``. Load every original encoder
+and decoder tensor with an explicit variant::
+
+    from torcheeg.models import STEEGFormerPretrainer
+
+    model = STEEGFormerPretrainer.from_pretrained(
+        'checkpoint-300.pth', variant='small', allow_namespace=True)
+    indices = model.channel_indices(['Fp1', 'Fp2', 'Cz'])
+    loss, prediction, mask = model(eeg, indices, mask_ratio=.75)
+    loss.backward()
+
+The full models have 160, 256 and 400 state tensors, respectively.
+Small's decoder has width 384 and four blocks, despite the upstream factory
+name saying dec256. Base and Large both use width 512 and eight decoder
+blocks. All three decoders have 16 attention heads. Native MAE has no
+dropout or stochastic depth; the pretrainer rejects these additions.
+The fresh MAE uses the original Xavier Linear initialization and normal
+CLS/mask-token initialization. Full loading rejects incomplete states; it
+never drops decoder tensors. Meta construction and restricted CPU mmap
+loading avoid allocating a second Large parameter set. Create optimizers
+after loading; model and optimizer checkpoints remain separate concepts.
+
+The pinned source has two different encoder temporal-position contracts.
+Regular ``forward_encoder`` starts temporal patches at zero; its decoder
+starts at one. This is the pretrainer default
+``encoder_position_offset=0``. Original ``forward_demo`` starts encoder
+patches at one: select ``encoder_position_offset=1`` explicitly for that
+protocol. Inherited unmasked ``forward_all`` and ``forward_features`` keep
+the existing encoder's position-one contract. An identical state dictionary
+does not encode this choice; save the selected policy with experiment state.
+
+``forward`` returns scalar masked reconstruction loss, predictions shaped
+``[batch, patches * electrodes, patch_size]``, and a binary mask shaped
+``[batch, patches * electrodes]``. Only mask-one patches contribute to
+mean squared error. ``norm_pix_loss=True`` explicitly enables the original
+unbiased per-patch target variance with epsilon 1e-6; the verified official
+Small/Base training metadata uses False. ``mask_ratio`` must be in (0, 1];
+one retains only CLS. The zero-mask undefined loss is rejected.
+``patchify`` and ``unpatchify`` preserve temporal-major, channel-minor order.
+
+Supply a device-compatible ``torch.Generator`` to control masking without
+changing the global RNG. Save its state, full model state, optimizer state,
+constructor settings, channel/preprocessing/partition settings and next batch
+cursor for exact continuation. Validation must use a separate generator.
+
+Official local checkpoint provenance
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Obtain files from the author's
+`release assets <https://github.com/LiuyinYang1101/STEEGFormer/releases>`_.
+Verify the exact bytes before opting into native metadata. No weights ship
+with TorchEEG. The fixed three-variant protocol uses Large 196, rather than
+the separate expanded-channel LargeV2 artifact.
+
+* Small: ``checkpoint-300.pth``, 393972208 bytes; SHA256
+  ``98d2848abdaea7a143d399c07f67f8782e07dd66e7c309ddb058c7158a8a8b02``.
+* Base: ``checkpoint-288.pth``, 1333478786 bytes; SHA256
+  ``3c04469072b1e2acf9333ee48ee1002f2db42f46ffb0daab6269686ebc6fe6c1``.
+* Large: ``large_weights_only_196.pth``, 1316497385 bytes; SHA256
+  ``7b2ed01dec88938ea0a8aba5621eab283bb61ec12b88c6475722fffae8afda83``.
+
+Small and Base require the scoped Namespace opt-in; Large 196 is a bare
+tensor state. Restricted loading has no unsafe fallback. For an older
+runtime lacking safe_globals, convert a verified full state to a tensor-only
+file on a supported runtime first. Preserve every decoder key during conversion.
+
+Real-data continuation example
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:doc:`/auto_examples/examples_eegmat_steegformer_pretraining` trains the full
+MAE using one-second EEGMat windows and a held-out subject. It requires
+official full weights, records source hashes and protocol, saves AdamW and
+masking RNG, and can resume at the next training batch. It has no random
+small-model fallback. Its fixed sequential batches and small teaching run
+do not reproduce the original corpus, optimizer schedule or benchmark scores.
+
+Validation scope
+~~~~~~~~~~~~~~~~
+
+Independent float64 fixtures cover both temporal-position modes, both target
+normalization policies, partial/full masking, reconstruction outputs, loss,
+input gradients and every used encoder/decoder parameter gradient. The
+complete official Small/Base/Large networks were also compared against the
+unmodified original MAE on two real 19-channel, 128-sample EEGMat windows:
+outputs, loss and input gradients matched exactly; all parameter gradients
+passed rtol=1e-4/atol=1e-6 (maximum absolute difference below 2e-9).
+This is CPU functional validation with full model geometry and weights,
+not a large-corpus result or GPU/distributed-training acceptance.

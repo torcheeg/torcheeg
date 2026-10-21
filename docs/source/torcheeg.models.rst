@@ -87,6 +87,7 @@ Transformer
    EEGPTAdaptedModel
    CBraMod
    STEEGFormer
+   STEEGFormerPretrainer
    STEEGFormerClassifier
    STEEGFormerRegression
    STEEGFormerEmbedding
