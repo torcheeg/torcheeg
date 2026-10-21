@@ -224,3 +224,88 @@ models. Dynamic masks, sequence lengths and native packed LSTMs require
 graph breaks; fullgraph compilation and GPU throughput are not established.
 Gallery rendering does not run the training workflows. Local documentation
 success does not establish a successful Read the Docs cloud build.
+
+Multi-endpoint survival training
+--------------------------------
+
+:class:`~torcheeg.models.SleepFMSurvivalObjective` adds a complete Cox objective
+over :class:`~torcheeg.models.SleepFMDiagnosis`. It preserves every native
+diagnosis tensor and all 1065 output columns. Supply all ordered endpoint names
+explicitly. Follow-up times and binary event indicators are [B,1065] in this
+same order. Event time and censoring conventions must be consistent across
+subjects. These arrays are measured outcomes, not classification labels. Do not encode
+missing follow-up as censoring or fill absent endpoint columns with zeros.
+
+The default ``ties='breslow'`` groups observations with the same time. Every
+event uses all subjects with observation time greater than or equal to its
+time, including censored subjects at the same time. Contributions are averaged
+over observed events within each endpoint, then over all 1065 endpoints.
+Zero-event endpoints contribute zero and remain in this final mean. Float64
+outputs retain float64 arithmetic; lower precision uses float32 accumulation.
+The risk-set definition follows the
+`Breslow partial likelihood <https://opensource.nibr.com/torchsurv/_autosummary/torchsurv.loss.cox.html>`_.
+
+For an already constructed complete ``diagnosis`` model and correctly aligned
+outcome tensors:
+
+.. code-block:: python
+
+   import torch
+   from torcheeg.models import SleepFMSurvivalObjective
+
+   # endpoint_names comes from the ordered outcome schema, not an inferred sort.
+   objective = SleepFMSurvivalObjective(diagnosis, endpoint_names)
+   optimizer = torch.optim.AdamW(objective.parameters(), lr=0.001)
+   optimizer.zero_grad()
+   result = objective(embeddings, encoded_demographics, times, is_event,
+                      padding_mask)
+   result['loss'].backward()
+   optimizer.step()
+
+A batch defines its own risk sets. A minibatch loss is not the full cohort
+likelihood. Batch composition therefore matters, and a one-subject batch has
+zero loss and gradient. Do not duplicate one subject to create a risk set.
+The output ``log_risks`` remains [B,1065]. A sigmoid is not a calibrated
+survival probability; this interface does not estimate a baseline hazard.
+
+Native reproduction
+^^^^^^^^^^^^^^^^^^^
+
+The pinned author pipeline uses ordered prefix risk sets after descending
+per-endpoint sorting. It does not group tied times, so equal-time observations
+can depend on row order. It also forces float32 log-cumulative accumulation.
+This native behavior is separate from the default Breslow objective.
+
+For exact source reproduction, explicitly construct the trusted original
+``cox_ph_loss`` callable from the separately supplied source and pass
+``ties='native'``, ``native_criterion=author_loss``, and a nonempty
+``criterion_id`` identifying its revision and source hash. The callable is
+invoked unchanged. TorchEEG does not import or redistribute that training
+pipeline. A native criterion must be stateless; source execution remains an
+explicit caller action.
+
+Restoration and validation
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The complete objective state contains all 35 native diagnosis states, the
+physical-metadata fingerprint, and an objective fingerprint. The latter guards
+all ordered endpoint names, tie policy, reduction, accumulation policy and
+native criterion identity. A changed endpoint order or policy is rejected
+during strict restoration. Tensors alone cannot reveal a mislabeled input
+column: align input tables against the declared schema before creating tensors.
+Demographics must use the original encoded convention; this objective does
+not fit or invent their normalization.
+
+For continuation, save the entire objective, optimizer, scheduler, input
+cursor and every random state used by the workflow. Construct the trusted
+complete backend and matching objective before restoring. The native criterion
+code itself is not serialized. Tests compare the full official model, original
+loss, input/demographic gradients, every parameter gradient, AdamW updates,
+and dropout/RNG/optimizer/scheduler restoration. An independent enumerated
+risk-set oracle also checks censoring and ties.
+
+These tests use synthetic inputs and outcomes. The author demo explicitly
+states that its PSG, stages, demographics and disease data are synthetic, and
+has only one subject row. It is not real clinical survival validation. A
+complete standalone caller-cohort workflow and measured clinical outcomes
+remain separate from this objective interface.
