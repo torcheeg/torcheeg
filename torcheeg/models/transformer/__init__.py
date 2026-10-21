@@ -35,3 +35,4 @@ from .sleepgpt import SleepGPT, SleepGPTClassifier
 from .unidmfm import UniDMFM, UniDMFMClassifier
 from .neurogpt import NeuroGPT, NeuroGPTClassifier
 from .csbrain import CSBrain, CSBrainClassifier
+from .mdjpt import MDJPT, MDJPTClassifier
