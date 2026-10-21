@@ -122,6 +122,11 @@ Transformer
    BIOT
    BIOTClassifier
    CBraMod
+   STEEGFormer
+   STEEGFormerPretrainer
+   STEEGFormerClassifier
+   STEEGFormerRegression
+   STEEGFormerEmbedding
    CBraModClassifier
    CBraModRegression
    CBraModEmbedding

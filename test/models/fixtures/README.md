@@ -102,192 +102,53 @@ sum/norm/first entries and complete bias gradients are checked. Pooling,
 flattening order, nonlinearities and all four head topologies are covered.
 No upstream checkpoint or patient signal is stored in the fixture.
 
-## BIOT
+## ST-EEGFormer encoder
 
-`biot_reference.json` was generated from unmodified official `model/biot.py`
-at d138e32634e52ae9fa6ec98ac9c4087b14ca869a with the PyPI
-linear-attention-transformer 0.19.1 noncausal global attention implementation.
-Both source SHA256 values are in the fixture. PyTorch 2.6 CPU, float64, two
-threads. Canonical width256/heads8/depth4/18 channels, two input channels,
-400 samples; deterministic `reference_state` from test_eegpt except native
-index/position buffers. Input is sin(arange/17)+cos(arange/31), seed913 before
-forward; loss is mean((output*sin(arange/13))**2). The first three position
-rows are copied verbatim from the author model into the fixture, so platform
-trigonometric rounding does not change the reference input. Cases cover eval,
-training with controlled dropout, zero EEG, and native channel offset2.
-For training, both reference and test use mask arange(numel)%10 >= p*10
-and division by 1-p, checking placement/scaling independently of version-specific
-RNG kernels. A separate test checks actual random dropout reproducibility,
-training variation, and deterministic evaluation on each supported runtime. Store all outputs
-and first8/sum/norm summaries for input and every trainable parameter gradient.
-No upstream package, network or pretrained weights are needed by CI. This
-fixture is an architecture regression test, not a pretrained accuracy claim.
-The three actual official checkpoints were separately loaded and compared
-against the reference, including every parameter gradient; see the BIOT guide.
+`steegformer_reference.json` comes from the unmodified MIT
+`pretrain/models_mae_eeg.py` at author revision
+542ee17918c3c2c36ba1d4ea02bedff5eb149370 and timm 1.0.10. A float64 model
+uses width16, MLP32, depth2 and four heads. Its decoder is not part of the
+fixture. Registered encoder tensors include the 512-position sinusoidal
+buffer and 145-slot channel table.
 
-## BENDR
+For native named-parameter index i, parameter entries are
+`sin(arange(numel) * .13 + i * .4) * .08`, with one added to normalization
+weights. Input is linspace(-1.2, .8, 128).reshape(2,2,32), and batch-specific
+channel indices are [[6,60],[110,71]]. Native forward_encoder_demo receives
+all four patch/channel positions in their original order, bypassing random
+mask permutation without altering encoder computation. A pre-hook captures
+the final norm input for the second, explicitly unnormalized feature mode.
 
-`bendr_reference.json` uses unchanged DN3 layers.py classes at revision
-4d477fe42d3d8ce64f3b790585bfa5c7acb84848 (full source hash in fixture).
-Extracted class definitions avoid unrelated legacy package imports; their
-bodies are unchanged. PyTorch2.6 CPU/float64/two threads, encoder3->16,
-context width16/mlp32/heads4/depth2, encoder dropout.1/context.15,
-input2x3x385 sin(arange/17)+cos(arange/31), reference_state per native
-component key. Loss mean((output*sin(arange/13))**2). Eval/train/zero/explicit
-time+channel masks; save all outputs and input/every parameter gradient
-summaries, including None for native unused parameters. Training dropout
-uses controlled scalar/channel masks arange%10>=p*10 divided by1-p for
-version-independent placement/scaling checks. Attention-probability dropout
-is set to zero in the training reference because fused SDPA RNG differs
-between supported Torch versions; its native probability.15 and stochastic
-behavior are separately tested. Full 512-wide/eight-layer actual released encoder24 and
-context76 tensors are compared independently against DN3, not represented
-as pretrained by these small synthetic fixtures. BSD notice LICENSES/BENDR.txt.
-
-## LUNA
-
-`luna_reference.json` uses unchanged BioFoundation source at revision
-d4484feccf62eeec666380cb55b5d5b1d517cd71, with timm1.0.10 and
-rotary-embedding-torch0.8.9. Source hashes in fixture. Torch2.6 CPU/float64/2threads,
-querywidth16/queries2/depth2/heads2/patch40, deterministic reference_state
-except native rotary frequencies/frozen temperature. Input1x3x80 is
-sin(arange/17)+cos(arange/31), coordinates[[.1,.2,.3],[.5,0,.9],[.2,.8,.4]],
-channel names FP1/C3/PZ. Loss mean((reconstruction*sin(arange/13))**2) plus
-.03*mean(attention**2). Eval/train/zero/masked cases. Store all outputs and
-attention plus first8/sum/norm EEG, coordinate and every parameter gradient,
-including None for native frozen/unused parameters. Module dropout uses
-controlled arange%10>=p*10 divided by1-p, MHA probability dropout is disabled
-in training reference, position noise is suppressed. Actual stochastic
-behavior is tested separately. Masking is after shared GroupNorm as native;
-masked raw input gradients need not be zero through visible-token statistics.
-
-Reference uses one example to avoid the author's known heterogeneous-batch
-repeat error; separate tests require batching to match individual examples
-and zero cross-example coordinate gradients. Full224/254/464 official
-canonical states are separately compared against the author model, including
-every gradient. No official weight values or adapted weights are in this
-fixture; states are independently generated mathematical test values.
-
-`reve_reference.json` uses the official brain-bzh/reve-base modeling_reve.py
-at dc2a075c287bb2f6c04ee5875bd79535a0f7dba6 and Torch2.6 CPU, two threads.
-Only reviewed class/function bodies are loaded; the Transformers base class
-is replaced by a no-op nn.Module adapter (state is subsequently copied),
-and no import or remote loader executes. Complete model/attention/positional
-equations remain unchanged. Width16/depth2/heads2/headwidth8/frequencies2,
-patch200/overlap20, MLP2.66/GEGLU, manual seed31. EEG is linspace(-1,1) shaped
-[2,3,420], coordinates linspace(-.1,.1) shaped[2,3,3]. Float32 state, native
-features and pretrained-query pooling plus EEG, coordinate and every
-parameter gradient are stored; loss is mean(pooled**2). All model weights
-are randomly generated test values, with no official checkpoint data.
-Full canonical69M/390M states are separately checked against the author
-implementation, including all140tensors and every gradient per variant.
-The training repository has MIT-licensed source; official weights separately
-use REVE Responsible Use License v1.0 and are not part of this fixture.
-
-`codebrain_reference.json` uses unchanged author SGConv/SSSM class/function
-bodies at22d350caf68246d2fda4f630ef837420db3fb130, with exactly one device-only
-change: attention-mask `.cuda()` becomes `.to(x.device)` for CPU reference.
-Source hashes are included. Torch2.6 CPU/float32/two threads, opt_einsum3.4.0,
-seed41; residual width8/depth2/kernel max16/vocabularies7and9. EEG linspace(-1,1)
-shaped[2,3,2,200]. Cases eval/masked contain complete outputs, EEG gradients
-and every parameter gradient's first8/sum/norm (None where unused/frozen).
-Eval loss mean((output*sin(arange/13))**2); masked loss mean(time_logits**2)
-plus mean(frequency_logits**2). Both native kernel buffers persist between
-cases. Generated initial state is a base64-encoded compressed NumPy archive,
-loaded with allow_pickle=False; there are no official checkpoint values.
-Train-mode seed59 parity and all complete official269tensors/gradients are
-verified separately against source; CI tests real dropout/optimizer behavior
-without pinning version-dependent random masks. Current native channel-wise
-Dropout2d behavior is represented by Dropout1d. Numerical contraction and
-complex multiplication order are preserved without opt_einsum at runtime.
-
-`codebrain_tokenizer_reference.json` uses unchanged CodeBrain source
-22d350caf68246d2fda4f630ef837420db3fb130; source hashes are included. Torch2.6
-CPU/float32/two threads, encoder1block/eachdecoder1block, fixedwidth200,
-codewidth8, vocabularies7and9. No official weights or EEG are included.
-`reference_state` in test_codebrain_tokenizer.py specifies every generated
-tensor: float64 sin(arange/17+offset)*.02 then cast, offset first6SHA256hex of
-name modulo97; norm weights/running variances/initted flags1, biases/running
-means/counters0, normalized codebook rows and cloned embed_avg. Input is
-sin(arange/17)+cos(arange/31), shaped[2,3,4,200]. Native positional rows0..3
-include CLS0; library channel_ids1..3 reserve CLS internally.
-
-Cases run sequentially: eval/no_grad, eval/grad, train/grad, retaining EMA
-buffers between cases. Complete six-term native loss/logs, full EEG gradients
-and every parameter gradient's first8/sum/norm (None where frozen) are stored.
-Training CNN dropout uses arange%10>=3 divided by.7; zero-probability modules
-remain identity. Separate actual stochastic full-checkpoint comparisons are
-not represented as portable masks. The final eval also stores both complete
-ID arrays, quantized latents and all three reconstructions. Full canonical
-325tensor comparisons include every gradient and state update separately.
-The fixture deliberately selects contrastive_mode='native' to test source
-reproduction; independent analytic tests establish the corrected default
-InfoNCE denominator. One-patch decoding and constant-target standardization
-fixes have separate regression tests because the native source fails there.
-
-### EEGMamba
-
-`eegmamba_reference.json` uses the complete 12-layer/64-state/50-head-dimension
-EEGMamba model from `wjq-learning/EEGMamba` revision
-`dbc83fa072744201e8897aeb9f65007b952ad323` (MIT), with Mamba2 and its published
-CPU SSD listing from `state-spaces/mamba` revision
-`8ffd905c91d207f5c0cc84fc2a2fb748655094f0` (Apache-2.0). Original model and
-block bodies are evaluated with CPU convolution, original RMSNorm reference
-functions and the unmodified `ssd_minimal_discrete` listing as backend
-substitutions. CUDA/Triton kernels are not executed by this fixture.
-
-No official checkpoint values are stored. For each state key, the first six
-SHA256 hex digits modulo 97 set an offset. Fill with
-`sin(arange(numel, float64)/17 + offset)*0.02`, then cast to float32 and reshape.
-Biases and mask encoding are zero; dt_bias is -3; D and one-dimensional norm
-weights are one. The SSD reference block length is eight. The input is
-`sin(arange(2400)/17)+cos(arange(2400)/31)` in float32, shaped `[2,2,3,200]`.
-Mask each example's first electrode/first patch and example zero's second
-electrode/last patch. Eval-mode features, reconstruction, input gradients and
-every parameter's gradient summary use loss `reconstruction.square().mean() +
-features[...,::3].mean()*0.1`. The separate float64 recurrence test checks the
-SSD output and all five input gradients across multiple block lengths.
-
-### TFM tokenizer and encoder
-
-`tfm_reference.json` is generated from original class/function bodies at
-`Jathurshan0330/TFM-Tokenizer` revision
-`2d6da482b16dabbb2ebec808fa9f505fc6f367c4`, MIT, and the native
-`linear_attention_transformer==0.19.1` dependency. The released CHB-MIT
-checkpoint has a linear reconstruction head; that commented source
-configuration replaces the current MLP explicitly. No tensors are skipped.
-
-The fixture uses float64, width64, vocabulary23, encoder2+2/decoder8 and
-four token-encoder layers. It contains no released checkpoint values.
-Generate states with float64 sin(arange/17+offset)*.02, where offset is the
-first6 SHA256 hex digits of each key modulo97. Preserve deterministic
-source positional buffers and index rows; set cluster counts and1D norm
-weights to1, biases to0, and clone codebook vectors into ema_w.
-Inputs are sin(arange(1600,float64)/17) shaped[2,800] and
-abs(sin(arange(1400,float64)/31)) shaped[2,100,7]. Tokenizer eval/train run
-sequentially, retaining EMA state. The loss is mean squared reconstruction
-plus MSE(vectors, straight_through.detach()), the corrected EMA commitment
-term. All outputs, full waveform/spectrum gradients, every parameter's
-first8/sum/norm gradient summary and complete EMA state are retained.
-
-Token-encoder IDs are arange(42).reshape(2,3,7)*7%24, including mask row23.
-The seven source-generated float32 positional rows are stored as
-`position_prefix` and copied exactly into the float64 test state. This avoids
-changing the reference inputs when CPU sine implementations differ; the
-float64 gradient tolerances remain unchanged.
-Eval/train/token-prediction cases use output.square().mean() and retain
-complete outputs/every gradient summary. Portable dropout uses
-arange(numel)%10 >= p*10, then divides by1-p. Original full8192-codebook
-checkpoints are tested separately against every native output/gradient and
-EMA state in actual stochastic train/eval mode. Independent real EDF
-verification and complete canonical generated-checkpoint workflow tests
-are distinct from this numerical fixture.
+Both full token outputs are weighted by linspace(-.7,1.1,numel).reshape_as
+output. Complete input and encoder-parameter gradients are stored, including
+None for unused final-norm parameters in raw mode. No author weights,
+optimizer objects or EEG recordings are included. Tests do not need timm.
 
 
-`mdjpt_state_geometry.json` records only public checkpoint tensor names,
-shapes and requires-grad facts from original mdJPT revision
-`bb84e89df5d05928ef3aa8645cbc339b59ed59de`. It contains no author neural
-implementation or pretrained values. `test_mdjpt.py` uses it in an explicitly
-labeled independent protocol fixture. Complete actual-source/weight numerical
-validation is separate in `test_mdjpt_native.py`; a fixture pass alone cannot
-establish pretrained-model equivalence.
+## ST-EEGFormer downstream head
+
+`steegformer_head_reference.json` uses unmodified MIT
+`easy_start/models_vit_eeg.py` at the encoder's author revision above with
+timm 1.0.10, global_pool=True, width16/MLP32/depth2/four heads. It loads the
+encoder fixture tensors, excluding unused final norm. Linear weights are
+arange(48).reshape(3,16)/71 - .3; biases are linspace(-.2,.1,3).
+Source input is linspace(-1.2,.8,400).reshape(2,2,100) plus
+.2*sin(arange(400)*.21). Population z-scoring precedes whole-window
+200-to-128 Hz resampling to64. An independent SciPy
+resample(identity100,64,axis0) linear operator also supplies the reference
+input gradient without TorchEEG FFT code. Outputs are weighted by
+[[.2,-.3,.7],[-.4,.8,-.1]]. Complete output/input/encoder/head gradients,
+preprocessed signals and pooled/grid features are stored. No patient data
+or author checkpoint is included. Tests do not require timm.
+
+
+`steegformer_pretraining_reference.json` was generated by the unmodified
+ST-EEGFormer pretrain/models_mae_eeg.py at revision
+542ee17918c3c2c36ba1d4ea02bedff5eb149370 with timm 1.0.10, PyTorch 2.6 CPU,
+float64, synthetic deterministic weights and inputs. It contains no official
+pretrained weights. Eight cases cover regular/demo temporal positions,
+normalized/raw reconstruction targets and partial/full masking; each records
+loss, reconstruction, mask, input and every used parameter gradient for a
+nonconstant reconstruction probe plus native loss. The fixture geometry is
+small for routine CI; separate real-input validation used all three complete
+official architectures and weights. Source license: LICENSES/STEEGFormer.txt.
