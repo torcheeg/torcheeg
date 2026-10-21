@@ -95,8 +95,9 @@ logit tensors shaped ``[32,masked_count,8192]`` and
 ``[32,unmasked_count,8192]``. Counts include all examples and electrodes;
 token ordering is the native boolean-index order. All 32 heads participate
 in gradients. Obtain matching target IDs from the separately supplied EEG-v1
-tokenizer; the adapter does not invent targets. The tokenizer, full RVQ
-training schedule and a real-data pretraining example remain separate work.
+tokenizer; the adapter does not invent targets. The complete tokenizer and its reconstruction-training example are described
+below. A complete 32-head masked-token training workflow and the original
+large-corpus training schedule remain separate work.
 
 Independent real EEG example and validation
 -------------------------------------------
@@ -129,3 +130,81 @@ features, symmetric logits, EEG gradients and every parameter gradient,
 and verify sample isolation. Without these paths only that external test
 is skipped. A separate GitHub workflow obtains the pinned author materials
 under their own terms and runs the same complete oracle.
+
+Complete tokenizer and reconstruction training
+----------------------------------------------
+
+:class:`torcheeg.models.NeuroRVQTokenizer` accepts the **complete** original
+EEG-v1 tokenizer. Use the same pinned source and Hub revisions above, with
+``pretrained_models/tokenizers/NeuroRVQ_EEG_tokenizer_v1.pt``. Its SHA256 is
+``d3e850e160b1a558c529466b1c0b8cebe8888a5e02824979886dd226187b2725``.
+All **505 native states** load strictly: 75,988,624 stored elements including
+EMA bookkeeping, with 8,355,440 trainable neural parameters. The original
+12-block encoder, 3-block decoder, four eight-layer residual quantizers,
+and all amplitude/sine/cosine heads remain present. Each of the 32 codebooks
+has 8192 entries of width 128. The complete adapter saves 508 states, adding
+electrode IDs, the metadata fingerprint, and the evaluation usage policy.
+
+Explicit construction is shown in
+:doc:`../auto_examples/examples_eegmat_neurorvq_tokenizer_training`.
+The library does not import the author code or download weights:
+
+.. code-block:: python
+
+   from torcheeg.models import NeuroRVQTokenizer
+
+   tokenizer = NeuroRVQTokenizer.from_pretrained(
+       './NeuroRVQ_EEG_tokenizer_v1.pt', full_author_tokenizer,
+       channel_names=channel_names, channel_vocab=original_vocabulary
+   )
+   tokenizer.train()
+   result = tokenizer(eeg, return_loss=True)
+   result['loss'].backward()
+
+``get_tokens`` exposes native ``token`` IDs of shape ``[4,8,B,C*P]`` and
+``indices`` of shape ``[32,B,C,P]``. Stream ``8 * branch + residual`` follows
+the original four-branch, eight-residual order; the within-stream flattening
+is channel-major. ``get_codebook_indices`` returns this ordered 32-stream
+tensor. ``quantized`` contains all four ``[B,128,C,P]`` feature maps.
+
+``forward_pretraining`` (or ``forward(return_loss=True)``) exposes the original
+code, amplitude, phase and standardized-signal losses and their **sum**. It
+calls the native encoder, RVQs, decoder and loss methods. This includes the
+original residual auxiliary loss and its reduction; no alternate codebook
+objective is substituted. ``original`` and ``reconstruction`` are ``[B,C,T]``,
+standardized per example across all channels and times using native unbiased
+variance. They are **not physical-voltage outputs**. Ordinary ``forward``
+returns these two tensors. Amplitude and sine/cosine predictions are also
+available in the training dictionary.
+
+Training updates the native EMA codebooks and usage counters. Author evaluation
+also changes 32 usage buffers. By default, the adapter restores those counters
+after evaluation and requires already initialized codebooks. Set
+``track_usage=True`` explicitly to retain the native evaluation statistics;
+strict checkpoint restoration rejects a policy change. Freezing a teacher
+requires both ``eval()`` and ``requires_grad_(False)``. Calls on a shared
+instance must be serialized; concurrent CUDA streams have not been validated.
+
+The adapter refreshes native EMA reduction callbacks at call time instead
+of capturing process-group availability at construction. Distributed training
+requires initialized codebooks. Read-only evaluation performs no statistic
+collectives, permitting evaluation on one rank. Native usage-tracking evaluation
+requires all ranks to enter its collectives. GPU and distributed full-model
+training are not established by the CPU example.
+
+The independent example trains all used tokenizer parameters on real EEGMat
+windows with a subject holdout and native EMA updates. It checks raw-file hashes
+and cache preprocessing manifests, saves the full adapter/AdamW/CPU RNG/cursor,
+and supports exact continuation with a new output path. It uses all19 measured
+electrodes at200Hz with the same explicit teaching normalization as the probe.
+Four held-out windows are evaluated without state changes or model selection.
+This is a few-step workflow check, not a published benchmark or reproduction
+of the original corpus and training schedule.
+
+Optional full-tokenizer oracle tests require
+``TORCHEEG_NEURORVQ_BACKEND_ROOT`` and
+``TORCHEEG_NEURORVQ_TOKENIZER_CHECKPOINT``. They compare original token order,
+all four losses, standardized outputs, EEG and every used parameter gradient,
+all EMA states, read-only evaluation, and exact optimizer/RNG continuation.
+The dedicated GitHub workflow downloads both complete official checkpoints,
+verifies their hashes, preserves their licenses, and runs the native tests.

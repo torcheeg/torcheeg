@@ -101,6 +101,7 @@ Transformer
    LEADClassifier
    NeuroRVQ
    NeuroRVQClassifier
+   NeuroRVQTokenizer
    BENDR
    BENDREncoder
    BENDRContextualizer
