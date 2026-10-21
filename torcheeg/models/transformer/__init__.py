@@ -32,3 +32,5 @@ from .lead import LEAD, LEADClassifier
 from .neurorvq import NeuroRVQ, NeuroRVQClassifier
 
 from .neurorvq_tokenizer import NeuroRVQTokenizer
+
+from .neurorvq_pretraining import NeuroRVQMaskedTokenPretrainer
