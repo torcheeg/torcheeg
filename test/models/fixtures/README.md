@@ -292,7 +292,7 @@ input and every parameter-gradient tensor, and complete post-forward EMA
 state. Synthetic weights/signals, width16, vocabulary23, one block per
 component; two dimensions per attention head avoid a degenerate softmax.
 Dropout uses the deterministic element mask documented in the fixture,
-and exact native masks are stored. The CPU float32 Hann window and original
+and exact native masks are stored. The CPU float32 Hann window snapshot (explicit fixture input) and original
 position buffers are retained for cross-runtime reproducibility. No official
 pretrained values are included. Separate native checks use full original
 64-wide/8192-vocabulary released models and ordinary seeded train dropout.

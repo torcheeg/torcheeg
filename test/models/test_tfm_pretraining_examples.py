@@ -75,7 +75,7 @@ class TestTFMPretrainingExamples(unittest.TestCase):
             resumed = torch.load(root / 'resumed.pt', weights_only=True)
             continuous = torch.load(root / 'continuous.pt', weights_only=True)
             self.assertEqual(
-                len(resumed['model']), 191 if objective == 'tokenizer' else 250
+                len(resumed['model']), 192 if objective == 'tokenizer' else 251
             )
             self.assertEqual(resumed['protocol']['train_subjects'], ['a'])
             self.assertEqual(resumed['protocol']['held_out_subject'], 'b')

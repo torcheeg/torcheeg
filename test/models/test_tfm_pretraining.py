@@ -53,9 +53,13 @@ class TestTFMPretraining(unittest.TestCase):
                         {n: tensor(t) for n, t in fixture['encoder_state'].items()},
                         strict=True,
                     )
-                    model = TFMMaskedTokenPretrainer(tokenizer, encoder)
+                    model = TFMMaskedTokenPretrainer(
+                        tokenizer, encoder, stft_window=tensor(fixture['stft_window'])
+                    )
                 else:
-                    model = TFMTokenizerPretrainer(tokenizer)
+                    model = TFMTokenizerPretrainer(
+                        tokenizer, stft_window=tensor(fixture['stft_window'])
+                    )
                 model.train(case['training'])
                 eeg = tensor(fixture['input']).requires_grad_()
                 with controlled_dropout():
@@ -108,6 +112,34 @@ class TestTFMPretraining(unittest.TestCase):
                         atol=1e-11,
                         msg=name,
                     )
+
+    def test_stft_window_snapshot_is_owned_saved_and_restored(self):
+        window = torch.hann_window(200)
+        expected = window.clone()
+        model = TFMTokenizerPretrainer(self.tokenizer(), stft_window=window).eval()
+        window.zero_()
+        torch.testing.assert_close(model.stft_window, expected, rtol=0, atol=0)
+        self.assertIn('stft_window', model.state_dict())
+        other = TFMTokenizerPretrainer(
+            self.tokenizer(), stft_window=torch.zeros(200)
+        ).eval()
+        other.load_state_dict(model.state_dict(), strict=True)
+        eeg = torch.randn(2, 2, 400, requires_grad=True)
+        second = eeg.detach().clone().requires_grad_()
+        mask = model.mask_spectrum(torch.ones(4, 100, 3))
+        left, right = model(eeg, mask=mask), other(second, mask=mask)
+        torch.testing.assert_close(left['loss'], right['loss'], rtol=0, atol=0)
+        left['loss'].backward()
+        right['loss'].backward()
+        torch.testing.assert_close(eeg.grad, second.grad, rtol=0, atol=0)
+        for invalid in (
+            torch.ones(199),
+            torch.ones(200, dtype=torch.long),
+            torch.full((200,), float('nan')),
+            torch.ones(200, requires_grad=True),
+        ):
+            with self.assertRaisesRegex(ValueError, 'stft_window'):
+                TFMTokenizerPretrainer(self.tokenizer(), stft_window=invalid)
 
     def test_spectral_mask_native_shared_groups_and_complement(self):
         spectrum = torch.ones(4, 100, 7)

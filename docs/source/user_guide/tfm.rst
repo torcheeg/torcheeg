@@ -226,7 +226,11 @@ using the original complementary spectral masks. Pass preprocessed floating
 EEG ``[batch,electrodes,samples]`` at 200 Hz; the wrapper performs the native
 STFT only, without filtering, scaling or resampling. The periodic Hann window
 is computed on CPU in float32 and moved to the signal device, preserving the
-original source window values even for float64 inputs. Both STFT and temporal
+original source window values even for float64 inputs. Its 200-value
+``stft_window`` snapshot is a persistent wrapper buffer. This preserves
+exact window values across platform-specific float32 cosine rounding during
+checkpoint restore. Supply a fixed ``stft_window`` explicitly for a controlled
+reference; a different window is an explicit preprocessing change. Both STFT and temporal
 convolution retain only complete 200-sample windows at stride 100.
 
 The default mask drops ten of twenty five-bin frequency groups and
@@ -317,9 +321,10 @@ Two independent workflows require local complete official multi-dataset
 weights and real EEGMat EDF files; neither substitutes a small random model:
 
 * :doc:`../auto_examples/examples_eegmat_tfm_tokenizer_training` continues
-  the 191-state MLP tokenizer, with explicit native or EMA-corrected objective.
+  the complete 191-state MLP tokenizer plus the saved window (192 wrapper states), with explicit native or EMA-corrected objective.
 * :doc:`../auto_examples/examples_eegmat_tfm_mtp_training` continues the
-  250-state teacher/encoder pair, preserving the trained vocabulary head.
+  complete 250-state teacher/encoder pair plus the saved window (251 wrapper
+  states), preserving the trained vocabulary head.
 
 Both use the existing explicit EEGMat transfer preprocessing, separate the
 last subject, and train on fixed sequential batches. They save every neural
@@ -349,3 +354,11 @@ this avoids an older AOTAutograd noncontiguous-gradient view failure without
 changing any parameter names, dimensions or formula. Independent native
 checks and existing BIOT/TFM regressions cover the eager compatibility.
 This is not a default-Inductor or GPU performance claim.
+
+
+EMA state transactions remain outside AOTAutograd graphs, explicitly between
+the two compiled neural branches. This preserves both ordered updates and
+distributed reductions, while avoiding a PyTorch 2.4 duplicated-mutated-input
+compiler error. It does not suppress compiler errors or replace either neural
+branch with a smaller network. Training uses graph breaks; inference with
+EMA disabled retains the tokenizer's existing compilation behavior.

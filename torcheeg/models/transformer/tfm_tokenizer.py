@@ -72,18 +72,27 @@ class _EMAQuantizer(nn.Module):
         indices = distances.argmin(-1)
         quantized = self.embedding(indices).reshape_as(x)
         if self.training and self.update:
-            with torch.no_grad():
-                assignments = F.one_hot(indices, self.count).to(flat.dtype)
-                counts, totals = assignments.sum(0), assignments.t() @ flat.detach()
-                if distributed.is_available() and distributed.is_initialized():
-                    distributed.all_reduce(counts)
-                    distributed.all_reduce(totals)
-                self.cluster_size.mul_(self.decay).add_(counts, alpha=1-self.decay)
-                self.ema_w.mul_(self.decay).add_(totals, alpha=1-self.decay)
-                total = self.cluster_size.sum()
-                smoothed = (self.cluster_size + 1e-5) / (total + self.count*1e-5) * total
-                self.embedding.weight.copy_(self.ema_w / smoothed[:, None])
+            self._update_ema(flat, indices)
         return quantized, indices.reshape(x.shape[:2])
+
+    @torch.no_grad()
+    def _update_ema(self, flat, indices):
+        assignments = F.one_hot(indices, self.count).to(flat.dtype)
+        counts, totals = assignments.sum(0), assignments.t() @ flat.detach()
+        if distributed.is_available() and distributed.is_initialized():
+            distributed.all_reduce(counts)
+            distributed.all_reduce(totals)
+        self.cluster_size.mul_(self.decay).add_(counts, alpha=1-self.decay)
+        self.ema_w.mul_(self.decay).add_(totals, alpha=1-self.decay)
+        total = self.cluster_size.sum()
+        smoothed = (self.cluster_size + 1e-5) / (total + self.count*1e-5) * total
+        self.embedding.weight.copy_(self.ema_w / smoothed[:, None])
+
+    # Keep the explicit state transaction between compiled neural branches.
+    # PyTorch 2.4 AOTAutograd cannot deduplicate twice-mutated EMA inputs.
+    if hasattr(torch, 'compiler') and hasattr(torch.compiler, 'disable'):
+        _update_ema = torch.compiler.disable(_update_ema)
+
 
 
 def _convolutions(width, temporal):

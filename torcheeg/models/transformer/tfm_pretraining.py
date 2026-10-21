@@ -7,7 +7,23 @@ from torch.nn import functional as F
 from .tfm_tokenizer import TFMEncoder, TFMTokenizer
 
 
-def _spectrum(eeg):
+def _window_snapshot(window):
+    if window is None:
+        return torch.hann_window(200, dtype=torch.float32, device='cpu')
+    if (
+        not isinstance(window, torch.Tensor)
+        or not window.is_floating_point()
+        or window.shape != (200,)
+        or window.requires_grad
+        or not torch.isfinite(window).all()
+    ):
+        raise ValueError(
+            'stft_window must be a finite, fixed floating tensor of 200 samples.'
+        )
+    return window.detach().cpu().clone().contiguous()
+
+
+def _spectrum(eeg, window):
     if (
         not isinstance(eeg, torch.Tensor)
         or not eeg.is_floating_point()
@@ -23,7 +39,7 @@ def _spectrum(eeg):
         temporal,
         n_fft=200,
         hop_length=100,
-        window=torch.hann_window(200, dtype=torch.float32, device='cpu').to(eeg.device),
+        window=window.to(eeg.device),
         center=False,
         onesided=True,
         return_complex=True,
@@ -52,9 +68,13 @@ class TFMTokenizerPretrainer(nn.Module):
             at beta=1 with straight-through codes. ema explicitly uses the
             corrected detached-target commitment helper instead. Save this
             choice with the experiment. (default: :obj:`'native'`)
+        stft_window (torch.Tensor, optional): Fixed 200-value window snapshot.
+            Default is the source float32 CPU Hann. It is saved as a buffer
+            so restoring a checkpoint does not regenerate platform-dependent
+            window values. A custom window is an explicit preprocessing change.
     """
 
-    def __init__(self, tokenizer, quantization_mode='native'):
+    def __init__(self, tokenizer, quantization_mode='native', stft_window=None):
         super().__init__()
         if not isinstance(tokenizer, TFMTokenizer):
             raise ValueError('Require a complete TFMTokenizer.')
@@ -65,6 +85,7 @@ class TFMTokenizerPretrainer(nn.Module):
             raise ValueError('quantization_mode must be native or ema.')
         self.tokenizer = tokenizer
         self.quantization_mode = quantization_mode
+        self.register_buffer('stft_window', _window_snapshot(stft_window))
 
     @staticmethod
     def mask_spectrum(spectrum, generator=None):
@@ -96,7 +117,7 @@ class TFMTokenizerPretrainer(nn.Module):
         )
 
     def forward(self, eeg, generator=None, mask=None):
-        spectrum, temporal = _spectrum(eeg)
+        spectrum, temporal = _spectrum(eeg, self.stft_window)
         if mask is None:
             mask = self.mask_spectrum(spectrum, generator)
         elif (
@@ -162,9 +183,11 @@ class TFMMaskedTokenPretrainer(nn.Module):
     Args:
         tokenizer (TFMTokenizer): Complete tokenizer, permanently frozen by this wrapper.
         encoder (TFMEncoder): Complete encoder with num_classes == num_tokens.
+        stft_window (torch.Tensor, optional): Fixed 200-value window snapshot,
+            saved as a buffer. Default is the source float32 CPU Hann.
     """
 
-    def __init__(self, tokenizer, encoder):
+    def __init__(self, tokenizer, encoder, stft_window=None):
         super().__init__()
         if not isinstance(tokenizer, TFMTokenizer) or not isinstance(
             encoder, TFMEncoder
@@ -180,6 +203,7 @@ class TFMMaskedTokenPretrainer(nn.Module):
             )
         self.tokenizer = tokenizer.requires_grad_(False).eval()
         self.encoder = encoder
+        self.register_buffer('stft_window', _window_snapshot(stft_window))
 
     def train(self, mode=True):
         super().train(mode)
@@ -188,7 +212,7 @@ class TFMMaskedTokenPretrainer(nn.Module):
 
     @torch.no_grad()
     def get_codebook_indices(self, eeg):
-        spectrum, temporal = _spectrum(eeg)
+        spectrum, temporal = _spectrum(eeg, self.stft_window)
         if not 1 <= eeg.shape[1] <= 16 or spectrum.shape[-1] > 1000:
             raise ValueError(
                 'Require 1--16 electrodes and at most 1000 temporal positions.'
