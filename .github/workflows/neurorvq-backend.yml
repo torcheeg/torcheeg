@@ -69,4 +69,6 @@ jobs:
               stream.write('TORCHEEG_NEURORVQ_TOKENIZER_CHECKPOINT=' + str(tokenizer) + '\n')
           PY
       - name: Validate complete native model and adapter
-        run: python -m unittest test.models.test_neurorvq_native test.models.test_neurorvq_tokenizer_native
+        run: |
+          python -m unittest test.models.test_neurorvq_native test.models.test_neurorvq_tokenizer_native
+          python -m unittest test.models.test_neurorvq_pretraining_native

@@ -102,6 +102,7 @@ Transformer
    NeuroRVQ
    NeuroRVQClassifier
    NeuroRVQTokenizer
+   NeuroRVQMaskedTokenPretrainer
    BENDR
    BENDREncoder
    BENDRContextualizer

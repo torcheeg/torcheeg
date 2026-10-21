@@ -96,8 +96,8 @@ logit tensors shaped ``[32,masked_count,8192]`` and
 token ordering is the native boolean-index order. All 32 heads participate
 in gradients. Obtain matching target IDs from the separately supplied EEG-v1
 tokenizer; the adapter does not invent targets. The complete tokenizer and its reconstruction-training example are described
-below. A complete 32-head masked-token training workflow and the original
-large-corpus training schedule remain separate work.
+below, followed by the complete 32-head masked-token workflow. The original
+large-corpus training schedule is not reproduced.
 
 Independent real EEG example and validation
 -------------------------------------------
@@ -208,3 +208,85 @@ all four losses, standardized outputs, EEG and every used parameter gradient,
 all EMA states, read-only evaluation, and exact optimizer/RNG continuation.
 The dedicated GitHub workflow downloads both complete official checkpoints,
 verifies their hashes, preserves their licenses, and runs the native tests.
+
+Train all 32 masked-token prediction heads
+-------------------------------------------
+
+:class:`torcheeg.models.NeuroRVQMaskedTokenPretrainer` connects the complete
+EEG-v1 backbone to the matching complete tokenizer. Supply both loaded adapters
+with identical ordered electrode names, vocabulary, sampling rate and patch
+geometry. The tokenizer must use ``track_usage=False``; shared parameters are
+rejected. The wrapper freezes the tokenizer, keeps it in evaluation mode when
+the backbone trains, and preserves every teacher state including usage buffers.
+It retains both original networks: **330 backbone plus 505 tokenizer states**.
+Together with physical metadata, usage policy and the objective fingerprint,
+the exported wrapper has **841 state entries**. The teacher decoder remains
+present even though target generation only needs encoding.
+
+.. code-block:: python
+
+   from torcheeg.models import NeuroRVQMaskedTokenPretrainer
+
+   # Explicit complete adapters loaded from both matching EEG-v1 checkpoints.
+   model = NeuroRVQMaskedTokenPretrainer(backbone, tokenizer)
+   model.train()
+   # mask: boolean [batch,electrodes,patches], same device as EEG.
+   result = model(eeg, mask)
+   result['loss'].backward()
+
+The mask and its complement must both contain at least one patch across the
+batch. All 32 original heads predict the corresponding frozen tokenizer IDs.
+For each branch, heads ``8 * branch`` through ``8 * branch + 7`` follow the
+eight native residual layers. Boolean indexing preserves batch, electrode,
+then temporal order. Returned targets are ``[32,B,C,P]``; logits are
+``[32,masked_count,8192]`` and ``[32,complement_count,8192]``.
+
+The objective is explicit: for **each partition separately**, cross entropy
+is averaged over its selected patches and all 32 heads. The two partition
+means are then **summed**. Unequal partition sizes do not weight one view
+more heavily. ``masked_loss`` and ``symmetric_loss`` expose these terms.
+The fingerprint in the state dictionary guards this reduction policy.
+
+This reduction is a TorchEEG training interface using the complete released
+networks, targets and logits. The pinned author repository exposes symmetric
+prediction but does not release its stage-two trainer or specify this loss
+reduction. The paper describes symmetric masking. This interface does not
+claim to reproduce an unavailable training loop or the original full-corpus
+schedule. No targets, codebooks or prediction heads are randomly substituted.
+
+Independent real-data workflow
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+See :doc:`../auto_examples/examples_eegmat_neurorvq_mtp_training`.
+The standalone script requires the explicit complete initial checkpoint pair,
+or a full strict resume artifact. It uses the same documented EEGMat teaching
+preprocessing as the tokenizer workflow and holds out the final sorted subject.
+Each example masks ``floor(C*P/2)`` patches without replacement using a dedicated
+CPU generator; the complement forms the second view. This mask-generation
+policy is explicit and is not attributed to an unpublished author sampler.
+
+.. code-block:: console
+
+   python examples/examples_eegmat_neurorvq_mtp_training.py --root-path ./eegmat \
+       --backend-root ./NeuroRVQ \
+       --foundation-checkpoint ./NeuroRVQ_EEG_foundation_model_v1.pt \
+       --tokenizer-checkpoint ./NeuroRVQ_EEG_tokenizer_v1.pt \
+       --steps 2 --output-path ./mtp2.pt
+   python examples/examples_eegmat_neurorvq_mtp_training.py --root-path ./eegmat \
+       --backend-root ./NeuroRVQ --resume ./mtp2.pt --steps 3 --output-path ./mtp3.pt
+
+``--steps`` is the total including resumed steps. The example saves all 841
+model states, backbone AdamW state, global CPU and mask-generator RNG, next
+batch cursor, input hashes and preprocessing protocol. Resume rejects protocol
+changes. It checks cache manifests and never overwrites an existing output.
+Validation uses the first four held-out windows with a separate fixed mask
+generator, without parameter selection or teacher updates. The few-step CPU
+run checks the workflow; its losses are not benchmark results.
+
+Normal interface tests use clearly labeled protocol doubles. Optional complete
+native tests require both checkpoint environment variables above. They compare
+all 32-stream targets, both native logit tensors, explicit mathematical CE,
+EEG and all 330 backbone parameter gradients, immutable teacher state, and
+exact full optimizer/global-RNG/mask-RNG continuation. These are complete
+original models, not smaller numerical substitutes. GPU execution, concurrent
+shared-model calls and a full distributed training benchmark remain unverified.
