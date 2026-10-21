@@ -3,6 +3,7 @@ name: Uni-DMFM external backend
 on:
   pull_request:
     paths:
+      - 'torcheeg/models/transformer/__init__.py'
       - 'torcheeg/models/transformer/unidmfm*.py'
       - 'test/models/test_unidmfm*.py'
       - 'examples/examples_eegmat_unidmfm*.py'

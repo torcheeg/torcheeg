@@ -3,6 +3,7 @@ name: SleepFM external backends
 on:
   pull_request:
     paths:
+      - 'torcheeg/models/transformer/__init__.py'
       - 'torcheeg/models/transformer/sleepfm.py'
       - 'test/models/test_sleepfm*.py'
       - 'examples/examples_eegmat_sleepfm.py'

@@ -35,6 +35,9 @@ For verified runtime combinations and modern API examples, see :doc:`pytorch`.
 Models and training
 -------------------
 
+For pretrained EEG backbones and complete self-supervised objectives, see
+:doc:`foundation_models`.
+
 Match the sample representation to the model. Raw signals, grid features,
 and graphs have different input formats. Check :doc:`../torcheeg.models`
 before creating the data loader. Match the output and target formats to
@@ -51,6 +54,7 @@ the same library workflow as a reusable assistant skill.
 .. toctree::
    :hidden:
 
+   foundation_models
    cache
    moabb
    eegpt_decoders

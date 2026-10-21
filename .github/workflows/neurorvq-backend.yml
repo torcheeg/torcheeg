@@ -3,6 +3,7 @@ name: NeuroRVQ external backend
 on:
   pull_request:
     paths:
+      - 'torcheeg/models/transformer/__init__.py'
       - 'torcheeg/models/transformer/neurorvq*.py'
       - 'test/models/test_neurorvq*.py'
       - 'examples/examples_eegmat_neurorvq*.py'
