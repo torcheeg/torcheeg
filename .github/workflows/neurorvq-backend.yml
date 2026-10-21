@@ -3,9 +3,10 @@ name: NeuroRVQ external backend
 on:
   pull_request:
     paths:
-      - 'torcheeg/models/transformer/neurorvq.py'
+      - 'torcheeg/models/transformer/__init__.py'
+      - 'torcheeg/models/transformer/neurorvq*.py'
       - 'test/models/test_neurorvq*.py'
-      - 'examples/examples_eegmat_neurorvq.py'
+      - 'examples/examples_eegmat_neurorvq*.py'
       - 'docs/source/user_guide/neurorvq.rst'
       - '.github/workflows/neurorvq-backend.yml'
       - 'setup.py'
@@ -43,7 +44,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: external/neurorvq-weights
-          key: neurorvq-p-base-d14ef4eae2d4594d5f1f709226a3bb5f362afd84b68050d5da0fa0586aea886a
+          key: neurorvq-complete-tokenizer-d3e850e1-base-d14ef4eae2d4594d5f1f709226a3bb5f362afd84b68050d5da0fa0586aea886a
       - name: Obtain separately licensed official checkpoint
         run: |
           python - <<'PY'
@@ -56,12 +57,19 @@ jobs:
           path = Path(hf_hub_download('ntinosbarmpas/NeuroRVQ', filename,
               revision='d944b87f44ae0ba2923b2f10d0518f23f6803b76', local_dir='external/neurorvq-weights')).resolve()
           assert hashlib.sha256(path.read_bytes()).hexdigest() == 'd14ef4eae2d4594d5f1f709226a3bb5f362afd84b68050d5da0fa0586aea886a'
+          tokenizer = Path(hf_hub_download('ntinosbarmpas/NeuroRVQ',
+              'pretrained_models/tokenizers/NeuroRVQ_EEG_tokenizer_v1.pt',
+              revision='d944b87f44ae0ba2923b2f10d0518f23f6803b76', local_dir='external/neurorvq-weights')).resolve()
+          assert hashlib.sha256(tokenizer.read_bytes()).hexdigest() == 'd3e850e160b1a558c529466b1c0b8cebe8888a5e02824979886dd226187b2725'
           hf_hub_download('ntinosbarmpas/NeuroRVQ', 'LICENSE',
               revision='d944b87f44ae0ba2923b2f10d0518f23f6803b76', local_dir='external/neurorvq-weights')
           shutil.copyfile('LICENSES/NEURORVQ-BACKEND-NOTICE.txt', 'external/neurorvq-weights/NEURORVQ-BACKEND-NOTICE.txt')
           shutil.copyfile(Path(os.environ['TORCHEEG_NEURORVQ_BACKEND_ROOT']) / 'LICENSE', 'external/neurorvq-weights/SOURCE_LICENSE')
           with Path(os.environ['GITHUB_ENV']).open('a') as stream:
               stream.write('TORCHEEG_NEURORVQ_CHECKPOINT=' + str(path) + '\n')
+              stream.write('TORCHEEG_NEURORVQ_TOKENIZER_CHECKPOINT=' + str(tokenizer) + '\n')
           PY
       - name: Validate complete native model and adapter
-        run: python -m unittest test.models.test_neurorvq_native
+        run: |
+          python -m unittest test.models.test_neurorvq_native test.models.test_neurorvq_tokenizer_native
+          python -m unittest test.models.test_neurorvq_pretraining_native

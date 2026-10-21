@@ -31,7 +31,10 @@ class _LinearAttention(nn.Module):
         k = k.softmax(dim=-2)
         context = torch.einsum('bhnd,bhne->bhde', k, v)
         attended = torch.einsum('bhnd,bhde->bhne', q, context)
-        return self.dropout(self.to_out(attended.transpose(1, 2).reshape(batch, tokens, width)))
+        # Keep the projection/dropout two-dimensional: older AOTAutograd can
+        # otherwise view a noncontiguous dropout gradient as [batch*tokens,width].
+        merged = attended.transpose(1, 2).reshape(batch * tokens, width)
+        return self.dropout(self.to_out(merged)).reshape(batch, tokens, width)
 
 
 class _FeedForward(nn.Module):

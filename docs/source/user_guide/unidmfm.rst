@@ -82,10 +82,10 @@ log STFT magnitude with FFT 64, hop 16 and a Hann window, giving 33 by 13
 values per one-second patch. Its contrastive criterion normalizes projections
 and uses paired-view cross entropy with a specified temperature.
 
-The current standalone example trains a new task head. A complete independent
-real-data reproduction of the original pretraining schedule, span masking
-and augmentations remains separate work; output availability alone does not
-establish that reproduction.
+The classification example trains a new task head. The independent
+self-supervised workflow below uses the original augmentations, span masking
+and all three losses. Its teaching schedule is explicit; the original full
+TUEG corpus and pretraining schedule are not reproduced.
 
 Safe full loading and metadata
 -------------------------------
@@ -141,3 +141,100 @@ unchanged during the frozen probe. PyTorch 2.6 CPU ``aot_eager`` compilation
 with ``fullgraph=False`` preserves feature and three-head outputs and all
 input/parameter gradients. These checks establish neither fullgraph/GPU
 performance nor the published pretraining and downstream benchmark scores.
+
+Complete self-supervised training
+----------------------------------
+
+:class:`torcheeg.models.UniDMFMPretrainer` connects every original reconstruction
+and contrastive head to the released training objective. Supply the complete
+``UniDMFM`` adapter and an explicitly constructed native ``NTXentLoss`` module.
+The library imports no author code and bundles neither source nor weights.
+The standalone example obtains the loss, augmentations and span-mask sampler
+from the same trusted pinned local author checkout.
+
+.. code-block:: python
+
+   from torcheeg.models import UniDMFMPretrainer
+
+   # native_loss is explicitly constructed from the separately obtained source.
+   pretrainer = UniDMFMPretrainer(backbone, native_loss)
+   result = pretrainer(clean_eeg, first_view, second_view, mask)
+   result['loss'].backward()
+
+Clean EEG and both independently augmented views are ``[B,C,T]`` at 200 Hz.
+The explicit binary ``[B,C,P]`` mask zeros only the first augmented view.
+The original second augmented view supplies the other contrastive projection.
+Both reconstruction targets use **clean original EEG**, even if augmentation
+shifted the first view. No target is silently changed to the augmented signal.
+
+The time loss is masked **MSE**, summed over selected samples and divided by
+``mask.sum()*200 + 1e-8``. The frequency target uses periodic Hann64, hop16,
+centered reflect padding, and one-sided STFT: ``log(abs(STFT)+1e-6)``, flattened
+to 429 bins (33 frequencies by 13 frames). Frequency MSE is summed over selected
+bins and divided by ``mask.sum()*429 + 1e-8``. It is not ``log1p`` or a raw FFT.
+Only the frequency target is detached; time-target and augmented-view gradients
+follow the original source. Although author variables say ``mae``, the released
+criterion is squared error.
+
+The supplied original NT-Xent normalizes the two projections, forms the full
+``2B`` similarity matrix, clamps scaled similarity to ``[-50,50]``, removes its
+diagonal and predicts positive pairs offset by ``B``. Its explicit temperature
+is recorded with the loss coefficients. The default total is the sum of all
+three losses; callers can supply nonnegative coefficients. Empty masks retain
+the original zero reconstruction terms. A batch of one has zero NT-Xent signal;
+use at least two examples for meaningful negatives.
+
+All **386 native states** remain present, including 144 profiling buffers.
+The physical metadata, stored float32 Hann64 window and objective fingerprint
+bring the full wrapper to **389 states**. Checkpoint restoration rejects a
+changed objective or temperature. A supplied fixed native window can be used
+for numerical comparison and is saved exactly, avoiding reconstruction of its
+values on another CPU.
+
+Independent real-data continuation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+See :doc:`../auto_examples/examples_eegmat_unidmfm_pretraining`.
+The standalone example uses all 19 EEGMat electrodes, whole-record resampling
+to 200 Hz, FIR 0.1–75 Hz and 50-Hz notch, original reference, and **20-second**
+windows. It converts to float32 before per-channel unbiased standardization
+``(x-mean)/(std+1e-6)``, then clamps to ``[-10,10]`` as in native pretraining.
+This differs from the population-standardized four-second classification probe.
+
+The original source generates independent views through whole-window temporal
+shifts, channel dropout and Gaussian noise. Its span lengths of 5–10 patches
+can overlap and are clipped at the window end. ``mask_ratio=0.6`` therefore
+means an approximate masking policy, not an exact 60 percent selection.
+The example calls the original functions; it does not replace this sampler.
+
+The last sorted subject is held out. Labels never enter optimization. The CPU
+teaching run uses native AdamW coefficients and gradient clipping, with a fixed
+1000-update cosine schedule and 100-update warmup. This schedule is independent
+of ``--steps``, which is the total number of updates including resumed ones.
+It is a small teaching transfer, not a TUEG/full-corpus or GPU-AMP reproduction.
+
+.. code-block:: console
+
+   python examples/examples_eegmat_unidmfm_pretraining.py --root-path ./eegmat \
+       --backend-root ./Uni-DMFM --checkpoint ./pretrained_weights.pth \
+       --steps 2 --output-path ./pretrain2.pt
+   python examples/examples_eegmat_unidmfm_pretraining.py --root-path ./eegmat \
+       --backend-root ./Uni-DMFM --checkpoint ./pretrained_weights.pth \
+       --resume ./pretrain2.pt --steps 3 --output-path ./pretrain3.pt
+
+The original checkpoint is required even on resume to establish the complete
+profiling schema and provenance. Saved training state includes all model and
+profiling tensors, window, optimizer, scheduler, Torch/Python/NumPy RNG and
+next batch cursor. NumPy RNG is encoded as restricted-loadable tensors and
+basic values. Validation uses a separate fixed RNG, then restores the training
+streams. Input hashes, cache manifests and protocol are checked; existing output
+files are rejected. Native helper namespaces are explicitly checked: use a fresh
+process if a different author checkout already occupies their module names.
+
+Normal numerical tests use clearly labeled protocol doubles and an independent
+NumPy STFT reference. Optional tests use the **complete official model** and
+compare all predictions, three losses, raw EEG and every parameter gradient.
+They also execute the untouched original CPU training method and compare the
+complete optimizer step, gradient clipping, scheduler and profiling state.
+The dedicated GitHub workflow supplies the original source and checkpoint.
+GPU, shared-model concurrency and distributed pretraining remain unverified.

@@ -3,11 +3,16 @@ name: SleepFM external backends
 on:
   pull_request:
     paths:
-      - 'torcheeg/models/transformer/sleepfm.py'
+      - 'torcheeg/models/transformer/__init__.py'
+      - 'torcheeg/models/transformer/sleepfm*.py'
+      - 'torcheeg/datasets/module/clinical/sleepfm.py'
+      - 'torcheeg/datasets/module/clinical/__init__.py'
+      - 'test/datasets/*sleepfm*.py'
       - 'test/models/test_sleepfm*.py'
       - 'examples/examples_eegmat_sleepfm.py'
       - 'examples/examples_sleepedfx_sleepfm_staging.py'
       - 'examples/examples_sleepfm_diagnosis.py'
+      - 'examples/examples_sleepfm_survival_training.py'
       - 'docs/source/user_guide/sleepfm.rst'
       - '.github/workflows/sleepfm-backend.yml'
       - 'setup.py'
@@ -59,4 +64,11 @@ jobs:
           assert 'Attribution-NonCommercial 4.0' in (root / 'LICENSE').read_text()
           PY
       - name: Validate all three complete native models and gradients
-        run: python -m unittest test.models.test_sleepfm_native
+        run: |
+          python -m unittest \
+            test.models.test_sleepfm test.models.test_sleepfm_examples \
+            test.models.test_sleepfm_native test.models.test_sleepfm_survival \
+            test.models.test_sleepfm_survival_native \
+            test.datasets.test_sleepfm_survival \
+            test.models.test_sleepfm_cohort_example \
+            test.models.test_sleepfm_cohort_native

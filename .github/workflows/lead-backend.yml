@@ -3,6 +3,7 @@ name: LEAD external backend
 on:
   pull_request:
     paths:
+      - 'torcheeg/models/transformer/__init__.py'
       - 'torcheeg/models/transformer/lead.py'
       - 'test/models/test_lead*.py'
       - 'examples/examples_eegmat_lead.py'

@@ -3,6 +3,7 @@ name: NeuroGPT external backend
 on:
   pull_request:
     paths:
+      - 'torcheeg/models/transformer/__init__.py'
       - 'torcheeg/models/transformer/neurogpt.py'
       - 'test/models/test_neurogpt*.py'
       - 'examples/examples_bciciv2a_neurogpt.py'

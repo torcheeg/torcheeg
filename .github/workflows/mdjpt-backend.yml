@@ -3,6 +3,7 @@ name: mdJPT external backend
 on:
   pull_request:
     paths:
+      - 'torcheeg/models/transformer/__init__.py'
       - 'torcheeg/models/transformer/mdjpt.py'
       - 'test/models/test_mdjpt*.py'
       - 'test/models/fixtures/mdjpt_state_geometry.json'

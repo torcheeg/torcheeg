@@ -3,6 +3,7 @@ name: SleepGPT external backend
 on:
   pull_request:
     paths:
+      - 'torcheeg/models/transformer/__init__.py'
       - 'torcheeg/models/transformer/sleepgpt.py'
       - 'test/models/test_sleepgpt*.py'
       - 'examples/examples_eegmat_sleepgpt.py'

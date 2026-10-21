@@ -109,12 +109,18 @@ Transformer
    MDJPTClassifier
    UniDMFM
    UniDMFMClassifier
+   UniDMFMPretrainer
    SleepGPT
    SleepGPTClassifier
    SleepFM
    SleepFMClassifier
    SleepFMStaging
    SleepFMDiagnosis
+   TFMTokenizerPretrainer
+   TFMMaskedTokenPretrainer
+   NeuroRVQTokenizer
+   NeuroRVQMaskedTokenPretrainer
+   SleepFMSurvivalObjective
    BENDR
    BENDREncoder
    BENDRContextualizer
@@ -122,6 +128,11 @@ Transformer
    BIOT
    BIOTClassifier
    CBraMod
+   STEEGFormer
+   STEEGFormerPretrainer
+   STEEGFormerClassifier
+   STEEGFormerRegression
+   STEEGFormerEmbedding
    CBraModClassifier
    CBraModRegression
    CBraModEmbedding
