@@ -3,9 +3,9 @@ name: Uni-DMFM external backend
 on:
   pull_request:
     paths:
-      - 'torcheeg/models/transformer/unidmfm.py'
+      - 'torcheeg/models/transformer/unidmfm*.py'
       - 'test/models/test_unidmfm*.py'
-      - 'examples/examples_eegmat_unidmfm.py'
+      - 'examples/examples_eegmat_unidmfm*.py'
       - 'docs/source/user_guide/unidmfm.rst'
       - '.github/workflows/unidmfm-backend.yml'
       - 'setup.py'
@@ -88,4 +88,6 @@ jobs:
           assert digest.hexdigest() == '92fc5f59cd3ffc1c25898f1a573db8d8194935a163bbcb9c68d45f86ba81d5fe'
           PY
       - name: Compare complete native features, all heads and every gradient
-        run: python -m unittest test.models.test_unidmfm test.models.test_unidmfm_example test.models.test_unidmfm_native
+        run: |
+          python -m unittest test.models.test_unidmfm test.models.test_unidmfm_example test.models.test_unidmfm_native
+          python -m unittest test.models.test_unidmfm_pretraining test.models.test_unidmfm_pretraining_native
