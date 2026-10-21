@@ -1,4 +1,4 @@
-ST-EEGFormer encoder adaptation
+ST-EEGFormer encoder and complete MAE adaptation
 
 Upstream: https://github.com/LiuyinYang1101/STEEGFormer
 Revision: 542ee17918c3c2c36ba1d4ea02bedff5eb149370
@@ -13,8 +13,10 @@ pickle globals. The learned table retains all 145 native slots.
 The encoder uses registered PyTorch modules and native scaled-dot-product
 attention, with no timm or torchvision dependency. Feature methods explicitly
 separate native pretraining final normalization from downstream unnormalized
-mean pooling. The MAE decoder, optimizer and task-specific weights are not
-implemented or represented as restored by an encoder load.
+mean pooling. A separate STEEGFormerPretrainer retains the full native MAE decoder and
+masked reconstruction objective from pretrain/models_mae_eeg.py. Encoder-only
+loading remains explicitly separate. The teaching workflow uses a new AdamW
+optimizer; no task-specific pretrained heads are represented as restored.
 
 No pretrained weights are redistributed. The small native release artifact
 is linked from the author's repository. Its SHA256 and release provenance
@@ -28,3 +30,8 @@ explicit whole-window resampling, optional signal normalization, task-head
 dropout, channel-major features and freeze/evaluation control. They initialize
 fresh task heads and do not claim to restore native trained task weights.
 Independent fixtures use deterministic synthetic weights and signals.
+
+Full MAE adaptation retains native state keys, both documented encoder
+temporal-position paths, position-one decoder, unbiased normalized-target
+variance and masked-only reconstruction loss. Independent fixtures generated
+with original code use synthetic weights and signals, not pretrained values.
