@@ -224,3 +224,242 @@ models. Dynamic masks, sequence lengths and native packed LSTMs require
 graph breaks; fullgraph compilation and GPU throughput are not established.
 Gallery rendering does not run the training workflows. Local documentation
 success does not establish a successful Read the Docs cloud build.
+
+Multi-endpoint survival training
+--------------------------------
+
+:class:`~torcheeg.models.SleepFMSurvivalObjective` adds a complete Cox objective
+over :class:`~torcheeg.models.SleepFMDiagnosis`. It preserves every native
+diagnosis tensor and all 1065 output columns. Supply all ordered endpoint names
+explicitly. Follow-up times and binary event indicators are [B,1065] in this
+same order. Event time and censoring conventions must be consistent across
+subjects. These arrays are measured outcomes, not classification labels. Do not encode
+missing follow-up as censoring or fill absent endpoint columns with zeros.
+
+The default ``ties='breslow'`` groups observations with the same time. Every
+event uses all subjects with observation time greater than or equal to its
+time, including censored subjects at the same time. Contributions are averaged
+over observed events within each endpoint, then over all 1065 endpoints.
+Zero-event endpoints contribute zero and remain in this final mean. Float64
+outputs retain float64 arithmetic; lower precision uses float32 accumulation.
+The risk-set definition follows the
+`Breslow partial likelihood <https://opensource.nibr.com/torchsurv/_autosummary/torchsurv.loss.cox.html>`_.
+
+For an already constructed complete ``diagnosis`` model and correctly aligned
+outcome tensors:
+
+.. code-block:: python
+
+   import torch
+   from torcheeg.models import SleepFMSurvivalObjective
+
+   # endpoint_names comes from the ordered outcome schema, not an inferred sort.
+   objective = SleepFMSurvivalObjective(diagnosis, endpoint_names)
+   optimizer = torch.optim.AdamW(objective.parameters(), lr=0.001)
+   optimizer.zero_grad()
+   result = objective(embeddings, encoded_demographics, times, is_event,
+                      padding_mask)
+   result['loss'].backward()
+   optimizer.step()
+
+A batch defines its own risk sets. A minibatch loss is not the full cohort
+likelihood. Batch composition therefore matters, and a one-subject batch has
+zero loss and gradient. Do not duplicate one subject to create a risk set.
+The output ``log_risks`` remains [B,1065]. A sigmoid is not a calibrated
+survival probability; this interface does not estimate a baseline hazard.
+
+Native reproduction
+^^^^^^^^^^^^^^^^^^^
+
+The pinned author pipeline uses ordered prefix risk sets after descending
+per-endpoint sorting. It does not group tied times, so equal-time observations
+can depend on row order. It also forces float32 log-cumulative accumulation.
+This native behavior is separate from the default Breslow objective.
+
+For exact source reproduction, explicitly construct the trusted original
+``cox_ph_loss`` callable from the separately supplied source and pass
+``ties='native'``, ``native_criterion=author_loss``, and a nonempty
+``criterion_id`` identifying its revision and source hash. The callable is
+invoked unchanged. TorchEEG does not import or redistribute that training
+pipeline. A native criterion must be stateless; source execution remains an
+explicit caller action.
+
+Restoration and validation
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The complete objective state contains all 35 native diagnosis states, the
+physical-metadata fingerprint, and an objective fingerprint. The latter guards
+all ordered endpoint names, tie policy, reduction, accumulation policy and
+native criterion identity. A changed endpoint order or policy is rejected
+during strict restoration. Tensors alone cannot reveal a mislabeled input
+column: align input tables against the declared schema before creating tensors.
+Demographics must use the original encoded convention; this objective does
+not fit or invent their normalization.
+
+For continuation, save the entire objective, optimizer, scheduler, input
+cursor and every random state used by the workflow. Construct the trusted
+complete backend and matching objective before restoring. The native criterion
+code itself is not serialized. Tests compare the full official model, original
+loss, input/demographic gradients, every parameter gradient, AdamW updates,
+and dropout/RNG/optimizer/scheduler restoration. An independent enumerated
+risk-set oracle also checks censoring and ties.
+
+These tests use synthetic inputs and outcomes. The author demo explicitly
+states that its PSG, stages, demographics and disease data are synthetic, and
+has only one subject row. It is not real clinical survival validation. The
+standalone caller-cohort workflow is described below; measured clinical
+outcome validation is separate from these synthetic protocol checks.
+
+.. _sleepfm-survival-cohort:
+
+Patient-separated cohort workflow
+---------------------------------
+
+:class:`~torcheeg.datasets.SleepFMSurvivalDataset` reads native upstream
+embedding files and explicitly named outcome tables.
+:func:`~torcheeg.datasets.collate_sleepfm_survival` pads variable-length
+sequences without cropping. The standalone
+:doc:`../auto_examples/examples_sleepfm_survival_training` trains the entire
+released diagnosis model and exports a complete continuation checkpoint.
+
+The manifest declares one selected baseline PSG per patient. It enforces
+distinct study IDs and patient IDs across train, validation and test, and
+rejects repeated file paths or identical file contents assigned to different
+patients. Patient identity comes from the provider's explicit identity table;
+it is not inferred from filenames. Selecting the correct baseline and
+identifying repeated visits remain cohort preparation decisions.
+
+Manifest and named tables
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The UTF-8 JSON manifest has exactly three top-level fields:
+``version: 1``, ``schema``, and ``records``. Duplicate JSON keys are
+rejected. Every record contains distinct string ``study_id`` and
+``subject_id``, a ``path`` to its HDF5 file, the file's lowercase
+``sha256``, and ``split`` (train, validation or test). Relative paths
+are resolved against the manifest directory. IDs retain leading zeros.
+
+The schema contains all of the following fields:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 36 64
+
+   * - Field
+     - Meaning
+   * - endpoint_names
+     - All 1065 distinct output-column names in their declared model order.
+   * - demographic_names
+     - Exactly two ordered, already encoded demographic columns.
+   * - modality_names
+     - Ordered subset of BAS, RESP, EKG, EMG. Modality zero must be present.
+   * - embedding_step_seconds
+     - Integer 5.
+   * - embedding_width
+     - Integer 128.
+   * - upstream_source_revision
+     - Explicit 40-character lowercase source revision.
+   * - upstream_checkpoint_sha256
+     - Explicit 64-character lowercase upstream checkpoint identity.
+   * - preprocessing_id
+     - Your documented upstream preprocessing/embedding protocol identity.
+   * - demographic_encoding_id
+     - Your documented encoding convention. The reader does not fit a codec.
+   * - event_time_unit
+     - The documented unit shared by the cohort's follow-up values.
+   * - data_kind
+     - measured or synthetic. Use synthetic if any signals, demographics or
+       outcomes were generated for a demonstration.
+
+For the released diagnosis head, the original
+``sleepfm/configs/label_mapping.csv`` stores all 1065 string ``phecode``
+names in output order. Read them as strings in the stored order; do not
+float-sort or normalize their decimal spelling. Its order matches the author
+demo event/time tables. The standalone workflow requires the pinned original
+source and matching official upstream checkpoint identity, and verifies the
+complete diagnosis configuration/checkpoint before constructing the model.
+Declaring provenance does not independently prove how a supplied embedding
+was generated; retain the preprocessing records that support that declaration.
+
+Each time/event CSV contains ``Study ID`` and exactly the 1065 endpoint
+columns. The demographic CSV contains ``Study ID`` and the two declared
+demographic columns. Columns and rows may be shuffled: the reader aligns them
+by exact names and string IDs. Duplicate IDs, missing selected records,
+unknown/missing columns, nonfinite values, negative follow-up and nonbinary
+events are rejected. Do not replace unknown follow-up with censoring.
+Only the selected split's numeric outcomes are used; reserved test outcomes
+are not used to fit, evaluate or select the training model.
+
+Embedding files and batches
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Each HDF5 root contains only its declared, available modality datasets, each
+float32 [steps,128] with 1 through 6480 aligned five-second steps. All present
+modalities must have the same actual length. The first declared modality must
+exist; optional missing modalities become whole-modality padding masks.
+
+The reader hashes and decodes the same byte snapshot. It rejects soft links,
+external links, virtual datasets and external dataset storage, so a declared
+file hash cannot silently refer to mutable data in a different file.
+Files are opened and closed per sample; no HDF5 handle is shared across data
+loader processes. ``validate_files()`` checks all selected files before an
+experiment, and every subsequent read checks its snapshot again.
+
+The collator returns embeddings [B,C,max_steps,128], boolean masks,
+float32 demographics, float64 follow-up, binary events, string study/patient
+IDs and a schema identity. It rejects mixed endpoint/modality/encoding schemas
+and repeated patients in a risk-set batch. Padding covers missing modalities
+and right time suffixes only; it does not change valid observations.
+
+Standalone training and continuation
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+With your declared cohort and separately obtained trusted author release:
+
+.. code-block:: console
+
+   python examples/examples_sleepfm_survival_training.py \
+       --backend-root ./sleepfm-clinical \
+       --manifest-path ./cohort/manifest.json \
+       --event-times-path ./cohort/time_to_event.csv \
+       --is-event-path ./cohort/is_event.csv \
+       --demographics-path ./cohort/demographics.csv \
+       --output-path ./step2.pt --steps 2
+
+Use a new output path to continue to a larger total step count:
+
+.. code-block:: console
+
+   python examples/examples_sleepfm_survival_training.py \
+       --backend-root ./sleepfm-clinical \
+       --manifest-path ./cohort/manifest.json \
+       --event-times-path ./cohort/time_to_event.csv \
+       --is-event-path ./cohort/is_event.csv \
+       --demographics-path ./cohort/demographics.csv \
+       --resume ./step2.pt --output-path ./step3.pt --steps 3
+
+The CPU teaching workflow requires at least two distinct training patients and
+two validation patients. A saved permutation visits each training patient
+once per epoch. A last singleton merges into the preceding batch, so that
+batch can have one more patient than ``--batch-size``; no patient is dropped
+or duplicated. AdamW uses lr0.001 and weight decay0.01. The plateau scheduler
+steps only at completed epochs. Validation averages fixed batch risk-set
+losses; it is not a full-cohort likelihood or a calibrated clinical metric.
+
+Checkpoint export is atomic and does not overwrite an existing output.
+Continuation restores all 35 native diagnosis tensors, both metadata guards,
+optimizer, scheduler, global Torch RNG, patient-order generator, permutation
+and cursor. Validation restores the training RNG and does not advance the
+scheduler at a partial-epoch reporting point. Input hashes, schemas, patient
+lists, source/code identities, seed, batch size and recorded runtime must
+match. Exact continuation is checked in the same verified CPU runtime; it is
+not a cross-platform numerical-equivalence guarantee.
+
+Tests run the actual CLI with the complete official model on an explicitly
+synthetic multi-subject file cohort, compare saved/resumed and continuous
+training, and independently replay raw HDF5/CSV inputs through the original
+model/loss and AdamW updates. The original author's one-subject synthetic
+tables also test schema alignment and the rejection of meaningful training
+from one subject. Those checks do not process that demo's EDF into real
+clinical training evidence. Measured clinical cohort validation remains
+unavailable, and generated outcomes are not benchmark results.

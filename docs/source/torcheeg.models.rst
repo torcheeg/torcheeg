@@ -120,6 +120,7 @@ Transformer
    TFMMaskedTokenPretrainer
    NeuroRVQTokenizer
    NeuroRVQMaskedTokenPretrainer
+   SleepFMSurvivalObjective
    BENDR
    BENDREncoder
    BENDRContextualizer

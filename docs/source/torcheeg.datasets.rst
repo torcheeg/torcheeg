@@ -179,6 +179,23 @@ source selection, cohort linkage, units and discontinuities.
 See :doc:`user_guide/adsz` for the independent ADSZ cohorts, source units,
 channel-block layout and conservative evaluation groups.
 
+Survival embedding cohorts
+--------------------------
+
+.. autosummary::
+    :toctree: generated
+    :nosignatures:
+    :template: datasettemplate.rst
+
+    SleepFMSurvivalDataset
+
+.. autofunction:: collate_sleepfm_survival
+
+These inputs are already computed five-second SleepFM embeddings with an
+explicit patient, outcome and encoding schema. They do not use the raw-signal
+disk cache. See :ref:`sleepfm-survival-cohort` for the manifest, named CSVs,
+hash checks and complete standalone training workflow.
+
 Customized Datasets
 ---------------------------------------------------------
 

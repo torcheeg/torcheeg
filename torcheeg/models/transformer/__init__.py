@@ -44,3 +44,4 @@ from .tfm_pretraining import TFMTokenizerPretrainer, TFMMaskedTokenPretrainer
 from .neurorvq_tokenizer import NeuroRVQTokenizer
 from .neurorvq_pretraining import NeuroRVQMaskedTokenPretrainer
 from .unidmfm_pretraining import UniDMFMPretrainer
+from .sleepfm_survival import SleepFMSurvivalObjective

@@ -126,6 +126,17 @@ out of checkpoint and parameter selection. Exact continuation requires the
 model, optimizer, scheduler when used, data cursor, preprocessing identity,
 and every random state used by augmentation or masking.
 
+Clinical survival training
+--------------------------
+
+:class:`~torcheeg.models.SleepFMSurvivalObjective` retains the complete
+1065-output diagnosis model. :class:`~torcheeg.datasets.SleepFMSurvivalDataset`
+loads explicitly declared baseline cohorts and aligns outcome columns by name.
+The independent SleepFM training example validates on separate patients and
+saves the optimizer, scheduler, sample order, and random state for continuation.
+See :doc:`sleepfm` for the manifest and precomputed embedding contract.
+Synthetic workflow checks do not establish clinical performance.
+
 Validation and scope
 --------------------
 
