@@ -214,5 +214,151 @@ input gradients and EMA states matched; full encoder outputs, vocabulary
 predictions and every used parameter gradient passed numerical checks,
 including ID8192 masking. Independent real-EDF preprocessing, tokenization,
 class features and a trained downstream head provide a separate teaching
-workflow check. Symmetric spectral-mask/token-prediction training workflows
-and additional released fine-tuning variants remain separate work.
+workflow check. Complete spectral-mask/token-prediction workflows are described below.
+Additional released fine-tuning variants require separate validation.
+
+
+Complementary-spectrum tokenizer pretraining
+--------------------------------------------
+
+:class:`torcheeg.models.TFMTokenizerPretrainer` runs the full tokenizer twice
+using the original complementary spectral masks. Pass preprocessed floating
+EEG ``[batch,electrodes,samples]`` at 200 Hz; the wrapper performs the native
+STFT only, without filtering, scaling or resampling. The periodic Hann window
+is computed on CPU in float32 and moved to the signal device, preserving the
+original source window values even for float64 inputs. Its 200-value
+``stft_window`` snapshot is a persistent wrapper buffer. This preserves
+exact window values across platform-specific float32 cosine rounding during
+checkpoint restore. Supply a fixed ``stft_window`` explicitly for a controlled
+reference; a different window is an explicit preprocessing change. Both STFT and temporal
+convolution retain only complete 200-sample windows at stride 100.
+
+The default mask drops ten of twenty five-bin frequency groups and
+``floor(frames/2)`` temporal positions. Their keep-region intersection is
+shared across the entire flattened sample/electrode batch. The second view
+is its full complement, not an independent half mask. Each branch receives
+the same unmasked waveform, and both reconstruct the ENTIRE clean spectrum.
+Do not substitute masked-only MAE loss or mask the raw waveform.
+
+.. code-block:: python
+
+    import torch
+    from torcheeg.models import TFMTokenizer, TFMTokenizerPretrainer
+
+    tokenizer = TFMTokenizer.from_pretrained(
+        './tfm_tokenizer_last.pth', reconstruction_head='mlp')
+    model = TFMTokenizerPretrainer(tokenizer, quantization_mode='native')
+    mask_generator = torch.Generator().manual_seed(43)
+    output = model(eeg, generator=mask_generator)
+    output['loss'].backward()
+
+The output dictionary contains total/reconstruction/quantization losses,
+both reconstructions and code-ID arrays, and the Boolean first-view keep
+mask. Spectra use ``[batch * electrodes,100,frames]`` and IDs use
+``[batch * electrodes,frames]``. In train mode the codebook updates through
+EMA twice sequentially, once per branch; the optimizer updates neural
+parameters separately. Eval mode leaves all EMA state unchanged.
+
+``quantization_mode='native'`` retains the original sum of codebook and
+beta-weighted commitment terms. With straight-through codes and beta=1,
+these encoder gradients cancel even though the loss value is nonzero.
+``quantization_mode='ema'`` explicitly selects the corrected detached-target
+commitment term already provided by TFMTokenizer. It changes the objective
+and its gradients; it is not a claim to reproduce the literal source loss.
+Save the selected mode with the experiment. Both modes have independent
+continuation examples and gradient/resume checks.
+
+The masking generator must be on CPU, matching the source's randperm calls.
+Neural dropout uses the ordinary device RNG. An optional explicit Boolean
+``mask`` must match the flattened spectrum shape/device and cannot be passed
+with a generator. Default masks are batch-shared; an explicit mask is a
+user-selected protocol and can deliberately differ.
+
+Symmetric masked-token pretraining
+----------------------------------
+
+:class:`torcheeg.models.TFMMaskedTokenPretrainer` requires the complete
+matching tokenizer and an encoder with ``num_classes == num_tokens``.
+Load the actual trained 8192-output MTP checkpoint; the binary CHB-MIT head
+is rejected and no random replacement head is inserted.
+
+.. code-block:: python
+
+    from torcheeg.models import TFMEncoder, TFMMaskedTokenPretrainer
+
+    encoder = TFMEncoder.from_pretrained(
+        './tfm_encoder_mtp_last.pth', num_classes=8192)
+    model = TFMMaskedTokenPretrainer(tokenizer, encoder)
+    output = model(eeg, generator=torch.Generator().manual_seed(43))
+    output['loss'].backward()
+
+The wrapper permanently freezes the supplied tokenizer and preserves its
+eval mode across ``model.train()``. This prevents the source Lightning
+wrapper's initialization-only eval call from allowing later teacher dropout
+or EMA updates. Use separate tokenizer instances for tokenizer learning and
+frozen-teacher training. Hard IDs stop input and teacher gradients.
+
+For ``[batch,1--16 electrodes,samples]``, clean teacher IDs are
+``[batch,electrodes,frames]``. An independent Bernoulli mask keeps each token
+in the first view or its complement; ID8192 fills masked positions. Each
+view predicts every token using the full vocabulary head, then contributes
+mean CE over only its masked positions. The two means are SUMMED, without
+partition-size weighting. The output dictionary includes both predictions
+``[batch,electrodes * frames,vocabulary]``, component losses, IDs and mask.
+
+``True`` means visible in the first view. Optional ``mask`` must be Boolean
+with the teacher-ID shape/device. A supplied generator uses that token
+device. Both partitions must be nonempty: the wrapper raises an explicit
+error for a degenerate sampled/provided mask instead of the source's NaN
+empty-target CE. Advance the generator or provide another mask. At least
+two token positions are required. Channel IDs retain TFMEncoder's explicit
+sequential-row contract; filtering, units and montage conversion are not inferred.
+
+Training and exact continuation examples
+----------------------------------------
+
+Two independent workflows require local complete official multi-dataset
+weights and real EEGMat EDF files; neither substitutes a small random model:
+
+* :doc:`../auto_examples/examples_eegmat_tfm_tokenizer_training` continues
+  the complete 191-state MLP tokenizer plus the saved window (192 wrapper states), with explicit native or EMA-corrected objective.
+* :doc:`../auto_examples/examples_eegmat_tfm_mtp_training` continues the
+  complete 250-state teacher/encoder pair plus the saved window (251 wrapper
+  states), preserving the trained vocabulary head.
+
+Both use the existing explicit EEGMat transfer preprocessing, separate the
+last subject, and train on fixed sequential batches. They save every neural
+parameter and EMA buffer, AdamW state, independent mask-generator state,
+ordinary dropout RNG, source hashes, preprocessing/constructor/objective
+settings and next batch cursor. Restore all of them together. ``--steps``
+is the total target optimizer-step count, including resumed steps.
+Validation uses a separate fixed generator and performs no update or model
+selection. The teaching fixed learning rate differs from the original
+large-corpus cosine/warmup schedule; no convergence or benchmark score is claimed.
+
+Independent original-code fixtures cover train/eval losses, both branch
+outputs, complete input/parameter gradients and all EMA state. The routine
+fixture uses synthetic 16-wide models with nontrivial two-dimensional
+attention heads; separate checks use the complete official 64-wide,
+8192-codebook, 2+2+8 tokenizer and four-layer MTP encoder. These tests do
+not establish GPU/distributed throughput or the paper's training results.
+
+
+The complete official models also pass PyTorch 2.6 CPU
+``torch.compile(backend='aot_eager', fullgraph=False)`` training checks
+with explicit masks: both branch outputs, input/parameter gradients and
+post-forward EMA states agree with eager execution. Keep ordinary graph
+breaks enabled for tensor-value guards. The shared linear-attention projection
+and dropout preserve two-dimensional layout before restoring token shape;
+this avoids an older AOTAutograd noncontiguous-gradient view failure without
+changing any parameter names, dimensions or formula. Independent native
+checks and existing BIOT/TFM regressions cover the eager compatibility.
+This is not a default-Inductor or GPU performance claim.
+
+
+EMA state transactions remain outside AOTAutograd graphs, explicitly between
+the two compiled neural branches. This preserves both ordered updates and
+distributed reductions, while avoiding a PyTorch 2.4 duplicated-mutated-input
+compiler error. It does not suppress compiler errors or replace either neural
+branch with a smaller network. Training uses graph breaks; inference with
+EMA disabled retains the tokenizer's existing compilation behavior.

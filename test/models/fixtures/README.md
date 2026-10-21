@@ -282,3 +282,17 @@ checkpoints are tested separately against every native output/gradient and
 EMA state in actual stochastic train/eval mode. Independent real EDF
 verification and complete canonical generated-checkpoint workflow tests
 are distinct from this numerical fixture.
+
+
+`tfm_pretraining_reference.json` uses the original tokenizer-learning and
+symmetric-MTP forward bodies from Jathurshan0330/TFM-Tokenizer revision
+2d6da482b16dabbb2ebec808fa9f505fc6f367c4, MIT. Four float64 train/eval cases
+record native loss, both reconstructions or vocabulary predictions, full
+input and every parameter-gradient tensor, and complete post-forward EMA
+state. Synthetic weights/signals, width16, vocabulary23, one block per
+component; two dimensions per attention head avoid a degenerate softmax.
+Dropout uses the deterministic element mask documented in the fixture,
+and exact native masks are stored. The CPU float32 Hann window snapshot (explicit fixture input) and original
+position buffers are retained for cross-runtime reproducibility. No official
+pretrained values are included. Separate native checks use full original
+64-wide/8192-vocabulary released models and ordinary seeded train dropout.
