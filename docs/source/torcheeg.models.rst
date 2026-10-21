@@ -97,6 +97,8 @@ Transformer
    TFMTokenizer
    TFMEncoder
    TFMClassifier
+   TFMTokenizerPretrainer
+   TFMMaskedTokenPretrainer
    BENDR
    BENDREncoder
    BENDRContextualizer
