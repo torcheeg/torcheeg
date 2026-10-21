@@ -105,6 +105,7 @@ Transformer
    SleepFMClassifier
    SleepFMStaging
    SleepFMDiagnosis
+   SleepFMSurvivalObjective
    BENDR
    BENDREncoder
    BENDRContextualizer
