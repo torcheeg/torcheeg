@@ -44,6 +44,8 @@ class TestEmotionRecognitionDataset(unittest.TestCase):
         item = next(SEEDVDataset.process_record(**kwargs))
 
         self.assertEqual(item['eeg'].shape, (62, 800))
+        self.assertEqual(item['info']['date'], 20180507)
+        self.assertIsInstance(item['info']['date'], int)
 
     def test_seed_v_feature_dataset(self):
         kwargs = {
