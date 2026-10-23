@@ -36,6 +36,38 @@ class FakeDataset(BaseDataset):
         return len(self.info)
 
 
+class TestBaseDataset(unittest.TestCase):
+    def test_missing_record_hooks_identify_the_subclass(self):
+        class IncompleteDataset(BaseDataset):
+            pass
+
+        dataset = IncompleteDataset.__new__(IncompleteDataset)
+        for method, kwargs in (("set_records", {}),
+                               ("read_record", {"record": "record"}),
+                               ("process_record", {"record": "record"})):
+            with self.subTest(method=method):
+                with self.assertRaisesRegex(
+                        NotImplementedError,
+                        f"Method {method} is not implemented in class IncompleteDataset"):
+                    getattr(dataset, method)(**kwargs)
+
+    def test_record_hooks_can_be_overridden_as_static_methods(self):
+        class StaticDataset(BaseDataset):
+            @staticmethod
+            def read_record(record, **kwargs):
+                return {"samples": record}
+
+            @staticmethod
+            def process_record(record, samples, **kwargs):
+                yield {"eeg": samples, "key": record}
+
+        dataset = StaticDataset.__new__(StaticDataset)
+        for owner in (StaticDataset, dataset):
+            samples = owner.read_record(record="record")
+            self.assertEqual(next(owner.process_record(record="record", **samples)),
+                             {"eeg": "record", "key": "record"})
+
+
 class TestFolderDataset(unittest.TestCase):
     def setUp(self):
         if os.path.exists('./tmp_out/'):

@@ -35,7 +35,8 @@ class ChannelAttention(nn.Module):
 class SpatialAttention(nn.Module):
     def __init__(self, kernel_size=7):
         super(SpatialAttention, self).__init__()
-        assert kernel_size in (3, 7), 'Kernel size must be 3 or 7.'
+        if not (kernel_size in (3, 7)):
+            raise ValueError('Kernel size must be 3 or 7.')
         padding = 3 if kernel_size == 7 else 1
         self.conv1 = nn.Conv2d(2, 1, kernel_size, padding=padding, bias=False)
         self.sigmoid = nn.Sigmoid()
@@ -199,15 +200,15 @@ class LGGNet(nn.Module):
         self.in_channels = in_channels
         self.num_electrodes = num_electrodes
 
-        self.t_block1 = self.temporal_block(
+        self.t_block1 = self._build_temporal_block(
             self.in_channels, self.num_T,
             (1, int(self.inception_window[0] * self.sampling_rate)),
             self.pool_kernel_size, self.pool_stride)
-        self.t_block2 = self.temporal_block(
+        self.t_block2 = self._build_temporal_block(
             self.in_channels, self.num_T,
             (1, int(self.inception_window[1] * self.sampling_rate)),
             self.pool_kernel_size, self.pool_stride)
-        self.t_block3 = self.temporal_block(
+        self.t_block3 = self._build_temporal_block(
             self.in_channels, self.num_T,
             (1, int(self.inception_window[2] * self.sampling_rate)),
             self.pool_kernel_size, self.pool_stride)
@@ -250,7 +251,7 @@ class LGGNet(nn.Module):
         nn.init.xavier_uniform_(self.local_filter_weight)
         nn.init.xavier_uniform_(self.global_adj)
 
-    def temporal_block(self, in_channels, out_channels, kernel_size,
+    def _build_temporal_block(self, in_channels, out_channels, kernel_size,
                        pool_kernel_size, pool_stride):
         return nn.Sequential(
             nn.Conv2d(in_channels,
@@ -283,7 +284,7 @@ class LGGNet(nn.Module):
         x = self.aggregate.forward(x)
         adj = self.get_adj(x)
         x = self.bn_g1(x)
-        
+
         x = self.gcn(x, adj)
         x = self.bn_g2(x)
         x = x.view(x.shape[0], -1)

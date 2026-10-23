@@ -17,17 +17,17 @@ from .utils import FrechetInceptionDistance
 
 _EVALUATE_OUTPUT = List[Dict[str, float]]  # 1 dict per DataLoader
 
-log = logging.getLogger('torcheeg')
+_log = logging.getLogger('torcheeg')
 
 
-def extract_into_tensor(a: torch.Tensor, t: int,
+def _extract_into_tensor(a: torch.Tensor, t: int,
                         x_shape: Tuple[int, ...]) -> torch.Tensor:
     b, *_ = t.shape
     out = a.gather(-1, t)
     return out.reshape(b, *((1, ) * (len(x_shape) - 1)))
 
 
-def noise_like(shape: Tuple[int, ...],
+def _noise_like(shape: Tuple[int, ...],
                device: torch.device,
                repeat: bool = False) -> torch.Tensor:
     repeat_noise = lambda: torch.randn((1, *shape[1:]), device=device).repeat(
@@ -36,7 +36,7 @@ def noise_like(shape: Tuple[int, ...],
     return repeat_noise() if repeat else noise()
 
 
-def betas_for_alpha_bar(num_diffusion_timesteps: int,
+def _betas_for_alpha_bar(num_diffusion_timesteps: int,
                         alpha_bar: Any,
                         max_beta: float = 0.999) -> np.ndarray:
     betas = []
@@ -47,7 +47,7 @@ def betas_for_alpha_bar(num_diffusion_timesteps: int,
     return np.array(betas)
 
 
-def make_beta_schedule(schedule: str,
+def _make_beta_schedule(schedule: str,
                        n_timestep: int,
                        linear_start: float = 1e-4,
                        linear_end: float = 2e-2,
@@ -171,12 +171,12 @@ class LitEma(nn.Module):
             param.data.copy_(c_param.data)
 
 
-def exists(x):
+def _exists(x):
     return x is not None
 
 
-def default(val, d):
-    if exists(val):
+def _default(val, d):
+    if _exists(val):
         return val
     return d() if isfunction(d) else d
 
@@ -255,9 +255,8 @@ class DDPMTrainer(pl.LightningModule):
             metric_classifier: nn.Module = None,
             metric_num_features: int = None):
         super().__init__()
-        assert parameterization in [
-            "eps", "x0", "v"
-        ], 'currently only supporting "eps" and "x0" and "v"'
+        if not (parameterization in ['eps', 'x0', 'v']):
+            raise ValueError('currently only supporting "eps" and "x0" and "v"')
         self.parameterization = parameterization
         self.lr = lr
         self.weight_decay = weight_decay
@@ -307,19 +306,22 @@ class DDPMTrainer(pl.LightningModule):
         self.test_vlb_loss = torchmetrics.MeanMetric()
 
         if 'fid' in metrics:
-            assert not self.metric_extractor is None, 'The metric_extractor should be specified.'
+            if not (not self.metric_extractor is None):
+                raise ValueError('The metric_extractor should be specified.')
             if hasattr(self.metric_extractor,
                        'in_channels') and self.metric_num_features is None:
                 warnings.warn(
                     f'No metric_num_features specified, use metric_extractor.in_channels ({self.metric_extractor.in_channels}) as metric_num_features.'
                 )
                 self.metric_num_features = self.metric_extractor.in_channels
-            assert not self.metric_num_features is None, 'The metric_num_features should be specified.'
+            if not (not self.metric_num_features is None):
+                raise ValueError('The metric_num_features should be specified.')
             self.test_fid = FrechetInceptionDistance(self.metric_extractor,
                                                      self.metric_num_features)
 
         if 'is' in metrics:
-            assert not self.metric_extractor is None, 'The metric_classifier should be specified.'
+            if not (not self.metric_extractor is None):
+                raise ValueError('The metric_classifier should be specified.')
             self.test_is = InceptionScore(self.metric_classifier)
 
     def register_schedule(self,
@@ -328,7 +330,7 @@ class DDPMTrainer(pl.LightningModule):
                           linear_start: float = 1e-4,
                           linear_end: float = 2e-2,
                           cosine_s: float = 8e-3):
-        betas = make_beta_schedule(beta_schedule,
+        betas = _make_beta_schedule(beta_schedule,
                                    timesteps,
                                    linear_start=linear_start,
                                    linear_end=linear_end,
@@ -341,8 +343,8 @@ class DDPMTrainer(pl.LightningModule):
         self.num_timesteps = int(timesteps)
         self.linear_start = linear_start
         self.linear_end = linear_end
-        assert alphas_cumprod.shape[
-            0] == self.num_timesteps, 'alphas have to be defined for each timestep'
+        if not (alphas_cumprod.shape[0] == self.num_timesteps):
+            raise ValueError('alphas have to be defined for each timestep')
 
         to_torch = partial(torch.tensor, dtype=torch.float32)
 
@@ -392,7 +394,7 @@ class DDPMTrainer(pl.LightningModule):
                 (2 * self.posterior_variance * to_torch(alphas) *
                  (1 - self.alphas_cumprod)))
         else:
-            raise NotImplementedError("mu not supported")
+            raise ValueError("mu not supported")
         lvlb_weights[0] = lvlb_weights[1]
         self.register_buffer('lvlb_weights', lvlb_weights, persistent=False)
         assert not torch.isnan(self.lvlb_weights).all()
@@ -403,24 +405,24 @@ class DDPMTrainer(pl.LightningModule):
             self.model_ema.store(self.model.parameters())
             self.model_ema.copy_to(self.model)
             if context is not None:
-                log.info(f"{context}: Switched to EMA weights")
+                _log.info(f"{context}: Switched to EMA weights")
         try:
             yield None
         finally:
             if self.use_ema:
                 self.model_ema.restore(self.model.parameters())
                 if context is not None:
-                    log.info(f"{context}: Restored training weights")
+                    _log.info(f"{context}: Restored training weights")
 
     def q_mean_variance(
             self, x_start: torch.Tensor,
             t: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         mean = (
-            extract_into_tensor(self.sqrt_alphas_cumprod, t, x_start.shape) *
+            _extract_into_tensor(self.sqrt_alphas_cumprod, t, x_start.shape) *
             x_start)
-        variance = extract_into_tensor(1.0 - self.alphas_cumprod, t,
+        variance = _extract_into_tensor(1.0 - self.alphas_cumprod, t,
                                        x_start.shape)
-        log_variance = extract_into_tensor(self.log_one_minus_alphas_cumprod, t,
+        log_variance = _extract_into_tensor(self.log_one_minus_alphas_cumprod, t,
                                            x_start.shape)
         return mean, variance, log_variance
 
@@ -428,36 +430,36 @@ class DDPMTrainer(pl.LightningModule):
             self, x_t: torch.Tensor, t: torch.Tensor,
             noise: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
         return (
-            extract_into_tensor(self.sqrt_recip_alphas_cumprod, t, x_t.shape) *
-            x_t - extract_into_tensor(self.sqrt_recipm1_alphas_cumprod, t,
+            _extract_into_tensor(self.sqrt_recip_alphas_cumprod, t, x_t.shape) *
+            x_t - _extract_into_tensor(self.sqrt_recipm1_alphas_cumprod, t,
                                       x_t.shape) * noise)
 
     def predict_start_from_z_and_v(
             self, x_t: torch.Tensor, t: torch.Tensor,
             v: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
         return (
-            extract_into_tensor(self.sqrt_alphas_cumprod, t, x_t.shape) * x_t -
-            extract_into_tensor(self.sqrt_one_minus_alphas_cumprod, t,
+            _extract_into_tensor(self.sqrt_alphas_cumprod, t, x_t.shape) * x_t -
+            _extract_into_tensor(self.sqrt_one_minus_alphas_cumprod, t,
                                 x_t.shape) * v)
 
     def predict_eps_from_z_and_v(
             self, x_t: torch.Tensor, t: torch.Tensor,
             v: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
         return (
-            extract_into_tensor(self.sqrt_alphas_cumprod, t, x_t.shape) * v +
-            extract_into_tensor(self.sqrt_one_minus_alphas_cumprod, t,
+            _extract_into_tensor(self.sqrt_alphas_cumprod, t, x_t.shape) * v +
+            _extract_into_tensor(self.sqrt_one_minus_alphas_cumprod, t,
                                 x_t.shape) * x_t)
 
     def q_posterior(
             self, x_start: torch.Tensor, x_t: torch.Tensor,
             t: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         posterior_mean = (
-            extract_into_tensor(self.posterior_mean_coef1, t, x_t.shape) *
+            _extract_into_tensor(self.posterior_mean_coef1, t, x_t.shape) *
             x_start +
-            extract_into_tensor(self.posterior_mean_coef2, t, x_t.shape) * x_t)
-        posterior_variance = extract_into_tensor(self.posterior_variance, t,
+            _extract_into_tensor(self.posterior_mean_coef2, t, x_t.shape) * x_t)
+        posterior_variance = _extract_into_tensor(self.posterior_variance, t,
                                                  x_t.shape)
-        posterior_log_variance_clipped = extract_into_tensor(
+        posterior_log_variance_clipped = _extract_into_tensor(
             self.posterior_log_variance_clipped, t, x_t.shape)
         return posterior_mean, posterior_variance, posterior_log_variance_clipped
 
@@ -485,7 +487,7 @@ class DDPMTrainer(pl.LightningModule):
         b, *_, device = *x.shape, x.device
         model_mean, _, model_log_variance = self.p_mean_variance(
             x=x, t=t, clip_denoised=clip_denoised)
-        noise = noise_like(x.shape, device, repeat_noise)
+        noise = _noise_like(x.shape, device, repeat_noise)
         # no noise when t == 0
         nonzero_mask = (1 - (t == 0).float()).reshape(
             b, *((1, ) * (len(x.shape) - 1)))
@@ -494,17 +496,17 @@ class DDPMTrainer(pl.LightningModule):
 
     def q_sample(self, x_start: torch.Tensor, t: torch.Tensor,
                  noise: torch.Tensor) -> torch.Tensor:
-        noise = default(noise, lambda: torch.randn_like(x_start))
+        noise = _default(noise, lambda: torch.randn_like(x_start))
         return (
-            extract_into_tensor(self.sqrt_alphas_cumprod, t, x_start.shape) *
-            x_start + extract_into_tensor(self.sqrt_one_minus_alphas_cumprod, t,
+            _extract_into_tensor(self.sqrt_alphas_cumprod, t, x_start.shape) *
+            x_start + _extract_into_tensor(self.sqrt_one_minus_alphas_cumprod, t,
                                           x_start.shape) * noise)
 
     def get_v(self, x: torch.Tensor, noise: torch.Tensor,
               t: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
         return (
-            extract_into_tensor(self.sqrt_alphas_cumprod, t, x.shape) * noise -
-            extract_into_tensor(self.sqrt_one_minus_alphas_cumprod, t,
+            _extract_into_tensor(self.sqrt_alphas_cumprod, t, x.shape) * noise -
+            _extract_into_tensor(self.sqrt_one_minus_alphas_cumprod, t,
                                 x.shape) * x)
 
     def get_loss(self,
@@ -523,7 +525,7 @@ class DDPMTrainer(pl.LightningModule):
                                                     pred,
                                                     reduction='none')
         else:
-            raise NotImplementedError("unknown loss type '{loss_type}'")
+            raise ValueError(f"Unknown loss_type {loss_type!r}.")
 
         return loss
 
@@ -533,7 +535,7 @@ class DDPMTrainer(pl.LightningModule):
         t: torch.Tensor,
         noise: torch.Tensor = None
     ) -> Tuple[torch.Tensor, Dict[str, torch.Tensor]]:
-        noise = default(noise, lambda: torch.randn_like(x_start))
+        noise = _default(noise, lambda: torch.randn_like(x_start))
         x_noisy = self.q_sample(x_start=x_start, t=t, noise=noise)
         model_out = self.model(x_noisy, t)
 
@@ -545,7 +547,7 @@ class DDPMTrainer(pl.LightningModule):
         elif self.parameterization == "v":
             target = self.get_v(x_start, noise, t)
         else:
-            raise NotImplementedError(
+            raise ValueError(
                 f"Parameterization {self.parameterization} not yet supported")
 
         loss = self.get_loss(model_out, target, mean=False).mean(dim=[1, 2, 3])
@@ -622,7 +624,7 @@ class DDPMTrainer(pl.LightningModule):
         for key, value in self.trainer.logged_metrics.items():
             if key.startswith("train_"):
                 str += f"{key}: {value:.3f} "
-        log.info(str + '\n')
+        _log.info(str + '\n')
 
         # reset the metrics
         self.train_simple_loss.reset()
@@ -660,7 +662,7 @@ class DDPMTrainer(pl.LightningModule):
         for key, value in self.trainer.logged_metrics.items():
             if key.startswith("val_"):
                 str += f"{key}: {value:.3f} "
-        log.info(str + '\n')
+        _log.info(str + '\n')
 
         # reset the metrics
         self.val_simple_loss.reset()
@@ -722,7 +724,7 @@ class DDPMTrainer(pl.LightningModule):
         for key, value in self.trainer.logged_metrics.items():
             if key.startswith("test_"):
                 str += f"{key}: {value:.3f} "
-        log.info(str + '\n')
+        _log.info(str + '\n')
 
         # reset the metrics
         self.test_simple_loss.reset()
@@ -836,7 +838,7 @@ class CDDPMTrainer(DDPMTrainer):
         y: torch.Tensor,
         noise: torch.Tensor = None
     ) -> Tuple[torch.Tensor, Dict[str, torch.Tensor]]:
-        noise = default(noise, lambda: torch.randn_like(x_start))
+        noise = _default(noise, lambda: torch.randn_like(x_start))
         x_noisy = self.q_sample(x_start=x_start, t=t, noise=noise)
         model_out = self.model(x_noisy, t, y)
 
@@ -848,7 +850,7 @@ class CDDPMTrainer(DDPMTrainer):
         elif self.parameterization == "v":
             target = self.get_v(x_start, noise, t)
         else:
-            raise NotImplementedError(
+            raise ValueError(
                 f"Parameterization {self.parameterization} not yet supported")
 
         loss = self.get_loss(model_out, target, mean=False).mean(dim=[1, 2, 3])
@@ -953,7 +955,7 @@ class CDDPMTrainer(DDPMTrainer):
         b, *_, device = *x.shape, x.device
         model_mean, _, model_log_variance = self.p_mean_variance(
             x=x, t=t, y=y, clip_denoised=clip_denoised)
-        noise = noise_like(x.shape, device, repeat_noise)
+        noise = _noise_like(x.shape, device, repeat_noise)
         # no noise when t == 0
         nonzero_mask = (1 - (t == 0).float()).reshape(
             b, *((1, ) * (len(x.shape) - 1)))

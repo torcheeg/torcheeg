@@ -9,7 +9,7 @@ from ....utils import get_random_dir_path
 from ..base_dataset import BaseDataset
 
 
-def apply_notch_filter(eeg_data: np.ndarray, fs: float, notch_freq: float = 50.0) -> np.ndarray:
+def _apply_notch_filter(eeg_data: np.ndarray, fs: float, notch_freq: float = 50.0) -> np.ndarray:
     """
     Apply notch filter to remove line noise.
 
@@ -29,7 +29,7 @@ def apply_notch_filter(eeg_data: np.ndarray, fs: float, notch_freq: float = 50.0
     return filtered_data
 
 
-def apply_highpass_filter(eeg_data: np.ndarray, fs: float, hp_freq: float = 0.1) -> np.ndarray:
+def _apply_highpass_filter(eeg_data: np.ndarray, fs: float, hp_freq: float = 0.1) -> np.ndarray:
     """
     Apply high-pass Butterworth filter.
 
@@ -50,7 +50,7 @@ def apply_highpass_filter(eeg_data: np.ndarray, fs: float, hp_freq: float = 0.1)
     return filtered_data
 
 
-def apply_downsample(eeg_data: np.ndarray, original_fs: float, target_fs: float) -> np.ndarray:
+def _apply_downsample(eeg_data: np.ndarray, original_fs: float, target_fs: float) -> np.ndarray:
     """
     Downsample EEG data.
 
@@ -70,7 +70,7 @@ def apply_downsample(eeg_data: np.ndarray, original_fs: float, target_fs: float)
     return downsampled_data
 
 
-def create_eog_bipolar(eeg_data: np.ndarray, ch_names: list) -> Tuple[np.ndarray, np.ndarray]:
+def _create_eog_bipolar(eeg_data: np.ndarray, ch_names: list) -> Tuple[np.ndarray, np.ndarray]:
     """
     Create bipolar EOG channels from the DTU dataset.
 
@@ -95,7 +95,7 @@ def create_eog_bipolar(eeg_data: np.ndarray, ch_names: list) -> Tuple[np.ndarray
     return veog, heog
 
 
-def apply_eog_removal(eeg_data: np.ndarray, veog: np.ndarray, heog: np.ndarray) -> np.ndarray:
+def _apply_eog_removal(eeg_data: np.ndarray, veog: np.ndarray, heog: np.ndarray) -> np.ndarray:
     """
     Remove EOG artifacts using regression.
 
@@ -122,7 +122,7 @@ def apply_eog_removal(eeg_data: np.ndarray, veog: np.ndarray, heog: np.ndarray) 
     return denoised_data
 
 
-def apply_average_reference(eeg_data: np.ndarray) -> np.ndarray:
+def _apply_average_reference(eeg_data: np.ndarray) -> np.ndarray:
     """
     Apply average reference to EEG data.
 
@@ -319,17 +319,17 @@ class DTUDataset(BaseDataset):
         has_wav_file = expinfo.wavfile_female.astype(str) != 'nan'
         expinfo = expinfo[has_wav_file].reset_index(drop=True)
 
-        eeg_data = apply_notch_filter(eeg_data, original_fs, notch_freq=50.0)
+        eeg_data = _apply_notch_filter(eeg_data, original_fs, notch_freq=50.0)
 
         if original_fs != sampling_rate:
-            eeg_data = apply_downsample(eeg_data, original_fs, sampling_rate)
+            eeg_data = _apply_downsample(eeg_data, original_fs, sampling_rate)
             event_samples = (event_samples * sampling_rate /
                              original_fs).astype(int)
 
-        eeg_data = apply_highpass_filter(eeg_data, sampling_rate, hp_freq=0.1)
+        eeg_data = _apply_highpass_filter(eeg_data, sampling_rate, hp_freq=0.1)
 
         if eog_removal:
-            veog, heog = create_eog_bipolar(eeg_data, ch_names)
+            veog, heog = _create_eog_bipolar(eeg_data, ch_names)
             channels_to_remove = ['EXG3', 'EXG4',
                                   'EXG5', 'EXG6', 'EXG7', 'EXG8', 'Status']
             keep_indices = [i for i, ch in enumerate(
@@ -337,7 +337,7 @@ class DTUDataset(BaseDataset):
             eeg_data = eeg_data[:, keep_indices]
             ch_names_clean = [ch_names[i] for i in keep_indices]
 
-            eeg_data = apply_eog_removal(eeg_data, veog, heog)
+            eeg_data = _apply_eog_removal(eeg_data, veog, heog)
         else:
             channels_to_remove = ['EXG3', 'EXG4',
                                   'EXG5', 'EXG6', 'EXG7', 'EXG8', 'Status']
@@ -346,7 +346,7 @@ class DTUDataset(BaseDataset):
             eeg_data = eeg_data[:, keep_indices]
             ch_names_clean = [ch_names[i] for i in keep_indices]
 
-        eeg_data = apply_average_reference(eeg_data)
+        eeg_data = _apply_average_reference(eeg_data)
 
         trial_data = []
         trial_info = []
@@ -508,9 +508,10 @@ class DTUDataset(BaseDataset):
                     root_path: str = './EEG',
                     **kwargs):
 
-        assert os.path.exists(
-            root_path
-        ), f'root_path ({root_path}) does not exist. Please download the dataset and set the root_path to the downloaded path.'
+        if not (os.path.exists(root_path)):
+            raise FileNotFoundError(
+                f'root_path ({root_path}) does not exist. Please download the dataset and set the root_path to the downloaded path.'
+            )
 
         all_files = os.listdir(root_path)
         records = [f for f in all_files if f.endswith('.mat') and
