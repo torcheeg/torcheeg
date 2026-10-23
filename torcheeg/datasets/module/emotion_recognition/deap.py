@@ -20,12 +20,6 @@ class DEAPDataset(BaseDataset):
     - Signals: Electroencephalogram (32 channels at 512Hz, downsampled to 128Hz), skinconductance level (SCL), respiration amplitude, skin temperature,electrocardiogram, blood volume by plethysmograph, electromyograms ofZygomaticus and Trapezius muscles (EMGs), electrooculogram (EOG), face video (for 22 participants).
     - Rating: Arousal, valence, like/dislike, dominance (all ona scale from 1 to 9), familiarity (on a scale from 1 to 5).
 
-    Hidden files (including macOS .DS_Store and AppleDouble sidecars),
-    unrelated extensions and directories are ignored during record discovery.
-    Only visible .dat files are read, in deterministic filename order. If an
-    older preprocessing attempt failed on a sidecar, use a new :obj:`io_path`
-    to avoid reusing an incomplete cache.
-
     In order to use this dataset, the download folder :obj:`data_preprocessed_python` is required, containing the following files:
 
     .. code-block:: text
