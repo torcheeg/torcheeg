@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="480" viewBox="0 0 1200 480" role="img" aria-labelledby="title">
+<title id="title">KFoldPerSubject</title>
+<rect width="1200" height="480" fill="white"/>
+<g font-family="DejaVu Sans, Arial, sans-serif">
+<text x="220.0" y="115" font-size="18" fill="#253047" text-anchor="middle" font-weight="400">Fold 1</text>
+<text x="220.0" y="217" font-size="16" fill="#637086" text-anchor="middle" font-weight="400">Subject 1</text>
+<rect x="102.0" y="240" width="16" height="18" rx="3" fill="#A77BCB"/>
+<path d="M106.0 249 h8" stroke="white" stroke-width="2"/>
+<rect x="122.0" y="240" width="16" height="18" rx="3" fill="#A77BCB"/>
+<path d="M126.0 249 h8" stroke="white" stroke-width="2"/>
+<rect x="142.0" y="240" width="16" height="18" rx="3" fill="#A77BCB"/>
+<path d="M146.0 249 h8" stroke="white" stroke-width="2"/>
+<rect x="162.0" y="240" width="16" height="18" rx="3" fill="#A77BCB"/>
+<path d="M166.0 249 h8" stroke="white" stroke-width="2"/>
+<rect x="182.0" y="240" width="16" height="18" rx="3" fill="#B6BDC8"/>
+<rect x="202.0" y="240" width="16" height="18" rx="3" fill="#B6BDC8"/>
+<rect x="222.0" y="240" width="16" height="18" rx="3" fill="#B6BDC8"/>
+<rect x="242.0" y="240" width="16" height="18" rx="3" fill="#B6BDC8"/>
+<rect x="262.0" y="240" width="16" height="18" rx="3" fill="#B6BDC8"/>
+<rect x="282.0" y="240" width="16" height="18" rx="3" fill="#B6BDC8"/>
+<rect x="302.0" y="240" width="16" height="18" rx="3" fill="#B6BDC8"/>
+<rect x="322.0" y="240" width="16" height="18" rx="3" fill="#B6BDC8"/>
+<text x="600.0" y="115" font-size="18" fill="#253047" text-anchor="middle" font-weight="400">Fold 2</text>
+<text x="600.0" y="217" font-size="16" fill="#637086" text-anchor="middle" font-weight="400">Subject 1</text>
+<rect x="482.0" y="240" width="16" height="18" rx="3" fill="#B6BDC8"/>
+<rect x="502.0" y="240" width="16" height="18" rx="3" fill="#B6BDC8"/>
+<rect x="522.0" y="240" width="16" height="18" rx="3" fill="#B6BDC8"/>
+<rect x="542.0" y="240" width="16" height="18" rx="3" fill="#B6BDC8"/>
+<rect x="562.0" y="240" width="16" height="18" rx="3" fill="#A77BCB"/>
+<path d="M566.0 249 h8" stroke="white" stroke-width="2"/>
+<rect x="582.0" y="240" width="16" height="18" rx="3" fill="#A77BCB"/>
+<path d="M586.0 249 h8" stroke="white" stroke-width="2"/>
+<rect x="602.0" y="240" width="16" height="18" rx="3" fill="#A77BCB"/>
+<path d="M606.0 249 h8" stroke="white" stroke-width="2"/>
+<rect x="622.0" y="240" width="16" height="18" rx="3" fill="#A77BCB"/>
+<path d="M626.0 249 h8" stroke="white" stroke-width="2"/>
+<rect x="642.0" y="240" width="16" height="18" rx="3" fill="#B6BDC8"/>
+<rect x="662.0" y="240" width="16" height="18" rx="3" fill="#B6BDC8"/>
+<rect x="682.0" y="240" width="16" height="18" rx="3" fill="#B6BDC8"/>
+<rect x="702.0" y="240" width="16" height="18" rx="3" fill="#B6BDC8"/>
+<text x="980.0" y="115" font-size="18" fill="#253047" text-anchor="middle" font-weight="400">Fold 3</text>
+<text x="980.0" y="217" font-size="16" fill="#637086" text-anchor="middle" font-weight="400">Subject 1</text>
+<rect x="862.0" y="240" width="16" height="18" rx="3" fill="#B6BDC8"/>
+<rect x="882.0" y="240" width="16" height="18" rx="3" fill="#B6BDC8"/>
+<rect x="902.0" y="240" width="16" height="18" rx="3" fill="#B6BDC8"/>
+<rect x="922.0" y="240" width="16" height="18" rx="3" fill="#B6BDC8"/>
+<rect x="942.0" y="240" width="16" height="18" rx="3" fill="#B6BDC8"/>
+<rect x="962.0" y="240" width="16" height="18" rx="3" fill="#B6BDC8"/>
+<rect x="982.0" y="240" width="16" height="18" rx="3" fill="#B6BDC8"/>
+<rect x="1002.0" y="240" width="16" height="18" rx="3" fill="#B6BDC8"/>
+<rect x="1022.0" y="240" width="16" height="18" rx="3" fill="#A77BCB"/>
+<path d="M1026.0 249 h8" stroke="white" stroke-width="2"/>
+<rect x="1042.0" y="240" width="16" height="18" rx="3" fill="#A77BCB"/>
+<path d="M1046.0 249 h8" stroke="white" stroke-width="2"/>
+<rect x="1062.0" y="240" width="16" height="18" rx="3" fill="#A77BCB"/>
+<path d="M1066.0 249 h8" stroke="white" stroke-width="2"/>
+<rect x="1082.0" y="240" width="16" height="18" rx="3" fill="#A77BCB"/>
+<path d="M1086.0 249 h8" stroke="white" stroke-width="2"/>
+<rect x="499" y="400" width="16" height="18" rx="3" fill="#B6BDC8"/>
+<text x="524" y="415" font-size="16" fill="#253047" text-anchor="start" font-weight="400">Train</text>
+<rect x="625" y="400" width="16" height="18" rx="3" fill="#A77BCB"/>
+<path d="M629 409 h8" stroke="white" stroke-width="2"/>
+<text x="650" y="415" font-size="16" fill="#253047" text-anchor="start" font-weight="400">Test</text>
+</g></svg>

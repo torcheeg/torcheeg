@@ -221,11 +221,13 @@ class SEEDDataset(BaseDataset):
             if before_trial:
                 trial_samples = before_trial(trial_samples)
 
+            int_trial_id = int(trial_id.split('_')[-1][3:])
+
             # record the common meta info
             trial_meta_info = {
                 'subject_id': subject,
-                'trial_id': trial_id,
-                'emotion': int(labels[int(trial_id.split('_')[-1][3:]) - 1]),
+                'trial_id': int_trial_id,
+                'emotion': int(labels[int_trial_id - 1]),
                 'date': date
             }
 
@@ -264,9 +266,10 @@ class SEEDDataset(BaseDataset):
                 end_at = start_at + dynamic_chunk_size
 
     def set_records(self, root_path: str = './Preprocessed_EEG', **kwargs):
-        assert os.path.exists(
-            root_path
-        ), f'root_path ({root_path}) does not exist. Please download the dataset and set the root_path to the downloaded path.'
+        if not (os.path.exists(root_path)):
+            raise FileNotFoundError(
+                f'root_path ({root_path}) does not exist. Please download the dataset and set the root_path to the downloaded path.'
+            )
         file_list = os.listdir(root_path)
         skip_set = ['label.mat', 'readme.txt']
         file_list = [f for f in file_list if f not in skip_set]

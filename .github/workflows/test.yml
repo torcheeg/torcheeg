@@ -2,9 +2,7 @@ name: Tests
 
 on:
   pull_request:
-    branches: [ main ]
   push:
-    branches: [ main ]
 
 jobs:
   test:
@@ -33,7 +31,7 @@ jobs:
       run: |
         echo "torch==2.4.1" > constraints.txt
         echo "torch_scatter==2.1.2" >> constraints.txt
-        echo "torch_sparse==0.6.18" >> constraints.txt
+        echo "lmdb==1.4.1" >> constraints.txt
         
     - name: Install package and dependencies
       run: |
@@ -41,7 +39,7 @@ jobs:
         
     - name: Run tests
       run: |
-        python -m unittest discover test/
+        python -m unittest discover -s test -t .
         
     - name: Test build
       run: |

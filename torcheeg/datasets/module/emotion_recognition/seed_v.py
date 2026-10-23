@@ -172,9 +172,9 @@ class SEEDVDataset(BaseDataset):
     def fake_record(record: str, **kwargs) -> Dict:
         num_channels = 62
         num_samples = 1000 * 60
-        
+
         data_matrix = np.random.randn(num_channels, num_samples)
-        
+
         return {
             'record': '10_1_20180507.cnt',
             'data_matrix': data_matrix
@@ -190,16 +190,18 @@ class SEEDVDataset(BaseDataset):
                        offline_transform: Union[None, Callable] = None,
                        **kwargs):
         file_name = os.path.basename(record)
-        file_stem = os.path.splitext(file_name)[0]
+        file_name_without_ext = os.path.splitext(file_name)[0]
         # split with _, the first part is the subject_id, the second part is the session_id, the third part is the date
-        subject_id, session_id, date = file_stem.split('_')[:3]
+        subject_id, session_id, date = file_name_without_ext.split('_')[:3]
+        subject_id = int(subject_id)
+        session_id = int(session_id)
         date = int(date)
 
         labels = [[4, 1, 3, 2, 0, 4, 1, 3, 2, 0, 4, 1, 3, 2, 0],
                   [2, 1, 3, 0, 4, 4, 0, 3, 2, 1, 3, 4, 1, 2, 0],
                   [2, 1, 3, 0, 4, 4, 0, 3, 2, 1, 3, 4, 1, 2, 0]]
 
-        trial_labels = labels[int(session_id) - 1]
+        trial_labels = labels[session_id - 1]
 
         start_end_list = [
             {
@@ -233,8 +235,8 @@ class SEEDVDataset(BaseDataset):
                 ]
             },
         ]
-        start_seconds = start_end_list[int(session_id) - 1]['start_seconds']
-        end_seconds = start_end_list[int(session_id) - 1]['end_seconds']
+        start_seconds = start_end_list[session_id - 1]['start_seconds']
+        end_seconds = start_end_list[session_id - 1]['end_seconds']
 
         write_pointer = 0
 
@@ -300,9 +302,10 @@ class SEEDVDataset(BaseDataset):
                 end_at = start_at + dynamic_chunk_size
 
     def set_records(self, root_path: str = './EEG_raw', **kwargs):
-        assert os.path.exists(
-            root_path
-        ), f'root_path ({root_path}) does not exist. Please download the dataset and set the root_path to the downloaded path.'
+        if not (os.path.exists(root_path)):
+            raise FileNotFoundError(
+                f'root_path ({root_path}) does not exist. Please download the dataset and set the root_path to the downloaded path.'
+            )
 
         file_list = os.listdir(root_path)
         file_list = [

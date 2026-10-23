@@ -2,6 +2,7 @@ from typing import Any, Callable, Dict, Tuple, Union
 import pandas as pd
 import mne
 import numpy as np
+import os
 
 from .base_dataset import BaseDataset
 from ...utils import get_random_dir_path
@@ -107,7 +108,7 @@ class CSVFolderDataset(BaseDataset):
         return {
             'trial_samples': trial_samples,
         }
-    
+
     @staticmethod
     def process_record(record: Dict,
                        trial_samples: mne.Epochs,
@@ -128,7 +129,8 @@ class CSVFolderDataset(BaseDataset):
                 t = offline_transform(eeg=trial_signal)
                 t_eeg = t['eeg']
 
-            clip_id = f'{file_path}_{write_pointer}'
+            file_name = os.path.basename(file_path)
+            clip_id = f'{file_name}_{write_pointer}'
             write_pointer += 1
 
             record_info = {
@@ -143,7 +145,8 @@ class CSVFolderDataset(BaseDataset):
         # read csv
         df = pd.read_csv(csv_path)
 
-        assert 'file_path' in df.columns, 'file_path is required in csv file.'
+        if not ('file_path' in df.columns):
+            raise ValueError('file_path is required in csv file.')
 
         # df to a list of dict, each dict is a row
         df_list = df.to_dict('records')

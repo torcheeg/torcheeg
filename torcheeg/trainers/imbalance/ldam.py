@@ -34,7 +34,8 @@ class LDAMLoss(nn.Module):
         margin_list = 1.0 / np.sqrt(np.sqrt(class_frequency))
         margin_list = margin_list * (max_margin / np.max(margin_list))
         self.register_buffer('margin_list', torch.tensor(margin_list).float())
-        assert scaling > 0, "scaling should be greater than 0."
+        if not (scaling > 0):
+            raise ValueError('scaling should be greater than 0.')
         self.scaling = scaling
         if not weight is None:
             self.register_buffer('weight', weight)
@@ -117,7 +118,10 @@ class LDAMLossTrainer(ClassifierTrainer):
             _class_frequency = [0] * self.num_classes
             for _, batch_y in class_frequency:
                 # assert every item in batch_y is less than self.num_classes
-                assert torch.all(batch_y < self.num_classes), f"The label in class_frequency ({batch_y}) is out of range 0-{self.num_classes-1}."
+                if not (torch.all(batch_y < self.num_classes)):
+                    raise ValueError(
+                        f'The label in class_frequency ({batch_y}) is out of range 0-{self.num_classes - 1}.'
+                    )
 
                 for y in batch_y:
                     _class_frequency[y] += 1
@@ -125,8 +129,8 @@ class LDAMLossTrainer(ClassifierTrainer):
         else:
             self._class_frequency = class_frequency
 
-        assert self.rule in ["none", "reweight",
-                             "drw"], f"Unsupported rule: {self.rule}."
+        if not (self.rule in ['none', 'reweight', 'drw']):
+            raise ValueError(f'Unsupported rule: {self.rule}.')
 
         if self.rule == 'none':
             _weight = None
