@@ -87,24 +87,24 @@ class TSCeption(nn.Module):
         self.pool = 8
         # by setting the convolutional kernel being (1,lenght) and the strids being 1 we can use conv2d to
         # achieve the 1d convolution operation
-        self.Tception1 = self.conv_block(
+        self.Tception1 = self._build_conv_block(
             in_channels, num_T,
             (1, int(self.inception_window[0] * sampling_rate)), 1, self.pool)
-        self.Tception2 = self.conv_block(
+        self.Tception2 = self._build_conv_block(
             in_channels, num_T,
             (1, int(self.inception_window[1] * sampling_rate)), 1, self.pool)
-        self.Tception3 = self.conv_block(
+        self.Tception3 = self._build_conv_block(
             in_channels, num_T,
             (1, int(self.inception_window[2] * sampling_rate)), 1, self.pool)
 
-        self.Sception1 = self.conv_block(num_T, num_S, (int(num_electrodes), 1),
+        self.Sception1 = self._build_conv_block(num_T, num_S, (int(num_electrodes), 1),
                                          1, int(self.pool * 0.25))
-        self.Sception2 = self.conv_block(num_T, num_S,
+        self.Sception2 = self._build_conv_block(num_T, num_S,
                                          (int(num_electrodes * 0.5), 1),
                                          (int(num_electrodes * 0.5), 1),
                                          int(self.pool * 0.25),
                                          padding=(0, 0, 1, 0) if num_electrodes % 2 == 1 else 0)
-        self.fusion_layer = self.conv_block(num_S, num_S, (3, 1), 1, 4)
+        self.fusion_layer = self._build_conv_block(num_S, num_S, (3, 1), 1, 4)
         self.BN_t = nn.BatchNorm2d(num_T)
         self.BN_s = nn.BatchNorm2d(num_S)
         self.BN_fusion = nn.BatchNorm2d(num_S)
@@ -113,7 +113,7 @@ class TSCeption(nn.Module):
                                 nn.Dropout(dropout),
                                 nn.Linear(hid_channels, num_classes))
 
-    def conv_block(self, in_channels: int, out_channels: int, kernel: int,
+    def _build_conv_block(self, in_channels: int, out_channels: int, kernel: int,
                    stride: int, pool_kernel: int, padding: int = 0) -> nn.Module:
         return nn.Sequential(
             nn.ZeroPad2d(padding) if padding != 0 else nn.Identity(),

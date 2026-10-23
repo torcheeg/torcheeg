@@ -46,9 +46,10 @@ class Select(LabelTransform):
         return super().__call__(*args, y=y, **kwargs)
 
     def apply(self, y: Dict, **kwargs) -> Union[int, float, List]:
-        assert isinstance(
-            y, dict
-        ), f'The transform Select only accepts label dict as input, but obtain {type(y)} as input.'
+        if not (isinstance(y, dict)):
+            raise TypeError(
+                f'The transform Select only accepts label dict as input, but obtain {type(y)} as input.'
+            )
         if self.select_list:
             return [y[k] for k in self.key]
         return y[self.key]

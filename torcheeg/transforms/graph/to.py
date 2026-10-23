@@ -213,7 +213,10 @@ class ToDynamicG(EEGTransform):
             func = self.edge_func
         else:
             valid_edge_func = list(self.edge_func_list.keys())
-            assert self.edge_func in valid_edge_func, f'Unimplemented calculation method {self.edge_func}, allowable selection of calculation methods include {valid_edge_func}'
+            if not (self.edge_func in valid_edge_func):
+                raise ValueError(
+                    f'Unimplemented calculation method {self.edge_func}, allowable selection of calculation methods include {valid_edge_func}'
+                )
 
             func = self.edge_func_list[self.edge_func]
 

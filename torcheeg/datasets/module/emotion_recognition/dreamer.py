@@ -170,39 +170,39 @@ class DREAMERDataset(BaseDataset):
         num_channel = 14
         trial_length = 7680
         baseline_length = 61 * 128
-        
+
         score_valence = np.random.uniform(1, 5, (num_trials, 1))
         score_arousal = np.random.uniform(1, 5, (num_trials, 1))
         score_dominance = np.random.uniform(1, 5, (num_trials, 1))
-        
+
         stimuli_data = np.zeros((num_trials, 1), dtype=object)
         baseline_data = np.zeros((num_trials, 1), dtype=object)
-        
+
         for i in range(num_trials):
             stimuli_data[i, 0] = np.random.rand(trial_length, num_channel)
             baseline_data[i, 0] = np.random.rand(baseline_length, num_channel)
-        
+
         eeg_data = {
             'stimuli': np.array([[stimuli_data]]),
             'baseline': np.array([[baseline_data]])
         }
-        
+
         subject_data = {
             'EEG': np.array([[eeg_data]]),
             'ScoreValence': np.array([[score_valence]]),
             'ScoreArousal': np.array([[score_arousal]]),
             'ScoreDominance': np.array([[score_dominance]])
         }
-        
+
         data_array = np.zeros((1, 1), dtype=object)
         data_array[0, 0] = subject_data
-        
+
         mat_data = {
             'DREAMER': np.array([[{
                 'Data': data_array
             }]])
         }
-        
+
         return {
             'mat_data': mat_data,
             'record': 0
@@ -309,9 +309,10 @@ class DREAMERDataset(BaseDataset):
                 end_at = start_at + dynamic_chunk_size
 
     def set_records(self, mat_path: str = './DREAMER.mat', **kwargs):
-        assert os.path.exists(
-            mat_path
-        ), f'mat_path ({mat_path}) does not exist. Please download the dataset and set the mat_path to the downloaded path.'
+        if not (os.path.exists(mat_path)):
+            raise FileNotFoundError(
+                f'mat_path ({mat_path}) does not exist. Please download the dataset and set the mat_path to the downloaded path.'
+            )
 
         mat_data = scio.loadmat(mat_path,
                                 verify_compressed_data_integrity=False)
