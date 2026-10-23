@@ -85,53 +85,53 @@ class ATCNet(nn.Module):
             nn.AvgPool2d((1, self.pool_size)),
             nn.Dropout2d(0.1)
         )
-        self.__build_model()
+        self._build_model()
 
-    def __build_model(self):
+    def _build_model(self):
         with torch.no_grad():
             x = torch.zeros(2, self.in_channels,
                             self.num_electrodes, self.chunk_size)
             x = self.conv_block(x)
             x = x[:, :, -1, :]
             x = x.permute(0, 2, 1)
-            self.__chan_dim, self.__embed_dim = x.shape[1:]
-            self.win_len = self.__chan_dim - self.num_windows + 1
+            self._chan_dim, self._embed_dim = x.shape[1:]
+            self.win_len = self._chan_dim - self.num_windows + 1
 
             for i in range(self.num_windows):
                 st = i
                 end = x.shape[1] - self.num_windows+i+1
                 x2 = x[:, st:end, :]
 
-                self.__add_msa(i)
+                self._add_msa(i)
                 x2_ = self.get_submodule("msa"+str(i))(x2, x2, x2)[0]
-                self.__add_msa_drop(i)
+                self._add_msa_drop(i)
                 x2_ = self.get_submodule("msa_drop"+str(i))(x2)
                 x2 = torch.add(x2, x2_)
 
                 for j in range(self.tcn_depth):
-                    self.__add_tcn((i+1)*j, x2.shape[1])
+                    self._add_tcn((i+1)*j, x2.shape[1])
                     out = self.get_submodule("tcn"+str((i+1)*j))(x2)
                     if x2.shape[1] != out.shape[1]:
-                        self.__add_recov(i)
+                        self._add_recov(i)
                         x2 = self.get_submodule("re"+str(i))(x2)
                     x2 = torch.add(x2, out)
                     x2 = nn.ELU()(x2)
                 x2 = x2[:, -1, :]
-                self.__dense_dim = x2.shape[-1]
-                self.__add_dense(i)
+                self._dense_dim = x2.shape[-1]
+                self._add_dense(i)
                 x2 = self.get_submodule("dense"+str(i))(x2)
 
-    def __add_msa(self, index: int):
+    def _add_msa(self, index: int):
 
         self.add_module('msa'+str(index), nn.MultiheadAttention(
-            embed_dim=self.__embed_dim,
+            embed_dim=self._embed_dim,
             num_heads=2,
             batch_first=True))
 
-    def __add_msa_drop(self, index):
+    def _add_msa_drop(self, index):
         self.add_module('msa_drop'+str(index), nn.Dropout(0.3))
 
-    def __add_tcn(self, index: int, num_electrodes: int):
+    def _add_tcn(self, index: int, num_electrodes: int):
         self.add_module('tcn'+str(index),
                         nn.Sequential(
             nn.Conv1d(num_electrodes, 32,
@@ -145,13 +145,13 @@ class ATCNet(nn.Module):
             nn.Dropout(0.3))
         )
 
-    def __add_recov(self, index: int):
+    def _add_recov(self, index: int):
         self.add_module('re'+str(index),
                         nn.Conv1d(self.win_len, 32, 4, padding='same'))
 
-    def __add_dense(self, index: int):
+    def _add_dense(self, index: int):
         self.add_module('dense'+str(index),
-                        nn.Linear(self.__dense_dim, self.num_classes))
+                        nn.Linear(self._dense_dim, self.num_classes))
 
     def forward(self, x):
         r'''

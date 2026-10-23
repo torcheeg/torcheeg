@@ -43,14 +43,16 @@ class BaselineRemoval(EEGTransform):
         if kwargs['baseline'] is None:
             return eeg
 
-        assert kwargs[
-            'baseline'].shape == eeg.shape, f'The shape of baseline signals ({kwargs["baseline"].shape}) need to be consistent with the input signal ({eeg.shape}). Did you forget to add apply_to_baseline=True to the transforms before BaselineRemoval so that these transforms are applied to the baseline signal simultaneously?'
+        if not (kwargs['baseline'].shape == eeg.shape):
+            raise ValueError(
+                f"The shape of baseline signals ({kwargs['baseline'].shape}) need to be consistent with the input signal ({eeg.shape}). Did you forget to add apply_to_baseline=True to the transforms before BaselineRemoval so that these transforms are applied to the baseline signal simultaneously?"
+            )
         return eeg - kwargs['baseline']
 
     @property
     def targets_as_params(self):
         return ['baseline']
-    
+
     def get_params_dependent_on_targets(self, params):
         return {'baseline': params['baseline']}
 
@@ -80,14 +82,14 @@ class BaselineCorrection(EEGTransform):
 
 
     def apply(self, eeg, **kwargs) -> any:
-        
-         if kwargs['baseline'] is None:
+
+        if kwargs['baseline'] is None:
             return eeg
-         return eeg - kwargs['baseline'].mean(self.axis,keepdims= True)
-    
+        return eeg - kwargs['baseline'].mean(self.axis,keepdims= True)
+
     @property
     def targets_as_params(self):
         return ['baseline']
-    
+
     def get_params_dependent_on_targets(self, params):
         return {'baseline': params['baseline']}
