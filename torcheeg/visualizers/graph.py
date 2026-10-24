@@ -11,7 +11,9 @@ from pylab import cm
 from ..utils import LazyLoader as _LazyLoader
 from .utils import _plot_to_image
 
-_pyg = _LazyLoader('torch_geometric')
+_pyg = _LazyLoader(
+    'torch_geometric',
+    install_hint='See https://pytorch-geometric.readthedocs.io/en/latest/notes/installation.html')
 
 
 def plot_graph(data: 'pyg.data.Data',

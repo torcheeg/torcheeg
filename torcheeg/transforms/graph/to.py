@@ -10,7 +10,9 @@ from ..base_transform import EEGTransform
 from ...utils import LazyLoader
 
 
-pyg = LazyLoader('torch_geometric')
+pyg = LazyLoader(
+    'torch_geometric',
+    install_hint='See https://pytorch-geometric.readthedocs.io/en/latest/notes/installation.html')
 
 
 class ToG(EEGTransform):

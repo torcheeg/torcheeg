@@ -67,7 +67,7 @@ sys.meta_path.insert(0, BlockOptionalDependencies())
             try:
                 transform(eeg=torch.ones(3, 4))
             except ImportError as error:
-                assert 'install `torch_geometric`' in str(error), str(error)
+                assert 'Could not import optional dependency `torch_geometric`' in str(error), str(error)
             else:
                 raise AssertionError('Graph conversion must load its dependency')
         """)
@@ -78,11 +78,44 @@ sys.meta_path.insert(0, BlockOptionalDependencies())
             try:
                 RGNN(torch.eye(3), num_electrodes=3)
             except ImportError as error:
-                assert 'install `torch_scatter`' in str(error), str(error)
+                assert 'Could not import optional dependency `torch_scatter`' in str(error), str(error)
                 assert 'pytorch-geometric.readthedocs.io' in str(error), str(error)
             else:
                 raise AssertionError('RGNN must report its missing dependency')
         ''')
+
+    def test_resampling_without_optional_backends(self):
+        self.run_without(('samplerate', 'resampy', 'soxr'), """
+            import numpy as np
+            from torcheeg.transforms.numpy import downsample
+            from torcheeg.utils import LazyLoader
+            assert downsample.LazyLoader is LazyLoader
+            eeg = np.ones((2, 32))
+            transform = downsample.SetSamplingRate(32, 16, res_type='scipy')
+            assert transform(eeg=eeg)['eeg'].shape == (2, 16)
+            for backend, method in [('samplerate', 'linear'),
+                                    ('resampy', 'kaiser_best'), ('soxr', 'soxr_hq')]:
+                transform = downsample.SetSamplingRate(32, 16, res_type=method)
+                try:
+                    transform(eeg=eeg)
+                except ImportError as error:
+                    assert f'pip install {backend}' in str(error), str(error)
+                    assert 'pytorch-geometric' not in str(error), str(error)
+                else:
+                    raise AssertionError('Selected backend must report its missing dependency')
+        """)
+
+    def test_moabb_reports_its_own_install_hint(self):
+        self.run_without(('moabb',), """
+            try:
+                import torcheeg.datasets.moabb
+            except ImportError as error:
+                assert 'pip install moabb' in str(error), str(error)
+                assert 'pytorch-geometric' not in str(error), str(error)
+                assert isinstance(error.__cause__, ModuleNotFoundError)
+            else:
+                raise AssertionError('MOABB type imports must report their missing dependency')
+        """)
 
     def test_gin_reports_missing_pyg_when_constructed(self):
         self.run_without(('torch_geometric',), '''
@@ -91,7 +124,7 @@ sys.meta_path.insert(0, BlockOptionalDependencies())
                 try:
                     build()
                 except ImportError as error:
-                    assert 'install `torch_geometric`' in str(error), str(error)
+                    assert 'Could not import optional dependency `torch_geometric`' in str(error), str(error)
                 else:
                     raise AssertionError('Graph model must report its missing dependency')
         ''')

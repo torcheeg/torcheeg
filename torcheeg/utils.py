@@ -199,8 +199,9 @@ def ensure_cache(path, fingerprint, writer, files=None, validator=None):
 
 
 class LazyLoader:
-    def __init__(self, lib_name):
+    def __init__(self, lib_name, install_hint=None):
         self._lib_name = lib_name
+        self._install_hint = install_hint
         self._module = None
 
     def __getattr__(self, name):
@@ -208,10 +209,10 @@ class LazyLoader:
             try:
                 self._module = _import_module(self._lib_name)
             except ImportError as error:
-                raise ImportError(
-                    f"To use this functionality, you need to install `{self._lib_name}`. "
-                    f"Please refer to https://pytorch-geometric.readthedocs.io/en/latest/notes/installation.html"
-                ) from error
+                message = f"Could not import optional dependency `{self._lib_name}`."
+                if self._install_hint:
+                    message += f" {self._install_hint}"
+                raise ImportError(message) from error
         return getattr(self._module, name)
 
 

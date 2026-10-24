@@ -8,8 +8,12 @@ import torch.nn.functional as F
 from ...utils import LazyLoader as _LazyLoader
 
 
-_pyg = _LazyLoader('torch_geometric')
-_scatter = _LazyLoader('torch_scatter')
+_pyg = _LazyLoader(
+    'torch_geometric',
+    install_hint='See https://pytorch-geometric.readthedocs.io/en/latest/notes/installation.html')
+_scatter = _LazyLoader(
+    'torch_scatter',
+    install_hint='See https://pytorch-geometric.readthedocs.io/en/latest/notes/installation.html')
 
 
 def _maybe_num_electrodes(index: torch.Tensor, num_electrodes: Union[int, None] = None) -> int:

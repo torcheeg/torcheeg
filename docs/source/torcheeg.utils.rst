@@ -40,6 +40,8 @@ Optional dependencies
 ``LazyLoader`` loads its module on first attribute access. Resolving a class as
 a base also accesses an attribute, so a top-level class definition triggers the
 import at that point. Importing shared utilities does not load visualizers.
+Pass an optional ``install_hint`` to provide dependency-specific installation
+instructions; the loader itself does not assume a particular package.
 
 Migration
 ---------

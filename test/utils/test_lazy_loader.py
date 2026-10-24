@@ -19,9 +19,20 @@ class TestLazyLoader(unittest.TestCase):
         error = ModuleNotFoundError('graph backend unavailable')
         with patch('torcheeg.utils._import_module', side_effect=error):
             lazy = LazyLoader('torch_scatter')
-            with self.assertRaisesRegex(ImportError, 'install `torch_scatter`') as caught:
+            with self.assertRaisesRegex(ImportError, 'Could not import optional dependency `torch_scatter`') as caught:
                 lazy.scatter_add
             self.assertIs(caught.exception.__cause__, error)
+            self.assertNotIn("pytorch-geometric", str(caught.exception))
+
+    def test_custom_install_hint_and_retry(self):
+        error = ImportError('backend binary incompatible')
+        module = SimpleNamespace(value=42)
+        with patch('torcheeg.utils._import_module', side_effect=[error, module]):
+            lazy = LazyLoader('backend', install_hint='See backend installation docs.')
+            with self.assertRaisesRegex(ImportError, 'See backend installation docs') as caught:
+                lazy.value
+            self.assertIs(caught.exception.__cause__, error)
+            self.assertEqual(lazy.value, 42)
 
     def test_class_attribute_can_be_used_as_a_base(self):
         lazy = LazyLoader('collections')

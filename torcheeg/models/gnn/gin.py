@@ -6,7 +6,9 @@ import torch.nn.functional as F
 from ...utils import LazyLoader as _LazyLoader
 
 
-_pyg = _LazyLoader('torch_geometric')
+_pyg = _LazyLoader(
+    'torch_geometric',
+    install_hint='See https://pytorch-geometric.readthedocs.io/en/latest/notes/installation.html')
 
 
 class GIN(nn.Module):
