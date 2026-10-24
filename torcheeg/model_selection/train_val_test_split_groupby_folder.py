@@ -7,9 +7,6 @@ from torcheeg.datasets.module.base_dataset import BaseDataset
 from .base_model_selection import BaseModelSelection
 from .utils import create_subset, read_indices, write_partitions
 
-__all__ = ['TrainValTestSplitGroupbyFolder']
-
-
 class TrainValTestSplitGroupbyFolder(BaseModelSelection):
     r'''
     A tool class for datasets where the train/validation/test split is

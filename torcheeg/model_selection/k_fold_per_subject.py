@@ -10,9 +10,6 @@ from torcheeg.datasets.module.base_dataset import BaseDataset
 from .base_model_selection import BaseModelSelection
 from .utils import create_subset, read_indices, validate_groups, write_indices
 
-__all__ = ['KFoldPerSubject']
-
-
 class KFoldPerSubject(BaseModelSelection):
     r'''
     A tool class for k-fold cross-validations, to divide the training set and the test set, commonly used to study model performance in the case of subject dependent experiments. Experiments were performed separately for each subject, where the data of the subject is divided into k subsets, with one subset being retained as the test set and the remaining k-1 being used as training data. In most of the literature, K is chosen as 5 or 10 according to the size of the data set.

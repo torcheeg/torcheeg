@@ -45,12 +45,3 @@ jobs:
       run: |
         pip install build
         python -m build
-        
-    - name: Upload test results
-      if: success() || failure()
-      uses: actions/upload-artifact@v4
-      with:
-        name: test-results-${{ matrix.python-version }}
-        path: |
-          ./**/*.log
-          ./**/*.xml

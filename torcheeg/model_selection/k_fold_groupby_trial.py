@@ -10,9 +10,6 @@ from torcheeg.datasets.module.base_dataset import BaseDataset
 from .base_model_selection import BaseModelSelection
 from .utils import create_subset, read_indices, write_indices
 
-__all__ = ['KFoldGroupbyTrial']
-
-
 class KFoldGroupbyTrial(BaseModelSelection):
     r'''
     A tool class for k-fold cross-validations, to divide the training set and the test set. A variant of :obj:`KFold`, where the data set is divided into k subsets at the dimension of trials, with one subset being retained as the test set and the remaining k-1 being used as training data. In most of the literature, K is chosen as 5 or 10 according to the size of the data set.
