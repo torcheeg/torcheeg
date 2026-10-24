@@ -59,10 +59,8 @@ Module: ``torcheeg.visualizers.graph``.
 Migration
 ---------
 
-Existing function imports such as ``from torcheeg.utils import plot_signal``
-remain available as aliases. New code should import from
-``torcheeg.visualizers``. The former ``torcheeg.utils.visualize`` submodule is
-replaced by the functional modules above; update direct submodule imports.
+Replace plotting imports from ``torcheeg.utils`` or ``torcheeg.utils.visualize``
+with imports from ``torcheeg.visualizers`` or the functional modules above.
 
 This reorganization moves the existing seven functions. It does not add a
 spectrum/PSD plotting function. Frequency-band feature maps can still be drawn

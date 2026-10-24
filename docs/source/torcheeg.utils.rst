@@ -44,14 +44,13 @@ import at that point. Importing shared utilities does not load visualizers.
 Migration
 ---------
 
-Imports of public functions from ``torcheeg.utils`` remain valid. Replace direct
+Replace direct
 imports from the former ``torcheeg.utils.file``, ``torcheeg.utils.experiment``,
 ``torcheeg.utils.cache`` and ``torcheeg.utils.lazy_loader`` submodules with imports
 from ``torcheeg.utils``. For example::
 
     from torcheeg.utils import LazyLoader, download_url, ensure_cache
 
-Plotting functions now live in ``torcheeg.visualizers``. Their old public
-``torcheeg.utils`` names remain aliases, while direct
-``torcheeg.utils.visualize`` imports must be updated. No domain-specific
-``utils.py`` file is renamed or moved.
+Plotting functions now live in ``torcheeg.visualizers``. Replace plotting imports
+from ``torcheeg.utils`` or ``torcheeg.utils.visualize`` with imports from
+``torcheeg.visualizers``. No domain-specific ``utils.py`` file is renamed or moved.

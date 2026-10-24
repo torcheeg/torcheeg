@@ -215,22 +215,8 @@ class LazyLoader:
         return getattr(self._module, name)
 
 
-_VISUALIZERS = ['plot_signal', 'plot_raw_topomap', 'plot_feature_topomap', 'plot_3d_tensor', 'plot_2d_tensor', 'plot_adj_connectivity', 'plot_graph']
-
 __all__ = [
     'seed_everything', 'download_url', 'get_package_dir_path',
     'get_random_dir_path', 'get_temp_dir_path', 'LazyLoader',
     'compute_fingerprint', 'compute_checksum', 'validate_cache', 'ensure_cache',
-] + _VISUALIZERS
-
-
-def __getattr__(name):
-    if name not in _VISUALIZERS:
-        raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
-    value = getattr(_import_module('.visualizers', __package__), name)
-    globals()[name] = value
-    return value
-
-
-def __dir__():
-    return sorted(set(globals()) | set(__all__))
+]
