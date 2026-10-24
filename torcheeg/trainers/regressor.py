@@ -10,7 +10,7 @@ from torchmetrics import MetricCollection
 
 _EVALUATE_OUTPUT = List[Dict[str, float]]
 
-log = logging.getLogger('torcheeg')
+_log = logging.getLogger('torcheeg')
 
 
 class RootMeanSquaredError(torchmetrics.MeanSquaredError):
@@ -161,7 +161,7 @@ class RegressorTrainer(pl.LightningModule):
         for key, value in self.trainer.logged_metrics.items():
             if key.startswith("train_"):
                 str += f"{key}: {value:.3f} "
-        log.info(str)
+        _log.info(str)
 
         self.train_loss.reset()
         self.train_metrics.reset()
@@ -198,7 +198,7 @@ class RegressorTrainer(pl.LightningModule):
         for key, value in self.trainer.logged_metrics.items():
             if key.startswith("val_"):
                 str += f"{key}: {value:.3f} "
-        log.info(str)
+        _log.info(str)
 
         self.val_loss.reset()
         self.val_metrics.reset()
@@ -233,7 +233,7 @@ class RegressorTrainer(pl.LightningModule):
         for key, value in self.trainer.logged_metrics.items():
             if key.startswith("test_"):
                 str += f"{key}: {value:.3f} "
-        log.info(str)
+        _log.info(str)
 
         self.test_loss.reset()
         self.test_metrics.reset()

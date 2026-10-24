@@ -52,7 +52,10 @@ class BandTransform(EEGTransform):
         return np.stack(band_list, axis=-1)
 
     def opt(self, eeg: np.ndarray, **kwargs) -> np.ndarray:
-        raise NotImplementedError
+        raise NotImplementedError(
+            "Method opt is not implemented in class "
+            + self.__class__.__name__
+        )
 
     @property
     def repr_body(self) -> Dict:

@@ -1,50 +1,23 @@
 import os
-import random
-import shutil
+import tempfile
 import unittest
 
-import pandas as pd
-
-from torcheeg.datasets import BaseDataset
 from torcheeg.model_selection import LeaveOneSubjectOut
 
-
-class FakeDataset(BaseDataset):
-    def __init__(self, num_subjects, num_trials, num_clips):
-        data = []
-        for subject_id in range(num_subjects):
-            for trial_id in range(num_trials):
-                for clip_idx in range(num_clips):
-                    clip_id = f"{subject_id}_{trial_id}_{clip_idx}"
-                    data.append({
-                        'subject_id': subject_id,
-                        'trial_id': trial_id,
-                        'clip_id': clip_id
-                    })
-
-        self.info = pd.DataFrame(data)
-        self.eeg_io_router = {
-            'fake_router': 'fake_router'
-        }
-
-    def __getitem__(self, index):
-        row = self.info.iloc[index]
-        return f"signal_{row['clip_id']}", f"label_{row['clip_id']}"
-
-    def __len__(self):
-        return len(self.info)
+from .test_utils import _make_dataset
 
 
 class TestLeaveOneSubjectOut(unittest.TestCase):
+
     def setUp(self):
-        if os.path.exists('./tmp_out/'):
-            shutil.rmtree('./tmp_out/')
-        os.mkdir('./tmp_out/')
+        self._directory = tempfile.TemporaryDirectory()
+        self.addCleanup(self._directory.cleanup)
+        self._split_path = os.path.join(self._directory.name, 'split')
 
     def test_leave_one_subject_out(self):
-        dataset = FakeDataset(5, 5, 5)
+        dataset = _make_dataset()
 
-        split_path = f'./tmp_out/split_{"".join(random.sample("zyxwvutsrqponmlkjihgfedcba", 20))}'
+        split_path = self._split_path
         k_fold = LeaveOneSubjectOut(split_path=split_path)
 
         split_num = 0

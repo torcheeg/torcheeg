@@ -169,12 +169,12 @@ class SEEDIVDataset(BaseDataset):
         num_trials = 15
         num_channels = 62
         timesteps = 2000
-        
+
         samples = {}
         for trial in range(1, num_trials + 1):
             key = f'ww_eeg{trial}'
             samples[key] = np.random.randn(num_channels, timesteps)
-        
+
         return {
             'record': '1/10_20151014.mat',
             'samples': samples
@@ -281,9 +281,10 @@ class SEEDIVDataset(BaseDataset):
                 end_at = start_at + dynamic_chunk_size
 
     def set_records(self, root_path: str = './eeg_raw_data', **kwargs):
-        assert os.path.exists(
-            root_path
-        ), f'root_path ({root_path}) does not exist. Please download the dataset and set the root_path to the downloaded path.'
+        if not (os.path.exists(root_path)):
+            raise FileNotFoundError(
+                f'root_path ({root_path}) does not exist. Please download the dataset and set the root_path to the downloaded path.'
+            )
 
         session_list = ['1', '2', '3']
         file_path_list = []

@@ -108,7 +108,7 @@ class CSVFolderDataset(BaseDataset):
         return {
             'trial_samples': trial_samples,
         }
-    
+
     @staticmethod
     def process_record(record: Dict,
                        trial_samples: mne.Epochs,
@@ -145,7 +145,8 @@ class CSVFolderDataset(BaseDataset):
         # read csv
         df = pd.read_csv(csv_path)
 
-        assert 'file_path' in df.columns, 'file_path is required in csv file.'
+        if not ('file_path' in df.columns):
+            raise ValueError('file_path is required in csv file.')
 
         # df to a list of dict, each dict is a row
         df_list = df.to_dict('records')
