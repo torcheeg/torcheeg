@@ -51,6 +51,7 @@ Numpy-based Transforms
     BandSpectralEntropy
     PearsonCorrelation
     PhaseLockingCorrelation
+    PhaseLockingValue
     MeanStdNormalize
     MinMaxNormalize
     PickElectrode
@@ -65,6 +66,11 @@ Numpy-based Transforms
     Flatten
     HorizontalFlip
     OrderElectrode
+
+.. toctree::
+    :maxdepth: 1
+
+    phase_locking_value
 
 .. currentmodule:: torcheeg.transforms
 
