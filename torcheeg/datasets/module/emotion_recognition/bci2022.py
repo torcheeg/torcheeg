@@ -7,23 +7,23 @@ import numpy as np
 from ....utils import get_random_dir_path
 from ..base_dataset import BaseDataset
 
-FIRST_BATCH_CHANNEL = [
+_FIRST_BATCH_CHANNEL = [
     'FP1', 'FP2', 'FZ', 'F3', 'F4', 'F7', 'F8', 'FC1', 'FC2', 'FC5', 'FC6',
     'CZ', 'C3', 'C4', 'T7', 'T8', 'A1', 'A2', 'CP1', 'CP2', 'CP5', 'CP6', 'PZ',
     'P3', 'P4', 'P7', 'P8', 'PO3', 'PO4', 'OZ', 'O1', 'O2'
 ]
 
-SECOND_BATCH_CHANNEL = [
+_SECOND_BATCH_CHANNEL = [
     'FP1', 'FP2', 'FZ', 'F3', 'F4', 'F7', 'F8', 'FC1', 'FC2', 'FC5', 'FC6',
     'CZ', 'C3', 'C4', 'T7', 'T8', 'CP1', 'CP2', 'CP5', 'CP6', 'PZ', 'P3', 'P4',
     'P7', 'P8', 'PO3', 'PO4', 'OZ', 'O1', 'O2', 'A2', 'A1'
 ]
 
-FIRST_TO_SECOND_ORDER = [
-    FIRST_BATCH_CHANNEL.index(c) for c in SECOND_BATCH_CHANNEL
+_FIRST_TO_SECOND_ORDER = [
+    _FIRST_BATCH_CHANNEL.index(c) for c in _SECOND_BATCH_CHANNEL
 ]
 
-VALENCE_DICT = {
+_VALENCE_DICT = {
     1: -1,  # negative
     2: -1,
     3: -1,
@@ -54,7 +54,7 @@ VALENCE_DICT = {
     28: 1
 }
 
-EMOTION_DICT = {
+_EMOTION_DICT = {
     1: 0,  # anger
     2: 0,
     3: 0,
@@ -245,21 +245,21 @@ class BCI2022Dataset(BaseDataset):
         duration = 10
         num_samples = duration * 550
         num_channels = 33
-        
+
         eeg_data = np.random.randn(num_channels - 1, num_samples)
-        
+
         events = np.zeros(num_samples)
-        
+
         events[500] = 1
         events[525] = 240
         events[1500] = 241
-        
+
         events[2000] = 2
         events[2025] = 240
         events[3000] = 241
-        
+
         samples = np.vstack([eeg_data, events])
-        
+
         return {
             'samples': samples
         }
@@ -282,7 +282,7 @@ class BCI2022Dataset(BaseDataset):
 
         events = samples[-1]
         if reorder:
-            samples = samples.take(FIRST_TO_SECOND_ORDER, axis=0)
+            samples = samples.take(_FIRST_TO_SECOND_ORDER, axis=0)
 
         # initial pointers
         trial_id = 0
@@ -304,16 +304,17 @@ class BCI2022Dataset(BaseDataset):
             elif event == 241:
                 # Current trial video end event 241: This event indicates that the video ends playing. Block end event 243: This event indicates the end of the block.
                 end_at = i
-                assert (not video_id is None) and (
-                    not start_at is None
-                ), f'Parse event fail for trial {trial_id} with video_id={video_id}, start_at={start_at}, end_at={end_at}!'
+                if not (not video_id is None and (not start_at is None)):
+                    raise ValueError(
+                        f'Parse event fail for trial {trial_id} with video_id={video_id}, start_at={start_at}, end_at={end_at}!'
+                    )
 
                 trial_meta_info = {
                     'trial_id': trial_id,
                     'video_id': video_id,
                     'subject_id': subject,
-                    'valence': VALENCE_DICT[video_id],
-                    'emotion': EMOTION_DICT[video_id],
+                    'valence': _VALENCE_DICT[video_id],
+                    'emotion': _EMOTION_DICT[video_id],
                 }
 
                 cur_start_at = start_at
@@ -357,9 +358,10 @@ class BCI2022Dataset(BaseDataset):
     def set_records(self,
                     root_path: str = './data_preprocessed_python',
                     **kwargs):
-        assert os.path.exists(
-            root_path
-        ), f'root_path ({root_path}) does not exist. Please download the dataset and set the root_path to the downloaded path.'
+        if not (os.path.exists(root_path)):
+            raise FileNotFoundError(
+                f'root_path ({root_path}) does not exist. Please download the dataset and set the root_path to the downloaded path.'
+            )
         outputs = []
         for train_set_batch in [
                 'TrainSet_first_batch', 'TrainSet_second_batch'

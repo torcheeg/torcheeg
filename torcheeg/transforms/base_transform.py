@@ -15,9 +15,9 @@ class BaseTransform:
         params = self.get_params()
 
         if self.targets_as_params:
-            assert all(key in kwargs
-                       for key in self.targets_as_params), "{} requires {}".format(self.__class__.__name__,
-                                                                                   self.targets_as_params)
+            if not (all((key in kwargs for key in self.targets_as_params))):
+                raise ValueError('{} requires {}'.format(self.__class__.__name__,
+                                                         self.targets_as_params))
             targets_as_params = {k: kwargs[k] for k in self.targets_as_params}
             params_dependent_on_targets = self.get_params_dependent_on_targets(targets_as_params)
             params.update(params_dependent_on_targets)
@@ -51,10 +51,16 @@ class BaseTransform:
 
     @property
     def targets(self) -> Dict[str, Callable]:
-        raise NotImplementedError("Method targets is not implemented in class " + self.__class__.__name__)
+        raise NotImplementedError(
+            "Method targets is not implemented in class "
+            + self.__class__.__name__
+        )
 
     def apply(self, *args, **kwargs) -> any:
-        raise NotImplementedError("Method apply is not implemented in class " + self.__class__.__name__)
+        raise NotImplementedError(
+            "Method apply is not implemented in class "
+            + self.__class__.__name__
+        )
 
     @property
     def repr_body(self) -> Dict:
@@ -87,7 +93,10 @@ class EEGTransform(BaseTransform):
         return {"eeg": self.apply}
 
     def apply(self, eeg: any, baseline: Union[any, None] = None, **kwargs) -> any:
-        raise NotImplementedError("Method apply is not implemented in class " + self.__class__.__name__)
+        raise NotImplementedError(
+            "Method apply is not implemented in class "
+            + self.__class__.__name__
+        )
 
     @property
     def repr_body(self) -> Dict:
@@ -100,4 +109,7 @@ class LabelTransform(BaseTransform):
         return {"y": self.apply}
 
     def apply(self, y: any, **kwargs) -> any:
-        raise NotImplementedError("Method apply is not implemented in class " + self.__class__.__name__)
+        raise NotImplementedError(
+            "Method apply is not implemented in class "
+            + self.__class__.__name__
+        )

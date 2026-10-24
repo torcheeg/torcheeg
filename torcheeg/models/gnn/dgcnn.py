@@ -38,7 +38,7 @@ class Linear(nn.Module):
         return self.linear(inputs)
 
 
-def normalize_A(A: torch.Tensor, symmetry: bool=False) -> torch.Tensor:
+def _normalize_adjacency(A: torch.Tensor, symmetry: bool=False) -> torch.Tensor:
     A = F.relu(A)
     if symmetry:
         A = A + torch.transpose(A, 0, 1)
@@ -54,7 +54,7 @@ def normalize_A(A: torch.Tensor, symmetry: bool=False) -> torch.Tensor:
     return L
 
 
-def generate_cheby_adj(A: torch.Tensor, num_layers: int) -> torch.Tensor:
+def _generate_cheby_adj(A: torch.Tensor, num_layers: int) -> torch.Tensor:
     support = []
     for i in range(num_layers):
         if i == 0:
@@ -76,7 +76,7 @@ class Chebynet(nn.Module):
             self.gc1.append(GraphConvolution(in_channels, out_channels))
 
     def forward(self, x: torch.Tensor, L: torch.Tensor) -> torch.Tensor:
-        adj = generate_cheby_adj(L, self.num_layers)
+        adj = _generate_cheby_adj(L, self.num_layers)
         for i in range(len(self.gc1)):
             if i == 0:
                 result = self.gc1[i](x, adj[i])
@@ -159,7 +159,7 @@ class DGCNN(nn.Module):
             torch.Tensor[number of sample, number of classes]: the predicted probability that the samples belong to the classes.
         '''
         x = self.BN1(x.transpose(1, 2)).transpose(1, 2)
-        L = normalize_A(self.A)
+        L = _normalize_adjacency(self.A)
         result = self.layer1(x, L)
         result = result.reshape(x.shape[0], -1)
         result = F.relu(self.fc1(result))

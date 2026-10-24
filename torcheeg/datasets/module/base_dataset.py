@@ -1,6 +1,6 @@
 import logging
 import os
-import shutil
+import tempfile
 from copy import copy
 from typing import Any, Callable, Dict, Union
 
@@ -12,8 +12,10 @@ from torch.utils.data import Dataset
 from tqdm import tqdm
 
 from torcheeg.io import EEGSignalIO, MetaInfoIO
+from ...utils import get_random_dir_path
+from ..utils import ensure_cache, compute_fingerprint
 
-log = logging.getLogger('torcheeg')
+_log = logging.getLogger('torcheeg')
 
 
 class BaseDataset(Dataset):
@@ -29,6 +31,8 @@ class BaseDataset(Dataset):
                  after_session: Callable = None,
                  after_subject: Callable = None,
                  **kwargs):
+        io_path = get_random_dir_path(
+            dir_prefix='datasets') if io_path is None else os.fspath(io_path)
         self.io_path = io_path
         self.io_size = io_size
         self.io_mode = io_mode
@@ -39,97 +43,89 @@ class BaseDataset(Dataset):
         self.after_session = after_session
         self.after_subject = after_subject
 
-        # new IO
-        if not self.exist(self.io_path) or self.io_mode == 'memory':
-            log.info(
-                f'🔍 | Processing EEG data. Processed EEG data has been cached to \033[92m{io_path}\033[0m.'
-            )
-            log.info(
-                f'⏳ | Monitoring the detailed processing of a record for debugging. The processing of other records will only be reported in percentage to keep it clean.'
-            )
-            # make the root dictionary
-            os.makedirs(self.io_path, exist_ok=True)
-
-            records = self.set_records(**kwargs)
-            if self.num_worker == 0:
-                try:
-                    worker_results = []
-                    for record_id, record in tqdm(enumerate(records),
-                                                  disable=not self.verbose,
-                                                  desc="[PROCESS]",
-                                                  total=len(records),
-                                                  position=0,
-                                                  leave=None):
-                        worker_results.append(
-                            self.handle_record(io_path=self.io_path,
-                                               io_size=self.io_size,
-                                               io_mode=self.io_mode,
-                                               record=record,
-                                               record_id=record_id,
-                                               read_record=self.read_record,
-                                               process_record=self.process_record,
-                                               verbose=self.verbose,
-                                               **kwargs))
-                except Exception as e:
-                    # shutil to delete the database
-                    shutil.rmtree(self.io_path)
-                    raise e
-            else:
-                # catch the exception
-                try:
-                    worker_results = Parallel(n_jobs=self.num_worker)(
-                        delayed(self.handle_record)(
-                            io_path=io_path,
-                            io_size=io_size,
-                            io_mode=io_mode,
-                            record_id=record_id,
-                            record=record,
-                            read_record=self.read_record,
-                            process_record=self.process_record,
-                            verbose=self.verbose,
-                            **kwargs)
-                        for record_id, record in tqdm(enumerate(records),
-                                                      disable=not self.verbose,
-                                                      desc="[PROCESS]",
-                                                      total=len(records),
-                                                      position=0,
-                                                      leave=None))
-                except Exception as e:
-                    # shutil to delete the database
-                    shutil.rmtree(self.io_path)
-                    raise e
-
-            if not self.io_mode == 'memory':
-                log.info(
-                    f'✅ | All processed EEG data has been cached to {io_path}.'
-                )
-                log.info(
-                    f'😊 | Please set \033[92mio_path\033[0m to \033[92m{io_path}\033[0m for the next run, to directly read from the cache if you wish to skip the data processing step.'
-                )
-
-            self.init_io(
-                io_path=self.io_path,
-                io_size=self.io_size,
-                io_mode=self.io_mode)
-
-            if self.after_trial is not None or self.after_session is not None or self.after_subject is not None:
-                # catch the exception
-                try:
-                    self.update_record(after_trial=after_trial,
-                                       after_session=after_session,
-                                       after_subject=after_subject)
-                except Exception as e:
-                    # shutil to delete the database
-                    shutil.rmtree(self.io_path)
-                    raise e
+        configuration = {
+            name: value
+            for name, value in kwargs.items()
+            if name not in ('online_transform', 'label_transform')
+        }
+        configuration.update(io_mode=io_mode,
+                             after_trial=after_trial,
+                             after_session=after_session,
+                             after_subject=after_subject)
+        records = list(self.set_records(**kwargs))
+        if self.io_mode == 'memory':
+            # Memory storage is rebuilt for each instance and has no disk manifest.
+            with tempfile.TemporaryDirectory(prefix='torcheeg-memory-') as path:
+                self._build_cache(path, records, kwargs)
+            self.io_path = io_path
         else:
-            log.info(
-                f'🔍 | Detected cached processing results, reading cache from {self.io_path}.'
-            )
-            self.init_io(
-                io_path=self.io_path,
-                io_size=self.io_size,
-                io_mode=self.io_mode)
+            fingerprint = compute_fingerprint(type(self), configuration, records,
+                                              io_path)
+            ensure_cache(io_path, fingerprint,
+                         lambda path: self._build_cache(path, records, kwargs))
+            self.init_io(io_path=self.io_path,
+                         io_size=self.io_size,
+                         io_mode=self.io_mode)
+
+    def _build_cache(self, path, records, kwargs):
+        final_path = self.io_path
+        self.io_path = path
+        try:
+            if self.num_worker == 0:
+                results = [
+                    self.handle_record(io_path=path,
+                                       io_size=self.io_size,
+                                       io_mode=self.io_mode,
+                                       record=record,
+                                       record_id=index,
+                                       read_record=self.read_record,
+                                       process_record=self.process_record,
+                                       verbose=self.verbose,
+                                       **kwargs)
+                    for index, record in tqdm(enumerate(records),
+                                              total=len(records),
+                                              disable=not self.verbose,
+                                              desc='[PROCESS]')
+                ]
+            else:
+                results = Parallel(n_jobs=self.num_worker)(
+                    delayed(self.handle_record)(io_path=path,
+                                                io_size=self.io_size,
+                                                io_mode=self.io_mode,
+                                                record=record,
+                                                record_id=index,
+                                                read_record=self.read_record,
+                                                process_record=self.process_record,
+                                                verbose=self.verbose,
+                                                **kwargs)
+                    for index, record in tqdm(enumerate(records),
+                                              total=len(records),
+                                              disable=not self.verbose,
+                                              desc='[PROCESS]'))
+            self.init_io(io_path=path, io_size=self.io_size, io_mode=self.io_mode)
+            if self.io_mode == 'memory':
+                self.eeg_io_router = {
+                    item['record']: item['eeg_io']
+                    for item in results
+                }
+                self.eeg_signal_paths = {}
+            if any(hook is not None for hook in (self.after_trial, self.after_session,
+                                                 self.after_subject)):
+                self.update_record(after_trial=self.after_trial,
+                                   after_session=self.after_session,
+                                   after_subject=self.after_subject)
+        finally:
+            if self.io_mode != 'memory':
+                self._close_io()
+            self.io_path = final_path
+
+    def _close_io(self):
+        for eeg_io in getattr(self, 'eeg_io_router', {}).values():
+            backend = eeg_io._io
+            if self.io_mode == 'lmdb':
+                backend._env.close()
+        self.eeg_io_router = {}
+        self.eeg_signal_paths = {}
 
     def init_io(self, io_path: str, io_size: int, io_mode: str):
         # get all records
@@ -139,8 +135,10 @@ class BaseDataset(Dataset):
         # sort the records
         records = sorted(records, key=lambda x: int(x.split('_')[2]))
 
-        assert len(records) > 0, \
-            f"The io_path, {io_path}, is corrupted. Please delete this folder and try again."
+        if not (len(records) > 0):
+            raise RuntimeError(
+                f'The io_path, {io_path}, is corrupted. Please delete this folder and try again.'
+            )
 
         info_merged = []
 
@@ -155,8 +153,9 @@ class BaseDataset(Dataset):
                 self.eeg_signal_paths[record] = eeg_signal_path
 
                 info_df = info_io.read_all()
-                assert '_record_id' not in info_df.columns, \
-                    "column '_record_id' is a forbidden reserved word."
+                if not ('_record_id' not in info_df.columns):
+                    raise ValueError(
+                        "column '_record_id' is a forbidden reserved word.")
                 info_df['_record_id'] = record
                 info_merged.append(info_df)
 
@@ -174,8 +173,9 @@ class BaseDataset(Dataset):
                 self.eeg_io_router[record] = eeg_io
 
                 info_df = info_io.read_all()
-                assert '_record_id' not in info_df.columns, \
-                    "column '_record_id' is a forbidden reserved word."
+                if not ('_record_id' not in info_df.columns):
+                    raise ValueError(
+                        "column '_record_id' is a forbidden reserved word.")
                 info_df['_record_id'] = record
                 info_merged.append(info_df)
 
@@ -184,8 +184,9 @@ class BaseDataset(Dataset):
         self.info = pd.concat(info_merged, ignore_index=True)
 
     def is_lazy(self):
-        assert hasattr(self, 'eeg_io_router') or hasattr(
-            self, 'eeg_signal_paths'), "The dataset should contain eeg_io_router or eeg_signal_paths."
+        if not (hasattr(self, 'eeg_io_router') or hasattr(self, 'eeg_signal_paths')):
+            raise RuntimeError(
+                'The dataset should contain eeg_io_router or eeg_signal_paths.')
         if hasattr(self, 'eeg_io_router') and len(self.eeg_io_router) > 0:
             return False
         if hasattr(
@@ -243,7 +244,7 @@ class BaseDataset(Dataset):
             bool: True if the database IO exists, otherwise False.
         '''
 
-        return os.path.exists(io_path)
+        return os.path.isfile(os.path.join(io_path, 'manifest.json'))
 
     def __getitem__(self, index: int) -> any:
         info = self.read_info(index)
@@ -310,7 +311,9 @@ class BaseDataset(Dataset):
 
         '''
         raise NotImplementedError(
-            "Method set_records is not implemented in class BaseDataset")
+            "Method set_records is not implemented in class "
+            + self.__class__.__name__
+        )
 
     @staticmethod
     def handle_record(io_path: Union[None, str] = None,
@@ -333,47 +336,35 @@ class BaseDataset(Dataset):
                              io_size=io_size,
                              io_mode=io_mode)
 
-        kwargs['record'] = record
-        kwargs.update(read_record(**kwargs))
-        gen = process_record(**kwargs)
-
-        if record_id == 0:
-            pbar = tqdm(disable=not verbose,
-                        desc=f"[RECORD {record}]",
-                        position=1,
-                        leave=None)
-
-            # pbar.write(
-            #     "Monitoring the detailed processing of a record. The detailed processing of other records will not be reported to keep it clean."
-            # )
-
-        # loop for data yield by process_record, until to the end of the data
-        while True:
-            try:
-                # call process_record of the class
-                # get the current class name
-                obj = next(gen)
-
-                if record_id == 0:
+        pbar = None
+        try:
+            kwargs['record'] = record
+            kwargs.update(read_record(**kwargs))
+            if record_id == 0:
+                pbar = tqdm(disable=not verbose,
+                            desc=f'[RECORD {record}]',
+                            position=1,
+                            leave=None)
+            for item in process_record(**kwargs):
+                if pbar is not None:
                     pbar.update(1)
+                if item and 'eeg' in item and 'key' in item:
+                    eeg_io.write_eeg(item['eeg'], item['key'])
+                if item and 'info' in item:
+                    info_io.write_info(item['info'])
 
-            except StopIteration:
-                break
+            result = {'record': f'_record_{_record_id}'}
+            if io_mode == 'memory':
+                result['eeg_io'] = eeg_io
+            return result
+        finally:
+            if pbar is not None:
+                pbar.close()
+            if io_mode == 'lmdb':
+                eeg_io._io._env.close()
 
-            if obj and 'eeg' in obj and 'key' in obj:
-                eeg_io.write_eeg(obj['eeg'], obj['key'])
-            if obj and 'info' in obj:
-                info_io.write_info(obj['info'])
-
-        if record_id == 0:
-            pbar.close()
-
-        return {
-            'record': f'_record_{_record_id}'
-        }
-
-    @staticmethod
-    def read_record(record: Any, **kwargs) -> Dict:
+    @classmethod
+    def read_record(cls, record: Any, **kwargs) -> Dict:
         '''
         The IO method for reading the database. It is used to describe how the files are read. It is called in parallel by :obj:`joblib.Parallel` in :obj:`__init__` of the class, the output of this method will be passed to :obj:`process_record`.
 
@@ -392,11 +383,12 @@ class BaseDataset(Dataset):
         '''
 
         raise NotImplementedError(
-            "Method read_record is not implemented in class BaseDataset"
+            "Method read_record is not implemented in class "
+            + cls.__name__
         )
 
-    @staticmethod
-    def process_record(record: Any, **kwargs) -> Dict:
+    @classmethod
+    def process_record(cls, record: Any, **kwargs) -> Dict:
         '''
         The IO method for generating the database. It is used to describe how files are processed to generate the database. It is called in parallel by :obj:`joblib.Parallel` in :obj:`__init__` of the class.
 
@@ -425,7 +417,9 @@ class BaseDataset(Dataset):
         '''
 
         raise NotImplementedError(
-            "Method process_record is not implemented in class BaseDataset")
+            "Method process_record is not implemented in class "
+            + cls.__name__
+        )
 
     def update_record(self,
                       after_trial: Callable = None,
@@ -479,7 +473,7 @@ class BaseDataset(Dataset):
                 else:
                     trial_df = [(None, session_info)]
                     if not after_trial is None:
-                        log.info(
+                        _log.info(
                             "No trial_id column found in info, after_trial hook is ignored."
                         )
                 if after_trial is None:

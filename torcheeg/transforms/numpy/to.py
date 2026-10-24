@@ -123,14 +123,12 @@ class ToGrid(EEGTransform):
     dropping a Cartesian coordinate does not create grid indices.
 
     Dictionary insertion order must match the input electrode order.
-    A coordinate of None leaves that electrode unmapped. Forward conversion
-    discards its samples and reverse conversion returns zeros for it.
-    Reverse conversion reads mapped cells in channel order; empty grid
-    cells are ignored by
-    reverse conversion. This NumPy operation does not retain autograd history.
+    Omit electrodes without grid positions from both the mapping and the EEG
+    input. None coordinates are not accepted. Reverse conversion returns only
+    the supplied electrodes, in mapping order, and ignores empty grid cells.
 
     Args:
-        channel_location_dict (dict): Electrode location information. Represented in dictionary form, where :obj:`key` corresponds to the electrode name and :obj:`value` corresponds to the row index and column index of the electrode on the grid, or None for an unmapped electrode. Mapped positions must be distinct.
+        channel_location_dict (dict): Electrode location information. Represented in dictionary form, where :obj:`key` corresponds to the electrode name and :obj:`value` corresponds to the row index and column index of the electrode on the grid. Mapped positions must be distinct.
         apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (default: :obj:`False`)
 
     .. automethod:: __call__
@@ -147,8 +145,9 @@ class ToGrid(EEGTransform):
         occupied = set()
         for name, location in channel_location_dict.items():
             if location is None:
-                locations[name] = None
-                continue
+                raise ValueError(
+                    'Omit electrodes without grid positions from both the '
+                    'mapping and the EEG input; None coordinates are not accepted.')
             try:
                 row, column = location
             except (TypeError, ValueError) as error:
@@ -164,8 +163,6 @@ class ToGrid(EEGTransform):
                 raise ValueError('ToGrid electrodes must have distinct grid positions.')
             occupied.add(position)
             locations[name] = position
-        if not occupied:
-            raise ValueError('ToGrid requires at least one mapped electrode.')
         self.channel_location_dict = locations
         self.height = max(row for row, _ in occupied) + 1
         self.width = max(column for _, column in occupied) + 1
@@ -192,11 +189,8 @@ class ToGrid(EEGTransform):
         # num_electrodes x timestep
         outputs = np.zeros([self.height, self.width, eeg.shape[-1]])
         # 9 x 9 x timestep
-        for i, locs in enumerate(self.channel_location_dict.values()):
-            if locs is None:
-                continue
-            (loc_y, loc_x) = locs
-            outputs[loc_y][loc_x] = eeg[i]
+        for i, (row, column) in enumerate(self.channel_location_dict.values()):
+            outputs[row, column] = eeg[i]
 
         outputs = outputs.transpose(2, 0, 1)
         # timestep x 9 x 9
@@ -204,9 +198,7 @@ class ToGrid(EEGTransform):
 
     def reverse(self, eeg: np.ndarray, **kwargs) -> Dict[str, np.ndarray]:
         r'''
-        Recover mapped electrodes from a grid in the original channel order.
-        Unmapped electrodes are filled with zeros because forward conversion
-        discarded their values.
+        Recover the supplied electrodes from a grid in mapping order.
 
         Args:
             eeg (np.ndarray): Grid signals with shape
@@ -220,10 +212,7 @@ class ToGrid(EEGTransform):
         if eeg.ndim != 3 or eeg.shape[1:] != (self.height, self.width):
             raise ValueError('ToGrid.reverse requires [time points, height, width] matching the grid.')
         outputs = np.zeros([len(self.channel_location_dict), eeg.shape[0]])
-        for index, location in enumerate(self.channel_location_dict.values()):
-            if location is None:
-                continue
-            row, column = location
+        for index, (row, column) in enumerate(self.channel_location_dict.values()):
             outputs[index] = eeg[:, row, column]
         return {'eeg': outputs}
 

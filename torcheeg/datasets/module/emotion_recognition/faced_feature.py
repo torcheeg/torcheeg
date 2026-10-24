@@ -6,7 +6,7 @@ import numpy as np
 
 from ....utils import get_random_dir_path
 from ..base_dataset import BaseDataset
-from .faced import EMOTION_DICT, VALENCE_DICT
+from .faced import _EMOTION_DICT, _VALENCE_DICT
 
 
 class FACEDFeatureDataset(BaseDataset):
@@ -22,7 +22,7 @@ class FACEDFeatureDataset(BaseDataset):
     - Signals: Electroencephalogram (30 channels at 250Hz) and two channels of left/right mastoid signals from 123 subjects.
     - Rating: 28 video clips are annotated in valence and discrete emotion dimensions. The valence is divided into positive (1), negative (-1), and neutral (0). Discrete emotions are divided into anger (0), disgust (1), fear (2), sadness (3), neutral (4), amusement (5), inspiration (6), joy (7), and tenderness (8).
 
-    In order to use this dataset, the download folder :obj:`EEG_Features`(download from this url: https://www.synapse.org/#!Synapse:syn52368847) is required, containing the following files:
+    In order to use this dataset, the download folder :obj:`EEG_Features` (download from this url: https://www.synapse.org/#!Synapse:syn52368847) is required, containing the following files:
 
     .. code-block:: text
 
@@ -85,7 +85,7 @@ class FACEDFeatureDataset(BaseDataset):
         verbose (bool): Whether to display logs during processing, such as progress bars, etc. (default: :obj:`True`)    
     '''
 
-    def rename_pkl_files(self, root_path):
+    def _rename_pkl_files(self, root_path):
         for dirpath, dirnames, filenames in os.walk(root_path):
             for filename in filenames:
                 if filename.endswith('.pkl.pkl'):
@@ -112,7 +112,7 @@ class FACEDFeatureDataset(BaseDataset):
                  verbose: bool = True):
         if io_path is None:
             io_path = get_random_dir_path(dir_prefix='datasets')
-        self.rename_pkl_files(root_path)
+        self._rename_pkl_files(root_path)
         # pass all arguments to super class
         params = {
             'root_path': root_path,
@@ -196,8 +196,8 @@ class FACEDFeatureDataset(BaseDataset):
                     'end_at': (i + 1) *
                     250,  # The size of the sliding time windows for feature
                     'clip_id': clip_id,
-                    'valence': VALENCE_DICT[trial_id + 1],
-                    'emotion': EMOTION_DICT[trial_id + 1],
+                    'valence': _VALENCE_DICT[trial_id + 1],
+                    'emotion': _EMOTION_DICT[trial_id + 1],
                 }
                 record_info.update(trial_meta_info)
 
@@ -207,9 +207,10 @@ class FACEDFeatureDataset(BaseDataset):
                 yield {'eeg': t_eeg, 'key': clip_id, 'info': record_info}
 
     def set_records(self, root_path: str = './EEG_Features/DE', **kwargs):
-        assert os.path.exists(
-            root_path
-        ), f'root_path ({root_path}) does not exist. Please download the dataset and set the root_path to the downloaded path.'
+        if not (os.path.exists(root_path)):
+            raise FileNotFoundError(
+                f'root_path ({root_path}) does not exist. Please download the dataset and set the root_path to the downloaded path.'
+            )
 
         file_path_list = os.listdir(root_path)
         file_path_list.sort()

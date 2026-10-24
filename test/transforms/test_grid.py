@@ -19,12 +19,20 @@ class TestGrid(unittest.TestCase):
         np.testing.assert_array_equal(transform.reverse(eeg=grid)['eeg'], eeg)
         self.assertTrue((grid[:, 1, 1] == 0).all())
 
-    def test_unmapped_channels_reverse_to_zeros(self):
-        transform = ToGrid({'known': (0, 1), 'missing': None, 'other': (1, 0)})
-        eeg = np.arange(15).reshape(3, 5)
-        result = transform.reverse(eeg=transform(eeg=eeg)['eeg'])['eeg']
-        np.testing.assert_array_equal(result[[0, 2]], eeg[[0, 2]])
-        np.testing.assert_array_equal(result[1], np.zeros(5))
+    def test_missing_electrodes_must_be_removed_from_mapping_and_input(self):
+        eeg = np.arange(15).reshape(3, 5)  # C3, Cz, C4
+        with self.assertRaisesRegex(ValueError, 'both the mapping and the EEG input'):
+            ToGrid({'C3': (0, 0), 'Cz': None, 'C4': (0, 2)})
+        transform = ToGrid({'C3': (0, 0), 'C4': (0, 2)})
+        with self.assertRaisesRegex(ValueError, 'one row per channel mapping'):
+            transform(eeg=eeg)
+        selected = eeg[[0, 2]]
+        grid = transform(eeg=selected)['eeg']
+        np.testing.assert_array_equal(grid[:, 0, 0], eeg[0])
+        np.testing.assert_array_equal(grid[:, 0, 2], eeg[2])
+        recovered = transform.reverse(eeg=grid)['eeg']
+        self.assertEqual(recovered.shape, (2, 5))
+        np.testing.assert_array_equal(recovered, selected)
 
     def test_empty_grid_cells_do_not_change_recovered_electrodes(self):
         transform = ToGrid({'first': (0, 0), 'last': (2, 2)})
@@ -88,7 +96,7 @@ class TestGrid(unittest.TestCase):
         np.testing.assert_array_equal(eeg, original)
         np.testing.assert_array_equal(grid, grid_original)
 
-    def test_existing_public_two_dimensional_grid_constants_still_work(self):
+    def test_public_grids_with_missing_positions_require_channel_selection(self):
         checked = 0
         for name in dir(constants):
             if not name.endswith('CHANNEL_LOCATION_DICT'):
@@ -98,11 +106,18 @@ class TestGrid(unittest.TestCase):
             if not positions or not all(len(location) == 2 for location in positions):
                 continue
             with self.subTest(name=name):
-                transform = ToGrid(mapping)
+                indices = [index for index, location in enumerate(mapping.values())
+                           if location is not None]
+                if len(indices) != len(mapping):
+                    with self.assertRaisesRegex(ValueError, 'None coordinates'):
+                        ToGrid(mapping)
+                selected_mapping = {name: location for name, location in mapping.items()
+                                    if location is not None}
+                transform = ToGrid(selected_mapping)
                 eeg = np.arange(len(mapping) * 3).reshape(len(mapping), 3)
-                recovered = transform.reverse(eeg=transform(eeg=eeg)['eeg'])['eeg']
-                indices = [index for index, location in enumerate(mapping.values()) if location is not None]
-                np.testing.assert_array_equal(recovered[indices], eeg[indices])
+                selected = eeg[indices]
+                recovered = transform.reverse(eeg=transform(eeg=selected)['eeg'])['eeg']
+                np.testing.assert_array_equal(recovered, selected)
                 checked += 1
         self.assertGreater(checked, 5)
 

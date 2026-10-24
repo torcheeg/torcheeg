@@ -122,10 +122,10 @@ class SanDiegoSSVEPDataset(BaseDataset):
         n_trials = 10
         n_channels = 22
         n_times = 1000
-        
+
         eeg = np.random.randn(n_trials, n_channels, n_times)
         y = np.random.randint(1, 5, size=(n_trials,))
-        
+
         return {
             'record': 'S01trainEEG.mat',
             'eeg': eeg,
