@@ -10,9 +10,6 @@ from torcheeg.datasets.module.base_dataset import BaseDataset
 from .base_model_selection import BaseModelSelection
 from .utils import create_subset, read_indices, validate_groups, write_indices
 
-__all__ = ['LeaveOneSubjectOut']
-
-
 class LeaveOneSubjectOut(BaseModelSelection):
     r'''
     A tool class for leave-one-subject-out cross-validations, to divide the training set and the test set, commonly used to study model performance in the case of subject independent experiments. During each fold, experiments require testing on one subject and training on the other subjects.
