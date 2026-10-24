@@ -282,7 +282,13 @@ class DEAPDataset(BaseDataset):
             raise FileNotFoundError(
                 f'root_path ({root_path}) does not exist. Please download the dataset and set the root_path to the downloaded path.'
             )
-        return os.listdir(root_path)
+        records = sorted(filename for filename in os.listdir(root_path)
+                         if not filename.startswith('.')
+                         and filename.lower().endswith('.dat')
+                         and os.path.isfile(os.path.join(root_path, filename)))
+        if not records:
+            raise ValueError(f'No DEAP .dat files were found in {root_path}.')
+        return records
 
     def __getitem__(self, index: int) -> Tuple:
         info = self.read_info(index)
