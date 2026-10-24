@@ -7,21 +7,7 @@ from scipy.signal import hilbert
 from ..base_transform import EEGTransform
 
 
-class LazyLoader:
-    def __init__(self, lib_name):
-        self._lib_name = lib_name
-        self._module = None
-
-    def __getattr__(self, name):
-        if self._module is None:
-            try:
-                self._module = __import__(self._lib_name)
-            except ImportError:
-                raise ImportError(
-                    f"To use this functionality, you need to install `{self._lib_name}`. "
-                    f"Please refer to https://pytorch-geometric.readthedocs.io/en/latest/notes/installation.html"
-                )
-        return getattr(self._module, name)
+from ...utils.lazy_loader import LazyLoader
 
 
 pyg = LazyLoader('torch_geometric')
@@ -213,7 +199,10 @@ class ToDynamicG(EEGTransform):
             func = self.edge_func
         else:
             valid_edge_func = list(self.edge_func_list.keys())
-            assert self.edge_func in valid_edge_func, f'Unimplemented calculation method {self.edge_func}, allowable selection of calculation methods include {valid_edge_func}'
+            if not (self.edge_func in valid_edge_func):
+                raise ValueError(
+                    f'Unimplemented calculation method {self.edge_func}, allowable selection of calculation methods include {valid_edge_func}'
+                )
 
             func = self.edge_func_list[self.edge_func]
 

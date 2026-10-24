@@ -6,7 +6,7 @@ import torch.nn as nn
 from .mmd_like import _MMDLikeTrainer
 
 
-def guassian_kernel(x_source,
+def _gaussian_kernel(x_source,
                     x_target,
                     mul_kernel=2.0,
                     num_kernels=5,
@@ -31,13 +31,13 @@ def guassian_kernel(x_source,
     return sum(kernel_val)
 
 
-def maximum_mean_discrepancy(x_source,
+def _maximum_mean_discrepancy(x_source,
                              x_target,
                              mul_kernel=2.0,
                              num_kernels=5,
                              sigma=None):
     batch_size = int(x_source.shape[0])
-    kernels = guassian_kernel(x_source,
+    kernels = _gaussian_kernel(x_source,
                               x_target,
                               mul_kernel=mul_kernel,
                               num_kernels=num_kernels,
@@ -144,4 +144,4 @@ class DANTrainer(_MMDLikeTrainer):
             x_source_feat = x_source_feat[:batch_size]
             x_target_feat = x_target_feat[:batch_size]
 
-        return maximum_mean_discrepancy(x_source_feat, x_target_feat)
+        return _maximum_mean_discrepancy(x_source_feat, x_target_feat)

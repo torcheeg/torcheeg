@@ -5,36 +5,22 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
-class LazyLoader:
-    def __init__(self, lib_name):
-        self._lib_name = lib_name
-        self._module = None
-
-    def __getattr__(self, name):
-        if self._module is None:
-            try:
-                self._module = __import__(self._lib_name)
-            except ImportError:
-                raise ImportError(
-                    f"To use this functionality, you need to install `{self._lib_name}`. "
-                    f"Please refer to https://pytorch-geometric.readthedocs.io/en/latest/notes/installation.html"
-                )
-        return getattr(self._module, name)
+from ...utils.lazy_loader import LazyLoader as _LazyLoader
 
 
-pyg = LazyLoader('torch_geometric')
-scatter = LazyLoader('torch_scatter')
+_pyg = _LazyLoader('torch_geometric')
+_scatter = _LazyLoader('torch_scatter')
 
 
-def maybe_num_electrodes(index: torch.Tensor, num_electrodes: Union[int, None] = None) -> int:
+def _maybe_num_electrodes(index: torch.Tensor, num_electrodes: Union[int, None] = None) -> int:
     return index.max().item() + 1 if num_electrodes is None else num_electrodes
 
 
-def add_remaining_self_loops(edge_index: torch.Tensor,
+def _add_remaining_self_loops(edge_index: torch.Tensor,
                              edge_weight: Union[torch.Tensor, None] = None,
                              fill_value: float = 1.0,
                              num_electrodes: Union[int, None] = None) -> Tuple[torch.Tensor, torch.Tensor]:
-    num_electrodes = maybe_num_electrodes(edge_index, num_electrodes)
+    num_electrodes = _maybe_num_electrodes(edge_index, num_electrodes)
     row, col = edge_index
 
     mask = row != col
@@ -48,7 +34,8 @@ def add_remaining_self_loops(edge_index: torch.Tensor,
                              device=edge_index.device)
 
     if edge_weight is not None:
-        assert edge_weight.numel() == edge_index.size(1)
+        if not (edge_weight.numel() == edge_index.size(1)):
+            raise ValueError('edge_weight must contain one weight per edge.')
         remaining_edge_weight = edge_weight[inv_mask]
 
         if remaining_edge_weight.numel() > 0:
@@ -125,7 +112,7 @@ class RGNN(torch.nn.Module):
                  learn_edge_weights: bool = True):
 
         super(RGNN, self).__init__()
-        scatter_add = scatter.scatter_add
+        scatter_add = _scatter.scatter_add
         self.num_electrodes = num_electrodes
         self.in_channels = in_channels
         self.num_electrodes = num_electrodes
@@ -143,7 +130,7 @@ class RGNN(torch.nn.Module):
             self.xs, self.ys]  # strict lower triangular values
         self.adj = nn.Parameter(adj, requires_grad=learn_edge_weights)
 
-        class NewSGConv(pyg.nn.SGConv):
+        class NewSGConv(_pyg.nn.SGConv):
             def __init__(self,
                          in_channels: int,
                          out_channels: int,
@@ -165,7 +152,7 @@ class RGNN(torch.nn.Module):
                                      dtype=dtype, device=edge_index.device)
 
                 fill_value = 1 if not improved else 2
-                edge_index, adj = add_remaining_self_loops(
+                edge_index, adj = _add_remaining_self_loops(
                     edge_index, adj, fill_value, num_electrodes)
                 row, col = edge_index
                 deg = scatter_add(torch.abs(adj), row, dim=0,
@@ -215,7 +202,7 @@ class RGNN(torch.nn.Module):
         adj = adj.reshape(-1).repeat(batch_size)
         x = F.relu(self.conv1(x, edge_index, adj))
 
-        x = pyg.nn.global_add_pool(x, data.batch, size=batch_size)
+        x = _pyg.nn.global_add_pool(x, data.batch, size=batch_size)
         x = F.dropout(x, p=self.dropout, training=self.training)
         x = self.fc(x)
 

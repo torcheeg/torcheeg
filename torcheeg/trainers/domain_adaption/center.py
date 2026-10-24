@@ -9,7 +9,7 @@ from torch.autograd.function import Function
 
 from ..classifier import ClassifierTrainer, classification_metrics
 
-log = logging.getLogger('torcheeg')
+_log = logging.getLogger('torcheeg')
 
 
 class CentersLoss(nn.Module):
@@ -174,7 +174,7 @@ class CenterLossTrainer(ClassifierTrainer):
         self.val_metrics = classification_metrics(metrics, num_classes)
         self.test_metrics = classification_metrics(metrics, num_classes)
 
-    def __reset_metric(self, state: str = "train"):
+    def _reset_metric(self, state: str = "train"):
         if state == "train":
             self.train_loss.reset()
             self.center_loss_train.reset()
@@ -244,10 +244,10 @@ class CenterLossTrainer(ClassifierTrainer):
         for key, value in self.trainer.logged_metrics.items():
             if key.startswith("train"):
                 str += f"{key}: {value:.3f} "
-        log.info(str + '\n')
+        _log.info(str + '\n')
 
         # reset the metrics
-        self.__reset_metric()
+        self._reset_metric()
 
     def validation_step(self, batch: Tuple[torch.Tensor],
                         batch_idx: int) -> torch.Tensor:
@@ -292,12 +292,12 @@ class CenterLossTrainer(ClassifierTrainer):
                       on_step=False,
                       logger=True)
         # reset the metrics
-        self.__reset_metric("val")
+        self._reset_metric("val")
         str = "\n[Val] "
         for key, value in self.trainer.logged_metrics.items():
             if key.startswith("val"):
                 str += f"{key}: {value:.3f} "
-        log.info(str + '\n')
+        _log.info(str + '\n')
 
     def test_step(self, batch: Tuple[torch.Tensor],
                   batch_idx: int) -> torch.Tensor:
@@ -330,12 +330,12 @@ class CenterLossTrainer(ClassifierTrainer):
                       on_step=False,
                       logger=True)
         # reset the metrics
-        self.__reset_metric("test")
+        self._reset_metric("test")
         str = "\n[Test] "
         for key, value in self.trainer.logged_metrics.items():
             if key.startswith("test"):
                 str += f"{key}: {value:.3f} "
-        log.info(str + '\n')
+        _log.info(str + '\n')
 
         self.test_loss.reset()
         self.test_metrics.reset()

@@ -54,6 +54,24 @@ sys.meta_path.insert(0, BlockOptionalDependencies())
                     assert not set(blocked).intersection(sys.modules)
                 ''')
 
+    def test_graph_entry_points_share_loader_without_importing_pyg(self):
+        self.run_without(('torch_geometric',), """
+            from torcheeg.models.gnn import gin, rgnn
+            from torcheeg.transforms.graph import to
+            from torcheeg.utils import visualize
+            from torcheeg.utils.lazy_loader import LazyLoader
+            for loader in (gin._pyg, rgnn._pyg, to.pyg, visualize._pyg):
+                assert type(loader) is LazyLoader
+                assert loader._module is None
+            transform = to.ToG(adj=torch.eye(3))
+            try:
+                transform(eeg=torch.ones(3, 4))
+            except ImportError as error:
+                assert 'install `torch_geometric`' in str(error), str(error)
+            else:
+                raise AssertionError('Graph conversion must load its dependency')
+        """)
+
     def test_rgnn_reports_missing_scatter_when_constructed(self):
         self.run_without(('torch_scatter',), '''
             from torcheeg.models import RGNN

@@ -61,11 +61,6 @@ networks. This part of the implementation relies on PyG.
 If you do not use graph-related algorithms, you can skip this part of
 the installation.
 
-The graph plugins are loaded when a model needs them. You can import and
-use CNN, RNN, and Transformer models without installing graph plugins.
-RGNN requires both ``torch_geometric`` and ``torch_scatter``; constructing
-RGNN without a required plugin raises an installation error.
-
 .. code:: shell
 
    # Conda

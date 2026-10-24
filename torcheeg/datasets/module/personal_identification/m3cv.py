@@ -245,13 +245,15 @@ class M3CVDataset(BaseDataset):
                     root_path: str = './aistudio',
                     subset: str = 'Enrollment',
                     **kwargs):
-        assert os.path.exists(
-            root_path
-        ), f'root_path ({root_path}) does not exist. Please download the dataset and set the root_path to the downloaded path.'
+        if not (os.path.exists(root_path)):
+            raise FileNotFoundError(
+                f'root_path ({root_path}) does not exist. Please download the dataset and set the root_path to the downloaded path.'
+            )
 
-        assert subset in [
-            'Enrollment', 'Calibration', 'Testing'
-        ], f"Unavailable subset name {subset}, and available options include 'Enrollment', 'Calibration', and 'Testing'."
+        if not (subset in ['Enrollment', 'Calibration', 'Testing']):
+            raise ValueError(
+                f"Unavailable subset name {subset}, and available options include 'Enrollment', 'Calibration', and 'Testing'."
+            )
 
         df = pd.read_csv(os.path.join(root_path, f'{subset}_Info.csv'))
         return df.to_dict(orient='records')
