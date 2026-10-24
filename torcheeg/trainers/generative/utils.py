@@ -31,11 +31,6 @@ class FrechetInceptionDistance(Metric):
     '''
     This class is used to calculate the Frechet Inception Distance (FID) metric. It is used to evaluate the quality of the generated EEG signals. For more details, please refer to the following information. Redefine the original implementation of FID in torchmetrics to support EEG signals.
 
-    The supplied EEG feature extractor is used directly. Initialization does
-    not create an image Inception network, download image weights, or require
-    torch-fidelity. Feature sums and covariances retain TorchMetrics state
-    reduction and reset behavior.
-
     - Paper: Heusel M, Ramsauer H, Unterthiner T, et al. Gans trained by a two time-scale update rule converge to a local nash equilibrium[J]. Advances in neural information processing systems, 2017, 30.
     - URL: https://arxiv.org/abs/1706.08500
     - Project: https://github.com/Lightning-AI/torchmetrics/blob/f94d167319d397a1fa4aee593b99f9765a6dfa12/src/torchmetrics/image/fid.py#L183
