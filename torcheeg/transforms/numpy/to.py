@@ -128,10 +128,6 @@ class ToGrid(EEGTransform):
         locations = {}
         occupied = set()
         for name, location in channel_location_dict.items():
-            if location is None:
-                raise ValueError(
-                    'Omit electrodes without grid positions from both the '
-                    'mapping and the EEG input; None coordinates are not accepted.')
             try:
                 row, column = location
             except (TypeError, ValueError) as error:

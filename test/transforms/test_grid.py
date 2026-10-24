@@ -31,7 +31,7 @@ class TestGrid(unittest.TestCase):
 
     def test_missing_electrodes_must_be_removed_from_mapping_and_input(self):
         eeg = np.arange(15).reshape(3, 5)
-        with self.assertRaisesRegex(ValueError, 'both the mapping and the EEG input'):
+        with self.assertRaisesRegex(ValueError, '2D integer'):
             ToGrid({'C3': (0, 0), 'Cz': None, 'C4': (0, 2)})
         transform = ToGrid({'C3': (0, 0), 'C4': (0, 2)})
         with self.assertRaisesRegex(ValueError, 'one row per channel mapping'):
@@ -119,7 +119,7 @@ class TestGrid(unittest.TestCase):
                 indices = [index for index, location in enumerate(mapping.values())
                            if location is not None]
                 if len(indices) != len(mapping):
-                    with self.assertRaisesRegex(ValueError, 'None coordinates'):
+                    with self.assertRaisesRegex(ValueError, '2D integer'):
                         ToGrid(mapping)
                 selected_mapping = {name: location for name, location in mapping.items()
                                     if location is not None}
