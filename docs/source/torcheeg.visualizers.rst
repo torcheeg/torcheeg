@@ -1,5 +1,5 @@
 torcheeg.visualizers
-===================
+================================
 
 Plot EEG signals, scalp maps, tensors and connectivity through a dedicated
 visualization API. Import a function from the package or its functional module::
