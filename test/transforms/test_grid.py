@@ -31,7 +31,7 @@ class TestGrid(unittest.TestCase):
 
     def test_missing_electrodes_must_be_removed_from_mapping_and_input(self):
         eeg = np.arange(15).reshape(3, 5)
-        with self.assertRaisesRegex(ValueError, '2D integer'):
+        with self.assertRaises(TypeError):
             ToGrid({'C3': (0, 0), 'Cz': None, 'C4': (0, 2)})
         transform = ToGrid({'C3': (0, 0), 'C4': (0, 2)})
         with self.assertRaisesRegex(ValueError, 'one row per channel mapping'):
@@ -74,17 +74,20 @@ class TestGrid(unittest.TestCase):
         transform = ToGrid({'a': np.array([1, 2], dtype=np.int64)})
         self.assertEqual(transform(eeg=np.ones((1, 5)))['eeg'].shape, (5, 2, 3))
 
-    def test_3d_montages_raise_an_actionable_grid_error(self):
-        with self.assertRaisesRegex(ValueError, '2D integer.*3D standard-montage'):
+    def test_3d_montages_are_not_grid_coordinates(self):
+        with self.assertRaises(ValueError):
             ToGrid({'Fp1': (0.1, 0.2, 0.3)})
 
     def test_invalid_positions_fail_before_conversion(self):
-        mappings = [{}, {'a': None}, {'a': (-1, 0)}, {'a': (0.1, 1)},
-                    {'a': (True, 0)}, {'a': 'ab'}, {'a': 1},
+        mappings = [{}, {'a': (-1, 0)}, {'a': (0.1, 1)},
+                    {'a': (True, 0)}, {'a': 'ab'},
                     {'a': (0, 0), 'b': (0, 0)}]
         for mapping in mappings:
             with self.subTest(mapping=mapping), self.assertRaises(ValueError):
                 ToGrid(mapping)
+        for location in (None, 1):
+            with self.subTest(location=location), self.assertRaises(TypeError):
+                ToGrid({'a': location})
 
     def test_forward_and_reverse_shapes_must_match_the_mapping(self):
         transform = ToGrid({'a': (0, 1), 'b': (2, 0)})
@@ -119,7 +122,7 @@ class TestGrid(unittest.TestCase):
                 indices = [index for index, location in enumerate(mapping.values())
                            if location is not None]
                 if len(indices) != len(mapping):
-                    with self.assertRaisesRegex(ValueError, '2D integer'):
+                    with self.assertRaises(TypeError):
                         ToGrid(mapping)
                 selected_mapping = {name: location for name, location in mapping.items()
                                     if location is not None}

@@ -1,4 +1,3 @@
-from collections.abc import Mapping as _Mapping
 from typing import Dict, Tuple, Union
 
 import numpy as np
@@ -123,29 +122,19 @@ class ToGrid(EEGTransform):
                  channel_location_dict: Dict[str, Tuple[int, int]],
                  apply_to_baseline: bool = False):
         super(ToGrid, self).__init__(apply_to_baseline=apply_to_baseline)
-        if not isinstance(channel_location_dict, _Mapping) or not channel_location_dict:
-            raise ValueError('channel_location_dict must be a nonempty mapping.')
-        locations = {}
-        occupied = set()
-        for name, location in channel_location_dict.items():
-            try:
-                row, column = location
-            except (TypeError, ValueError) as error:
-                raise ValueError(
-                    'ToGrid requires 2D integer (row, column) grid positions, '
-                    'not 3D standard-montage coordinates.') from error
+        self.channel_location_dict = {
+            name: tuple(location) for name, location in channel_location_dict.items()
+        }
+        positions = list(self.channel_location_dict.values())
+        for row, column in positions:
             if any(isinstance(value, (bool, np.bool_))
                    or not isinstance(value, (int, np.integer)) or value < 0
                    for value in (row, column)):
                 raise ValueError('ToGrid positions must be nonnegative integer grid indices.')
-            position = (int(row), int(column))
-            if position in occupied:
-                raise ValueError('ToGrid electrodes must have distinct grid positions.')
-            occupied.add(position)
-            locations[name] = position
-        self.channel_location_dict = locations
-        self.height = max(row for row, _ in occupied) + 1
-        self.width = max(column for _, column in occupied) + 1
+        if len(set(positions)) != len(positions):
+            raise ValueError('ToGrid electrodes must have distinct grid positions.')
+        self.height = max(row for row, _ in positions) + 1
+        self.width = max(column for _, column in positions) + 1
 
     def __call__(self,
                  *args,
@@ -163,7 +152,6 @@ class ToGrid(EEGTransform):
         return super().__call__(*args, eeg=eeg, baseline=baseline, **kwargs)
 
     def apply(self, eeg: np.ndarray, **kwargs) -> np.ndarray:
-        eeg = np.asarray(eeg)
         if eeg.ndim != 2 or eeg.shape[0] != len(self.channel_location_dict):
             raise ValueError('ToGrid requires [electrodes, time points] with one row per channel mapping.')
         # num_electrodes x timestep
@@ -185,7 +173,6 @@ class ToGrid(EEGTransform):
         Returns:
             np.ndarray: The revered results with the shape of [number of electrodes, number of data points].
         '''
-        eeg = np.asarray(eeg)
         if eeg.ndim != 3 or eeg.shape[1:] != (self.height, self.width):
             raise ValueError('ToGrid.reverse requires [time points, height, width] matching the grid.')
         # timestep x 9 x 9
