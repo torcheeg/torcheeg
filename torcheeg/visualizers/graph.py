@@ -98,4 +98,3 @@ def plot_graph(data: 'pyg.data.Data',
     plt.show()
 
     return np.array(img)
-

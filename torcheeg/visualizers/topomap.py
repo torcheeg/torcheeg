@@ -165,4 +165,3 @@ def plot_feature_topomap(tensor: torch.Tensor,
     img = _plot_to_image(fig)
     plt.show()
     return np.array(img)
-

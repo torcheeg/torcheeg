@@ -97,4 +97,3 @@ def plot_2d_tensor(tensor: torch.Tensor,
     plt.show()
 
     return np.array(img)
-

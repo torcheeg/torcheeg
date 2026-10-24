@@ -108,4 +108,3 @@ def plot_adj_connectivity(adj: torch.Tensor,
     plt.show()
 
     return np.array(img)
-

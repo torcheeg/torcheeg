@@ -56,4 +56,3 @@ def plot_signal(tensor: torch.Tensor,
         epochs.plot(show_scrollbars=False, show_scalebars=False, block=True))
     plt.show()
     return np.array(img)
-
