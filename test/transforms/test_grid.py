@@ -20,7 +20,7 @@ class TestGrid(unittest.TestCase):
         self.assertTrue((grid[:, 1, 1] == 0).all())
 
     def test_missing_electrodes_must_be_removed_from_mapping_and_input(self):
-        eeg = np.arange(15).reshape(3, 5)  # C3, Cz, C4
+        eeg = np.arange(15).reshape(3, 5)
         with self.assertRaisesRegex(ValueError, 'both the mapping and the EEG input'):
             ToGrid({'C3': (0, 0), 'Cz': None, 'C4': (0, 2)})
         transform = ToGrid({'C3': (0, 0), 'C4': (0, 2)})

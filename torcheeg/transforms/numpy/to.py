@@ -95,7 +95,7 @@ class To2d(EEGTransform):
 
 class ToGrid(EEGTransform):
     r'''
-    A transform method to project the EEG signals of different channels onto the grid according to the electrode positions to form a 3D EEG signal representation with the size of [number of data points, height of grid, width of grid]. For the electrode position information, please refer to constants grouped by dataset:
+    A transform method to project the EEG signals of different channels onto the grid according to the electrode positions to form a 3D EEG signal representation with the size of [number of data points, width of grid, height of grid]. For the electrode position information, please refer to constants grouped by dataset:
 
     - datasets.constants.emotion_recognition.deap.DEAP_CHANNEL_LOCATION_DICT
     - datasets.constants.emotion_recognition.dreamer.DREAMER_CHANNEL_LOCATION_DICT
@@ -111,24 +111,8 @@ class ToGrid(EEGTransform):
         t(eeg=np.random.randn(32, 128))['eeg'].shape
         >>> (128, 9, 9)
 
-        grid = t(eeg=np.random.randn(32, 128))['eeg']
-        signals = t.reverse(eeg=grid)['eeg']
-        signals.shape
-        >>> (32, 128)
-
-    Grid coordinates are nonnegative integer ``(row, column)`` pairs. They
-    are not the three-dimensional Cartesian positions in
-    :obj:`STANDARD_1020_CHANNEL_LOCATION_DICT`. Use a dataset's schematic
-    two-dimensional grid, or define a grid for your own channel order;
-    dropping a Cartesian coordinate does not create grid indices.
-
-    Dictionary insertion order must match the input electrode order.
-    Omit electrodes without grid positions from both the mapping and the EEG
-    input. None coordinates are not accepted. Reverse conversion returns only
-    the supplied electrodes, in mapping order, and ignores empty grid cells.
-
     Args:
-        channel_location_dict (dict): Electrode location information. Represented in dictionary form, where :obj:`key` corresponds to the electrode name and :obj:`value` corresponds to the row index and column index of the electrode on the grid. Mapped positions must be distinct.
+        channel_location_dict (dict): Electrode location information. Represented in dictionary form, where :obj:`key` corresponds to the electrode name and :obj:`value` corresponds to the row index and column index of the electrode on the grid.
         apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (default: :obj:`False`)
 
     .. automethod:: __call__
@@ -178,7 +162,7 @@ class ToGrid(EEGTransform):
             baseline (np.ndarray, optional) : The corresponding baseline signal, if apply_to_baseline is set to True and baseline is passed, the baseline signal will be transformed with the same way as the experimental signal.
 
         Returns:
-            np.ndarray: The projected results with the shape of [number of data points, height of grid, width of grid].
+            np.ndarray: The projected results with the shape of [number of data points, width of grid, height of grid].
         '''
         return super().__call__(*args, eeg=eeg, baseline=baseline, **kwargs)
 
@@ -198,23 +182,27 @@ class ToGrid(EEGTransform):
 
     def reverse(self, eeg: np.ndarray, **kwargs) -> Dict[str, np.ndarray]:
         r'''
-        Recover the supplied electrodes from a grid in mapping order.
-
+        The inverse operation of the converter is used to take out the electrodes on the grid and arrange them in the original order.
         Args:
-            eeg (np.ndarray): Grid signals with shape
-                [time points, height of grid, width of grid].
+            eeg (np.ndarray): The input EEG signals in shape of [number of data points, width of grid, height of grid].
 
         Returns:
-            Dict[str, np.ndarray]: Signals with shape [electrodes, time points]
-            under the ``eeg`` key.
+            np.ndarray: The revered results with the shape of [number of electrodes, number of data points].
         '''
         eeg = np.asarray(eeg)
         if eeg.ndim != 3 or eeg.shape[1:] != (self.height, self.width):
             raise ValueError('ToGrid.reverse requires [time points, height, width] matching the grid.')
-        outputs = np.zeros([len(self.channel_location_dict), eeg.shape[0]])
-        for index, (row, column) in enumerate(self.channel_location_dict.values()):
-            outputs[index] = eeg[:, row, column]
-        return {'eeg': outputs}
+        # timestep x 9 x 9
+        eeg = eeg.transpose(1, 2, 0)
+        # 9 x 9 x timestep
+        num_electrodes = len(self.channel_location_dict)
+        outputs = np.zeros([num_electrodes, eeg.shape[2]])
+        for i, (x, y) in enumerate(self.channel_location_dict.values()):
+            outputs[i] = eeg[x][y]
+        # num_electrodes x timestep
+        return {
+            'eeg': outputs
+        }
 
     @property
     def repr_body(self) -> Dict:
