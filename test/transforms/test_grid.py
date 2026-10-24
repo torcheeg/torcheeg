@@ -3,10 +3,20 @@ import unittest
 import numpy as np
 
 from torcheeg.datasets import constants
+from torcheeg.datasets.constants.utils import format_channel_location_dict
 from torcheeg.transforms import Compose, ToGrid
 
 
 class TestGrid(unittest.TestCase):
+    def test_location_helper_omits_channels_absent_from_grid(self):
+        channels = ['C4', 'Cz', 'C3']
+        grid = [['C3', '-', 'C4']]
+        mapping = format_channel_location_dict(channels, grid)
+        self.assertEqual(mapping, {'C4': [0, 2], 'C3': [0, 0]})
+        self.assertEqual(list(mapping), ['C4', 'C3'])
+        self.assertEqual(format_channel_location_dict(['Cz'], grid), {})
+        self.assertEqual(channels, ['C4', 'Cz', 'C3'])
+
     def test_non_square_grid_roundtrip_matches_channel_order(self):
         mapping = {'Cz': (2, 1), 'Fp1': (0, 0), 'Pz': (4, 2)}
         eeg = np.arange(21, dtype=float).reshape(3, 7)
