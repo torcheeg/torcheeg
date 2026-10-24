@@ -15,60 +15,78 @@ class TestUtilsImports(unittest.TestCase):
             capture_output=True, text=True, timeout=120)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
-    def test_lightweight_utilities_do_not_load_plotting_or_experiment(self):
+    def test_shared_utilities_do_not_load_visualizers(self):
         self.run_fresh('''
             import importlib.abc
             import sys
             import torcheeg
 
-            blocked = {'torcheeg.utils.visualize', 'torcheeg.utils.experiment'}
-            assert not blocked.intersection(sys.modules)
+            class BlockVisualizers(importlib.abc.MetaPathFinder):
+                def find_spec(self, fullname, path=None, target=None):
+                    if fullname.startswith('torcheeg.visualizers'):
+                        raise AssertionError('Unexpected visualization import: ' + fullname)
 
-            class BlockHeavyUtilities(importlib.abc.MetaPathFinder):
+            sys.meta_path.insert(0, BlockVisualizers())
+            import torcheeg.utils as utils
+            from torcheeg.utils import download_url, get_random_dir_path, LazyLoader
+            assert utils.__file__.endswith('utils.py')
+            assert download_url is utils.download_url
+            assert 'plot_graph' in dir(utils)
+            assert not any(name.startswith('torcheeg.visualizers') for name in sys.modules)
+        ''')
+
+    def test_tensor_import_does_not_load_other_visualizers(self):
+        self.run_fresh('''
+            import importlib.abc
+            import sys
+            import torcheeg
+            blocked = {'torcheeg.visualizers.raw', 'torcheeg.visualizers.topomap',
+                       'torcheeg.visualizers.connectivity', 'torcheeg.visualizers.graph'}
+
+            class BlockOtherVisualizers(importlib.abc.MetaPathFinder):
                 def find_spec(self, fullname, path=None, target=None):
                     if fullname in blocked:
-                        raise AssertionError('Unexpected utility import: ' + fullname)
+                        raise AssertionError('Unexpected visualization import: ' + fullname)
 
-            sys.meta_path.insert(0, BlockHeavyUtilities())
-            import torcheeg.utils as utils
-            from torcheeg.utils import download_url, get_random_dir_path
-            from torcheeg.utils.file import download_url as direct_download
-            from torcheeg.utils.lazy_loader import LazyLoader
-            assert download_url is direct_download
-            assert utils.download_url is direct_download
-            assert 'plot_graph' in dir(utils)
+            sys.meta_path.insert(0, BlockOtherVisualizers())
+            from torcheeg.visualizers import plot_2d_tensor
+            from torcheeg.visualizers.tensor import plot_2d_tensor as direct
+            from torcheeg.utils import plot_2d_tensor as legacy
+            assert direct is plot_2d_tensor is legacy
             assert not blocked.intersection(sys.modules)
         ''')
 
-    def test_public_exports_resolve_to_original_functions(self):
+    def test_public_exports_and_legacy_aliases(self):
         self.run_fresh('''
             import torcheeg.utils as utils
-            from torcheeg.utils import experiment, file, visualize
-
+            import torcheeg.visualizers as visualizers
+            from torcheeg.visualizers import raw, topomap, tensor, connectivity, graph
             expected = {
-                'seed_everything': experiment,
-                **{name: file for name in (
-                    'download_url', 'get_package_dir_path',
-                    'get_random_dir_path', 'get_temp_dir_path')},
-                **{name: visualize for name in (
-                    'plot_2d_tensor', 'plot_3d_tensor', 'plot_adj_connectivity',
-                    'plot_feature_topomap', 'plot_graph', 'plot_raw_topomap',
-                    'plot_signal')},
+                'plot_signal': raw,
+                'plot_raw_topomap': topomap,
+                'plot_feature_topomap': topomap,
+                'plot_2d_tensor': tensor,
+                'plot_3d_tensor': tensor,
+                'plot_adj_connectivity': connectivity,
+                'plot_graph': graph,
             }
-            assert set(utils.__all__) == set(expected)
+            assert set(visualizers.__all__) == set(expected)
             namespace = {}
-            exec('from torcheeg.utils import *', namespace)
+            exec('from torcheeg.visualizers import *', namespace)
+            legacy = {}
+            exec('from torcheeg.utils import *', legacy)
             for name, module in expected.items():
-                value = getattr(utils, name)
+                value = getattr(visualizers, name)
                 assert value is getattr(module, name)
-                assert utils.__dict__[name] is value
-                assert namespace[name] is value
-            try:
-                utils.nonexistent_utility
-            except AttributeError:
-                pass
-            else:
-                raise AssertionError('Unknown attributes must raise AttributeError')
+                assert visualizers.__dict__[name] is value
+                assert namespace[name] is legacy[name] is value
+            for module in (utils, visualizers):
+                try:
+                    module.nonexistent_utility
+                except AttributeError:
+                    pass
+                else:
+                    raise AssertionError('Unknown attributes must raise AttributeError')
         ''')
 
 

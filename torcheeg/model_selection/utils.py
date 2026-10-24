@@ -6,7 +6,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from ..utils.cache import (ensure_cache as _ensure_cache, compute_fingerprint as
+from ..utils import (ensure_cache as _ensure_cache, compute_fingerprint as
                            _compute_fingerprint, validate_cache)
 
 __all__ = [

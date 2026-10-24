@@ -58,9 +58,9 @@ sys.meta_path.insert(0, BlockOptionalDependencies())
         self.run_without(('torch_geometric',), """
             from torcheeg.models.gnn import gin, rgnn
             from torcheeg.transforms.graph import to
-            from torcheeg.utils import visualize
-            from torcheeg.utils.lazy_loader import LazyLoader
-            for loader in (gin._pyg, rgnn._pyg, to.pyg, visualize._pyg):
+            from torcheeg.visualizers import graph
+            from torcheeg.utils import LazyLoader
+            for loader in (gin._pyg, rgnn._pyg, to.pyg, graph._pyg):
                 assert type(loader) is LazyLoader
                 assert loader._module is None
             transform = to.ToG(adj=torch.eye(3))

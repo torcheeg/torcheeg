@@ -7,7 +7,7 @@ from scipy.signal import hilbert
 from ..base_transform import EEGTransform
 
 
-from ...utils.lazy_loader import LazyLoader
+from ...utils import LazyLoader
 
 
 pyg = LazyLoader('torch_geometric')

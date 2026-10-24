@@ -2,13 +2,13 @@ import unittest
 from types import SimpleNamespace
 from unittest.mock import patch
 
-from torcheeg.utils.lazy_loader import LazyLoader
+from torcheeg.utils import LazyLoader
 
 
 class TestLazyLoader(unittest.TestCase):
     def test_import_is_deferred_and_cached(self):
         module = SimpleNamespace(value=42)
-        with patch('torcheeg.utils.lazy_loader.import_module', return_value=module) as load:
+        with patch('torcheeg.utils._import_module', return_value=module) as load:
             lazy = LazyLoader('graph.backend')
             load.assert_not_called()
             self.assertEqual(lazy.value, 42)
@@ -17,7 +17,7 @@ class TestLazyLoader(unittest.TestCase):
 
     def test_missing_dependency_preserves_cause(self):
         error = ModuleNotFoundError('graph backend unavailable')
-        with patch('torcheeg.utils.lazy_loader.import_module', side_effect=error):
+        with patch('torcheeg.utils._import_module', side_effect=error):
             lazy = LazyLoader('torch_scatter')
             with self.assertRaisesRegex(ImportError, 'install `torch_scatter`') as caught:
                 lazy.scatter_add
