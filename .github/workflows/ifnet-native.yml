@@ -1,0 +1,45 @@
+name: IFNet complete author models
+
+on:
+  pull_request:
+    paths:
+      - 'torcheeg/models/cnn/ifnet.py'
+      - 'torcheeg/models/cnn/__init__.py'
+      - 'test/models/test_ifnet*.py'
+      - 'test/examples/test_bciciv2a_ifnet*.py'
+      - 'examples/examples_bciciv2a_ifnet*.py'
+      - 'docs/source/user_guide/ifnet.rst'
+      - '.github/workflows/ifnet-native.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ifnet:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      OMP_NUM_THREADS: '2'
+      MPLBACKEND: Agg
+      TORCHEEG_IFNET_SOURCE: external
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Obtain and hash both complete author files
+        run: |
+          mkdir external
+          curl --fail --location --retry 3 https://raw.githubusercontent.com/Jiaheng-Wang/IFNet/00ca53e29d2318a4cf7259878a4e42a7e00c6211/TEEGM/models/IFNet.py --output external/IFNet.py
+          curl --fail --location --retry 3 https://raw.githubusercontent.com/Jiaheng-Wang/IFNet/00ca53e29d2318a4cf7259878a4e42a7e00c6211/TEEGM/models/IFNetV2.py --output external/IFNetV2.py
+          echo 'e3243460628db509a43fa0e8c6531ecce07c36d360fefdfc9f6eb6e7305e7702  external/IFNet.py' | sha256sum --check
+          echo 'b4361be570e213fbed886d23a4b297b0aa9fd1bb11bb085923aa2d34770021f1  external/IFNetV2.py' | sha256sum --check
+      - name: Install matching CPU dependencies
+        run: |
+          python -m pip install torch==2.6.0 torchvision==0.21.0 --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install torch-scatter==2.1.2 torch-sparse==0.6.18 --only-binary=:all: --find-links https://data.pyg.org/whl/torch-2.6.0+cpu.html
+          python -m pip install -e '.[model,dataset]' timm==1.0.10
+      - name: Compare complete networks and both independent workflows
+        run: |
+          python -m unittest test.models.test_ifnet test.models.test_ifnet_native test.examples.test_bciciv2a_ifnet test.examples.test_bciciv2a_ifnet_v2
