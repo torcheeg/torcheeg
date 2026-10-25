@@ -16,6 +16,7 @@ Convolutional Neural Networks
    :template: modeltemplate.rst
 
    EEGNet
+   EEGInceptionERP
    ShallowConvNet
    DeepConvNet
    FBCCNN

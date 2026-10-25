@@ -90,3 +90,4 @@ the same library workflow as a reusable assistant skill.
    mdjpt
    steegformer
    msvtnet
+   eeginception_erp
