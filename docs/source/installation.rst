@@ -20,13 +20,6 @@ according to the system, CUDA version and other information:
    # e.g. GPU version
    pip install torch==1.11.0+cu113 torchvision==0.12.0+cu113 torchaudio==0.11.0 --extra-index-url https://download.pytorch.org/whl/cu113
 
-SciPy versions
-~~~~~~~~~~~~~~
-
-The development version requires SciPy 1.7.3 or later. The previous upper
-limit of 1.10.1 is removed. Select a SciPy version that supports your Python
-version. This change does not add new APIs to older TorchEEG releases.
-
 Anaconda
 ~~~~~~~~
 
