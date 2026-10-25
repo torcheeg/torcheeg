@@ -75,6 +75,8 @@ Transformer
    MHANet
    DARNet
    CTNet
+   MSVTNet
+   MSVTNetLoss
    EEGPT
    EEGPTClassifier
    EEGPTRegression

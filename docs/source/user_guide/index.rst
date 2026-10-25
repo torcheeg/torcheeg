@@ -35,6 +35,9 @@ For verified runtime combinations and modern API examples, see :doc:`pytorch`.
 Models and training
 -------------------
 
+For supervised multi-scale motor imagery training with auxiliary classifiers,
+see :doc:`msvtnet`.
+
 For pretrained EEG backbones and complete self-supervised objectives, see
 :doc:`foundation_models`.
 
@@ -86,3 +89,4 @@ the same library workflow as a reusable assistant skill.
    csbrain
    mdjpt
    steegformer
+   msvtnet
