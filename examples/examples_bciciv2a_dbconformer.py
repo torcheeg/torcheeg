@@ -1,6 +1,6 @@
 """
 Train DBConformer on BCI Competition IV 2a
-=====================================
+==========================================
 
 Download labelled BNCI2014-001 MAT recordings from
 https://bnci-horizon-2020.eu/database/data-sets and retain their attribution.

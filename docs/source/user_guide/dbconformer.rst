@@ -8,7 +8,7 @@ temporal/spatial positions, channel-attention fusion and the complete MLP
 classifier. This is not a pretrained foundation model.
 
 Supply the author implementation
--------------------------------
+--------------------------------
 
 The `author repository <https://github.com/wzwvv/DBConformer>`_ does not
 state a source license at the inspected revision. TorchEEG distributes an
