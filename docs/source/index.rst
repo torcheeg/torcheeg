@@ -32,7 +32,6 @@ Transformers.
 
    installation
    contributing
-   agent_guide
    about_us
 
 .. toctree::
@@ -57,6 +56,7 @@ Transformers.
    torcheeg.models
    torcheeg.transforms
    torcheeg.trainers
+   torcheeg.visualizers
    torcheeg.utils
 
 Indices and tables

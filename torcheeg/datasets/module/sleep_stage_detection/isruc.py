@@ -11,7 +11,7 @@ from ....utils import get_random_dir_path
 from ..base_dataset import BaseDataset
 
 
-def interploate(raw: mne.io.BaseRaw, channels: List = ['F3-M2', 'C3-M2', 'O1-M2', 'F4-M1', 'C4-M1', 'O2-M1']):
+def _interpolate(raw: mne.io.BaseRaw, channels: List = ['F3-M2', 'C3-M2', 'O1-M2', 'F4-M1', 'C4-M1', 'O2-M1']):
     missing_channels = list(set(channels) - set(raw.ch_names))
 
     if len(missing_channels):
@@ -24,17 +24,17 @@ def interploate(raw: mne.io.BaseRaw, channels: List = ['F3-M2', 'C3-M2', 'O1-M2'
     return raw
 
 
-def filter(raw: mne.io.BaseRaw, l_freq: float = 0.5, h_freq: float = 30):
+def _filter(raw: mne.io.BaseRaw, l_freq: float = 0.5, h_freq: float = 30):
     raw = raw.filter(l_freq=l_freq, h_freq=h_freq, fir_design='firwin')
     return raw
 
 
-def downsample(epochs: mne.Epochs, sfreq: int = 100):
+def _downsample(epochs: mne.Epochs, sfreq: int = 100):
     epochs = epochs.resample(sfreq)
     return epochs
 
 
-def epoching(raw, duration: float = 30):
+def _epoching(raw, duration: float = 30):
     events = mne.make_fixed_length_events(
         raw, duration=duration-1. / raw.info['sfreq'])
     epochs = mne.Epochs(raw, events, tmin=0, tmax=duration-1. / raw.info['sfreq'],
@@ -42,7 +42,7 @@ def epoching(raw, duration: float = 30):
     return epochs
 
 
-def format_subject_id(recording_file: str, root_path: str):
+def _format_subject_id(recording_file: str, root_path: str):
     recording_file = os.path.normpath(recording_file)
     root_path = os.path.normpath(root_path)
     rel_path = os.path.relpath(recording_file, root_path)
@@ -121,31 +121,28 @@ class ISRUCDataset(BaseDataset):
         verbose (bool): Whether to display logs during processing, such as progress bars, etc. (default: :obj:`True`)
     '''
 
-    def __init__(self,
-                 root_path: str = './ISRUC-SLEEP',
-                 groups: List = [0, 1, 2],
-                 channels: List = ['F3-M2',
-                                   'C3-M2',
-                                   'O1-M2',
-                                   'F4-M1',
-                                   'C4-M1',
-                                   'O2-M1'],
-                 l_freq: float = 0.5,
-                 h_freq: float = 30,
-                 sfreq: int = 100,
-                 online_transform: Union[None, Callable] = None,
-                 offline_transform: Union[None, Callable] = None,
-                 label_transform: Union[None, Callable] = None,
-                 io_path: Union[None, str] = None,
-                 io_size: int = 1048576,
-                 io_mode: str = 'lmdb',
-                 num_worker: int = 0,
-                 verbose: bool = True,
-                 **kwargs):
+    def __init__(
+            self,
+            root_path: str = './ISRUC-SLEEP',
+            groups: List = [0, 1, 2],
+            channels: List = ['F3-M2', 'C3-M2', 'O1-M2', 'F4-M1', 'C4-M1', 'O2-M1'],
+            l_freq: float = 0.5,
+            h_freq: float = 30,
+            sfreq: int = 100,
+            online_transform: Union[None, Callable] = None,
+            offline_transform: Union[None, Callable] = None,
+            label_transform: Union[None, Callable] = None,
+            io_path: Union[None, str] = None,
+            io_size: int = 1048576,
+            io_mode: str = 'lmdb',
+            num_worker: int = 0,
+            verbose: bool = True,
+            **kwargs):
         if io_path is None:
             io_path = get_random_dir_path(dir_prefix='datasets')
 
-        assert 0 in groups or 1 in groups or 2 in groups, "groups must be a subset of [0, 1, 2]"
+        if not (0 in groups or 1 in groups or 2 in groups):
+            raise ValueError('groups must be a subset of [0, 1, 2]')
 
         params = {
             'root_path': root_path,
@@ -187,10 +184,10 @@ class ISRUCDataset(BaseDataset):
             shutil.copy2(recording_file, temp_edf_path)
             raw = read_raw_edf(temp_edf_path, preload=True)
 
-        raw = filter(raw, l_freq, h_freq)
-        raw = downsample(raw, sfreq)
-        raw = interploate(raw, channels)
-        epochs = epoching(raw)
+        raw = _filter(raw, l_freq, h_freq)
+        raw = _downsample(raw, sfreq)
+        raw = _interpolate(raw, channels)
+        epochs = _epoching(raw)
 
         epochs_data = epochs.get_data()
         label2id = {'0': 'Sleep stage W',
@@ -236,7 +233,7 @@ class ISRUCDataset(BaseDataset):
                        **kwargs):
 
         recording_file, scoring_file, group = record
-        subject_id = format_subject_id(recording_file, root_path)
+        subject_id = _format_subject_id(recording_file, root_path)
 
         if before_trial:
             epochs_data = before_trial(epochs_data)

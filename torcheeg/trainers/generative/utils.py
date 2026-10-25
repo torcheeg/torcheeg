@@ -1,8 +1,7 @@
 from copy import deepcopy
 
 import torch
-from torchmetrics.image.fid import \
-    FrechetInceptionDistance as _FrechetInceptionDistance
+from torchmetrics import Metric
 
 
 def _compute_fid(mu1: torch.Tensor, sigma1: torch.Tensor, mu2: torch.Tensor,
@@ -28,7 +27,7 @@ def _compute_fid(mu1: torch.Tensor, sigma1: torch.Tensor, mu2: torch.Tensor,
     return a + b - 2 * c
 
 
-class FrechetInceptionDistance(_FrechetInceptionDistance):
+class FrechetInceptionDistance(Metric):
     '''
     This class is used to calculate the Frechet Inception Distance (FID) metric. It is used to evaluate the quality of the generated EEG signals. For more details, please refer to the following information. Redefine the original implementation of FID in torchmetrics to support EEG signals.
 
@@ -36,6 +35,10 @@ class FrechetInceptionDistance(_FrechetInceptionDistance):
     - URL: https://arxiv.org/abs/1706.08500
     - Project: https://github.com/Lightning-AI/torchmetrics/blob/f94d167319d397a1fa4aee593b99f9765a6dfa12/src/torchmetrics/image/fid.py#L183
     '''
+
+    is_differentiable = False
+    higher_is_better = False
+    full_state_update = False
 
     def __init__(
         self,

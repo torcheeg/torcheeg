@@ -56,9 +56,10 @@ class Concatenate(EEGTransform):
                 if not new_kwargs_key in self.targets:
                     non_target_kwargs[new_kwargs_key] = new_kwargs_value
                     continue
-                assert isinstance(
-                    new_kwargs_value, np.ndarray
-                ), f'Concate only supports concatenating numpy.ndarray type data, you are trying to concatenate {type(new_kwargs_value)} type data.'
+                if not (isinstance(new_kwargs_value, np.ndarray)):
+                    raise TypeError(
+                        f'Concate only supports concatenating numpy.ndarray type data, you are trying to concatenate {type(new_kwargs_value)} type data.'
+                    )
                 if not new_kwargs_key in target_kwargs:
                     target_kwargs[new_kwargs_key] = []
                 target_kwargs[new_kwargs_key].append(new_kwargs_value)
@@ -158,9 +159,10 @@ class MapChunk(EEGTransform):
                 check_len_key = kwargs_key
                 check_len_value = len(kwargs_value)
             else:
-                assert len(
-                    kwargs_value
-                ) == check_len_value, f'The lengths of {check_len_key} ({check_len_value}) and {kwargs_key} ({len(kwargs_value)}) in the input signal are not the same.'
+                if not (len(kwargs_value) == check_len_value):
+                    raise ValueError(
+                        f'The lengths of {check_len_key} ({check_len_value}) and {kwargs_key} ({len(kwargs_value)}) in the input signal are not the same.'
+                    )
 
             start_at = 0
             end_at = start_at + self.chunk_size
@@ -186,9 +188,10 @@ class MapChunk(EEGTransform):
             for new_kwargs_key, new_kwargs_value in new_kwargs_t.items():
                 if not new_kwargs_key in self.targets:
                     continue
-                assert isinstance(
-                    new_kwargs_value, np.ndarray
-                ), f'Concate only supports concatenating numpy.ndarray type data, you are trying to concatenate {type(new_kwargs_value)} type data.'
+                if not (isinstance(new_kwargs_value, np.ndarray)):
+                    raise TypeError(
+                        f'Concate only supports concatenating numpy.ndarray type data, you are trying to concatenate {type(new_kwargs_value)} type data.'
+                    )
                 if not new_kwargs_key in new_target_kwargs:
                     new_target_kwargs[new_kwargs_key] = []
                 new_target_kwargs[new_kwargs_key].append(new_kwargs_value)

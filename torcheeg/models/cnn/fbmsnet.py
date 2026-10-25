@@ -18,7 +18,7 @@ def _same_pad_arg(input_size, kernel_size, stride, dilation, **_):
     return [pad_w // 2, pad_w - pad_w // 2, pad_h // 2, pad_h - pad_h // 2]
 
 
-def conv2d_same(x,
+def _conv2d_same(x,
                 weight: torch.Tensor,
                 bias: Optional[torch.Tensor] = None,
                 stride: Tuple[int, int] = (1, 1),
@@ -51,15 +51,15 @@ class SamePadConv2d(nn.Conv2d):
                              dilation, groups, bias)
 
     def forward(self, x):
-        return conv2d_same(x, self.weight, self.bias, self.stride, self.padding,
+        return _conv2d_same(x, self.weight, self.bias, self.stride, self.padding,
                            self.dilation, self.groups)
 
 
 ## MIX_CONV
-def create_conv2d_pad(in_chs, out_chs, kernel_size, **kwargs):
+def _create_conv2d_pad(in_chs, out_chs, kernel_size, **kwargs):
     padding = kwargs.pop('padding', '')
     kwargs.setdefault('bias', False)
-    padding, is_dynamic = get_padding_value(padding, kernel_size, **kwargs)
+    padding, is_dynamic = _get_padding_value(padding, kernel_size, **kwargs)
     if is_dynamic:
         return SamePadConv2d(in_chs, out_chs, kernel_size, **kwargs)
     else:
@@ -89,7 +89,7 @@ def _split_channels(num_chan, num_groups):
     return split
 
 
-def get_padding_value(padding, kernel_size, **kwargs):
+def _get_padding_value(padding, kernel_size, **kwargs):
     dynamic = False
     if isinstance(padding, str):
         # for any string padding, the padding will be calculated for you, one of three ways
@@ -141,7 +141,7 @@ class MixedConv2d(nn.ModuleDict):
             conv_groups = out_ch if depthwise else 1
             self.add_module(
                 str(idx),
-                create_conv2d_pad(in_ch,
+                _create_conv2d_pad(in_ch,
                                   out_ch,
                                   k,
                                   stride=stride,
@@ -229,45 +229,38 @@ class FBMSNet(nn.Module):
         self.chunk_size = chunk_size
         self.stride_factor = stride_factor
 
-        try:
-            self.mixConv2d = nn.Sequential(
-                MixedConv2d(in_channels=in_channels,
-                            out_channels=num_feature,
-                            kernel_size=[(1, 15), (1, 31), (1, 63), (1, 125)],
-                            stride=1,
-                            padding='',
-                            dilation=1,
-                            depthwise=False),
-                nn.BatchNorm2d(num_feature),
-            )
-            self.scb = self.SCB(in_chan=num_feature,
-                                out_chan=num_feature * dilatability,
-                                num_electrodes=int(num_electrodes))
+        if chunk_size % stride_factor != 0:
+            raise ValueError('chunk_size must be divisible by stride_factor.')
+        self.mixConv2d = nn.Sequential(
+            MixedConv2d(in_channels=in_channels,
+                        out_channels=num_feature,
+                        kernel_size=[(1, 15), (1, 31), (1, 63), (1, 125)],
+                        stride=1,
+                        padding='',
+                        dilation=1,
+                        depthwise=False),
+            nn.BatchNorm2d(num_feature),
+        )
+        self.scb = self._build_spatial_block(in_chan=num_feature,
+                                             out_chan=num_feature * dilatability,
+                                             num_electrodes=int(num_electrodes))
+        # Formulate the temporal agreegator
+        if temporal == 'VarLayer':
+            self.temporal_layer = VarLayer(dim=3)
+        elif temporal == 'StdLayer':
+            self.temporal_layer = StdLayer(dim=3)
+        elif temporal == 'LogVarLayer':
+            self.temporal_layer = LogVarLayer(dim=3)
+        elif temporal == 'MeanLayer':
+            self.temporal_layer = MeanLayer(dim=3)
+        elif temporal == 'MaxLayer':
+            self.temporal_layer = MaxLayer(dim=3)
+        else:
+            raise ValueError(f'Unsupported temporal aggregation: {temporal}.')
+        self.center_dim = self.feature_dim(in_channels, num_electrodes, chunk_size)[-1]
+        self.fc = self._build_classifier(self.center_dim, num_classes)
 
-            # Formulate the temporal agreegator
-            if temporal == 'VarLayer':
-                self.temporal_layer = VarLayer(dim=3)
-            elif temporal == 'StdLayer':
-                self.temporal_layer = StdLayer(dim=3)
-            elif temporal == 'LogVarLayer':
-                self.temporal_layer = LogVarLayer(dim=3)
-            elif temporal == 'MeanLayer':
-                self.temporal_layer = MeanLayer(dim=3)
-            elif temporal == 'MaxLayer':
-                self.temporal_layer = MaxLayer(dim=3)
-            else:
-                raise NotImplementedError
-
-            self.center_dim = self.feature_dim(in_channels, num_electrodes,
-                                               chunk_size)[-1]
-
-            self.fc = self.LastBlock(self.center_dim, num_classes)
-        except:
-            raise Exception(
-                "Model init failed: The Chunksize must be a  multiple of stride_factor.Please modify values of stride_factor or chunk_size."
-            )
-
-    def SCB(self,
+    def _build_spatial_block(self,
             in_chan,
             out_chan,
             num_electrodes,
@@ -282,7 +275,7 @@ class FBMSNet(nn.Module):
                                  weight_norm=weight_norm,
                                  padding=0), nn.BatchNorm2d(out_chan), swish())
 
-    def LastBlock(self, inF, outF, weight_norm=True, *args, **kwargs):
+    def _build_classifier(self, inF, outF, weight_norm=True, *args, **kwargs):
         return nn.Sequential(
             LinearWithConstraint(inF,
                                  outF,
