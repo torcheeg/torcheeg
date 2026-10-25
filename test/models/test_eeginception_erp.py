@@ -79,6 +79,28 @@ class TestEEGInceptionERP(unittest.TestCase):
             if getattr(module, 'bias', None) is not None:
                 self.assertTrue(torch.equal(module.bias, torch.zeros_like(module.bias)))
 
+    def test_legacy_padding_matches_logits_and_gradients(self):
+        model = EEGInceptionERP().eval()
+        legacy = copy.deepcopy(model)
+        for module in legacy.modules():
+            if hasattr(module, '_native_same'):
+                module._native_same = False
+        left = torch.randn(3, 8, 128, requires_grad=True)
+        right = left.detach().clone().requires_grad_()
+        actual, expected = legacy(left), model(right)
+        torch.testing.assert_close(actual, expected, rtol=1e-5, atol=1e-6)
+        actual.square().sum().backward()
+        expected.square().sum().backward()
+        torch.testing.assert_close(left.grad, right.grad, rtol=1e-5, atol=1e-6)
+        for name, value in legacy.named_parameters():
+            torch.testing.assert_close(
+                value.grad,
+                dict(model.named_parameters())[name].grad,
+                rtol=1e-5,
+                atol=1e-6,
+                msg=name,
+            )
+
     def test_safe_checkpoint_restores_next_training_update(self):
         model = EEGInceptionERP()
         optimizer = torch.optim.Adam(model.parameters(), lr=0.001)

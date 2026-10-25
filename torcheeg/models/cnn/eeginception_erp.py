@@ -12,8 +12,24 @@ from torch.nn import functional as F
 
 
 class _TemporalConv2d(nn.Conv2d):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        version = tuple(int(v) for v in torch.__version__.split('.')[:2])
+        self._native_same = version >= (1, 10)
+
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        # Explicit asymmetric SAME padding also supports older PyTorch releases.
+        # Keep the reference's numerical path when native SAME is available.
+        if self._native_same:
+            return F.conv2d(
+                x,
+                self.weight,
+                self.bias,
+                self.stride,
+                'same',
+                self.dilation,
+                self.groups,
+            )
+        # PyTorch 1.8 needs explicit asymmetric SAME padding.
         padding = self.kernel_size[1] - 1
         return super().forward(F.pad(x, (padding // 2, padding - padding // 2)))
 

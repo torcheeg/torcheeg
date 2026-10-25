@@ -33,8 +33,11 @@ The default epoch is one second at 128 Hz. Temporal kernels are 64, 32 and 16
 samples, followed by branch-specific depthwise convolutions over all eight
 electrodes. The second block uses 16, 8 and 4 samples. As in the pinned
 reference, this second-stage division stays four even with custom pooling.
-Aggregation kernels are eight and four samples. Explicit asymmetric SAME
-padding preserves time lengths, including even kernels and odd epoch sizes.
+Aggregation kernels are eight and four samples. Native SAME padding preserves
+the reference's numerical path on current PyTorch. Explicit asymmetric
+padding provides the same geometry on older PyTorch, including even kernels
+and odd epoch sizes. Older-version optimizer trajectories are not promised
+to be bitwise equal to a newer-version reference.
 
 All convolutional blocks include batch normalization, activation and dropout.
 Default batch normalization uses momentum 0.01 and epsilon 1e-5. There is no
