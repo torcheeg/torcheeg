@@ -92,3 +92,4 @@ the same library workflow as a reusable assistant skill.
    msvtnet
    eeginception_erp
    eegnex
+   ifnet

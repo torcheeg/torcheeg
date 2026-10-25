@@ -17,3 +17,4 @@ from .shallow_convnet import ShallowConvNet
 from .deep_convnet import DeepConvNet
 from .eeginception_erp import EEGInceptionERP
 from .eegnex import EEGNeX
+from .ifnet import IFNet, IFNetV2
