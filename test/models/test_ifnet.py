@@ -164,11 +164,9 @@ class TestIFNet(unittest.TestCase):
                 {'patch_size': 0},
                 {'dropout': float('nan')},
             ]:
-                with (
-                    self.subTest(cls=cls, kwargs=kwargs),
-                    self.assertRaises(ValueError),
-                ):
-                    cls(**kwargs)
+                with self.subTest(cls=cls, kwargs=kwargs):
+                    with self.assertRaises(ValueError):
+                        cls(**kwargs)
             model = cls()
             for shape in [
                 (3, 22, 750),
@@ -178,8 +176,9 @@ class TestIFNet(unittest.TestCase):
                 (3, 1, 44, 750),
                 (44, 750),
             ]:
-                with self.subTest(shape=shape), self.assertRaises(ValueError):
-                    model(torch.randn(shape))
+                with self.subTest(shape=shape):
+                    with self.assertRaises(ValueError):
+                        model(torch.randn(shape))
         with self.assertRaises(ValueError):
             IFNetV2(max_norm=0)
 
