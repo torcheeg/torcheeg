@@ -94,3 +94,4 @@ the same library workflow as a reusable assistant skill.
    eegnex
    ifnet
    dbconformer
+   eegwavenet

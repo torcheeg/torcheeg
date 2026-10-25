@@ -18,3 +18,4 @@ from .deep_convnet import DeepConvNet
 from .eeginception_erp import EEGInceptionERP
 from .eegnex import EEGNeX
 from .ifnet import IFNet, IFNetV2
+from .eegwavenet import EEGWaveNet
