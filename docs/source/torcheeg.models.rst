@@ -17,6 +17,7 @@ Convolutional Neural Networks
 
    EEGNet
    EEGInceptionERP
+   EEGNeX
    ShallowConvNet
    DeepConvNet
    FBCCNN

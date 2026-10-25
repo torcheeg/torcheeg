@@ -91,3 +91,4 @@ the same library workflow as a reusable assistant skill.
    steegformer
    msvtnet
    eeginception_erp
+   eegnex
