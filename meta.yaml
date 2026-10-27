@@ -1,8 +1,7 @@
-{% set name = "TorchEEG" %}
 {% set version = "1.1.3" %}
 
 package:
-  name: "{{ name|lower }}"
+  name: torcheeg
   version: "{{ version }}"
 
 source:
@@ -11,34 +10,47 @@ source:
 build:
   number: 0
   noarch: python
-  script: "python -m pip install . --no-deps --ignore-installed -vv"
+  script: "{{ PYTHON }} -m pip install . --no-deps --no-build-isolation -vv"
 
 requirements:
-  build:
-    - python
+  host:
+    - python >=3.7
+    - pip
+    - setuptools >=61
+    - wheel
   run:
-    - python
-    - tqdm>=4.64.0
-    - numpy>=1.21.5
-    - pandas>=1.3.5
-    - xlrd>=2.0.1
-    - scipy>=1.7.3,<=1.10.1
-    - scikit-learn>=1.0.2
-    - python-lmdb>=1.3.0
-    - einops>=0.4.1
-    - mne-base>=1.0.3
-    - xmltodict>=0.13.0
-    - networkx>=2.6.3
-    - PyWavelets>=1.3.0
-    - spectrum>=0.8.1
-    - torchmetrics>=0.10.0
-    - mne-connectivity>=0.4.0
-    - pytorch-lightning>=1.9.5
-    - wfdb>=4.1.2
+    - python >=3.7
+    - pytorch
+    - tqdm >=4.64.0
+    - numpy >=1.21.5
+    - pandas >=1.3.5
+    - xlrd >=2.0.1
+    - scipy >=1.7.3
+    - scikit-learn >=1.0.2
+    - python-lmdb >=1.3.0
+    - einops >=0.4.1
+    - mne-base >=1.0.3
+    - xmltodict >=0.13.0
+    - networkx >=2.6.3
+    - pywavelets >=1.3.0
+    - spectrum >=0.8.1
+    - torchmetrics >=0.10.0
+    - mne-connectivity >=0.4.0
+    - pytorch-lightning
+    - wfdb >=4.1.2
+    - filelock >=3.0
+
+test:
+  imports:
+    - torcheeg
+    - torcheeg.datasets
+    - torcheeg.models
+    - torcheeg.transforms
+  commands:
+    - python -c "import torch; from torcheeg.models import EEGNet; model = EEGNet(num_electrodes=32); model.eval(); assert model(torch.randn(2, 1, 32, 128)).shape == (2, 2)"
 
 about:
-  home: https://github.com/tczhangzhi/torcheeg
+  home: https://github.com/torcheeg/torcheeg
   license: MIT
+  license_file: LICENSE
   summary: 'TorchEEG is a library built on PyTorch for EEG signal analysis.'
-  description: |
-    TorchEEG is a library built on PyTorch for EEG signal analysis. TorchEEG aims to provide a plug-and-play EEG analysis tool, so that researchers can quickly reproduce EEG analysis work and start new EEG analysis research without paying attention to technical details unrelated to the research focus.
