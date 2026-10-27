@@ -29,7 +29,7 @@ For an NVIDIA GPU:
 Install with pip
 ----------------
 
-Install the release from PyPI:
+Install TorchEEG with pip:
 
 .. code-block:: shell
 
@@ -57,6 +57,12 @@ Combine plugin names to install both:
 .. code-block:: shell
 
    python -m pip install "torcheeg[pyg,moabb]"
+
+Install all plugins and test tools:
+
+.. code-block:: shell
+
+   python -m pip install "torcheeg[all]"
 
 Install with conda
 ------------------
@@ -113,10 +119,10 @@ Install the local source in editable mode:
 Python then uses the source files in this directory.
 Your code changes take effect when you start a new Python process.
 
-The development version uses these dependency groups:
+Use these plugin names with pip or a source installation:
 
-* ``model``: PyG graph transforms and graph neural networks.
-* ``dataset``: MOABB datasets.
+* ``pyg``: PyG graph transforms and graph neural networks.
+* ``moabb``: MOABB datasets.
 * ``transforms``: signal resampling with soxr.
 * ``trainer``: optional metrics for generative trainers.
 * ``test``: development test tools.
@@ -125,19 +131,19 @@ For MOABB support:
 
 .. code-block:: shell
 
-   python -m pip install -e ".[dataset]"
+   python -m pip install -e ".[moabb]"
 
 For graph support, install the matching PyG extension wheels. Then run:
 
 .. code-block:: shell
 
-   python -m pip install -e ".[model]"
+   python -m pip install -e ".[pyg]"
 
-Install all development groups for the test suite:
+Install all plugins and test tools:
 
 .. code-block:: shell
 
-   python -m pip install -e ".[test,model,trainer,transforms,dataset]"
+   python -m pip install -e ".[all]"
 
 Install the documentation dependencies to build the documentation:
 
