@@ -181,8 +181,7 @@ html_theme_options = {
     "show_pytorch_org_link": False,
     "show_lf_header": False,
     "show_lf_footer": False,
-    "llm_generate_md": False,
-    "llm_generate_full": False,
+    "llm_disabled": True,
     "icon_links": [{
         "name": "GitHub",
         "url": "https://github.com/torcheeg/torcheeg",
