@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 __version__ = '1.1.3'
-URL = 'https://github.com/tczhangzhi/torcheeg'
+URL = 'https://github.com/torcheeg/torcheeg'
 
 install_requires = [
     'tqdm>=4.64.0', 'numpy>=1.21.5', 'pandas>=1.3.5', 'xlrd>=2.0.1',
@@ -34,7 +34,9 @@ dataset_plugin_requires = [
     'moabb>=0.5.0',
 ]
 
-dataset_plugin_requires = ['moabb>=0.5.0']
+all_plugin_requires = list(dict.fromkeys(
+    model_plugin_requires + dataset_plugin_requires + trainer_plugin_requires +
+    transforms_plugin_requires + test_requires))
 
 readme = open('README.rst').read()
 
@@ -48,11 +50,14 @@ setup(
     author_email='tczhangzhi@gmail.com',
     keywords=['PyTorch', 'EEG'],
     url=URL,
-    packages=find_packages(),
+    packages=find_packages(include=['torcheeg', 'torcheeg.*']),
     long_description=readme,
     python_requires='>=3.7',
     extras_require={
         'test': test_requires,
+        'pyg': model_plugin_requires,
+        'moabb': dataset_plugin_requires,
+        'all': all_plugin_requires,
         'model': model_plugin_requires,
         'dataset': dataset_plugin_requires,
         'trainer': trainer_plugin_requires,
