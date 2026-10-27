@@ -1,5 +1,2 @@
 include LICENSE
 include README.md
-include AGENTS.md
-include llms.txt
-recursive-include .agents/skills *.md

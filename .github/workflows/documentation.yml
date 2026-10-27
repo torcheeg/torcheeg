@@ -8,9 +8,6 @@ on:
       - 'torcheeg/**'
       - 'setup.py'
       - 'MANIFEST.in'
-      - 'AGENTS.md'
-      - '.agents/**'
-      - 'llms.txt'
       - '.readthedocs.yaml'
       - '.github/workflows/documentation.yml'
   push:

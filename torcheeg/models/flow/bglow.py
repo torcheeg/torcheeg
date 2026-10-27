@@ -5,21 +5,21 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
-def compute_same_pad(kernel_size, stride):
+def _compute_same_pad(kernel_size, stride):
     if isinstance(kernel_size, int):
         kernel_size = [kernel_size]
 
     if isinstance(stride, int):
         stride = [stride]
 
-    assert len(stride) == len(
-        kernel_size
-    ), "Pass kernel size and stride both as int, or both as equal length iterable"
+    if not (len(stride) == len(kernel_size)):
+        raise ValueError(
+            'Pass kernel size and stride both as int, or both as equal length iterable')
 
     return [((k - 1) * s + 1) // 2 for k, s in zip(kernel_size, stride)]
 
 
-def uniform_binning_correction(x, n_bits=8):
+def _uniform_binning_correction(x, n_bits=8):
     """Replaces x^i with q^i(x) = U(x, x + 1.0 / 256.0).
 
     Args:
@@ -38,7 +38,7 @@ def uniform_binning_correction(x, n_bits=8):
     return x, objective
 
 
-def split_feature(tensor, type="split"):
+def _split_feature(tensor, type="split"):
     """
     type = ["split", "cross"]
     """
@@ -49,7 +49,7 @@ def split_feature(tensor, type="split"):
         return tensor[:, 0::2, ...], tensor[:, 1::2, ...]
 
 
-def gaussian_p(mean, logs, x):
+def _gaussian_p(mean, logs, x):
     """
     lnL = -1/2 * { ln|Var| + ((X - Mu)^T)(Var^-1)(X - Mu) + kln(2*PI) }
             k = 1 (Independent)
@@ -59,25 +59,26 @@ def gaussian_p(mean, logs, x):
     return -0.5 * (logs * 2.0 + ((x - mean)**2) / torch.exp(logs * 2.0) + c)
 
 
-def gaussian_likelihood(mean, logs, x):
-    p = gaussian_p(mean, logs, x)
+def _gaussian_likelihood(mean, logs, x):
+    p = _gaussian_p(mean, logs, x)
     return torch.sum(p, dim=[1, 2, 3])
 
 
-def gaussian_sample(mean, logs, temperature=1):
+def _gaussian_sample(mean, logs, temperature=1):
     # Sample from Gaussian with temperature
     z = torch.normal(mean, torch.exp(logs) * temperature)
 
     return z
 
 
-def squeeze2d(input, factor):
+def _squeeze2d(input, factor):
     if factor == 1:
         return input
 
     B, C, H, W = input.size()
 
-    assert H % factor == 0 and W % factor == 0, "H or W modulo factor is not 0"
+    if not (H % factor == 0 and W % factor == 0):
+        raise ValueError('H or W modulo factor is not 0')
 
     x = input.view(B, C, H // factor, factor, W // factor, factor)
     x = x.permute(0, 1, 3, 5, 2, 4).contiguous()
@@ -86,7 +87,7 @@ def squeeze2d(input, factor):
     return x
 
 
-def unsqueeze2d(input, factor):
+def _unsqueeze2d(input, factor):
     if factor == 1:
         return input
 
@@ -94,7 +95,8 @@ def unsqueeze2d(input, factor):
 
     B, C, H, W = input.size()
 
-    assert C % (factor2) == 0, "C module factor squared is not 0"
+    if not (C % factor2 == 0):
+        raise ValueError('C module factor squared is not 0')
 
     x = input.view(B, C // factor2, factor, factor, H, W)
     x = x.permute(0, 1, 4, 2, 5, 3).contiguous()
@@ -187,11 +189,12 @@ class ActNorm2d(_ActNorm):
         super().__init__(num_features, scale)
 
     def _check_input_dim(self, input):
-        assert len(input.size()) == 4
-        assert input.size(1) == self.num_features, (
-            "[ActNorm]: input should be in shape as `BCHW`,"
-            " channels should be {} rather than {}".format(
-                self.num_features, input.size()))
+        if not (len(input.size()) == 4):
+            raise ValueError('input must be a 4D tensor.')
+        if not (input.size(1) == self.num_features):
+            raise ValueError(
+                '[ActNorm]: input should be in shape as `BCHW`, channels should be {} rather than {}'
+                .format(self.num_features, input.size()))
 
 
 class LinearZeros(nn.Module):
@@ -225,7 +228,7 @@ class Conv2d(nn.Module):
         super().__init__()
 
         if padding == "same":
-            padding = compute_same_pad(kernel_size, stride)
+            padding = _compute_same_pad(kernel_size, stride)
         elif padding == "valid":
             padding = 0
 
@@ -268,7 +271,7 @@ class Conv2dZeros(nn.Module):
         super().__init__()
 
         if padding == "same":
-            padding = compute_same_pad(kernel_size, stride)
+            padding = _compute_same_pad(kernel_size, stride)
         elif padding == "valid":
             padding = 0
 
@@ -311,7 +314,8 @@ class Permute2d(nn.Module):
             self.indices_inverse[self.indices[i]] = i
 
     def forward(self, input, reverse=False):
-        assert len(input.size()) == 4
+        if not (len(input.size()) == 4):
+            raise ValueError('input must be a 4D tensor.')
 
         if not reverse:
             input = input[:, self.indices, :, :]
@@ -327,19 +331,19 @@ class Split2d(nn.Module):
 
     def split2d_prior(self, z):
         h = self.conv(z)
-        return split_feature(h, "cross")
+        return _split_feature(h, "cross")
 
     def forward(self, input, logdet=0.0, reverse=False, temperature=None):
         if reverse:
             z1 = input
             mean, logs = self.split2d_prior(z1)
-            z2 = gaussian_sample(mean, logs, temperature)
+            z2 = _gaussian_sample(mean, logs, temperature)
             z = torch.cat((z1, z2), dim=1)
             return z, logdet
         else:
-            z1, z2 = split_feature(input, "split")
+            z1, z2 = _split_feature(input, "split")
             mean, logs = self.split2d_prior(z1)
-            logdet = gaussian_likelihood(mean, logs, z2) + logdet
+            logdet = _gaussian_likelihood(mean, logs, z2) + logdet
             return z1, logdet
 
 
@@ -350,9 +354,9 @@ class SqueezeLayer(nn.Module):
 
     def forward(self, input, logdet=None, reverse=False):
         if reverse:
-            output = unsqueeze2d(input, self.factor)
+            output = _unsqueeze2d(input, self.factor)
         else:
-            output = squeeze2d(input, self.factor)
+            output = _squeeze2d(input, self.factor)
 
         return output, logdet
 
@@ -436,7 +440,7 @@ class InvertibleConv1x1(nn.Module):
             return z, logdet
 
 
-def get_block(in_channels, out_channels, hidden_channels):
+def _get_block(in_channels, out_channels, hidden_channels):
     block = nn.Sequential(
         Conv2d(in_channels, hidden_channels),
         nn.ReLU(inplace=False),
@@ -483,10 +487,10 @@ class FlowStep(nn.Module):
 
         # 3. coupling
         if flow_coupling == "additive":
-            self.block = get_block(in_channels // 2, in_channels // 2,
+            self.block = _get_block(in_channels // 2, in_channels // 2,
                                    hidden_channels)
         elif flow_coupling == "affine":
-            self.block = get_block(in_channels // 2, in_channels,
+            self.block = _get_block(in_channels // 2, in_channels,
                                    hidden_channels)
 
     def forward(self, input, logdet=None, reverse=False):
@@ -496,7 +500,8 @@ class FlowStep(nn.Module):
             return self.reverse_flow(input, logdet)
 
     def normal_flow(self, input, logdet):
-        assert input.size(1) % 2 == 0
+        if not (input.size(1) % 2 == 0):
+            raise ValueError('input must have an even number of channels.')
 
         # 1. actnorm
         z, logdet = self.actnorm(input, logdet=logdet, reverse=False)
@@ -505,12 +510,12 @@ class FlowStep(nn.Module):
         z, logdet = self.flow_permutation(z, logdet, False)
 
         # 3. coupling
-        z1, z2 = split_feature(z, "split")
+        z1, z2 = _split_feature(z, "split")
         if self.flow_coupling == "additive":
             z2 = z2 + self.block(z1)
         elif self.flow_coupling == "affine":
             h = self.block(z1)
-            shift, scale = split_feature(h, "cross")
+            shift, scale = _split_feature(h, "cross")
             scale = torch.sigmoid(scale + 2.0)
             z2 = z2 + shift
             z2 = z2 * scale
@@ -520,15 +525,16 @@ class FlowStep(nn.Module):
         return z, logdet
 
     def reverse_flow(self, input, logdet):
-        assert input.size(1) % 2 == 0
+        if not (input.size(1) % 2 == 0):
+            raise ValueError('input must have an even number of channels.')
 
         # 1.coupling
-        z1, z2 = split_feature(input, "split")
+        z1, z2 = _split_feature(input, "split")
         if self.flow_coupling == "additive":
             z2 = z2 - self.block(z1)
         elif self.flow_coupling == "affine":
             h = self.block(z1)
-            shift, scale = split_feature(h, "cross")
+            shift, scale = _split_feature(h, "cross")
             scale = torch.sigmoid(scale + 2.0)
             z2 = z2 / scale
             z2 = z2 - shift
@@ -703,7 +709,7 @@ class BGlow(nn.Module):
         if self.learn_top:
             h = self.learn_top_fn(h)
 
-        return split_feature(h, "split")
+        return _split_feature(h, "split")
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         r'''
@@ -717,12 +723,12 @@ class BGlow(nn.Module):
         '''
         b, c, h, w = x.shape
 
-        x, logdet = uniform_binning_correction(x)
+        x, logdet = _uniform_binning_correction(x)
 
         z, objective = self.flow(x, logdet=logdet, reverse=False)
 
         mean, logs = self.prior(x.shape[0])
-        objective += gaussian_likelihood(mean, logs, z)
+        objective += _gaussian_likelihood(mean, logs, z)
 
         # Full objective - converted to bits per dimension
         bpd = (-objective) / (math.log(2.0) * c * h * w)
@@ -756,7 +762,7 @@ class BGlow(nn.Module):
             torch.Tensor: the generated results, which should have the same shape as the input noise, i.e., :obj:`[n, 4, 32, 32]`. Here, :obj:`n` corresponds to the batch size, :obj:`4` corresponds to :obj:`in_channels`, and :obj:`(32, 32)` corresponds to :obj:`grid_size`.
         '''
         mean, logs = self.prior(num)
-        z = gaussian_sample(mean, logs, temperature)
+        z = _gaussian_sample(mean, logs, temperature)
 
         x = self.reverse(z, temperature=temperature)
         return x

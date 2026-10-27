@@ -205,9 +205,10 @@ class DTUProcessedDataset(BaseDataset):
     def set_records(self,
                     root_path: str = './DATA_preproc',
                     **kwargs):
-        assert os.path.exists(
-            root_path
-        ), f'root_path ({root_path}) does not exist. Please download the dataset and set the root_path to the downloaded path.'
+        if not (os.path.exists(root_path)):
+            raise FileNotFoundError(
+                f'root_path ({root_path}) does not exist. Please download the dataset and set the root_path to the downloaded path.'
+            )
 
         records = [f for f in os.listdir(
             root_path) if f.endswith('_data_preproc.mat')]

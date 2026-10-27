@@ -41,5 +41,4 @@ Start with a small run that checks finite outputs, gradients, and checkpoint
 restoration. Then run the full experiment on the intended data.
 Record package versions, preprocessing, partition IDs, seeds, and metrics.
 
-Continue with :doc:`../tutorials/index`. The :doc:`../agent_guide` provides
-the same library workflow as a reusable assistant skill.
+Continue with :doc:`../tutorials/index`.

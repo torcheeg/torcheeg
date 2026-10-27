@@ -1,12 +1,10 @@
 Community
 =========
 
-Use these pages to contribute an implementation, improve the documentation,
-or work with the library through an assistant.
+Use these pages to contribute an implementation or improve the documentation.
 
 .. toctree::
    :maxdepth: 1
 
    ../contributing
-   ../agent_guide
    ../about_us

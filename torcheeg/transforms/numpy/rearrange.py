@@ -38,9 +38,10 @@ class RearrangeElectrode(EEGTransform):
         self.source = source
         self.target = target
 
-        assert missing in [
-            'random', 'zero', 'mean'
-        ], f'Invalid missing method {missing}, should be one of [random, zero, mean].'
+        if not (missing in ['random', 'zero', 'mean']):
+            raise ValueError(
+                f'Invalid missing method {missing}, should be one of [random, zero, mean].'
+            )
 
         self.missing = missing
 

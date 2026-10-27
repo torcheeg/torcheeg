@@ -2,11 +2,11 @@ import torch
 import torch.nn as nn
 
 
-def square(x):
+def _square(x):
     return x * x
 
 
-def safe_log(x, eps=1e-6):
+def _safe_log(x, eps=1e-6):
     return torch.log(torch.clamp(x, min=eps))
 
 
@@ -96,7 +96,8 @@ class CSPNet(nn.Module):
         pool_stride_1: float = 25,
     ):
         super().__init__()
-        assert filter_size_t <= chunk_size, "Temporal filter size error"
+        if not (filter_size_t <= chunk_size):
+            raise ValueError('Temporal filter size error')
         if filter_size_s <= 0:
             filter_size_s = num_electrodes
 
@@ -111,9 +112,9 @@ class CSPNet(nn.Module):
                       groups=num_filters_t,
                       bias=False),
             nn.BatchNorm2d(num_filters_t * num_filters_s),
-            Expression(square),
+            Expression(_square),
             nn.AvgPool2d((pool_size_1, 1), stride=(pool_stride_1, 1)),
-            Expression(safe_log),
+            Expression(_safe_log),
             nn.Dropout(dropout),
         )
 

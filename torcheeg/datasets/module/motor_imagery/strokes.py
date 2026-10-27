@@ -64,23 +64,24 @@ class StrokePatientsMIDataset(BaseDataset):
         verbose (bool): Whether to display logs during processing, such as progress bars, etc. (default: :obj:`True`)
     '''
 
-    def __init__(self,
-                 root_path='./StrokePatientsMIDataset',
-                 chunk_size: int = 500,
-                 overlap: int = 0,
-                 online_transform: Union[None, Callable] = None,
-                 offline_transform: Union[None, Callable] = None,
-                 label_transform: Union[None, Callable] = None,
-                 before_trial: Union[None, Callable] = None,
-                 after_trial: Union[Callable, None] = None,
-                 after_session: Union[Callable, None] = None,
-                 after_subject: Union[Callable, None] = None,
-                 io_path: Union[None, str] = None,
-                 io_size: int = 1048576,
-                 io_mode: str = 'lmdb',
-                 num_worker: int = 0,
-                 verbose: bool = True,
-                 ):
+    def __init__(
+        self,
+        root_path='./StrokePatientsMIDataset',
+        chunk_size: int = 500,
+        overlap: int = 0,
+        online_transform: Union[None, Callable] = None,
+        offline_transform: Union[None, Callable] = None,
+        label_transform: Union[None, Callable] = None,
+        before_trial: Union[None, Callable] = None,
+        after_trial: Union[Callable, None] = None,
+        after_session: Union[Callable, None] = None,
+        after_subject: Union[Callable, None] = None,
+        io_path: Union[None, str] = None,
+        io_size: int = 1048576,
+        io_mode: str = 'lmdb',
+        num_worker: int = 0,
+        verbose: bool = True,
+    ):
         if io_path is None:
             io_path = get_random_dir_path(dir_prefix='datasets')
 
@@ -179,7 +180,10 @@ class StrokePatientsMIDataset(BaseDataset):
             # eog_baseline = eog_trial[:, :1000]
             label = 1 if trial_id % 2 else 0
 
-            assert chunk_size > overlap, f"Arg 'chunk_size' must be larger than arg 'overlap'.Current chunksize is {chunk_size},overlap is {overlap}"
+            if not (chunk_size > overlap):
+                raise ValueError(
+                    f"Arg 'chunk_size' must be larger than arg 'overlap'.Current chunksize is {chunk_size},overlap is {overlap}"
+                )
             start = 1000
             step = chunk_size - overlap
             end = start + step
@@ -376,7 +380,10 @@ class StrokePatientsMIProcessedDataset(StrokePatientsMIDataset):
             # eog_baseline = eog_trial[:, :1000]
             label = 1 if trial_id % 2 else 0
 
-            assert chunk_size > overlap, f"Arg 'chunk_size' must be larger than arg 'overlap'.Current chunksize is {chunk_size},overlap is {overlap}"
+            if not (chunk_size > overlap):
+                raise ValueError(
+                    f"Arg 'chunk_size' must be larger than arg 'overlap'.Current chunksize is {chunk_size},overlap is {overlap}"
+                )
             start = 1000
             step = chunk_size - overlap
             end = start + step

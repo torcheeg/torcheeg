@@ -181,7 +181,6 @@ html_theme_options = {
     "show_pytorch_org_link": False,
     "show_lf_header": False,
     "show_lf_footer": False,
-    "llm_custom_file": "../../llms.txt",
     "llm_generate_md": False,
     "llm_generate_full": False,
     "icon_links": [{
@@ -203,5 +202,3 @@ html_context = {
 }
 
 html_favicon = '_static/favicon.ico'
-# Publish the documentation index at the site root.
-html_extra_path = ["../../llms.txt"]

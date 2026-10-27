@@ -122,19 +122,19 @@ class ToGrid(EEGTransform):
                  channel_location_dict: Dict[str, Tuple[int, int]],
                  apply_to_baseline: bool = False):
         super(ToGrid, self).__init__(apply_to_baseline=apply_to_baseline)
-        self.channel_location_dict = channel_location_dict
-
-        loc_x_list = []
-        loc_y_list = []
-        for _, locs in channel_location_dict.items():
-            if locs is None:
-                continue
-            (loc_y, loc_x) = locs
-            loc_x_list.append(loc_x)
-            loc_y_list.append(loc_y)
-
-        self.width = max(loc_x_list) + 1
-        self.height = max(loc_y_list) + 1
+        self.channel_location_dict = {
+            name: tuple(location) for name, location in channel_location_dict.items()
+        }
+        positions = list(self.channel_location_dict.values())
+        for row, column in positions:
+            if any(isinstance(value, (bool, np.bool_))
+                   or not isinstance(value, (int, np.integer)) or value < 0
+                   for value in (row, column)):
+                raise ValueError('ToGrid positions must be nonnegative integer grid indices.')
+        if len(set(positions)) != len(positions):
+            raise ValueError('ToGrid electrodes must have distinct grid positions.')
+        self.height = max(row for row, _ in positions) + 1
+        self.width = max(column for _, column in positions) + 1
 
     def __call__(self,
                  *args,
@@ -152,20 +152,19 @@ class ToGrid(EEGTransform):
         return super().__call__(*args, eeg=eeg, baseline=baseline, **kwargs)
 
     def apply(self, eeg: np.ndarray, **kwargs) -> np.ndarray:
+        if eeg.ndim != 2 or eeg.shape[0] != len(self.channel_location_dict):
+            raise ValueError('ToGrid requires [electrodes, time points] with one row per channel mapping.')
         # num_electrodes x timestep
         outputs = np.zeros([self.height, self.width, eeg.shape[-1]])
         # 9 x 9 x timestep
-        for i, locs in enumerate(self.channel_location_dict.values()):
-            if locs is None:
-                continue
-            (loc_y, loc_x) = locs
-            outputs[loc_y][loc_x] = eeg[i]
+        for i, (row, column) in enumerate(self.channel_location_dict.values()):
+            outputs[row, column] = eeg[i]
 
         outputs = outputs.transpose(2, 0, 1)
         # timestep x 9 x 9
         return outputs
 
-    def reverse(self, eeg: np.ndarray, **kwargs) -> np.ndarray:
+    def reverse(self, eeg: np.ndarray, **kwargs) -> Dict[str, np.ndarray]:
         r'''
         The inverse operation of the converter is used to take out the electrodes on the grid and arrange them in the original order.
         Args:
@@ -174,6 +173,8 @@ class ToGrid(EEGTransform):
         Returns:
             np.ndarray: The revered results with the shape of [number of electrodes, number of data points].
         '''
+        if eeg.ndim != 3 or eeg.shape[1:] != (self.height, self.width):
+            raise ValueError('ToGrid.reverse requires [time points, height, width] matching the grid.')
         # timestep x 9 x 9
         eeg = eeg.transpose(1, 2, 0)
         # 9 x 9 x timestep

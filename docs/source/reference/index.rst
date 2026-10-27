@@ -14,4 +14,5 @@ workflow.
    ../torcheeg.models
    ../torcheeg.trainers
    ../torcheeg.io
+   ../torcheeg.visualizers
    ../torcheeg.utils
