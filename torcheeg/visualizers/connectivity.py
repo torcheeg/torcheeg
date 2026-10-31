@@ -1,4 +1,3 @@
-import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
@@ -54,7 +53,7 @@ def plot_adj_connectivity(adj: torch.Tensor,
     node_colors = None
     if region_list:
         num_region = len(region_list)
-        colormap = matplotlib.cm.get_cmap('rainbow')
+        colormap = plt.get_cmap('rainbow')
         region_colors = list(colormap(np.linspace(0, 1, num_region)))
         # random.shuffle(region_colors)
         # # circle two colors is better
