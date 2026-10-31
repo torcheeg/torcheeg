@@ -1,9 +1,49 @@
 import pickle
 import os
+import threading
+import weakref
 from typing import Union
 
 import torch
 import lmdb
+
+
+# Weak values let the last owner release the native environment.
+_LMDB_ENV_CACHE = weakref.WeakValueDictionary()
+_LMDB_ENV_LOCK = threading.Lock()
+_LMDB_ENV_PID = os.getpid()
+
+
+def _reset_lmdb_after_fork() -> None:
+    global _LMDB_ENV_CACHE, _LMDB_ENV_LOCK, _LMDB_ENV_PID
+    inherited = list(_LMDB_ENV_CACHE.values())
+    _LMDB_ENV_CACHE = weakref.WeakValueDictionary()
+    # An inherited lock may have been held by a thread absent in the child.
+    _LMDB_ENV_LOCK = threading.Lock()
+    _LMDB_ENV_PID = os.getpid()
+    for environment in inherited:
+        environment.close()
+
+
+if hasattr(os, 'register_at_fork'):
+    os.register_at_fork(after_in_child=_reset_lmdb_after_fork)
+
+
+def _get_lmdb_environment(path: str, io_size: int) -> lmdb.Environment:
+    if _LMDB_ENV_PID != os.getpid():
+        _reset_lmdb_after_fork()
+    with _LMDB_ENV_LOCK:
+        environment = _LMDB_ENV_CACHE.get(path)
+        if environment is not None:
+            try:
+                environment.info()
+            except lmdb.Error:
+                environment = None
+        if environment is None:
+            environment = lmdb.open(path=path, map_size=io_size, lock=False,
+                                    max_spare_txns=0)
+            _LMDB_ENV_CACHE[path] = environment
+        return environment
 
 
 class _EEGSignalIO:
@@ -104,13 +144,16 @@ class LMDBEEGSignalIO(_EEGSignalIO):
         self.io_size = io_size
 
         os.makedirs(self.io_path, exist_ok=True)
-        self._env = lmdb.open(path=self.io_path,
-                              map_size=self.io_size,
-                              lock=False)
+        self._env_path = os.path.realpath(self.io_path)
+        self._env_obj = None
+        self._env_pid = None
 
-    def __del__(self):
-        if hasattr(self, '_env'):
-            self._env.close()
+    @property
+    def _env(self) -> lmdb.Environment:
+        if self._env_obj is None or self._env_pid != os.getpid():
+            self._env_obj = _get_lmdb_environment(self._env_path, self.io_size)
+            self._env_pid = os.getpid()
+        return self._env_obj
 
     def __len__(self):
         with self._env.begin(write=False) as transaction:
@@ -141,7 +184,7 @@ class LMDBEEGSignalIO(_EEGSignalIO):
             with self._env.begin(write=True) as transaction:
                 transaction.put(key.encode(), pickle.dumps(eeg))
         except lmdb.MapFullError:
-            self.io_size = self.io_size * 2
+            self.io_size = max(self.io_size, self._env.info()['map_size']) * 2
             self._env.set_mapsize(self.io_size)
             try_again = True
         if try_again:
@@ -190,17 +233,17 @@ class LMDBEEGSignalIO(_EEGSignalIO):
         return [self.read_eeg(key) for key in self.keys()]
 
     def __getstate__(self):
-        # pickle for Pallarel
+        # Each process must acquire its own environment.
         state = self.__dict__.copy()
-        del state['_env']
+        state['_env_obj'] = None
+        state['_env_pid'] = None
         return state
 
     def __setstate__(self, state):
-        # pickle for Pallarel
         self.__dict__.update(state)
-        self._env = lmdb.open(path=self.io_path,
-                              map_size=self.io_size,
-                              lock=False)
+        self._env_path = state.get('_env_path', os.path.realpath(self.io_path))
+        self._env_obj = None
+        self._env_pid = None
 
     def __copy__(self):
         # LMDB does not allow reopening the same environment in one process.
