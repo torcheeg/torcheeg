@@ -8,10 +8,6 @@ import lmdb
 
 class _EEGSignalIO:
 
-    @property
-    def write_pointer(self):
-        return len(self)
-
     def keys(self):
         raise NotImplementedError(
             "Method keys is not implemented in class "
@@ -32,7 +28,7 @@ class _EEGSignalIO:
 
     def write_eeg(self,
                   eeg: Union[any, torch.Tensor],
-                  key: Union[str, None] = None) -> str:
+                  key: str) -> str:
         raise NotImplementedError(
             "Method write_eeg is not implemented in class "
             + self.__class__.__name__
@@ -46,13 +42,6 @@ class MemoryEEGSignalIO(_EEGSignalIO):
 
     def __len__(self):
         return len(self._memory)
-
-    @property
-    def write_pointer(self):
-        pointer = len(self._memory)
-        while str(pointer) in self._memory:
-            pointer += 1
-        return pointer
 
     def keys(self):
         r'''
@@ -83,20 +72,16 @@ class MemoryEEGSignalIO(_EEGSignalIO):
 
     def write_eeg(self,
                   eeg: Union[any, torch.Tensor],
-                  key: Union[str, None] = None) -> str:
+                  key: str) -> str:
         r'''
         Write EEG signal to memory.
 
         Args:
             eeg (any): EEG signal samples to be written into the database.
-            key (str, optional): Sample key. If omitted, an unused integer-string
-                key is generated. An existing explicit key replaces its sample.
-
-        Returns:
-            str: The key of the written EEG signal.
+            key (str): Sample key. An existing key replaces its sample.
         '''
-        if key is None:
-            key = str(self.write_pointer)
+        if not isinstance(key, str):
+            raise TypeError('key must be a string.')
 
         if eeg is None:
             raise ValueError(f'Save None to the memory with the key {key}!')
@@ -131,49 +116,36 @@ class LMDBEEGSignalIO(_EEGSignalIO):
         with self._env.begin(write=False) as transaction:
             return transaction.stat()['entries']
 
-    @staticmethod
-    def _next_write_pointer(transaction):
-        pointer = transaction.stat()['entries']
-        while transaction.get(str(pointer).encode()) is not None:
-            pointer += 1
-        return pointer
-
-    @property
-    def write_pointer(self):
-        with self._env.begin(write=False) as transaction:
-            return self._next_write_pointer(transaction)
-
     def write_eeg(self,
                   eeg: Union[any, torch.Tensor],
-                  key: Union[str, None] = None) -> str:
+                  key: str) -> str:
         r'''
         Write EEG signal to database.
 
         Args:
             eeg (any): EEG signal samples to be written into the database.
-            key (str, optional): Sample key. If omitted, an unused integer-string
-                key is generated. An existing explicit key replaces its sample.
+            key (str): Sample key. An existing key replaces its sample.
 
         Returns:
             str: The key of the written EEG signal.
         '''
 
-        auto_key = key is None
+        if not isinstance(key, str):
+            raise TypeError('key must be a string.')
+
         if eeg is None:
             raise ValueError(f'Save None to the LMDB with the key {key}!')
 
         try_again = False
         try:
             with self._env.begin(write=True) as transaction:
-                if auto_key:
-                    key = str(self._next_write_pointer(transaction))
                 transaction.put(key.encode(), pickle.dumps(eeg))
         except lmdb.MapFullError:
             self.io_size = self.io_size * 2
             self._env.set_mapsize(self.io_size)
             try_again = True
         if try_again:
-            return self.write_eeg(key=None if auto_key else key, eeg=eeg)
+            return self.write_eeg(key=key, eeg=eeg)
         return key
 
     def read_eeg(self, key: str) -> any:
@@ -245,30 +217,22 @@ class PickleEEGSignalIO(_EEGSignalIO):
     def __len__(self):
         return len(os.listdir(self.io_path))
 
-    @property
-    def write_pointer(self):
-        pointer = len(self)
-        while os.path.lexists(os.path.join(self.io_path, str(pointer))):
-            pointer += 1
-        return pointer
-
     def write_eeg(self,
                   eeg: Union[any, torch.Tensor],
-                  key: Union[str, None] = None) -> str:
+                  key: str) -> str:
         r'''
             Write EEG signal to folder.
     
             Args:
                 eeg (any): EEG signal samples to be written into the folder.
-                key (str, optional): Sample key. If omitted, an unused integer-string
-                    key is generated. An existing explicit key replaces its sample.
+                key (str): Sample key. An existing key replaces its sample.
     
             Returns:
                 str: The key of the written EEG signal.
             '''
 
-        if key is None:
-            key = str(self.write_pointer)
+        if not isinstance(key, str):
+            raise TypeError('key must be a string.')
 
         if eeg is None:
             raise ValueError(f'Save None to the LMDB with the key {key}!')
@@ -328,14 +292,14 @@ class EEGSignalIO:
     .. code-block:: python
 
         eeg_io = EEGSignalIO('YOUR_PATH')
-        key = eeg_io.write_eeg(np.random.randn(32, 128))
+        key = eeg_io.write_eeg(np.random.randn(32, 128), key='sample_0')
         eeg = eeg_io.read_eeg(key)
         eeg.shape
         >>> (32, 128)
     
     Args:
         io_path (str): Where the database is stored.
-        io_size (int, optional): Initial LMDB capacity in bytes. It increases when more space is needed. (default: :obj:`1048576`)
+        io_size (int, optional): The maximum capacity of the database. It will increase according to the size of the dataset. (default: :obj:`1024`)
         io_mode (str): Storage mode of EEG signal. When io_mode is set to :obj:`lmdb`, TorchEEG provides an efficient database (LMDB) for storing EEG signals. LMDB may not perform well on limited operating systems. Here, a file system based and a memory based EEG signal storages are also provided. When io_mode is set to :obj:`pickle`, pickle-based persistence files are used. When io_mode is set to :obj:`memory`, memory are used. (default: :obj:`lmdb`)
     '''
 
@@ -378,14 +342,13 @@ class EEGSignalIO:
 
     def write_eeg(self,
                   eeg: Union[any, torch.Tensor],
-                  key: Union[str, None] = None) -> str:
+                  key: str) -> str:
         r'''
         Write EEG signal to database.
 
         Args:
             eeg (any): EEG signal samples to be written into the database.
-            key (str, optional): Sample key. If omitted, an unused integer-string
-                key is generated. An existing explicit key replaces its sample.
+            key (str): Sample key. An existing key replaces its sample.
 
         Returns:
             str: The key of the written EEG signal.

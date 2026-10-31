@@ -40,10 +40,10 @@ class TestInputValidation(unittest.TestCase):
                 io = EEGSignalIO(path, io_mode=mode)
                 try:
                     with self.assertRaises(ValueError):
-                        io.write_eeg(None)
+                        io.write_eeg(None, key='invalid')
                     with self.assertRaises(KeyError):
                         io.read_eeg('missing')
-                    key = io.write_eeg(np.zeros((2, 3)))
+                    key = io.write_eeg(np.zeros((2, 3)), key='sample')
                     np.testing.assert_array_equal(io.read_eeg(key), np.zeros((2, 3)))
                 finally:
                     del io
