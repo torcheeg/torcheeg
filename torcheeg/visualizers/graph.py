@@ -6,7 +6,6 @@ import matplotlib.pyplot as plt
 import networkx as nx
 import numpy as np
 from matplotlib import colors
-from pylab import cm
 
 from ..utils import LazyLoader as _LazyLoader
 from .utils import _plot_to_image
@@ -64,7 +63,7 @@ def plot_graph(data: 'pyg.data.Data',
     edge_weights = [
         edgedata["edge_weight"] for _, _, edgedata in g.edges(data=True)
     ]
-    colormap = cm.get_cmap(color)
+    colormap = plt.get_cmap(color)
     edge_colors = colormap(edge_weights)
 
     # get posistion of nodes
