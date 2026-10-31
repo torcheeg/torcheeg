@@ -1,6 +1,6 @@
 """
 Train LGGNet on separate DEAP subjects
-=====================================
+========================================================
 
 Use authorized, trusted DEAP ``data_preprocessed_python`` pickle files from
 https://www.eecs.qmul.ac.uk/mmv/datasets/deap/ . Deserialization can execute
