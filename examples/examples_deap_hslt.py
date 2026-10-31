@@ -1,6 +1,6 @@
 """
 Train HSLT on grouped DEAP differential-entropy features
-=======================================================
+========================================================
 
 Obtain authorized DEAP ``data_preprocessed_python`` .dat files from
 https://www.eecs.qmul.ac.uk/mmv/datasets/deap/ and retain provider attribution.
