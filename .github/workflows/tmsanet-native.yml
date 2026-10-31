@@ -42,4 +42,4 @@ jobs:
           python -m pip install -e '.[model,dataset]' -e ./external-reference -c native-constraints.txt
       - name: Compare every native parameter, gradient and update and run example
         run: |
-          python -m unittest test.models.test_tmsanet test.models.test_tmsanet_native test.examples.test_bciciv2a_tmsanet
+          python -m unittest test.models.test_tmsanet test.models.test_tmsanet_native test.examples.test_bciciv2a_tmsanet test.models.test_tfm_tokenizer.TestTFMTokenizer.test_distributed_ema_matches_global_batch
