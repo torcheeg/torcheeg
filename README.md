@@ -232,100 +232,140 @@ If you would like to contribute new datasets, deep learning methods, and extensi
 ## Thanks for the contributors
 <!-- readme: collaborators,contributors -start -->
 <table>
-<tr>
-    <td align="center">
-        <a href="https://github.com/tczhangzhi">
-            <img src="https://avatars.githubusercontent.com/u/14837418?v=4" width="100;" alt="tczhangzhi"/>
-            <br />
-            <sub><b>ZHANG Zhi</b></sub>
-        </a>
-    </td>
-    <td align="center">
-        <a href="https://github.com/arrogant-R">
-            <img src="https://avatars.githubusercontent.com/u/83148307?v=4" width="100;" alt="arrogant-R"/>
-            <br />
-            <sub><b>Arrogant-R</b></sub>
-        </a>
-    </td>
-    <td align="center">
-        <a href="https://github.com/talhaanwarch">
-            <img src="https://avatars.githubusercontent.com/u/37379131?v=4" width="100;" alt="talhaanwarch"/>
-            <br />
-            <sub><b>Talha Anwar</b></sub>
-        </a>
-    </td>
-    <td align="center">
-        <a href="https://github.com/wufei-png">
-            <img src="https://avatars.githubusercontent.com/u/63766429?v=4" width="100;" alt="wufei-png"/>
-            <br />
-            <sub><b>Wu Fei</b></sub>
-        </a>
-    </td>
-    <td align="center">
-        <a href="https://github.com/nmq443">
-            <img src="https://avatars.githubusercontent.com/u/83683836?v=4" width="100;" alt="nmq443"/>
-            <br />
-            <sub><b>Nguyen Minh Quang</b></sub>
-        </a>
-    </td>
-    <td align="center">
-        <a href="https://github.com/MicheleBarsotti">
-            <img src="https://avatars.githubusercontent.com/u/48720814?v=4" width="100;" alt="MicheleBarsotti"/>
-            <br />
-            <sub><b>Meekele_b</b></sub>
-        </a>
-    </td></tr>
-<tr>
-    <td align="center">
-        <a href="https://github.com/Alexanderstaehle">
-            <img src="https://avatars.githubusercontent.com/u/48824183?v=4" width="100;" alt="Alexanderstaehle"/>
-            <br />
-            <sub><b>Alexanderstaehle</b></sub>
-        </a>
-    </td>
-    <td align="center">
-        <a href="https://github.com/dawin2015">
-            <img src="https://avatars.githubusercontent.com/u/12325204?v=4" width="100;" alt="dawin2015"/>
-            <br />
-            <sub><b>Liu-darong</b></sub>
-        </a>
-    </td>
-    <td align="center">
-        <a href="https://github.com/HaveAnIdeaCy">
-            <img src="https://avatars.githubusercontent.com/u/49177516?v=4" width="100;" alt="HaveAnIdeaCy"/>
-            <br />
-            <sub><b>HaveAnIdeaCy</b></sub>
-        </a>
-    </td>
-    <td align="center">
-        <a href="https://github.com/Nhix00">
-            <img src="https://avatars.githubusercontent.com/u/75837033?v=4" width="100;" alt="Nhix00"/>
-            <br />
-            <sub><b>Nhix</b></sub>
-        </a>
-    </td>
-    <td align="center">
-        <a href="https://github.com/sanjay7178">
-            <img src="https://avatars.githubusercontent.com/u/97831658?v=4" width="100;" alt="sanjay7178"/>
-            <br />
-            <sub><b>Sai Sanjay </b></sub>
-        </a>
-    </td>
-    <td align="center">
-        <a href="https://github.com/gitter-badger">
-            <img src="https://avatars.githubusercontent.com/u/8518239?v=4" width="100;" alt="gitter-badger"/>
-            <br />
-            <sub><b>The Gitter Badger</b></sub>
-        </a>
-    </td></tr>
-<tr>
-    <td align="center">
-        <a href="https://github.com/jewelrana77">
-            <img src="https://avatars.githubusercontent.com/u/61107733?v=4" width="100;" alt="jewelrana77"/>
-            <br />
-            <sub><b>MD JEWEL RANA</b></sub>
-        </a>
-    </td></tr>
+	<tbody>
+		<tr>
+            <td align="center">
+                <a href="https://github.com/tczhangzhi">
+                    <img src="https://avatars.githubusercontent.com/u/14837418?v=4" width="100;" alt="tczhangzhi"/>
+                    <br />
+                    <sub><b>ZHANG Zhi</b></sub>
+                </a>
+            </td>
+            <td align="center">
+                <a href="https://github.com/arrogant-R">
+                    <img src="https://avatars.githubusercontent.com/u/83148307?v=4" width="100;" alt="arrogant-R"/>
+                    <br />
+                    <sub><b>Arrogant-R</b></sub>
+                </a>
+            </td>
+            <td align="center">
+                <a href="https://github.com/talhaanwarch">
+                    <img src="https://avatars.githubusercontent.com/u/37379131?v=4" width="100;" alt="talhaanwarch"/>
+                    <br />
+                    <sub><b>Talha Anwar</b></sub>
+                </a>
+            </td>
+            <td align="center">
+                <a href="https://github.com/hehe226">
+                    <img src="https://avatars.githubusercontent.com/u/80147109?v=4" width="100;" alt="hehe226"/>
+                    <br />
+                    <sub><b>wufei</b></sub>
+                </a>
+            </td>
+            <td align="center">
+                <a href="https://github.com/jewelrana77">
+                    <img src="https://avatars.githubusercontent.com/u/61107733?v=4" width="100;" alt="jewelrana77"/>
+                    <br />
+                    <sub><b>MD JEWEL RANA</b></sub>
+                </a>
+            </td>
+            <td align="center">
+                <a href="https://github.com/nmq443">
+                    <img src="https://avatars.githubusercontent.com/u/83683836?v=4" width="100;" alt="nmq443"/>
+                    <br />
+                    <sub><b>Nguyen Minh Quang</b></sub>
+                </a>
+            </td>
+		</tr>
+		<tr>
+            <td align="center">
+                <a href="https://github.com/MicheleBarsotti">
+                    <img src="https://avatars.githubusercontent.com/u/48720814?v=4" width="100;" alt="MicheleBarsotti"/>
+                    <br />
+                    <sub><b>Meekele_b</b></sub>
+                </a>
+            </td>
+            <td align="center">
+                <a href="https://github.com/wufei-png">
+                    <img src="https://avatars.githubusercontent.com/u/63766429?v=4" width="100;" alt="wufei-png"/>
+                    <br />
+                    <sub><b>Wu Fei</b></sub>
+                </a>
+            </td>
+            <td align="center">
+                <a href="https://github.com/rexjz">
+                    <img src="https://avatars.githubusercontent.com/u/54502639?v=4" width="100;" alt="rexjz"/>
+                    <br />
+                    <sub><b>rexjz</b></sub>
+                </a>
+            </td>
+            <td align="center">
+                <a href="https://github.com/gitter-badger">
+                    <img src="https://avatars.githubusercontent.com/u/8518239?v=4" width="100;" alt="gitter-badger"/>
+                    <br />
+                    <sub><b>The Gitter Badger</b></sub>
+                </a>
+            </td>
+            <td align="center">
+                <a href="https://github.com/Han-Shen-math">
+                    <img src="https://avatars.githubusercontent.com/u/132526278?v=4" width="100;" alt="Han-Shen-math"/>
+                    <br />
+                    <sub><b>ShenHan</b></sub>
+                </a>
+            </td>
+            <td align="center">
+                <a href="https://github.com/sanjay7178">
+                    <img src="https://avatars.githubusercontent.com/u/97831658?v=4" width="100;" alt="sanjay7178"/>
+                    <br />
+                    <sub><b>Sai Sanjay </b></sub>
+                </a>
+            </td>
+		</tr>
+		<tr>
+            <td align="center">
+                <a href="https://github.com/Nhix00">
+                    <img src="https://avatars.githubusercontent.com/u/75837033?v=4" width="100;" alt="Nhix00"/>
+                    <br />
+                    <sub><b>Nhix</b></sub>
+                </a>
+            </td>
+            <td align="center">
+                <a href="https://github.com/kasrakn">
+                    <img src="https://avatars.githubusercontent.com/u/28311282?v=4" width="100;" alt="kasrakn"/>
+                    <br />
+                    <sub><b>Kasra Korminejad</b></sub>
+                </a>
+            </td>
+            <td align="center">
+                <a href="https://github.com/HaveAnIdeaCy">
+                    <img src="https://avatars.githubusercontent.com/u/49177516?v=4" width="100;" alt="HaveAnIdeaCy"/>
+                    <br />
+                    <sub><b>HaveAnIdeaCy</b></sub>
+                </a>
+            </td>
+            <td align="center">
+                <a href="https://github.com/dawin2015">
+                    <img src="https://avatars.githubusercontent.com/u/12325204?v=4" width="100;" alt="dawin2015"/>
+                    <br />
+                    <sub><b>Liu-darong</b></sub>
+                </a>
+            </td>
+            <td align="center">
+                <a href="https://github.com/Alexanderstaehle">
+                    <img src="https://avatars.githubusercontent.com/u/48824183?v=4" width="100;" alt="Alexanderstaehle"/>
+                    <br />
+                    <sub><b>Alexanderstaehle</b></sub>
+                </a>
+            </td>
+            <td align="center">
+                <a href="https://github.com/adityasingh2400">
+                    <img src="https://avatars.githubusercontent.com/u/60082699?v=4" width="100;" alt="adityasingh2400"/>
+                    <br />
+                    <sub><b>Aditya Singh</b></sub>
+                </a>
+            </td>
+		</tr>
+	<tbody>
 </table>
 <!-- readme: collaborators,contributors -end -->
 
