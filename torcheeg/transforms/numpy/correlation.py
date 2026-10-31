@@ -145,6 +145,35 @@ class PhaseLockingValue(CorrelationTransform):
         '''
         return super().__call__(*args, eeg=eeg, baseline=baseline, **kwargs)
 
+    def apply(self, eeg: np.ndarray, **kwargs) -> np.ndarray:
+        def plv_matrix(channels: np.ndarray) -> np.ndarray:
+            num_item = channels.shape[0]
+            if num_item == 0:
+                return np.zeros((num_item, num_item))
+            # compute each channel's analytic signal once instead of per pair
+            analytic = hilbert(channels, axis=-1)
+            amplitude = np.abs(analytic)
+            if not np.isfinite(analytic).all() or np.any(amplitude == 0):
+                raise ValueError(
+                    'PhaseLockingValue requires finite analytic signals with '
+                    'nonzero amplitude at every sample.')
+            if analytic.dtype == np.complex128:
+                # e^{i*phi} equals the analytic signal divided by its amplitude
+                unit = analytic / amplitude
+            else:
+                unit = np.exp(1j * np.angle(analytic).astype(np.float64))
+            # mean of e^{i(phi_x - phi_y)} for all pairs as one matrix product
+            value = np.abs(unit @ unit.conj().T) / analytic.shape[-1]
+            return np.clip(value, 0.0, 1.0)
+
+        if len(eeg.shape) == 3:
+            return np.stack([plv_matrix(band_eeg) for band_eeg in eeg], axis=0)
+        if not (len(eeg.shape) == 2):
+            raise ValueError(
+                'The input of CorrelationTransform must have 2 or 3 dimensions, which represent band number [optional], electrode number and time point number.'
+            )
+        return plv_matrix(eeg)[np.newaxis, ...]
+
     def opt(self, x: np.ndarray, y: np.ndarray) -> float:
         x_hill = hilbert(x)
         y_hill = hilbert(y)
