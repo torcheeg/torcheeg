@@ -1,0 +1,12 @@
+ADFCNN external backend notice
+
+The TorchEEG interface does not distribute author code or weights.
+Repository: https://github.com/UM-Tao/ADFCNN-MI
+Pinned revision: b4796ca3a93075e8da9dac5860ea6346f79d5a09
+Original directory: ADFCNN/model
+ADFCNN.py SHA256: 85b9d40dd7d994539456ff94d87f75ba7f08f789503d4006ec128ca76e611c31
+layers.py SHA256: 7db116eaa6046ba56d73f6aeafbda07b220c71b8afd5ba105469b97310b211a4
+
+No source license is stated in the inspected repository. Obtain and use the
+complete original files separately under applicable terms. This interface
+does not grant redistribution rights to the author implementation.
