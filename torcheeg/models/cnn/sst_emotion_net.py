@@ -94,8 +94,10 @@ class SSTEmotionNet(nn.Module):
         self.task_dropout = task_dropout
         self.num_classes = num_classes
 
-        assert grid_size[0] >= 16 and grid_size[
-            1] >= 16, 'The height and width of the grid must be greater than or equal to 16. Please upsample the EEG grid.'
+        if not (grid_size[0] >= 16 and grid_size[1] >= 16):
+            raise ValueError(
+                'The height and width of the grid must be greater than or equal to 16. Please upsample the EEG grid.'
+            )
 
         self.spatial_spectral = DenseNet3D(grid_size=grid_size,
                                            in_channels=spectral_in_channels,
@@ -143,9 +145,10 @@ class SSTEmotionNet(nn.Module):
         Returns:
             torch.Tensor[number of sample, number of classes]: the predicted probability that the samples belong to the classes.
         '''
-        assert x.shape[1] == (
-            self.spectral_in_channels + self.temporal_in_channels
-        ), f'The input number of channels is {x.shape[1]}, but the expected number of channels is the number of spectral channels {self.spectral_in_channels} plus the number of temporal channels {self.temporal_in_channels}.'
+        if not (x.shape[1] == self.spectral_in_channels + self.temporal_in_channels):
+            raise ValueError(
+                f'The input number of channels is {x.shape[1]}, but the expected number of channels is the number of spectral channels {self.spectral_in_channels} plus the number of temporal channels {self.temporal_in_channels}.'
+            )
 
         spectral_input = x[:, :self.spectral_in_channels]
         temporal_input = x[:, self.spectral_in_channels:]
@@ -180,9 +183,11 @@ class DenseNet3D(nn.Module):
         self.in_channels = in_channels
 
         if reduction != 0.0:
-            assert reduction <= 1.0 and reduction > 0.0, 'reduction value must lie between 0.0 and 1.0.'
+            if not (reduction <= 1.0 and reduction > 0.0):
+                raise ValueError('reduction value must lie between 0.0 and 1.0.')
 
-        assert (depth - 4) % 3 == 0, 'Depth must be 3 N + 4.'
+        if not ((depth - 4) % 3 == 0):
+            raise ValueError('Depth must be 3 N + 4.')
         count = int((depth - 4) / 3)
 
         if bottleneck:

@@ -1,42 +1,58 @@
 torcheeg.utils
-===================
+==============
 
-.. contents:: Extensive utility functions for visualizing data of different structures for debugging and display.
-    :depth: 2
-    :local:
-    :backlinks: top
+Shared utilities live in the single ``torcheeg/utils.py`` module. Utilities that
+belong to a specific domain remain in that domain's existing ``utils.py``.
+For plotting APIs, see :doc:`torcheeg.visualizers`.
 
-plot_raw_topomap
------------------------------------------------
+Files and experiments
+---------------------
 
-.. autofunction:: torcheeg.utils.plot_raw_topomap
+.. autofunction:: torcheeg.utils.seed_everything
 
-plot_feature_topomap
----------------------------------------------
+.. autofunction:: torcheeg.utils.download_url
 
-.. autofunction:: torcheeg.utils.plot_feature_topomap
+.. autofunction:: torcheeg.utils.get_package_dir_path
 
-plot_signal
------------------------------------------------------------
+.. autofunction:: torcheeg.utils.get_random_dir_path
 
-.. autofunction:: torcheeg.utils.plot_signal
+.. autofunction:: torcheeg.utils.get_temp_dir_path
 
-plot_3d_tensor
------------------------------------------------------------
+Shared cache operations
+-----------------------
 
-.. autofunction:: torcheeg.utils.plot_3d_tensor
+Dataset and split-specific fingerprinting stays in ``datasets.utils`` and
+``model_selection.utils``. These functions provide their shared cache machinery.
 
-plot_2d_tensor
------------------------------------------------------------
+.. autofunction:: torcheeg.utils.compute_fingerprint
 
-.. autofunction:: torcheeg.utils.plot_2d_tensor
+.. autofunction:: torcheeg.utils.compute_checksum
 
-plot_adj_connectivity 
------------------------------------------------------------
+.. autofunction:: torcheeg.utils.validate_cache
 
-.. autofunction:: torcheeg.utils.plot_adj_connectivity 
+.. autofunction:: torcheeg.utils.ensure_cache
 
-plot_graph
------------------------------------------------------------
+Optional dependencies
+---------------------
 
-.. autofunction:: torcheeg.utils.plot_graph
+.. autoclass:: torcheeg.utils.LazyLoader
+
+``LazyLoader`` loads its module on first attribute access. Resolving a class as
+a base also accesses an attribute, so a top-level class definition triggers the
+import at that point. Importing shared utilities does not load visualizers.
+Pass an optional ``install_hint`` to provide dependency-specific installation
+instructions; the loader itself does not assume a particular package.
+
+Migration
+---------
+
+Replace direct
+imports from the former ``torcheeg.utils.file``, ``torcheeg.utils.experiment``,
+``torcheeg.utils.cache`` and ``torcheeg.utils.lazy_loader`` submodules with imports
+from ``torcheeg.utils``. For example::
+
+    from torcheeg.utils import LazyLoader, download_url, ensure_cache
+
+Plotting functions now live in ``torcheeg.visualizers``. Replace plotting imports
+from ``torcheeg.utils`` or ``torcheeg.utils.visualize`` with imports from
+``torcheeg.visualizers``. No domain-specific ``utils.py`` file is renamed or moved.

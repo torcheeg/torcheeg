@@ -6,20 +6,7 @@ from ..base_transform import EEGTransform
 import scipy
 
 
-class LazyLoader:
-    def __init__(self, lib_name):
-        self._lib_name = lib_name
-        self._module = None
-
-    def __getattr__(self, name):
-        if self._module is None:
-            try:
-                self._module = __import__(self._lib_name)
-            except ImportError:
-                raise ImportError(
-                    f"To use this functionality, you need to install `{self._lib_name}`. "
-                )
-        return getattr(self._module, name)
+from ...utils import LazyLoader
 
 
 class Downsample(EEGTransform):
@@ -157,9 +144,9 @@ class SetSamplingRate(EEGTransform):
               eeg: np.ndarray,
               **kwargs
               ) -> np.ndarray:
-        samplerate = LazyLoader("samplerate")
-        resampy = LazyLoader("resampy")
-        soxr = LazyLoader('soxr')
+        samplerate = LazyLoader('samplerate', install_hint='Install with `pip install samplerate`.')
+        resampy = LazyLoader('resampy', install_hint='Install with `pip install resampy`.')
+        soxr = LazyLoader('soxr', install_hint='Install with `pip install soxr`.')
 
         eeg = eeg.astype(np.float32)
 

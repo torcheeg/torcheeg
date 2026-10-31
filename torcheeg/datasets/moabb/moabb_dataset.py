@@ -8,10 +8,14 @@ import pandas as pd
 
 from ..module.base_dataset import BaseDataset
 
-from moabb.datasets.base import BaseDataset as _MOABBDataset
-from moabb.paradigms.base import BaseParadigm as _MOABBParadigm
+from ...utils import LazyLoader
 
-log = logging.getLogger('torcheeg')
+_MOABBDataset = LazyLoader(
+    'moabb.datasets.base', install_hint='Install with `pip install moabb`.').BaseDataset
+_MOABBParadigm = LazyLoader(
+    'moabb.paradigms.base', install_hint='Install with `pip install moabb`.').BaseParadigm
+
+_log = logging.getLogger('torcheeg')
 
 class MOABBDataset(BaseDataset):
     '''
@@ -68,13 +72,18 @@ class MOABBDataset(BaseDataset):
                  after_trial: Union[Callable, None] = None,
                  after_session: Union[Callable, None] = None,
                  after_subject: Union[Callable, None] = None,
-                 io_path: str = '.torcheeg/io/moabb',
+                 io_path: Union[None, str] = None,
                  io_size: int = 1048576,
                  io_mode: str = 'lmdb',
                  download_path: str = None,
                  num_worker: int = 0,
                  verbose: bool = True,
-                                  **kwargs):
+                 **kwargs):
+        if download_path is None:
+            from ...utils import get_random_dir_path
+            if io_path is None:
+                io_path = get_random_dir_path(dir_prefix='datasets')
+            download_path = os.fspath(io_path) + '_raw'
         # pass all arguments to super class
         params = {
             'dataset': dataset,
@@ -99,8 +108,8 @@ class MOABBDataset(BaseDataset):
 
         if not paradigm.is_valid(dataset):
             message = f"Dataset {dataset.code} is not valid for paradigm"
-            raise AssertionError(message)
-        
+            raise ValueError(message)
+
         super().__init__(**params)
         # save all arguments to __dict__
         self.__dict__.update(params)

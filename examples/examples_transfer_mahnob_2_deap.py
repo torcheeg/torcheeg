@@ -1,6 +1,6 @@
 """
 Transfer Learning from MAHNOB-HCI to DEAP
-==========================
+=========================================
 
 In this tutorial, we demonstrate how to use TorchEEG to implement transfer learning with a Continuous Convolutional Neural Network (CCNN) model. We'll train our model on the MAHNOB-HCI dataset and then apply it to the DEAP dataset.
 

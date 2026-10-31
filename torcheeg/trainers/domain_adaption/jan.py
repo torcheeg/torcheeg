@@ -6,7 +6,7 @@ import torch.nn as nn
 from .mmd_like import _MMDLikeTrainer
 
 
-def gaussian_kernel(x_source,
+def _gaussian_kernel(x_source,
                     x_target,
                     mul_kernel=2.0,
                     num_kernel=5,
@@ -36,7 +36,7 @@ def gaussian_kernel(x_source,
     return sum(kernel_val)
 
 
-def maximum_mean_discrepancy(kernel_values, batch_size):
+def _maximum_mean_discrepancy(kernel_values, batch_size):
     loss = 0
     for i in range(batch_size):
         s1, s2 = i, (i + 1) % batch_size
@@ -202,7 +202,7 @@ class JANTrainer(_MMDLikeTrainer):
                                                        self.mul_kernel,
                                                        self.num_kernel,
                                                        [None, 1.68]):
-            kernels = gaussian_kernel(source,
+            kernels = _gaussian_kernel(source,
                                       target,
                                       mul_kernel=k_mul,
                                       num_kernel=k_num,
@@ -212,4 +212,4 @@ class JANTrainer(_MMDLikeTrainer):
             else:
                 joint_kernels = kernels
 
-        return maximum_mean_discrepancy(joint_kernels, batch_size)
+        return _maximum_mean_discrepancy(joint_kernels, batch_size)

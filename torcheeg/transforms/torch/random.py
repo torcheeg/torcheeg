@@ -21,7 +21,10 @@ class RandomEEGTransform(EEGTransform):
         return self.random_apply(eeg, **kwargs)
 
     def random_apply(self, eeg: torch.Tensor, **kwargs) -> torch.Tensor:
-        raise NotImplementedError
+        raise NotImplementedError(
+            "Method random_apply is not implemented in class "
+            + self.__class__.__name__
+        )
 
     @property
     def repr_body(self) -> Dict:
@@ -293,16 +296,18 @@ class RandomWindowSlice(RandomEEGTransform):
     def random_apply(self, eeg: torch.Tensor, **kwargs) -> torch.Tensor:
         eeg = eeg.numpy()
 
-        assert len(eeg.shape) == 2 or len(
-            eeg.shape
-        ) == 3, 'Window slicing is only supported on 2D arrays or 3D arrays. In 2D arrays, the last dimension represents time series. In 3D arrays, the second dimension represents time series.'
+        if not (len(eeg.shape) == 2 or len(eeg.shape) == 3):
+            raise ValueError(
+                'Window slicing is only supported on 2D arrays or 3D arrays. In 2D arrays, the last dimension represents time series. In 3D arrays, the second dimension represents time series.'
+            )
 
         if self.window_size >= eeg.shape[self.series_dim]:
             return eeg
 
-        assert -len(eeg.shape) <= self.series_dim < len(
-            eeg.shape
-        ), f'series_dim should be in range of [{- len(eeg.shape)}, {len(eeg.shape)}).'
+        if not (-len(eeg.shape) <= self.series_dim < len(eeg.shape)):
+            raise ValueError(
+                f'series_dim should be in range of [{-len(eeg.shape)}, {len(eeg.shape)}).'
+            )
 
         if self.series_dim < 0:
             self.series_dim = len(eeg.shape) + self.series_dim
@@ -411,9 +416,10 @@ class RandomWindowWarp(RandomEEGTransform):
     def random_apply(self, eeg: torch.Tensor, **kwargs) -> torch.Tensor:
         eeg = eeg.numpy()
 
-        assert len(eeg.shape) == 2 or len(
-            eeg.shape
-        ) == 3, 'Window warping is only supported on 2D arrays or 3D arrays. In 2D arrays, the last dimension represents time series. In 3D arrays, the second dimension represents time series.'
+        if not (len(eeg.shape) == 2 or len(eeg.shape) == 3):
+            raise ValueError(
+                'Window warping is only supported on 2D arrays or 3D arrays. In 2D arrays, the last dimension represents time series. In 3D arrays, the second dimension represents time series.'
+            )
 
         if self.window_size >= eeg.shape[self.series_dim]:
             return eeg
@@ -541,9 +547,10 @@ class RandomPCANoise(RandomEEGTransform):
     def random_apply(self, eeg: torch.Tensor, **kwargs) -> torch.Tensor:
         eeg = eeg.numpy()
 
-        assert len(eeg.shape) == 2 or len(
-            eeg.shape
-        ) == 3, 'Window warping is only supported on 2D arrays or 3D arrays. In 2D arrays, the last dimension represents time series. In 3D arrays, the second dimension represents time series.'
+        if not (len(eeg.shape) == 2 or len(eeg.shape) == 3):
+            raise ValueError(
+                'Window warping is only supported on 2D arrays or 3D arrays. In 2D arrays, the last dimension represents time series. In 3D arrays, the second dimension represents time series.'
+            )
 
         if self.series_dim != (len(eeg.shape) - 1):
             transpose_dims = list(range(len(eeg.shape)))
