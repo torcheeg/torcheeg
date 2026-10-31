@@ -63,20 +63,25 @@ class SanDiegoSSVEPDataset(BaseDataset):
         verbose (bool): Whether to display logs during processing, such as progress bars, etc. (default: :obj:`True`)
     '''
 
-    channels = ['PO7', 'PO3',
-                'POZ', 'PO4', 'PO8', 'O1', 'OZ', 'O2']
+    channels = [
+        'PO7', 'PO3', 'POZ', 'PO4', 'PO8', 'O1',  'OZ',  'O2',
+    ]
 
     grid = [
-        ['PO7', 'PO3', 'POZ', 'PO4', 'PO8'], ['-', 'O1', 'OZ', 'O2', '-']]
+        ['PO7', 'PO3', 'POZ', 'PO4', 'PO8'],
+        ['-',   'O1',  'OZ',  'O2',  '-'],
+    ]
 
-    adjacency = {'O1': ['PO7', 'PO3', 'POZ', 'OZ'],
-                 'O2': ['POZ', 'PO4', 'PO8', 'OZ'],
-                 'OZ': ['PO3', 'POZ', 'PO4', 'O1', 'O2'],
-                 'PO3': ['PO7', 'POZ', 'O1', 'OZ'],
-                 'PO4': ['POZ', 'PO8', 'OZ', 'O2'],
-                 'PO7': ['PO3', 'O1'],
-                 'PO8': ['PO4', 'O2'],
-                 'POZ': ['PO3', 'PO4', 'O1', 'OZ', 'O2']}
+    adjacency = {
+        'O1':  ['PO7', 'PO3', 'POZ', 'OZ'],
+        'O2':  ['POZ', 'PO4', 'PO8', 'OZ'],
+        'OZ':  ['PO3', 'POZ', 'PO4', 'O1', 'O2'],
+        'PO3': ['PO7', 'POZ', 'O1', 'OZ'],
+        'PO4': ['POZ', 'PO8', 'OZ', 'O2'],
+        'PO7': ['PO3', 'O1'],
+        'PO8': ['PO4', 'O2'],
+        'POZ': ['PO3', 'PO4', 'O1', 'OZ', 'O2'],
+    }
 
     frequencies = [9.25, 11.25, 13.25, 9.75,
                    11.75, 13.75, 10.25, 12.25, 14.25, 10.75, 12.75, 14.75]
