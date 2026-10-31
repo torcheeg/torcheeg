@@ -144,6 +144,18 @@ def main():
             dataset, subject=subjects[-1]
         )
     )
+    # The existing splitter can concatenate subjects in set iteration order.
+    # Record a stable physical trial order before fitting statistics or shuffling.
+    for partition in (train, test):
+        partition.info = partition.info.sort_values(
+            ['subject_id', 'trial_id'], kind='mergesort'
+        ).reset_index(drop=True)
+    train_trial_ids = [
+        [str(row.subject_id), int(row.trial_id)] for row in train.info.itertuples()
+    ]
+    test_trial_ids = [
+        [str(row.subject_id), int(row.trial_id)] for row in test.info.itertuples()
+    ]
     train_features, train_targets = zip(*(train[i] for i in range(len(train))))
     test_features, test_targets = zip(*(test[i] for i in range(len(test))))
     train_features, test_features, feature_mean, feature_scale = standardize_from_train(
@@ -221,6 +233,8 @@ def main():
         lr=0.001,
         weight_decay=0.0,
         train_subjects=subjects[:-1],
+        train_trial_ids=train_trial_ids,
+        test_trial_ids=test_trial_ids,
         held_out_subject=subjects[-1],
         train_windows=len(train),
         test_windows=len(test),

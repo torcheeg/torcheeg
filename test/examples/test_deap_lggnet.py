@@ -93,6 +93,11 @@ class TestDEAPLGGNet(unittest.TestCase):
                 (meta['train_windows'], meta['test_windows'], meta['updates']),
                 (4, 2, 2),
             )
+            self.assertEqual(
+                meta['train_trial_ids'],
+                [['s01.dat', 0], ['s01.dat', 1], ['s02.dat', 0], ['s02.dat', 1]],
+            )
+            self.assertEqual(meta['test_trial_ids'], [['s03.dat', 0], ['s03.dat', 1]])
             self.assertEqual(meta['label_rule'], 'valence_ge_5')
             self.assertEqual(checkpoint['test_targets'].tolist(), [0, 1])
             self.assertEqual(checkpoint['feature_mean'].shape, (32, 1))

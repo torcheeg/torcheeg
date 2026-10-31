@@ -23,7 +23,8 @@ Independent training example
 pickles and has no NNI or model-selector dependency. Provider EEG is microvolts
 at 128 Hz, already filtered at 4--45 Hz. One first-six-second stimulus window
 per trial begins after the three-second baseline. No additional filter or
-baseline subtraction is applied. The last sorted subject is held out. Fit
+baseline subtraction is applied. The last sorted subject is held out. Explicitly sort each partition by subject
+and trial before training; export the physical trial IDs. Fit
 per-channel mean and population standard deviation over training subjects and
 time only. Valence below five is class zero; at least five is class one.
 
