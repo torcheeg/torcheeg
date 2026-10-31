@@ -426,7 +426,7 @@ class TestDatasetConstants(unittest.TestCase):
                 (SleepEDFxDataset, constants.SLEEPEDFX_RAW_CHANNEL_LIST)):
             with self.subTest(dataset=cls.__name__):
                 self.assertEqual(inspect.signature(
-                    cls).parameters['channels'].default, channels)
+                    cls.__init__).parameters['channels'].default, channels)
 
     def test_grid_adjacency_ignores_empty_cells_and_includes_diagonals(self):
         from torcheeg.datasets.constants.utils import \
