@@ -83,6 +83,7 @@ Transformer
    MSVTNet
    MSVTNetLoss
    DBConformer
+   MSCFormer
    EEGPT
    EEGPTClassifier
    EEGPTRegression

@@ -95,3 +95,4 @@ the same library workflow as a reusable assistant skill.
    ifnet
    dbconformer
    eegwavenet
+   mscformer

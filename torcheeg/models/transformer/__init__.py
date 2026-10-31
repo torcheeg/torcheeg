@@ -47,3 +47,4 @@ from .unidmfm_pretraining import UniDMFMPretrainer
 from .sleepfm_survival import SleepFMSurvivalObjective
 from .msvtnet import MSVTNet, MSVTNetLoss
 from .dbconformer import DBConformer
+from .mscformer import MSCFormer
