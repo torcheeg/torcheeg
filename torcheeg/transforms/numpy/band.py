@@ -485,16 +485,9 @@ class BandSkewness(BandTransform):
         return super().__call__(*args, eeg=eeg, baseline=baseline, **kwargs)
 
     def opt(self, eeg: np.ndarray, **kwargs) -> np.ndarray:
-        n = len(eeg)
-        ave1 = 0.0
-        ave2 = 0.0
-        ave3 = 0.0
-        for eeg in eeg:
-            ave1 += eeg
-            ave2 += eeg**2
-            ave3 += eeg**3
-        ave1 /= n
-        ave2 /= n
-        ave3 /= n
-        sigma = np.sqrt(ave2 - ave1**2)
-        return (ave3 - 3 * ave1 * sigma**2 - ave1**3) / (sigma**3)
+        inv_n = 1 / len(eeg)
+        ave1 = eeg.sum() * inv_n
+        ave2 = eeg.dot(eeg) * inv_n
+        ave3 = (eeg * eeg).dot(eeg) * inv_n
+        var = ave2 - ave1 * ave1
+        return (ave3 - 3 * ave1 * var - ave1 * ave1 * ave1) / (var * np.sqrt(var))
