@@ -141,7 +141,7 @@ class SanDiegoSSVEPDataset(BaseDataset):
     def fake_record(record: str,
                     root_path: str = './archive', **kwargs) -> Dict:
         n_trials = 10
-        n_channels = 22
+        n_channels = 8
         n_times = 1000
 
         eeg = np.random.randn(n_trials, n_channels, n_times)

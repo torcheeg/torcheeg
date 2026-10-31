@@ -40,7 +40,7 @@ def _interpolate(raw: mne.io.BaseRaw, channels: List = ['EEG Fpz-Cz', 'EEG Pz-Oz
         raw_missing = mne.io.RawArray(zero_data, info)
         raw.add_channels([raw_missing], force_update_info=True)
 
-    raw = raw.pick_channels(channels)
+    raw = raw.pick(channels)
     return raw
 
 

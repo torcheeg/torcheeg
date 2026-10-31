@@ -1,6 +1,8 @@
 import unittest
 
+from torcheeg import transforms
 from torcheeg.datasets import SanDiegoSSVEPDataset, TSUBenckmarkDataset
+from torcheeg.datasets.utils import get_locations
 
 
 class TestSSVEPDataset(unittest.TestCase):
@@ -26,7 +28,11 @@ class TestSSVEPDataset(unittest.TestCase):
         kwargs.update(SanDiegoSSVEPDataset.fake_record(**kwargs))
         item = next(SanDiegoSSVEPDataset.process_record(**kwargs))
 
-        self.assertEqual(item['eeg'].shape, (22, 256))
+        self.assertEqual(item['eeg'].shape, (8, 256))
+        kwargs['offline_transform'] = transforms.ToGrid(get_locations(
+            SanDiegoSSVEPDataset.channels, SanDiegoSSVEPDataset.grid))
+        item = next(SanDiegoSSVEPDataset.process_record(**kwargs))
+        self.assertEqual(item['eeg'].shape, (256, 2, 5))
 
 
 if __name__ == '__main__':
