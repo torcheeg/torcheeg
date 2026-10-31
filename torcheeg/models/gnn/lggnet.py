@@ -111,7 +111,7 @@ class GraphConvolution(Module):
 
 class LGGNet(nn.Module):
     r'''
-    DLocal-Global-Graph Networks (LGGNet). For more details, please refer to the following information.
+    Local-Global-Graph Networks (LGGNet). For more details, please refer to the following information.
 
     - Paper: Ding Y, Robinson N, Zeng Q, et al. LGGNet: learning from Local-global-graph representations for brain-computer interface[J]. arXiv preprint arXiv:2105.02786, 2021.
     - URL: https://arxiv.org/abs/2105.02786
@@ -121,29 +121,38 @@ class LGGNet(nn.Module):
 
     .. code-block:: python
 
-        from torcheeg.datasets import SEEDDataset
+        from torch.utils.data import DataLoader
+        from torcheeg.datasets import DEAPDataset
         from torcheeg.models import LGGNet
         from torcheeg import transforms
-        from torcheeg.datasets.constants import SEED_GENERAL_REGION_LIST
+        from torcheeg.datasets.constants import DEAP_GENERAL_REGION_LIST
 
-        dataset = SEEDDataset(root_path='./Preprocessed_EEG',
-                              offline_transform=transforms.Compose([
-                                  transforms.MeanStdNormalize(),
-                                  transforms.To2d()
-                              ]),
-                              online_transform=transforms.Compose([
-                                  transforms.ToTensor()
-                              ]),
-                              label_transform=transforms.Compose([
-                                  transforms.Select('emotion'),
-                                  transforms.Lambda(lambda x: x + 1)
-                              ]))
-        model = LGGNet(region_list=SEED_GENERAL_REGION_LIST, chunk_size=128, num_electrodes=32, hid_channels=32, num_classes=2)
-        
+        dataset = DEAPDataset(
+            root_path='./data_preprocessed_python',
+            chunk_size=128,
+            num_channel=32,
+            online_transform=transforms.Compose([
+                transforms.To2d(),
+                transforms.ToTensor()
+            ]),
+            label_transform=transforms.Compose([
+                transforms.Select('valence'),
+                transforms.Binary(5.0)
+            ]))
+        model = LGGNet(region_list=DEAP_GENERAL_REGION_LIST,
+                       chunk_size=128, num_electrodes=32, num_classes=2)
         x, y = next(iter(DataLoader(dataset, batch_size=64)))
-        model(x)
+        logits = model(x)
 
-    The current built-in :obj:`region_list` includs:
+    Keep the electrode rows in the dataset's native order when using its region
+    indices. The output contains class logits, suitable for cross-entropy loss.
+    This short loading example does not define a held-out evaluation protocol.
+
+    After initialization, :obj:`feature_dim` reads the local filter's stored
+    width without advancing random streams or updating BatchNorm statistics.
+    The initialization and checkpoint keys remain compatible with v1.1.3.
+
+    The current built-in :obj:`region_list` includes:
 
     - torcheeg.datasets.constants.emotion_recognition.amigos.AMIGOS_GENERAL_REGION_LIST
     - torcheeg.datasets.constants.emotion_recognition.amigos.AMIGOS_FRONTAL_REGION_LIST
@@ -292,6 +301,10 @@ class LGGNet(nn.Module):
 
     @property
     def feature_dim(self):
+        # After initialization the learned filter already records this width.
+        # Reading it must not run random inputs through BatchNorm again.
+        if hasattr(self, 'local_filter_weight'):
+            return self.local_filter_weight.shape[-1]
         mock_eeg = torch.randn(
             (1, self.in_channels, self.num_electrodes, self.chunk_size))
 
