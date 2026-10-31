@@ -93,3 +93,4 @@ the same library workflow as a reusable assistant skill.
    eeginception_erp
    eegnex
    ifnet
+   dbconformer

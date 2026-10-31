@@ -1,0 +1,12 @@
+DBConformer external backend notice
+
+The TorchEEG interface does not distribute the author source or weights.
+Author: Ziwei Wang and collaborators
+Repository: https://github.com/wzwvv/DBConformer
+Pinned revision: 02cf63206087045c5cd0e8fa882831102e6fd01b
+Source file: models/DBConformer.py
+SHA256: b891d8ba28b3ef5064106065e4a2c9bd1e346fe29b6d68cc50c91dbf6cfa4bd1
+
+No license is stated in the inspected author repository. Obtain and use the
+complete original backend separately under terms applicable to that material.
+The wrapper does not grant rights to redistribute the author implementation.

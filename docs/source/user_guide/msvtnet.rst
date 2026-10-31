@@ -48,6 +48,11 @@ weights are retained, including ``last_head``; removing the parameter-free
 LogSoftmax does not change checkpoint tensor names. A native state dictionary
 with matching dimensions can be loaded strictly. No weights are downloaded.
 
+PyTorch 1.10 and later use the author's native SAME convolution path to
+preserve its floating-point behavior, including near-zero attention gradients
+that Adam can amplify. PyTorch 1.8 retains explicit SAME padding. Both paths
+preserve tensor names and geometry and are checked for outputs and gradients.
+
 Constructor dimensions are calculated without sample forwards. Fresh
 BatchNorm statistics start at zero mean, unit variance and zero batches.
 Loading an author's complete state restores its stored statistics, including

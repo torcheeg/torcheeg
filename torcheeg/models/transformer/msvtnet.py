@@ -29,7 +29,23 @@ def _probability(name, value):
 
 
 class _SamePadConv2d(nn.Conv2d):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        version = tuple(int(v) for v in torch.__version__.split('.')[:2])
+        self._native_same = version >= (1, 10)
+
     def forward(self, x):
+        # Match the author's numerical path on supported PyTorch versions.
+        if self._native_same:
+            return F.conv2d(
+                x,
+                self.weight,
+                self.bias,
+                self.stride,
+                'same',
+                self.dilation,
+                self.groups,
+            )
         total = self.kernel_size[-1] - 1
         return super().forward(F.pad(x, (total // 2, total - total // 2, 0, 0)))
 

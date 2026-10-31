@@ -81,6 +81,7 @@ Transformer
    CTNet
    MSVTNet
    MSVTNetLoss
+   DBConformer
    EEGPT
    EEGPTClassifier
    EEGPTRegression

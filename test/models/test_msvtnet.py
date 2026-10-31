@@ -6,9 +6,28 @@ import torch
 from torch import nn
 
 from torcheeg.models import MSVTNet, MSVTNetLoss
+from torcheeg.models.transformer.msvtnet import _SamePadConv2d
 
 
 class TestMSVTNet(unittest.TestCase):
+    def test_native_and_legacy_same_padding_outputs_and_all_gradients(self):
+        for kernel in (15, 16):
+            with self.subTest(kernel=kernel):
+                native = _SamePadConv2d(4, 4, (1, kernel), groups=4, bias=False)
+                legacy = copy.deepcopy(native)
+                legacy._native_same = False
+                left = torch.randn(2, 4, 3, 113, requires_grad=True)
+                right = left.detach().clone().requires_grad_()
+                actual, expected = native(left), legacy(right)
+                torch.testing.assert_close(actual, expected, rtol=1e-5, atol=1e-6)
+                actual.square().mean().backward()
+                expected.square().mean().backward()
+                torch.testing.assert_close(left.grad, right.grad, rtol=1e-5, atol=1e-6)
+                torch.testing.assert_close(
+                    native.weight.grad, legacy.weight.grad, rtol=1e-5, atol=1e-6
+                )
+                legacy.load_state_dict(native.state_dict(), strict=True)
+
     def make_model(self, **overrides):
         config = dict(
             num_electrodes=3,
