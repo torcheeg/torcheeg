@@ -20,3 +20,5 @@ from .eegnex import EEGNeX
 from .ifnet import IFNet, IFNetV2
 from .eegwavenet import EEGWaveNet
 from .adfcnn import ADFCNN
+
+from .slimseiz import SlimSeiz

@@ -1,0 +1,27 @@
+SlimSeiz external author implementation
+
+Paper/code: https://github.com/guoruilu/SlimSeiz
+Inspected revision: 84b168278173a0e14163a6839fb36d7c41bc3c52
+Original file: Loop_ADDNet_kFold.ipynb
+SHA256: a77807eee44b3a95780c12f656091172467dd7f967be942061d6cf417921d2a9
+
+The inspected repository does not state a source license. TorchEEG distributes
+its own interface only, not the notebook, original neural definitions,
+dataset, pretrained weights or training outputs. Users obtain any required
+rights and the trusted original notebook separately. The explicit local
+factory verifies the full file and executes only the complete MambaBlock /
+RMSNorm definition cell 1 and complete OneDCNN definition cell 7. No neural
+source is edited and no notebook data loading or training cells execute.
+
+The notebook credits the Mamba minimal implementation at
+https://github.com/johnma2006/mamba-minimal/blob/master/model.py and references
+the original state-spaces/mamba implementation. Those attributions remain
+in the separately supplied original notebook. No third-party neural code
+is copied into this distribution.
+
+SlimSeiz: Efficient Channel-Adaptive Seizure Prediction Using a Mamba-Enhanced
+Network, IEEE ISCAS 2025, doi:10.1109/ISCAS56072.2025.11043364.
+This interface exposes the complete binary neural network. The separate
+adaptive channel selection, preictal/interictal definition and contrastive
+training protocols are not implicit library behavior or claimed paper
+performance reproduction.
