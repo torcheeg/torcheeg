@@ -15,7 +15,7 @@ _pyg = _LazyLoader(
     install_hint='See https://pytorch-geometric.readthedocs.io/en/latest/notes/installation.html')
 
 
-def plot_graph(data: 'pyg.data.Data',
+def plot_graph(data: '_pyg.data.Data',
                channel_location_dict: Dict[str, List[int]],
                color: Union[colors.Colormap, str] = 'hsv'):
     r'''
