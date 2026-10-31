@@ -96,3 +96,4 @@ the same library workflow as a reusable assistant skill.
    dbconformer
    eegwavenet
    mscformer
+   tmsanet
