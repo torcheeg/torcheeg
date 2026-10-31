@@ -100,3 +100,4 @@ the same library workflow as a reusable assistant skill.
    adfcnn
    hslt
    slimseiz
+   bidann
