@@ -280,7 +280,7 @@ If you would like to contribute new datasets, deep learning methods, and extensi
         <a href="https://github.com/Alexanderstaehle">
             <img src="https://avatars.githubusercontent.com/u/48824183?v=4" width="100;" alt="Alexanderstaehle"/>
             <br />
-            <sub><b>Null</b></sub>
+            <sub><b>Alexanderstaehle</b></sub>
         </a>
     </td>
     <td align="center">
@@ -294,7 +294,7 @@ If you would like to contribute new datasets, deep learning methods, and extensi
         <a href="https://github.com/HaveAnIdeaCy">
             <img src="https://avatars.githubusercontent.com/u/49177516?v=4" width="100;" alt="HaveAnIdeaCy"/>
             <br />
-            <sub><b>Null</b></sub>
+            <sub><b>HaveAnIdeaCy</b></sub>
         </a>
     </td>
     <td align="center">
