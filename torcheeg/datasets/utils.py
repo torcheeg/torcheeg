@@ -10,8 +10,10 @@ import numpy as np
 import pandas as pd
 import torch
 
-from ..utils import (ensure_cache, compute_fingerprint as _compute_fingerprint,
-                           validate_cache, compute_checksum)
+from ..utils import compute_checksum
+from ..utils import compute_fingerprint as _compute_fingerprint
+from ..utils import ensure_cache, validate_cache
+
 
 def _describe_value(value, seen=None):
     if value is None or isinstance(value, (str, bytes, int, float, bool, np.generic)):

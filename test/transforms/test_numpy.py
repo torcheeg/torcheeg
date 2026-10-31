@@ -18,12 +18,12 @@ from torcheeg.transforms import (ARRCoefficient, BandApproximateEntropy,
                                  BandSignal, BandSkewness, BandSpectralEntropy,
                                  BandSVDEntropy, Compose, Concatenate,
                                  CWTSpectrum, Downsample, DWTDecomposition,
-                                 Flatten, MapChunk, MeanStdNormalize,
-                                 MinMaxNormalize, OrderElectrode,
-                                 PearsonCorrelation, PhaseLockingValue,
-                                 PickElectrode, RearrangeElectrode,
-                                 SetSamplingRate, To2d, ToGrid,
-                                 ToInterpolatedGrid, HorizontalFlip)
+                                 Flatten, HorizontalFlip, MapChunk,
+                                 MeanStdNormalize, MinMaxNormalize,
+                                 OrderElectrode, PearsonCorrelation,
+                                 PhaseLockingValue, PickElectrode,
+                                 RearrangeElectrode, SetSamplingRate, To2d,
+                                 ToGrid, ToInterpolatedGrid)
 
 
 def _periodic_cosine(cycles, phase=0.0, n_samples=256):
@@ -296,7 +296,6 @@ class TestNumpyTransforms(unittest.TestCase):
         self.assertEqual(src_eeg[1, :].tolist(), tgt_eeg[0, :].tolist())
         self.assertEqual(src_eeg[2, :].tolist(), tgt_eeg[1, :].tolist())
 
-
     def test_phase_locking_value_constant_phase_differences_are_fully_locked(self):
         reference = _periodic_cosine(16)
         for phase in (0.0, np.pi / 2.0, np.pi):
@@ -414,7 +413,8 @@ class TestNumpyTransforms(unittest.TestCase):
         transformed = PhaseLockingValue(apply_to_baseline=True)(
             eeg=bands, baseline=bands)
         self.assertEqual(transformed['baseline'].shape, (2, 2, 2))
-        np.testing.assert_array_equal(transformed['eeg'], transformed['baseline'])
+        np.testing.assert_array_equal(
+            transformed['eeg'], transformed['baseline'])
 
         # An unused baseline is passed through even if its phase is undefined.
         invalid_baseline = np.zeros_like(baseline)

@@ -9,6 +9,7 @@ from torcheeg.datasets.module.base_dataset import BaseDataset
 from ..utils import get_random_dir_path
 from .utils import create_subset, ensure_cache, read_indices, write_indices
 
+
 def train_test_split_per_subject_cross_trial(
         dataset: BaseDataset,
         test_size: Union[int, float] = 0.2,
@@ -67,7 +68,8 @@ def train_test_split_per_subject_cross_trial(
         subjects = list(pd.unique(info['subject_id']))
 
         if subject not in subjects:
-            raise ValueError(f'The subject should be in the subject list {subjects}.')
+            raise ValueError(
+                f'The subject should be in the subject list {subjects}.')
 
         subject_info = info[info['subject_id'] == subject]
         trial_ids = list(pd.unique(subject_info['trial_id']))
@@ -82,17 +84,20 @@ def train_test_split_per_subject_cross_trial(
 
         train_info = []
         for train_trial_id in train_trial_ids:
-            train_info.append(subject_info[subject_info['trial_id'] == train_trial_id])
+            train_info.append(
+                subject_info[subject_info['trial_id'] == train_trial_id])
         train_info = pd.concat(train_info, ignore_index=False)
 
         test_info = []
         for test_trial_id in test_trial_ids:
-            test_info.append(subject_info[subject_info['trial_id'] == test_trial_id])
+            test_info.append(
+                subject_info[subject_info['trial_id'] == test_trial_id])
         test_info = pd.concat(test_info, ignore_index=False)
 
         write_indices(os.path.join(split_path, 'train.csv'),
                       train_info.index.to_numpy())
-        write_indices(os.path.join(split_path, 'test.csv'), test_info.index.to_numpy())
+        write_indices(os.path.join(split_path, 'test.csv'),
+                      test_info.index.to_numpy())
 
     configuration = {
         'splitter': 'train_test_split_per_subject_cross_trial',
@@ -104,8 +109,10 @@ def train_test_split_per_subject_cross_trial(
     ensure_cache(dataset.info, ['subject_id', 'trial_id'], split_path, configuration,
                  ['train.csv', 'test.csv'], write_split)
 
-    train_info = read_indices(os.path.join(split_path, 'train.csv'), len(dataset))
-    test_info = read_indices(os.path.join(split_path, 'test.csv'), len(dataset))
+    train_info = read_indices(os.path.join(
+        split_path, 'train.csv'), len(dataset))
+    test_info = read_indices(os.path.join(
+        split_path, 'test.csv'), len(dataset))
 
     train_dataset = create_subset(dataset, train_info)
 

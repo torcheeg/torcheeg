@@ -1,10 +1,9 @@
-import os
 import json
+import os
+from typing import Dict, Iterator, Union
 from urllib.parse import quote, unquote
 
 import numpy as np
-from typing import Iterator, Dict, Union
-
 import pandas as pd
 
 from torcheeg.datasets.module.base_dataset import BaseDataset
@@ -12,10 +11,11 @@ from torcheeg.datasets.module.base_dataset import BaseDataset
 from .base_model_selection import BaseModelSelection
 from .utils import create_subset, read_indices, write_indices
 
+
 class Subcategory(BaseModelSelection):
     r'''
     A tool class for separating out subsets of specified categories, often used to extract data for a certain type of paradigm, or for a certain type of task. Each subset in the formed subset list contains only one type of data.
-    
+
     Common usage:
 
     .. code-block:: python
@@ -24,7 +24,7 @@ class Subcategory(BaseModelSelection):
         from torcheeg.model_selection import Subcategory
         from torcheeg import transforms
         from torch.utils.data import DataLoader
-        
+
         cv = Subcategory()
         dataset = M3CVDataset(root_path='./aistudio',
                               online_transform=transforms.Compose(
@@ -37,7 +37,7 @@ class Subcategory(BaseModelSelection):
         for subdataset in cv.split(dataset):
             loader = DataLoader(subdataset)
             ...
-    
+
     TorchEEG supports the division of training and test sets within each subset after dividing the data into subsets. The sample code is as follows:
 
     .. code-block:: python
@@ -57,7 +57,7 @@ class Subcategory(BaseModelSelection):
             train_loader = DataLoader(train_dataset)
             test_loader = DataLoader(test_dataset)
             ...
-    
+
     For the already divided training and testing sets, TorchEEG recommends using two :obj:`Subcategory` to extract their subcategories respectively. On this basis, the :obj:`zip` function can be used to combine the subsets. It is worth noting that it is necessary to ensure that the training and test sets have the same number and variety of classes.
 
     .. code-block:: python
@@ -126,11 +126,13 @@ class Subcategory(BaseModelSelection):
             name for name in os.listdir(self.split_path) if name.endswith('.csv')
         ]
 
-        category_list = [json.loads(unquote(name[:-4])) for name in indice_files]
+        category_list = [json.loads(unquote(name[:-4]))
+                         for name in indice_files]
         try:
             category_list.sort()
         except TypeError:
-            category_list.sort(key=lambda value: (type(value).__name__, str(value)))
+            category_list.sort(key=lambda value: (
+                type(value).__name__, str(value)))
 
         return category_list
 

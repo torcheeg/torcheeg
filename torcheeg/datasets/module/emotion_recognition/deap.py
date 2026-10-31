@@ -217,7 +217,8 @@ class DEAPDataset(BaseDataset):
                 trial_samples = before_trial(trial_samples)
 
             trial_baseline_sample = trial_samples[:, :baseline_chunk_size *
-                                                  num_baseline]  # channel(32), timestep(3*128)
+                                                  # channel(32), timestep(3*128)
+                                                  num_baseline]
             trial_baseline_sample = trial_baseline_sample.reshape(
                 num_channel, num_baseline,
                 baseline_chunk_size).mean(axis=1)  # channel(32), timestep(128)

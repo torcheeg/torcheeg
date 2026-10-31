@@ -1,13 +1,15 @@
 import os
 import re
-from typing import Iterator, Dict, Tuple, Union
+from typing import Dict, Iterator, Tuple, Union
 
 import pandas as pd
 from sklearn import model_selection
 
 from torcheeg.datasets.module.base_dataset import BaseDataset
+
 from .base_model_selection import BaseModelSelection
 from .utils import create_subset, read_indices, write_indices
+
 
 class KFoldCrossTrial(BaseModelSelection):
     r'''
@@ -77,9 +79,12 @@ class KFoldCrossTrial(BaseModelSelection):
         for fold_id, (train_index_trial_ids,
                       test_index_trial_ids) in enumerate(self._k_fold.split(trial_ids)):
             if len(train_index_trial_ids) == 0 or len(test_index_trial_ids) == 0:
-                raise ValueError(f'The number of training or testing trials is zero.')
-            train_trial_ids = [trial_ids[index] for index in train_index_trial_ids]
-            test_trial_ids = [trial_ids[index] for index in test_index_trial_ids]
+                raise ValueError(
+                    f'The number of training or testing trials is zero.')
+            train_trial_ids = [trial_ids[index]
+                               for index in train_index_trial_ids]
+            test_trial_ids = [trial_ids[index]
+                              for index in test_index_trial_ids]
             train_info = []
             for train_trial_id in train_trial_ids:
                 train_info.append(info[info['trial_id'] == train_trial_id])

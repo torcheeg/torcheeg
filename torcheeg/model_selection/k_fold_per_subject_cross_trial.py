@@ -1,14 +1,16 @@
 import os
 import re
+from typing import Dict, Iterator, List, Tuple, Union
 from urllib.parse import quote, unquote
-from typing import Iterator, Dict, List, Tuple, Union
 
 import pandas as pd
 from sklearn import model_selection
 
 from torcheeg.datasets.module.base_dataset import BaseDataset
+
 from .base_model_selection import BaseModelSelection
 from .utils import create_subset, read_indices, validate_groups, write_indices
+
 
 class KFoldPerSubjectCrossTrial(BaseModelSelection):
     r'''
@@ -45,7 +47,7 @@ class KFoldPerSubjectCrossTrial(BaseModelSelection):
             train_loader = DataLoader(train_dataset)
             test_loader = DataLoader(test_dataset)
             ...
-    
+
     :obj:`KFoldPerSubjectCrossTrial` allows the user to specify the index of the subject of interest, when the user need to report the performance on each subject.
 
     .. code-block:: python
@@ -111,8 +113,10 @@ class KFoldPerSubjectCrossTrial(BaseModelSelection):
                     raise ValueError(
                         f'The number of training or testing trials for subject {subject} is zero.'
                     )
-                train_trial_ids = [trial_ids[index] for index in train_index_trial_ids]
-                test_trial_ids = [trial_ids[index] for index in test_index_trial_ids]
+                train_trial_ids = [trial_ids[index]
+                                   for index in train_index_trial_ids]
+                test_trial_ids = [trial_ids[index]
+                                  for index in test_index_trial_ids]
                 train_info = []
                 for train_trial_id in train_trial_ids:
                     train_info.append(

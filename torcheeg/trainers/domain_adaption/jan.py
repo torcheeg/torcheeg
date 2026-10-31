@@ -7,10 +7,10 @@ from .mmd_like import _MMDLikeTrainer
 
 
 def _gaussian_kernel(x_source,
-                    x_target,
-                    mul_kernel=2.0,
-                    num_kernel=5,
-                    fix_sigma=None):
+                     x_target,
+                     mul_kernel=2.0,
+                     num_kernel=5,
+                     fix_sigma=None):
     """
     Code from XLearn: computes the full kernel matrix,
     which is less than optimal since we don't use all of it
@@ -105,6 +105,7 @@ class JANTrainer(_MMDLikeTrainer):
     .. automethod:: fit
     .. automethod:: test
     '''
+
     def __init__(self,
                  extractor: nn.Module,
                  classifier: nn.Module,
@@ -203,10 +204,10 @@ class JANTrainer(_MMDLikeTrainer):
                                                        self.num_kernel,
                                                        [None, 1.68]):
             kernels = _gaussian_kernel(source,
-                                      target,
-                                      mul_kernel=k_mul,
-                                      num_kernel=k_num,
-                                      fix_sigma=sigma)
+                                       target,
+                                       mul_kernel=k_mul,
+                                       num_kernel=k_num,
+                                       fix_sigma=sigma)
             if joint_kernels is not None:
                 joint_kernels = joint_kernels * kernels
             else:

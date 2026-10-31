@@ -55,10 +55,13 @@ class TestGrid(unittest.TestCase):
         transform = ToGrid({'a': (0, 0), 'b': (1, 1)}, apply_to_baseline=True)
         eeg, baseline = np.arange(10).reshape(2, 5), np.ones((2, 5))
         result = Compose([transform])(eeg=eeg, baseline=baseline, y=7)
-        np.testing.assert_array_equal(transform.reverse(eeg=result['eeg'])['eeg'], eeg)
-        np.testing.assert_array_equal(transform.reverse(eeg=result['baseline'])['eeg'], baseline)
+        np.testing.assert_array_equal(
+            transform.reverse(eeg=result['eeg'])['eeg'], eeg)
+        np.testing.assert_array_equal(transform.reverse(
+            eeg=result['baseline'])['eeg'], baseline)
         self.assertEqual(result['y'], 7)
-        default = ToGrid({'a': (0, 0), 'b': (1, 1)})(eeg=eeg, baseline=baseline)
+        default = ToGrid({'a': (0, 0), 'b': (1, 1)})(
+            eeg=eeg, baseline=baseline)
         self.assertIs(default['baseline'], baseline)
 
     def test_mapping_is_copied_without_changing_insertion_order(self):
@@ -66,13 +69,16 @@ class TestGrid(unittest.TestCase):
         transform = ToGrid(mapping)
         mapping['last'][0] = 10
         mapping['extra'] = [2, 2]
-        self.assertEqual(list(transform.channel_location_dict), ['last', 'first'])
+        self.assertEqual(list(transform.channel_location_dict), [
+                         'last', 'first'])
         eeg = np.arange(10).reshape(2, 5)
-        np.testing.assert_array_equal(transform.reverse(eeg=transform(eeg=eeg)['eeg'])['eeg'], eeg)
+        np.testing.assert_array_equal(transform.reverse(
+            eeg=transform(eeg=eeg)['eeg'])['eeg'], eeg)
 
     def test_numpy_integer_grid_positions_are_valid(self):
         transform = ToGrid({'a': np.array([1, 2], dtype=np.int64)})
-        self.assertEqual(transform(eeg=np.ones((1, 5)))['eeg'].shape, (5, 2, 3))
+        self.assertEqual(transform(eeg=np.ones((1, 5)))
+                         ['eeg'].shape, (5, 2, 3))
 
     def test_3d_montages_are_not_grid_coordinates(self):
         with self.assertRaises(ValueError):
@@ -115,7 +121,8 @@ class TestGrid(unittest.TestCase):
             if not name.endswith('CHANNEL_LOCATION_DICT'):
                 continue
             mapping = getattr(constants, name)
-            positions = [location for location in mapping.values() if location is not None]
+            positions = [location for location in mapping.values()
+                         if location is not None]
             if not positions or not all(len(location) == 2 for location in positions):
                 continue
             with self.subTest(name=name):
@@ -129,7 +136,8 @@ class TestGrid(unittest.TestCase):
                 transform = ToGrid(selected_mapping)
                 eeg = np.arange(len(mapping) * 3).reshape(len(mapping), 3)
                 selected = eeg[indices]
-                recovered = transform.reverse(eeg=transform(eeg=selected)['eeg'])['eeg']
+                recovered = transform.reverse(
+                    eeg=transform(eeg=selected)['eeg'])['eeg']
                 np.testing.assert_array_equal(recovered, selected)
                 checked += 1
         self.assertGreater(checked, 5)

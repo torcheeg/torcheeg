@@ -25,10 +25,9 @@ In this tutorial, we demonstrate how to use TorchEEG to implement transfer learn
 # We use the `after_hook_normalize` function to normalize each EEG trial. This helps in reducing the variance between trials, thereby aiding the transfer generalizable knowledge from MAHNOB to DEAP.
 #
 
-from torcheeg.datasets import MAHNOBDataset
 from torcheeg import transforms
+from torcheeg.datasets import MAHNOBDataset
 from torcheeg.datasets.constants import MAHNOB_CHANNEL_LOCATION_DICT
-
 from torcheeg.transforms import after_hook_normalize
 
 dataset = MAHNOBDataset(
@@ -82,12 +81,11 @@ train_dataset, val_dataset = train_test_split_groupby_trial(
 #
 
 import pytorch_lightning as pl
+from torch.utils.data import DataLoader
+from torchsampler import ImbalancedDatasetSampler
 
 from torcheeg.models import CCNN
 from torcheeg.trainers import ClassifierTrainer
-
-from torch.utils.data import DataLoader
-from torchsampler import ImbalancedDatasetSampler
 
 train_loader = DataLoader(train_dataset,
                           batch_size=64,
@@ -132,9 +130,7 @@ state_dict = model.state_dict()
 #
 
 from torcheeg.datasets import DEAPDataset
-
-from torcheeg.datasets.constants import \
-    DEAP_CHANNEL_LOCATION_DICT
+from torcheeg.datasets.constants import DEAP_CHANNEL_LOCATION_DICT
 
 dataset = DEAPDataset(
     io_path=f'./examples_transfer_mahnob_2_deap/deap',

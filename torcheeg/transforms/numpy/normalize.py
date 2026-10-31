@@ -1,4 +1,4 @@
-from typing import Union, Dict, List
+from typing import Dict, List, Union
 
 import numpy as np
 
@@ -28,9 +28,10 @@ class MeanStdNormalize(EEGTransform):
         std (np.array, optional): The standard deviation used in the normalization process, allowing the user to provide tandard deviation statistics in :obj:`np.ndarray` format. When statistics are not provided, use the statistics of the current sample for normalization.
         axis (int, optional): The dimension to normalize, when no dimension is specified, the entire data is normalized.
         apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (default: :obj:`False`)
-    
+
     .. automethod:: __call__
     '''
+
     def __init__(self,
                  mean: Union[np.ndarray, None] = None,
                  std: Union[np.ndarray, None] = None,
@@ -111,7 +112,7 @@ class MinMaxNormalize(EEGTransform):
         >>> (32, 128)
 
         from torcheeg import transforms
-        
+
         t = transforms.MinMaxNormalize(axis=1)
         # normalize along the second dimension (temproal dimension)
         t(eeg=np.random.randn(32, 128))['eeg'].shape
@@ -122,9 +123,10 @@ class MinMaxNormalize(EEGTransform):
         max (np.array, optional): The maximum used in the normalization process, allowing the user to provide maximum statistics in :obj:`np.ndarray` format. When statistics are not provided, use the statistics of the current sample for normalization.
         axis (int, optional): The dimension to normalize, when no dimension is specified, the entire data is normalized.
         apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (default: :obj:`False`)
-    
+
     .. automethod:: __call__
     '''
+
     def __init__(self,
                  min: Union[np.ndarray, None, float] = None,
                  max: Union[np.ndarray, None, float] = None,
@@ -145,7 +147,7 @@ class MinMaxNormalize(EEGTransform):
         Args:
             eeg (np.ndarray): The input EEG signals or features.
             baseline (np.ndarray, optional) : The corresponding baseline signal, if apply_to_baseline is set to True and baseline is passed, the baseline signal will be transformed with the same way as the experimental signal.
-            
+
         Returns:
             np.ndarray: The normalized results.
         '''

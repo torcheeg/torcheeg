@@ -2,23 +2,23 @@ import gc
 import multiprocessing as mp
 import os
 import pickle
-import weakref
-from concurrent.futures import ThreadPoolExecutor
-from unittest.mock import patch
 import tempfile
 import unittest
+import weakref
+from concurrent.futures import ThreadPoolExecutor
 from copy import copy
+from unittest.mock import patch
 
 import mne
 import numpy as np
-import torch
 import pandas as pd
+import torch
+from torch.utils.data import DataLoader
 
 from torcheeg import transforms
 from torcheeg.datasets import BaseDataset, MNERawDataset
 from torcheeg.io import EEGSignalIO, eeg_signal
 from torcheeg.model_selection import Subcategory
-from torch.utils.data import DataLoader
 
 
 def _read_in_spawned_process(io, queue, release):
@@ -65,7 +65,8 @@ class TestLMDBCopy(unittest.TestCase):
                 np.testing.assert_array_equal(survivor.read_eeg('sample'),
                                               np.arange(12).reshape(3, 4))
                 survivor.write_eeg(np.array([9]), key='after_delete')
-                self.assertEqual(survivor.read_eeg('after_delete').tolist(), [9])
+                self.assertEqual(survivor.read_eeg(
+                    'after_delete').tolist(), [9])
                 del survivor
                 if delete_original:
                     del duplicate
@@ -134,7 +135,8 @@ class TestLMDBCopy(unittest.TestCase):
                                                 'split')).split(dataset))
         del dataset, io
         gc.collect()
-        np.testing.assert_array_equal(subsets[0][0][0], np.arange(12).reshape(3, 4))
+        np.testing.assert_array_equal(
+            subsets[0][0][0], np.arange(12).reshape(3, 4))
         np.testing.assert_array_equal(subsets[1][0][0], [42])
 
     def test_copied_dataset_can_be_read_by_multiple_workers(self):
@@ -160,7 +162,8 @@ class TestLMDBCopy(unittest.TestCase):
                                     num_workers=2,
                                     multiprocessing_context=method)
                 batches = list(loader)
-                actual = np.concatenate([signal.numpy() for signal, _ in batches])
+                actual = np.concatenate([signal.numpy()
+                                        for signal, _ in batches])
                 np.testing.assert_array_equal(actual, expected)
                 np.testing.assert_array_equal(duplicate[0][0], expected[0])
 
@@ -191,7 +194,8 @@ class TestLMDBCopy(unittest.TestCase):
             result = queue.get(timeout=60)
             worker.join(timeout=10)
             self.assertEqual(worker.exitcode, 0)
-            self.assertEqual(result, ('ok', np.arange(12).reshape(3, 4).tolist()))
+            self.assertEqual(
+                result, ('ok', np.arange(12).reshape(3, 4).tolist()))
             reopened = EEGSignalIO(self._path, io_mode='lmdb')
             np.testing.assert_array_equal(reopened.read_eeg('sample'),
                                           np.arange(12).reshape(3, 4))
@@ -234,7 +238,8 @@ class TestLMDBEnvironment(unittest.TestCase):
         self.assertIs(first._io._env, second._io._env)
         np.testing.assert_array_equal(second.read_eeg('sample'), np.arange(8))
         second.write_eeg(np.arange(8) + 1, key='sample')
-        np.testing.assert_array_equal(first.read_eeg('sample'), np.arange(8) + 1)
+        np.testing.assert_array_equal(
+            first.read_eeg('sample'), np.arange(8) + 1)
 
     def test_canonical_paths_share_one_environment(self):
         root = os.path.join(self._directory.name, 'store')
@@ -246,7 +251,8 @@ class TestLMDBEnvironment(unittest.TestCase):
         self.assertIs(first._io._env, second._io._env)
         self.assertIs(first._io._env, third._io._env)
         first.write_eeg(np.arange(4), key='sample')
-        np.testing.assert_array_equal(second.read_eeg('sample'), third.read_eeg('sample'))
+        np.testing.assert_array_equal(
+            second.read_eeg('sample'), third.read_eeg('sample'))
 
     def test_pickle_round_trip_in_same_process_shares_environment(self):
         first = self._make_store()
@@ -256,15 +262,18 @@ class TestLMDBEnvironment(unittest.TestCase):
         first.write_eeg(np.arange(4) + 2, key='sample')
         del first
         gc.collect()
-        np.testing.assert_array_equal(second.read_eeg('sample'), np.arange(4) + 2)
+        np.testing.assert_array_equal(
+            second.read_eeg('sample'), np.arange(4) + 2)
 
     def test_legacy_backend_pickle_state_can_be_restored(self):
         store = self._make_store()
         store.write_eeg(np.arange(4), key='sample')
         restored = type(store._io).__new__(type(store._io))
-        restored.__setstate__({'io_path': self._directory.name, 'io_size': 1048576})
+        restored.__setstate__(
+            {'io_path': self._directory.name, 'io_size': 1048576})
         self.assertIs(restored._env, store._io._env)
-        np.testing.assert_array_equal(restored.read_eeg('sample'), np.arange(4))
+        np.testing.assert_array_equal(
+            restored.read_eeg('sample'), np.arange(4))
 
     def test_environment_is_released_after_last_owner(self):
         first = EEGSignalIO(self._directory.name, io_mode='lmdb')
@@ -280,12 +289,14 @@ class TestLMDBEnvironment(unittest.TestCase):
         gc.collect()
         self.assertIsNone(environment())
         reopened = self._make_store()
-        np.testing.assert_array_equal(reopened.read_eeg('sample'), np.arange(4))
+        np.testing.assert_array_equal(
+            reopened.read_eeg('sample'), np.arange(4))
 
     def test_repeated_unique_paths_do_not_retain_environments(self):
         references = []
         for index in range(12):
-            store = EEGSignalIO(os.path.join(self._directory.name, str(index)), io_mode='lmdb')
+            store = EEGSignalIO(os.path.join(
+                self._directory.name, str(index)), io_mode='lmdb')
             store.write_eeg(np.array([index]), key='sample')
             references.append(weakref.ref(store._io._env))
             del store
@@ -299,12 +310,14 @@ class TestLMDBEnvironment(unittest.TestCase):
         def read_store(_):
             store = EEGSignalIO(self._directory.name, io_mode='lmdb')
             for _ in range(8):
-                np.testing.assert_array_equal(store.read_eeg('sample'), np.arange(16))
+                np.testing.assert_array_equal(
+                    store.read_eeg('sample'), np.arange(16))
             return store
 
         with ThreadPoolExecutor(max_workers=8) as executor:
             stores = list(executor.map(read_store, range(24)))
-        self.assertTrue(all(store._io._env is original._io._env for store in stores))
+        self.assertTrue(
+            all(store._io._env is original._io._env for store in stores))
 
     def test_map_growth_uses_shared_capacity_for_each_wrapper(self):
         first = self._make_store(io_size=32768)
@@ -354,7 +367,8 @@ class TestLMDBEnvironment(unittest.TestCase):
             process.start()
         sender.close()
         try:
-            self.assertTrue(receiver.poll(30), 'Child did not return its sample.')
+            self.assertTrue(receiver.poll(
+                30), 'Child did not return its sample.')
             result = receiver.recv()
             process.join(timeout=10)
             self.assertEqual(process.exitcode, 0)
@@ -362,11 +376,13 @@ class TestLMDBEnvironment(unittest.TestCase):
             self.assertEqual(result[1], sample.tolist())
             self.assertNotEqual(result[3], os.getpid())
             if method == 'fork':
-                self.assertTrue(result[2], 'Child reused the inherited LMDB environment.')
+                self.assertTrue(
+                    result[2], 'Child reused the inherited LMDB environment.')
             self.assertIs(store._io._env, parent_environment)
             np.testing.assert_array_equal(store.read_eeg('sample'), sample)
             store.write_eeg(np.arange(4) + 1, key='sample')
-            np.testing.assert_array_equal(store.read_eeg('sample'), np.arange(4) + 1)
+            np.testing.assert_array_equal(
+                store.read_eeg('sample'), np.arange(4) + 1)
         finally:
             if process.is_alive():
                 process.terminate()
@@ -394,7 +410,8 @@ class TestLMDBEnvironment(unittest.TestCase):
         methods = [method for method in ('spawn', 'fork', 'forkserver')
                    if method in mp.get_all_start_methods()]
         eeg = np.arange(800, dtype=float).reshape(2, 400)
-        raw = mne.io.RawArray(eeg, mne.create_info(['C3', 'C4'], 100, 'eeg'), verbose='ERROR')
+        raw = mne.io.RawArray(eeg, mne.create_info(
+            ['C3', 'C4'], 100, 'eeg'), verbose='ERROR')
         expected = torch.tensor(np.stack([eeg[:, start:start + 100]
                                          for _ in range(2)
                                          for start in range(0, 400, 100)]), dtype=torch.float32)
@@ -403,9 +420,11 @@ class TestLMDBEnvironment(unittest.TestCase):
                 with self.subTest(lazy_threshold=threshold, method=method):
                     parameters = dict(
                         raw_list=[raw, raw],
-                        info_list=[{'subject_id': '01', 'trial_id': index} for index in range(2)],
+                        info_list=[{'subject_id': '01', 'trial_id': index}
+                                   for index in range(2)],
                         chunk_size=100, io_mode='lmdb', lazy_threshold=threshold,
-                        io_path=os.path.join(self._directory.name, f'dataset_{threshold}_{method}'),
+                        io_path=os.path.join(
+                            self._directory.name, f'dataset_{threshold}_{method}'),
                         online_transform=transforms.ToTensor(),
                         label_transform=transforms.Select('trial_id'), verbose=False)
                     dataset = MNERawDataset(**parameters)
@@ -413,11 +432,12 @@ class TestLMDBEnvironment(unittest.TestCase):
                     loader = DataLoader(reused, batch_size=2, num_workers=2,
                                         multiprocessing_context=method, timeout=30)
                     batches = list(loader)
-                    torch.testing.assert_close(torch.cat([batch[0] for batch in batches]), expected)
+                    torch.testing.assert_close(
+                        torch.cat([batch[0] for batch in batches]), expected)
                     torch.testing.assert_close(torch.cat([batch[1] for batch in batches]),
                                                torch.tensor([0] * 4 + [1] * 4))
-                    np.testing.assert_array_equal(dataset[2][0].numpy(), eeg[:, 200:300])
-
+                    np.testing.assert_array_equal(
+                        dataset[2][0].numpy(), eeg[:, 200:300])
 
     def test_environment_opens_only_on_first_access(self):
         with patch.object(eeg_signal.lmdb, 'open', wraps=eeg_signal.lmdb.open) as open_env:
@@ -443,7 +463,8 @@ class TestLMDBEnvironment(unittest.TestCase):
             self.assertIsNone(restored._io._env_obj)
             self.assertIsNone(restored._io._env_pid)
             acquire.assert_not_called()
-            np.testing.assert_array_equal(restored.read_eeg('sample'), np.arange(4))
+            np.testing.assert_array_equal(
+                restored.read_eeg('sample'), np.arange(4))
             acquire.assert_called_once()
             self.assertIs(restored._io._env_obj, store._io._env_obj)
 

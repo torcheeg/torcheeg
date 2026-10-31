@@ -222,7 +222,8 @@ class SEEDIVDataset(BaseDataset):
                 2, 0,
                 1, 0
             ]
-        ]  # The labels with 0, 1, 2, and 3 denote the ground truth, neutral, sad, fear, and happy emotions, respectively.
+            # The labels with 0, 1, 2, and 3 denote the ground truth, neutral, sad, fear, and happy emotions, respectively.
+        ]
         session_labels = labels[int(session_id) - 1]
 
         trial_name_ids = [(trial_name,

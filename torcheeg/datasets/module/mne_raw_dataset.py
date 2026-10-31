@@ -1,9 +1,11 @@
-from typing import Any, Callable, Dict, Tuple, Union, List
+from typing import Any, Callable, Dict, List, Tuple, Union
+
 import mne
 import numpy as np
 
-from .base_dataset import BaseDataset
 from ...utils import get_random_dir_path
+from .base_dataset import BaseDataset
+
 
 class MNERawDataset(BaseDataset):
     '''
@@ -51,6 +53,7 @@ class MNERawDataset(BaseDataset):
         num_worker (int): Number of subprocesses to use for data loading. 0 means that the data will be loaded in the main process. (default: :obj:`0`)
         verbose (bool): Whether to display logs during processing, such as progress bars, etc. (default: :obj:`True`)
     '''
+
     def __init__(self,
                  raw_list: List,
                  info_list: List,

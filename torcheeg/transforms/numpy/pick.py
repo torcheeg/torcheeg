@@ -31,8 +31,10 @@ class PickElectrode(EEGTransform):
 
     .. automethod:: __call__
     '''
+
     def __init__(self, pick_list: List[int], apply_to_baseline: bool = False):
-        super(PickElectrode, self).__init__(apply_to_baseline=apply_to_baseline)
+        super(PickElectrode, self).__init__(
+            apply_to_baseline=apply_to_baseline)
         self.pick_list = pick_list
 
     def __call__(self,
@@ -87,6 +89,7 @@ class PickElectrode(EEGTransform):
         return dict(super().repr_body, **{
             'pick_list': [...]
         })
+
 
 class OrderElectrode(EEGTransform):
     r'''

@@ -1,11 +1,13 @@
 import random
 import unittest
-import torch.nn as nn
+
 import torch
+import torch.nn as nn
 from torch.utils.data import Dataset
 from torch.utils.data.dataloader import DataLoader
-from torcheeg.trainers import GlowTrainer, CGlowTrainer
-from torcheeg.models import BGlow, BCGlow
+
+from torcheeg.models import BCGlow, BGlow
+from torcheeg.trainers import CGlowTrainer, GlowTrainer
 
 
 class DummyDataset(Dataset):
@@ -37,8 +39,9 @@ class TestGlowTrainer(unittest.TestCase):
 
         model = BCGlow(in_channels=4)
         trainer = CGlowTrainer(model, accelerator='cpu')
-        trainer.fit(train_loader, train_loader, max_epochs=1, max_steps=1) 
+        trainer.fit(train_loader, train_loader, max_epochs=1, max_steps=1)
         trainer.test_step(next(iter(train_loader)), batch_idx=0)
+
 
 if __name__ == '__main__':
     unittest.main()

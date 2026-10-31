@@ -1,6 +1,6 @@
+import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import torch
 
 
 class ATCNet(nn.Module):
@@ -45,6 +45,7 @@ class ATCNet(nn.Module):
             (default: :obj:`2`)
         chunk_size (int): The number of time points in each EEG segment/chunk. (default: :obj:`1125`)
     '''
+
     def __init__(self,
                  in_channels: int = 1,
                  num_classes: int = 4,

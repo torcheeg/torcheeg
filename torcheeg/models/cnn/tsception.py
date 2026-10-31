@@ -98,12 +98,12 @@ class TSCeption(nn.Module):
             (1, int(self.inception_window[2] * sampling_rate)), 1, self.pool)
 
         self.Sception1 = self._build_conv_block(num_T, num_S, (int(num_electrodes), 1),
-                                         1, int(self.pool * 0.25))
+                                                1, int(self.pool * 0.25))
         self.Sception2 = self._build_conv_block(num_T, num_S,
-                                         (int(num_electrodes * 0.5), 1),
-                                         (int(num_electrodes * 0.5), 1),
-                                         int(self.pool * 0.25),
-                                         padding=(0, 0, 1, 0) if num_electrodes % 2 == 1 else 0)
+                                                (int(num_electrodes * 0.5), 1),
+                                                (int(num_electrodes * 0.5), 1),
+                                                int(self.pool * 0.25),
+                                                padding=(0, 0, 1, 0) if num_electrodes % 2 == 1 else 0)
         self.fusion_layer = self._build_conv_block(num_S, num_S, (3, 1), 1, 4)
         self.BN_t = nn.BatchNorm2d(num_T)
         self.BN_s = nn.BatchNorm2d(num_S)
@@ -114,7 +114,7 @@ class TSCeption(nn.Module):
                                 nn.Linear(hid_channels, num_classes))
 
     def _build_conv_block(self, in_channels: int, out_channels: int, kernel: int,
-                   stride: int, pool_kernel: int, padding: int = 0) -> nn.Module:
+                          stride: int, pool_kernel: int, padding: int = 0) -> nn.Module:
         return nn.Sequential(
             nn.ZeroPad2d(padding) if padding != 0 else nn.Identity(),
             nn.Conv2d(in_channels=in_channels,

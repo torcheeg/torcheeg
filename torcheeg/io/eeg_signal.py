@@ -1,12 +1,11 @@
-import pickle
 import os
+import pickle
 import threading
 import weakref
 from typing import Union
 
-import torch
 import lmdb
-
+import torch
 
 # Weak values let the last owner release the native environment.
 _LMDB_ENV_CACHE = weakref.WeakValueDictionary()
@@ -101,12 +100,13 @@ class MemoryEEGSignalIO(_EEGSignalIO):
 
         Args:
             key (str): The index of the EEG signal to be queried.
-            
+
         Returns:
             any: The EEG signal sample.
         '''
         if key not in self._memory:
-            raise KeyError(f'Unable to index the EEG signal sample with key {key}!')
+            raise KeyError(
+                f'Unable to index the EEG signal sample with key {key}!')
 
         return self._memory[key]
 
@@ -197,7 +197,7 @@ class LMDBEEGSignalIO(_EEGSignalIO):
 
         Args:
             key (str): The index of the EEG signal to be queried.
-            
+
         Returns:
             any: The EEG signal sample.
         '''
@@ -205,7 +205,8 @@ class LMDBEEGSignalIO(_EEGSignalIO):
             eeg = transaction.get(key.encode())
 
         if eeg is None:
-            raise KeyError(f'Unable to index the EEG signal sample with key {key}!')
+            raise KeyError(
+                f'Unable to index the EEG signal sample with key {key}!')
 
         return pickle.loads(eeg)
 
@@ -265,11 +266,11 @@ class PickleEEGSignalIO(_EEGSignalIO):
                   key: str) -> str:
         r'''
             Write EEG signal to folder.
-    
+
             Args:
                 eeg (any): EEG signal samples to be written into the folder.
                 key (str): Sample key. An existing key replaces its sample.
-    
+
             Returns:
                 str: The key of the written EEG signal.
             '''
@@ -288,10 +289,10 @@ class PickleEEGSignalIO(_EEGSignalIO):
     def read_eeg(self, key: str) -> any:
         r'''
             Query the corresponding EEG signal in the folder according to the index.
-    
+
             Args:
                 key (str): The index of the EEG signal to be queried.
-                
+
             Returns:
                 any: The EEG signal sample.
             '''
@@ -306,7 +307,7 @@ class PickleEEGSignalIO(_EEGSignalIO):
     def keys(self):
         r'''
             Get all keys in the PickleEEGSignalIO.
-    
+
             Returns:
                 list: The list of keys in the PickleEEGSignalIO.
             '''
@@ -315,7 +316,7 @@ class PickleEEGSignalIO(_EEGSignalIO):
     def eegs(self):
         r'''
             Get all EEG signals in the PickleEEGSignalIO.
-    
+
             Returns:
                 list: The list of EEG signals in the PickleEEGSignalIO.
             '''
@@ -339,7 +340,7 @@ class EEGSignalIO:
         eeg = eeg_io.read_eeg(key)
         eeg.shape
         >>> (32, 128)
-    
+
     Args:
         io_path (str): Where the database is stored.
         io_size (int, optional): The maximum capacity of the database. It will increase according to the size of the dataset. (default: :obj:`1024`)
@@ -405,7 +406,7 @@ class EEGSignalIO:
 
         Args:
             key (str): The index of the EEG signal to be queried.
-            
+
         Returns:
             any: The EEG signal sample.
         '''

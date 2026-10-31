@@ -1,6 +1,6 @@
 import os
 import re
-from typing import Iterator, Dict, List, Tuple, Union
+from typing import Dict, Iterator, List, Tuple, Union
 
 import pandas as pd
 from sklearn import model_selection
@@ -9,6 +9,7 @@ from torcheeg.datasets.module.base_dataset import BaseDataset
 
 from .base_model_selection import BaseModelSelection
 from .utils import create_subset, read_indices, write_indices
+
 
 class KFoldGroupbyTrial(BaseModelSelection):
     r'''

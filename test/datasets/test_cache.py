@@ -92,7 +92,8 @@ class TestDatasetCache(unittest.TestCase):
                                       io_mode=mode,
                                       lazy_threshold=0,
                                       after_trial=_add_one)
-                np.testing.assert_array_equal(first[0][0], self._samples[0] + 1)
+                np.testing.assert_array_equal(
+                    first[0][0], self._samples[0] + 1)
                 manifest = path / 'manifest.json'
                 before = manifest.read_bytes()
                 repeated = self._dataset(
@@ -103,9 +104,11 @@ class TestDatasetCache(unittest.TestCase):
                     num_worker=1,
                     online_transform=transforms.ToTensor(),
                     label_transform=transforms.Select('subject_id'))
-                np.testing.assert_array_equal(repeated[0][0], self._samples[0] + 1)
+                np.testing.assert_array_equal(
+                    repeated[0][0], self._samples[0] + 1)
                 self.assertEqual(before, manifest.read_bytes())
-                self.assertEqual(set(json.loads(before)), {'fingerprint', 'files'})
+                self.assertEqual(set(json.loads(before)),
+                                 {'fingerprint', 'files'})
 
     def test_offline_parameters_and_hooks_invalidate_cache(self):
         self._dataset()
@@ -165,7 +168,8 @@ class TestDatasetCache(unittest.TestCase):
                 self.assertFalse(path.exists())
                 self.assertFalse(list(self._root.glob('.torcheeg-cache-*')))
                 recovered = self._dataset(io_path=path)
-                np.testing.assert_array_equal(recovered[0][0], self._samples[0])
+                np.testing.assert_array_equal(
+                    recovered[0][0], self._samples[0])
 
     def test_unknown_existing_cache_is_preserved(self):
         self._path.mkdir()
@@ -224,7 +228,8 @@ class TestDatasetCache(unittest.TestCase):
                 dataset = self._dataset(io_mode='memory',
                                         num_worker=workers,
                                         after_trial=_add_one)
-                np.testing.assert_array_equal(dataset[1][0], self._samples[1] + 1)
+                np.testing.assert_array_equal(
+                    dataset[1][0], self._samples[1] + 1)
                 self.assertFalse(self._path.exists())
 
     def test_omitted_paths_create_separate_caches(self):

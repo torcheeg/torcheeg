@@ -4,8 +4,9 @@ from typing import Any, Callable, Dict, Tuple, Union
 
 import numpy as np
 import scipy.io as scio
-from ..base_dataset import BaseDataset
+
 from ....utils import get_random_dir_path
+from ..base_dataset import BaseDataset
 
 
 class SEEDIVFeatureDataset(BaseDataset):
@@ -193,7 +194,8 @@ class SEEDIVFeatureDataset(BaseDataset):
                 2, 0,
                 1, 0
             ]
-        ]  # The labels with 0, 1, 2, and 3 denote the ground truth, neutral, sad, fear, and happy emotions, respectively.
+            # The labels with 0, 1, 2, and 3 denote the ground truth, neutral, sad, fear, and happy emotions, respectively.
+        ]
         session_labels = labels[int(session_id) - 1]
         trial_ids = [
             int(re.findall(r"de_movingAve(\d+)", key)[0])
@@ -212,7 +214,8 @@ class SEEDIVFeatureDataset(BaseDataset):
             trial_samples = np.concatenate(
                 trial_samples,
                 axis=-1)[:
-                         num_channel]  # channel(61), timestep(n), features(5*k)
+                         # channel(61), timestep(n), features(5*k)
+                         num_channel]
             trial_samples = trial_samples.transpose((1, 0, 2))
             # timestep(n), channel(61), features(5*k)
 

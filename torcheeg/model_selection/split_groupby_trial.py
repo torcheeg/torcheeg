@@ -10,6 +10,7 @@ from torcheeg.datasets.module.base_dataset import BaseDataset
 from ..utils import get_random_dir_path
 from .utils import create_subset, ensure_cache, read_indices, write_indices
 
+
 def train_test_split_groupby_trial(
         dataset: BaseDataset,
         test_size: Union[int, float] = 0.2,
@@ -96,7 +97,8 @@ def train_test_split_groupby_trial(
 
         write_indices(os.path.join(split_path, 'train.csv'),
                       train_info.index.to_numpy())
-        write_indices(os.path.join(split_path, 'test.csv'), test_info.index.to_numpy())
+        write_indices(os.path.join(split_path, 'test.csv'),
+                      test_info.index.to_numpy())
 
     configuration = {
         'splitter': 'train_test_split_groupby_trial',
@@ -107,8 +109,10 @@ def train_test_split_groupby_trial(
     ensure_cache(dataset.info, ['subject_id', 'trial_id'], split_path, configuration,
                  ['train.csv', 'test.csv'], write_split)
 
-    train_info = read_indices(os.path.join(split_path, 'train.csv'), len(dataset))
-    test_info = read_indices(os.path.join(split_path, 'test.csv'), len(dataset))
+    train_info = read_indices(os.path.join(
+        split_path, 'train.csv'), len(dataset))
+    test_info = read_indices(os.path.join(
+        split_path, 'test.csv'), len(dataset))
 
     train_dataset = create_subset(dataset, train_info)
 

@@ -59,6 +59,7 @@ class LMDA(nn.Module):
         hid_channels_2 (int): The number of hidden channels in the second convolution block. (default: :obj:`9`)
         pool_size (int): The size of the average pooling layer. (default: :obj:`5`)
     '''
+
     def __init__(self,
                  num_electrodes: int = 22,
                  chunk_size: int = 1750,
@@ -68,7 +69,7 @@ class LMDA(nn.Module):
                  hid_channels_1: int = 24,
                  hid_channels_2: int = 9,
                  pool_size: int = 5):
-        
+
         super(LMDA, self).__init__()
         self.channel_weight = nn.Parameter(torch.randn(depth, 1,
                                                        num_electrodes),

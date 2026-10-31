@@ -65,7 +65,7 @@ class LALossTrainer(ClassifierTrainer):
             devices (int): The number of devices to use. (default: :obj:`1`)
             accelerator (str): The accelerator to use. Availabel options are: 'cpu', 'gpu'. (default: :obj:`"cpu"`)
             metrics (list of str): The metrics to use. Availabel options are: 'precision', 'recall', 'f1score', 'accuracy', 'matthews', 'auroc', and 'kappa'. (default: :obj:`["accuracy"]`)
-        
+
         .. automethod:: fit
         .. automethod:: test
     '''

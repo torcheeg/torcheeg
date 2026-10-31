@@ -4,8 +4,8 @@ from typing import Any, Callable, Dict, Tuple, Union
 import mne
 import numpy as np
 
-from .base_dataset import BaseDataset
 from ...utils import get_random_dir_path
+from .base_dataset import BaseDataset
 
 
 def default_read_fn(file_path, **kwargs):

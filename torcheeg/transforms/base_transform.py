@@ -1,6 +1,6 @@
 # https://github.com/albumentations-team/albumentations/blob/master/albumentations/core/transforms_interface.py
 
-from typing import Callable, Dict, Union, List
+from typing import Callable, Dict, List, Union
 
 
 class BaseTransform:
@@ -19,7 +19,8 @@ class BaseTransform:
                 raise ValueError('{} requires {}'.format(self.__class__.__name__,
                                                          self.targets_as_params))
             targets_as_params = {k: kwargs[k] for k in self.targets_as_params}
-            params_dependent_on_targets = self.get_params_dependent_on_targets(targets_as_params)
+            params_dependent_on_targets = self.get_params_dependent_on_targets(
+                targets_as_params)
             params.update(params_dependent_on_targets)
 
         for key, arg in kwargs.items():
@@ -80,6 +81,7 @@ class BaseTransform:
                 format_string += f"{k}={v}"
         format_string += ')'
         return format_string
+
 
 class EEGTransform(BaseTransform):
     def __init__(self, apply_to_baseline: bool = False):

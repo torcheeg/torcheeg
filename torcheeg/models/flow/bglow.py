@@ -113,6 +113,7 @@ class _ActNorm(nn.Module):
 
     After initialization, `bias` and `logs` will be trained as parameters.
     """
+
     def __init__(self, num_features, scale=1.0):
         super().__init__()
         # register mean and scale
@@ -488,10 +489,10 @@ class FlowStep(nn.Module):
         # 3. coupling
         if flow_coupling == "additive":
             self.block = _get_block(in_channels // 2, in_channels // 2,
-                                   hidden_channels)
+                                    hidden_channels)
         elif flow_coupling == "affine":
             self.block = _get_block(in_channels // 2, in_channels,
-                                   hidden_channels)
+                                    hidden_channels)
 
     def forward(self, input, logdet=None, reverse=False):
         if not reverse:
@@ -630,13 +631,13 @@ class BGlow(nn.Module):
     - Related Project: https://github.com/ikostrikov/pytorch-flows/
 
     Below is a recommended suite for use in EEG generation:
-    
+
     .. code-block:: python
 
         import torch
 
         from torcheeg.models.flow.bglow import BGlow
-        
+
         eeg = torch.randn(1, 4, 32, 32)
         model = BGlow()
         nll_loss = model(eeg)
@@ -657,6 +658,7 @@ class BGlow(nn.Module):
     ... automethod:: log_probs
     ... automethod:: sample
     '''
+
     def __init__(
         self,
         in_channels: int = 4,

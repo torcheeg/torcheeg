@@ -15,11 +15,9 @@ This guide will help you understand how to easily load and manipulate these data
 # To begin, you'll need to download the DEAP dataset from DEAP download link. Once you have the dataset, use the following code to load it. This will read EEG signals and labels, apply offline transformations, and save them for easy access later on.
 #
 
-from torcheeg.datasets import DEAPDataset
 from torcheeg import transforms
-
-from torcheeg.datasets.constants import \
-    DEAP_CHANNEL_LOCATION_DICT
+from torcheeg.datasets import DEAPDataset
+from torcheeg.datasets.constants import DEAP_CHANNEL_LOCATION_DICT
 
 dataset = DEAPDataset(
     io_path=f'./deap',
@@ -55,6 +53,7 @@ print(dataset[0])
 #
 
 import torch
+
 from torcheeg.visualizers import plot_3d_tensor
 
 img = plot_3d_tensor(torch.tensor(dataset[0][0]))
@@ -85,7 +84,8 @@ img = plot_3d_tensor(torch.tensor(dataset[0][0]))
 
 from torcheeg.datasets import DEAPDataset
 
-dataset = DEAPDataset(io_path=f'./deap', root_path='./data_preprocessed_python')
+dataset = DEAPDataset(
+    io_path=f'./deap', root_path='./data_preprocessed_python')
 print(dataset[0])
 
 ######################################################################
@@ -97,10 +97,10 @@ print(dataset[0])
 # motor-imagery-related datasets with the help of ``MoABB``.
 #
 
-import torcheeg.datasets.moabb as moabb_dataset
-
 from moabb.datasets import BNCI2014001
 from moabb.paradigms import LeftRightImagery
+
+import torcheeg.datasets.moabb as moabb_dataset
 
 dataset = BNCI2014001()
 dataset.subject_list = [1, 2, 3]

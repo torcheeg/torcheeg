@@ -121,7 +121,7 @@ class Up(nn.Module):
 class BCUNet(nn.Module):
     r'''
     The diffusion model consists of two processes, the forward process, and the backward process. The forward process is to gradually add Gaussian noise to an image until it becomes random noise, while the backward process is the de-noising process. We train an attention-based UNet network at the backward process to start with random noise and gradually de-noise it until an image is generated and use the UNet to generate a simulated image from random noises. In particular, in conditional UNet, additional label information is provided to guide the noise reduction results during the noise reduction process.
-    
+
     It is worth noting that this model is not designed for EEG analysis, but shows good performance and can serve as a good research start.
 
     - Paper: Ho J, Jain A, Abbeel P. Denoising diffusion probabilistic models[J]. Advances in Neural Information Processing Systems, 2020, 33: 6840-6851.
@@ -149,6 +149,7 @@ class BCUNet(nn.Module):
         beta_timesteps (int): The variance schedule controlling step sizes. (default: :obj:`256`)
         num_classes (int): The number of classes to predict. (default: :obj:`2`)
     '''
+
     def __init__(self,
                  in_channels=4,
                  hid_channels=64,

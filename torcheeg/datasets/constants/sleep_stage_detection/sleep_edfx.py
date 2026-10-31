@@ -1,3 +1,3 @@
 SLEEPEDFX_CHANNEL_LIST = [
-    'FPZ-CZ', 'PZ-OZ' # *PSG.edf
+    'FPZ-CZ', 'PZ-OZ'  # *PSG.edf
 ]

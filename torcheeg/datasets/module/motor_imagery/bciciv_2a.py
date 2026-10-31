@@ -1,11 +1,12 @@
-import os
 import logging
+import os
 from typing import Any, Callable, Dict, Tuple, Union
+
 import numpy as np
 import scipy.io as scio
 
-from ..base_dataset import BaseDataset
 from ....utils import get_random_dir_path
+from ..base_dataset import BaseDataset
 
 _log = logging.getLogger('torcheeg')
 

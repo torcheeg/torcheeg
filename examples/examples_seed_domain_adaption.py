@@ -10,19 +10,20 @@ In this tutorial, you'll learn how to utilize TorchEEG's Associative Domain Adap
 # Step 1: Initialize the Dataset
 # ------------------------------
 #
-# We leverage the SEED dataset, supported by TorchEEG, where each EEG sample lasts 1 second and consists of 200 data points. 
+# We leverage the SEED dataset, supported by TorchEEG, where each EEG sample lasts 1 second and consists of 200 data points.
 #
-# In offline preprocessing, each electrode's EEG signal is segmented into 4 sub-bands. We then calculate the differential entropy for each sub-band as a feature. The signals are debaselined, mapped onto a grid, and finally saved locally. 
+# In offline preprocessing, each electrode's EEG signal is segmented into 4 sub-bands. We then calculate the differential entropy for each sub-band as a feature. The signals are debaselined, mapped onto a grid, and finally saved locally.
 #
 # For online processing, we convert all EEG signals into Tensors for neural network input. Additionally, we apply after_hook_normalize to reduce trial variance effects on cross-subject emotion recognition.
 #
 
-from torcheeg.datasets import SEEDFeatureDataset
+import numpy as np
+from pytorch_lightning.callbacks import ModelCheckpoint
+
 from torcheeg import transforms
+from torcheeg.datasets import SEEDFeatureDataset
 from torcheeg.datasets.constants import SEED_CHANNEL_LOCATION_DICT
 from torcheeg.transforms import after_hook_normalize
-from pytorch_lightning.callbacks import ModelCheckpoint
-import numpy as np
 
 dataset = SEEDFeatureDataset(
     io_path=f'./examples_seed_domain_adaption/seed',
@@ -90,6 +91,7 @@ subset = Subcategory(
 #
 
 from torch.utils.data import DataLoader
+
 from torcheeg.model_selection import LeaveOneSubjectOut
 from torcheeg.trainers import ADATrainer
 
@@ -131,8 +133,7 @@ for j, sub_dataset in enumerate(subset.split(dataset)):
             target_loader,
             test_loader,
             max_epochs=50,
-            default_root_dir=
-            f'./examples_seed_domain_adaption/model/ses_{i}_sub_{j}.pth',
+            default_root_dir=f'./examples_seed_domain_adaption/model/ses_{i}_sub_{j}.pth',
             callbacks=[ModelCheckpoint(save_last=True)],
             enable_progress_bar=True,
             enable_model_summary=True,

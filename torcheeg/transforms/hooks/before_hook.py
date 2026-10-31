@@ -47,7 +47,7 @@ def before_hook_normalize(data: np.ndarray,
         data (np.ndarray): The input EEG signals or features of a trial.
         axis (int): The axis along which to normalize the data (default: :obj:`0`)
         eps (float): The term added to the denominator to improve numerical stability (default: :obj:`1e-6`)
-        
+
     Returns:
         np.ndarray: The normalized results of a trial.
     '''

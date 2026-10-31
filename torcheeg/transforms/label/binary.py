@@ -8,7 +8,7 @@ from ..base_transform import LabelTransform
 class Binary(LabelTransform):
     r'''
     Binarize the label according to a certain threshold. Labels larger than the threshold are set to 1, and labels smaller than the threshold are set to 0.
-    
+
     .. code-block:: python
 
         from torcheeg import transforms
@@ -32,6 +32,7 @@ class Binary(LabelTransform):
 
     .. automethod:: __call__
     '''
+
     def __init__(self, threshold: float):
         super(Binary, self).__init__()
         self.threshold = threshold
@@ -41,7 +42,7 @@ class Binary(LabelTransform):
         r'''
         Args:
             label (int, float, or list): The input label or list of labels.
-            
+
         Returns:
             int, float, or list: The output label or list of labels after binarization.
         '''
@@ -65,7 +66,7 @@ class Binary(LabelTransform):
 class BinaryOneVSRest(LabelTransform):
     r'''
     Binarize the label following the fashion of the one-vs-rest strategy. When label is the specified positive category label, the label is set to 1, when the label is any other category label, the label is set to 0.
-    
+
     .. code-block:: python
 
         from torcheeg import transforms
@@ -89,6 +90,7 @@ class BinaryOneVSRest(LabelTransform):
 
     .. automethod:: __call__
     '''
+
     def __init__(self, positive: int):
         super(BinaryOneVSRest, self).__init__()
         self.positive = positive
@@ -110,7 +112,7 @@ class BinaryOneVSRest(LabelTransform):
 class BinariesToCategory(LabelTransform):
     r'''
     Convert multiple binary labels into one multiclass label. Multiclass labels represent permutations of binary labels. Commonly used to combine two binary classification tasks into a single quad classification task.
-    
+
     .. code-block:: python
 
         from torcheeg import transforms
@@ -124,14 +126,15 @@ class BinariesToCategory(LabelTransform):
         >>> 2
         t(y=[1, 1])['y']
         >>> 3
-    
+
     .. automethod:: __call__
     '''
+
     def __call__(self, *args, y: List, **kwargs) -> int:
         r'''
         Args:
             y (list): list of binary labels.
-            
+
         Returns:
             int: The converted multiclass label.
         '''
@@ -141,7 +144,7 @@ class BinariesToCategory(LabelTransform):
         r'''
         Args:
             y (list): list of binary labels.
-            
+
         Returns:
             int: The converted multiclass label.
         '''

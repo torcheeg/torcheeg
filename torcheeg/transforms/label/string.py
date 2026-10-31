@@ -1,6 +1,5 @@
 import re
-
-from typing import List, Union, Dict
+from typing import Dict, List, Union
 
 from ..base_transform import LabelTransform
 
@@ -8,7 +7,7 @@ from ..base_transform import LabelTransform
 class StringToInt(LabelTransform):
     r'''
     Identify numbers in strings and convert strings to numbers. If there is no number in the string, the output corresponding to the string is 0.
-    
+
     .. code-block:: python
 
         from torcheeg import transforms
@@ -31,6 +30,7 @@ class StringToInt(LabelTransform):
 
     .. automethod:: __call__
     '''
+
     def __init__(self):
         super(StringToInt, self).__init__()
 
@@ -38,7 +38,7 @@ class StringToInt(LabelTransform):
         r'''
         Args:
             label (str): The input label or list of labels.
-            
+
         Returns:
             int: The output label or list of labels after binarization.
         '''

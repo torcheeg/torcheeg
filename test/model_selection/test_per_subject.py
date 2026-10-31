@@ -2,7 +2,10 @@ import os
 import tempfile
 import unittest
 
-from torcheeg.model_selection import KFoldPerSubjectCrossTrial, KFoldPerSubjectGroupbyTrial, train_test_split_per_subject_cross_trial, train_test_split_per_subject_groupby_trial
+from torcheeg.model_selection import (
+    KFoldPerSubjectCrossTrial, KFoldPerSubjectGroupbyTrial,
+    train_test_split_per_subject_cross_trial,
+    train_test_split_per_subject_groupby_trial)
 
 from .test_utils import _make_dataset
 
@@ -24,8 +27,10 @@ class TestPerSubjectSplits(unittest.TestCase):
         for train_dataset, test_dataset in k_fold.split(dataset):
             self.assertEqual(len(train_dataset), 20)
             self.assertEqual(len(test_dataset), 5)
-            self.assertEqual(len(list(set(train_dataset.info['subject_id']))), 1)
-            self.assertEqual(len(list(set(test_dataset.info['subject_id']))), 1)
+            self.assertEqual(
+                len(list(set(train_dataset.info['subject_id']))), 1)
+            self.assertEqual(
+                len(list(set(test_dataset.info['subject_id']))), 1)
             split_num += 1
         self.assertEqual(split_num, 25)
 
@@ -39,8 +44,10 @@ class TestPerSubjectSplits(unittest.TestCase):
         for train_dataset, test_dataset in k_fold.split(dataset):
             self.assertEqual(len(train_dataset), 20)
             self.assertEqual(len(test_dataset), 5)
-            self.assertEqual(len(list(set(train_dataset.info['subject_id']))), 1)
-            self.assertEqual(len(list(set(test_dataset.info['subject_id']))), 1)
+            self.assertEqual(
+                len(list(set(train_dataset.info['subject_id']))), 1)
+            self.assertEqual(
+                len(list(set(test_dataset.info['subject_id']))), 1)
             split_num += 1
         self.assertEqual(split_num, 25)
 
@@ -76,7 +83,8 @@ class TestPerSubjectSplits(unittest.TestCase):
                         subject=subject), tempfile.TemporaryDirectory() as path:
                     splitter = getattr(model_selection, name)(n_splits=5,
                                                               split_path=path)
-                    folds = list(splitter.split(_make_dataset(), subject=subject))
+                    folds = list(splitter.split(
+                        _make_dataset(), subject=subject))
                     self.assertEqual(len(folds), 5)
                     for train, test in folds:
                         self.assertEqual(set(train.info['subject_id']), {1})
@@ -96,13 +104,15 @@ class TestPerSubjectSplits(unittest.TestCase):
                 kwargs = {} if name in ('LeaveOneSubjectOut',
                                         'TrainTestSplitPerSubjectGroupbyTrial') else {
                                             'n_splits': 5
-                                        }
-                splitter = getattr(model_selection, name)(split_path=path, **kwargs)
+                }
+                splitter = getattr(model_selection, name)(
+                    split_path=path, **kwargs)
                 folds = list(splitter.split(dataset, subject='group/1%'))
                 self.assertEqual(len(folds), 5 if 'KFold' in name else 1)
                 self.assertIn('group/1%', splitter.subjects)
                 held_out = folds[0][1] if name == 'LeaveOneSubjectOut' else folds[0][0]
-                self.assertEqual(set(held_out.info['subject_id']), {'group/1%'})
+                self.assertEqual(
+                    set(held_out.info['subject_id']), {'group/1%'})
 
     def test_ambiguous_subject_filename_ids_are_rejected(self):
         from torcheeg import model_selection

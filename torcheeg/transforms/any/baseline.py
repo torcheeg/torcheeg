@@ -1,4 +1,4 @@
-from typing import Dict, Union, List
+from typing import Dict, List, Union
 
 from ..base_transform import EEGTransform
 
@@ -6,7 +6,7 @@ from ..base_transform import EEGTransform
 class BaselineRemoval(EEGTransform):
     r'''
     A transform method to subtract the baseline signal (the signal recorded before the emotional stimulus), the nosie signal is removed from the emotional signal unrelated to the emotional stimulus.
-    
+
     TorchEEG recommends using this class in online_transform for higher processing speed. Even though, this class is also supported in offline_transform. Usually, the baseline needs the same transformation as the experimental signal, please add :obj:`apply_to_baseline=True` to all transforms before this operation to ensure that the transformation is performed on the baseline signal
 
     .. code-block:: python
@@ -22,9 +22,10 @@ class BaselineRemoval(EEGTransform):
 
         t(eeg=np.random.randn(32, 128), baseline=np.random.randn(32, 128))['eeg'].shape
         >>> (4, 9, 9)
-    
+
     .. automethod:: __call__
     '''
+
     def __init__(self):
         super(BaselineRemoval, self).__init__(apply_to_baseline=False)
 
@@ -56,10 +57,11 @@ class BaselineRemoval(EEGTransform):
     def get_params_dependent_on_targets(self, params):
         return {'baseline': params['baseline']}
 
+
 class BaselineCorrection(EEGTransform):
     r'''
     A transform method to subtract the mean of baseline signal from EEG.
-    
+
     TorchEEG recommends using this class in online_transform for higher processing speed. Even though, this class is also supported in offline_transform. Usually, the baseline needs the same transformation as the experimental signal, please add :obj:`apply_to_baseline=True` to all transforms before this operation to ensure that the transformation is performed on the baseline signal
 
     .. code-block:: python
@@ -70,22 +72,22 @@ class BaselineCorrection(EEGTransform):
 
         t(eeg=np.random.randn(32, 128), baseline=np.random.randn(32, 128))['eeg'].shape
         >>> (32,128)
-    
+
     .. automethod:: __call__
     '''
-    def __init__(self,axis=-1):
+
+    def __init__(self, axis=-1):
         super(BaselineCorrection, self).__init__(apply_to_baseline=False)
-        self.axis=axis
+        self.axis = axis
 
-    def __call__(self, *args, eeg: any, baseline= None, **kwargs) :
+    def __call__(self, *args, eeg: any, baseline=None, **kwargs):
         return super().__call__(*args, eeg=eeg, baseline=baseline, **kwargs)
-
 
     def apply(self, eeg, **kwargs) -> any:
 
         if kwargs['baseline'] is None:
             return eeg
-        return eeg - kwargs['baseline'].mean(self.axis,keepdims= True)
+        return eeg - kwargs['baseline'].mean(self.axis, keepdims=True)
 
     @property
     def targets_as_params(self):

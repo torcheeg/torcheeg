@@ -210,19 +210,19 @@ class AMIGOSDataset(BaseDataset):
 
     @staticmethod
     def process_record(
-        record: str,
-        samples: np.ndarray,
-        labels: np.ndarray,
-        chunk_size: int = 128,
-        overlap: int = 0,
-        num_channel: int = 14,
-        num_trial: int = 16,
-        skipped_subjects: List[int] = [9, 12, 21, 22, 23, 24, 33],
-        num_baseline: int = 5,
-        baseline_chunk_size: int = 128,
-        before_trial: Union[None, Callable] = None,
-        offline_transform: Union[None, Callable] = None,
-        **kwargs):
+            record: str,
+            samples: np.ndarray,
+            labels: np.ndarray,
+            chunk_size: int = 128,
+            overlap: int = 0,
+            num_channel: int = 14,
+            num_trial: int = 16,
+            skipped_subjects: List[int] = [9, 12, 21, 22, 23, 24, 33],
+            num_baseline: int = 5,
+            baseline_chunk_size: int = 128,
+            before_trial: Union[None, Callable] = None,
+            offline_transform: Union[None, Callable] = None,
+            **kwargs):
 
         subject = int(
             re.findall(r'Data_Preprocessed_P(\d*).mat',
@@ -272,7 +272,8 @@ class AMIGOSDataset(BaseDataset):
             # extract baseline signals
             trial_baseline_sample = trial_samples[:num_channel, :
                                                   baseline_chunk_size *
-                                                  num_baseline]  # channel(14), timestep(5*128)
+                                                  # channel(14), timestep(5*128)
+                                                  num_baseline]
             trial_baseline_sample = trial_baseline_sample.reshape(
                 num_channel, num_baseline,
                 baseline_chunk_size).mean(axis=1)  # channel(14), timestep(128)

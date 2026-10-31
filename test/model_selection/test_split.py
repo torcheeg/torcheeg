@@ -2,7 +2,9 @@ import os
 import tempfile
 import unittest
 
-from torcheeg.model_selection import train_test_split, train_test_split_cross_trial, train_test_split_groupby_trial
+from torcheeg.model_selection import (train_test_split,
+                                      train_test_split_cross_trial,
+                                      train_test_split_groupby_trial)
 
 from .test_utils import _make_dataset
 

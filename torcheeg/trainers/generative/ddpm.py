@@ -21,15 +21,15 @@ _log = logging.getLogger('torcheeg')
 
 
 def _extract_into_tensor(a: torch.Tensor, t: int,
-                        x_shape: Tuple[int, ...]) -> torch.Tensor:
+                         x_shape: Tuple[int, ...]) -> torch.Tensor:
     b, *_ = t.shape
     out = a.gather(-1, t)
     return out.reshape(b, *((1, ) * (len(x_shape) - 1)))
 
 
 def _noise_like(shape: Tuple[int, ...],
-               device: torch.device,
-               repeat: bool = False) -> torch.Tensor:
+                device: torch.device,
+                repeat: bool = False) -> torch.Tensor:
     repeat_noise = lambda: torch.randn((1, *shape[1:]), device=device).repeat(
         shape[0], *((1, ) * (len(shape) - 1)))
     noise = lambda: torch.randn(shape, device=device)
@@ -37,8 +37,8 @@ def _noise_like(shape: Tuple[int, ...],
 
 
 def _betas_for_alpha_bar(num_diffusion_timesteps: int,
-                        alpha_bar: Any,
-                        max_beta: float = 0.999) -> np.ndarray:
+                         alpha_bar: Any,
+                         max_beta: float = 0.999) -> np.ndarray:
     betas = []
     for i in range(num_diffusion_timesteps):
         t1 = i / num_diffusion_timesteps
@@ -48,10 +48,10 @@ def _betas_for_alpha_bar(num_diffusion_timesteps: int,
 
 
 def _make_beta_schedule(schedule: str,
-                       n_timestep: int,
-                       linear_start: float = 1e-4,
-                       linear_end: float = 2e-2,
-                       cosine_s: float = 8e-3) -> np.ndarray:
+                        n_timestep: int,
+                        linear_start: float = 1e-4,
+                        linear_end: float = 2e-2,
+                        cosine_s: float = 8e-3) -> np.ndarray:
     if schedule == "linear":
         betas = (torch.linspace(linear_start**0.5,
                                 linear_end**0.5,
@@ -190,7 +190,7 @@ class DDPMTrainer(pl.LightningModule):
     - Related Project: https://github.com/Stability-AI/stablediffusion
 
     .. code-block:: python
-        
+
         from torcheeg.trainers import DDPMTrainer
         from torcheeg.models import BUNet
 
@@ -242,7 +242,8 @@ class DDPMTrainer(pl.LightningModule):
             cosine_s: float = 8e-3,
             original_elbo_weight: float = 0.,
             v_posterior:
-        float = 0.,  # weight for choosing posterior variance as sigma = (1-v) * beta_tilde + v * beta
+        # weight for choosing posterior variance as sigma = (1-v) * beta_tilde + v * beta
+        float = 0.,
             l_simple_weight: float = 1.,
             parameterization:
         str = "eps",  # all assuming fixed variance schedules
@@ -256,7 +257,8 @@ class DDPMTrainer(pl.LightningModule):
             metric_num_features: int = None):
         super().__init__()
         if not (parameterization in ['eps', 'x0', 'v']):
-            raise ValueError('currently only supporting "eps" and "x0" and "v"')
+            raise ValueError(
+                'currently only supporting "eps" and "x0" and "v"')
         self.parameterization = parameterization
         self.lr = lr
         self.weight_decay = weight_decay
@@ -315,7 +317,8 @@ class DDPMTrainer(pl.LightningModule):
                 )
                 self.metric_num_features = self.metric_extractor.in_channels
             if not (not self.metric_num_features is None):
-                raise ValueError('The metric_num_features should be specified.')
+                raise ValueError(
+                    'The metric_num_features should be specified.')
             self.test_fid = FrechetInceptionDistance(self.metric_extractor,
                                                      self.metric_num_features)
 
@@ -331,10 +334,10 @@ class DDPMTrainer(pl.LightningModule):
                           linear_end: float = 2e-2,
                           cosine_s: float = 8e-3):
         betas = _make_beta_schedule(beta_schedule,
-                                   timesteps,
-                                   linear_start=linear_start,
-                                   linear_end=linear_end,
-                                   cosine_s=cosine_s)
+                                    timesteps,
+                                    linear_start=linear_start,
+                                    linear_end=linear_end,
+                                    cosine_s=cosine_s)
         alphas = 1. - betas
         alphas_cumprod = np.cumprod(alphas, axis=0)
         alphas_cumprod_prev = np.append(1., alphas_cumprod[:-1])
@@ -367,7 +370,8 @@ class DDPMTrainer(pl.LightningModule):
         posterior_variance = (1 - self.v_posterior) * betas * (
             1. - alphas_cumprod_prev) / (
                 1. - alphas_cumprod) + self.v_posterior * betas
-        self.register_buffer('posterior_variance', to_torch(posterior_variance))
+        self.register_buffer('posterior_variance',
+                             to_torch(posterior_variance))
 
         self.register_buffer(
             'posterior_log_variance_clipped',
@@ -421,9 +425,9 @@ class DDPMTrainer(pl.LightningModule):
             _extract_into_tensor(self.sqrt_alphas_cumprod, t, x_start.shape) *
             x_start)
         variance = _extract_into_tensor(1.0 - self.alphas_cumprod, t,
-                                       x_start.shape)
+                                        x_start.shape)
         log_variance = _extract_into_tensor(self.log_one_minus_alphas_cumprod, t,
-                                           x_start.shape)
+                                            x_start.shape)
         return mean, variance, log_variance
 
     def predict_start_from_noise(
@@ -432,7 +436,7 @@ class DDPMTrainer(pl.LightningModule):
         return (
             _extract_into_tensor(self.sqrt_recip_alphas_cumprod, t, x_t.shape) *
             x_t - _extract_into_tensor(self.sqrt_recipm1_alphas_cumprod, t,
-                                      x_t.shape) * noise)
+                                       x_t.shape) * noise)
 
     def predict_start_from_z_and_v(
             self, x_t: torch.Tensor, t: torch.Tensor,
@@ -440,7 +444,7 @@ class DDPMTrainer(pl.LightningModule):
         return (
             _extract_into_tensor(self.sqrt_alphas_cumprod, t, x_t.shape) * x_t -
             _extract_into_tensor(self.sqrt_one_minus_alphas_cumprod, t,
-                                x_t.shape) * v)
+                                 x_t.shape) * v)
 
     def predict_eps_from_z_and_v(
             self, x_t: torch.Tensor, t: torch.Tensor,
@@ -448,7 +452,7 @@ class DDPMTrainer(pl.LightningModule):
         return (
             _extract_into_tensor(self.sqrt_alphas_cumprod, t, x_t.shape) * v +
             _extract_into_tensor(self.sqrt_one_minus_alphas_cumprod, t,
-                                x_t.shape) * x_t)
+                                 x_t.shape) * x_t)
 
     def q_posterior(
             self, x_start: torch.Tensor, x_t: torch.Tensor,
@@ -458,7 +462,7 @@ class DDPMTrainer(pl.LightningModule):
             x_start +
             _extract_into_tensor(self.posterior_mean_coef2, t, x_t.shape) * x_t)
         posterior_variance = _extract_into_tensor(self.posterior_variance, t,
-                                                 x_t.shape)
+                                                  x_t.shape)
         posterior_log_variance_clipped = _extract_into_tensor(
             self.posterior_log_variance_clipped, t, x_t.shape)
         return posterior_mean, posterior_variance, posterior_log_variance_clipped
@@ -500,14 +504,14 @@ class DDPMTrainer(pl.LightningModule):
         return (
             _extract_into_tensor(self.sqrt_alphas_cumprod, t, x_start.shape) *
             x_start + _extract_into_tensor(self.sqrt_one_minus_alphas_cumprod, t,
-                                          x_start.shape) * noise)
+                                           x_start.shape) * noise)
 
     def get_v(self, x: torch.Tensor, noise: torch.Tensor,
               t: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
         return (
             _extract_into_tensor(self.sqrt_alphas_cumprod, t, x.shape) * noise -
             _extract_into_tensor(self.sqrt_one_minus_alphas_cumprod, t,
-                                x.shape) * x)
+                                 x.shape) * x)
 
     def get_loss(self,
                  pred: torch.Tensor,
@@ -795,7 +799,7 @@ class CDDPMTrainer(DDPMTrainer):
     - Related Project: https://github.com/Stability-AI/stablediffusion
 
     .. code-block:: python
-        
+
         model = UNet()
         trainer = CDDPMTrainer(model)
         trainer.fit(train_loader, val_loader, max_epochs=1)

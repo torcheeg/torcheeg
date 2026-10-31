@@ -140,7 +140,7 @@ class LGGNet(nn.Module):
                                   transforms.Lambda(lambda x: x + 1)
                               ]))
         model = LGGNet(region_list=SEED_GENERAL_REGION_LIST, chunk_size=128, num_electrodes=32, hid_channels=32, num_classes=2)
-        
+
         x, y = next(iter(DataLoader(dataset, batch_size=64)))
         model(x)
 
@@ -171,6 +171,7 @@ class LGGNet(nn.Module):
         pool_stride (int): The stride of pooling layers in the temporal blocks (default: :obj:`4`)
         num_classes (int): The number of classes to predict. (default: :obj:`2`)
     '''
+
     def __init__(self,
                  region_list,
                  in_channels: int = 1,
@@ -227,17 +228,17 @@ class LGGNet(nn.Module):
         feature_dim = self.feature_dim
         self.local_filter_weight = nn.Parameter(torch.FloatTensor(
             self.num_electrodes, feature_dim),
-                                                requires_grad=True)
+            requires_grad=True)
         self.local_filter_bias = nn.Parameter(torch.zeros(
             (1, self.num_electrodes, 1), dtype=torch.float32),
-                                              requires_grad=True)
+            requires_grad=True)
 
         self.aggregate = Aggregator(self.region_list)
         num_region = len(self.region_list)
 
         self.global_adj = nn.Parameter(torch.FloatTensor(
             num_region, num_region),
-                                       requires_grad=True)
+            requires_grad=True)
 
         self.bn_g1 = nn.BatchNorm1d(num_region)
         self.bn_g2 = nn.BatchNorm1d(num_region)
@@ -252,7 +253,7 @@ class LGGNet(nn.Module):
         nn.init.xavier_uniform_(self.global_adj)
 
     def _build_temporal_block(self, in_channels, out_channels, kernel_size,
-                       pool_kernel_size, pool_stride):
+                              pool_kernel_size, pool_stride):
         return nn.Sequential(
             nn.Conv2d(in_channels,
                       out_channels,

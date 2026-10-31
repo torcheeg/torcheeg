@@ -7,9 +7,12 @@ import torch.nn as nn
 class InceptionConv2d(nn.Module):
     def __init__(self, in_channels: int, out_channels: int, bias: bool = True):
         super().__init__()
-        self.conv5x5 = nn.Conv2d(in_channels, out_channels, kernel_size=5, stride=1, padding=2, bias=bias)
-        self.conv3x3 = nn.Conv2d(in_channels, out_channels, kernel_size=3, stride=1, padding=1, bias=bias)
-        self.conv1x1 = nn.Conv2d(in_channels, out_channels, kernel_size=1, stride=1, padding=0, bias=bias)
+        self.conv5x5 = nn.Conv2d(
+            in_channels, out_channels, kernel_size=5, stride=1, padding=2, bias=bias)
+        self.conv3x3 = nn.Conv2d(
+            in_channels, out_channels, kernel_size=3, stride=1, padding=1, bias=bias)
+        self.conv1x1 = nn.Conv2d(
+            in_channels, out_channels, kernel_size=1, stride=1, padding=0, bias=bias)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.conv5x5(x) + self.conv3x3(x) + self.conv1x1(x)
@@ -31,7 +34,8 @@ class SeparableConv2d(nn.Module):
                                padding=padding,
                                groups=in_channels,
                                bias=bias)
-        self.point = nn.Conv2d(in_channels, out_channels, kernel_size=1, stride=stride, padding=0, bias=bias)
+        self.point = nn.Conv2d(in_channels, out_channels,
+                               kernel_size=1, stride=stride, padding=0, bias=bias)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         x = self.depth(x)
@@ -78,6 +82,7 @@ class STNet(nn.Module):
         num_classes (int): The number of classes to predict. (default: :obj:`2`)
         dropout (float): Probability of an element to be zeroed in the dropout layers. (default: :obj:`0.2`)
     '''
+
     def __init__(self,
                  chunk_size: int = 128,
                  grid_size: Tuple[int, int] = (9, 9),
@@ -89,10 +94,14 @@ class STNet(nn.Module):
         self.dropout = dropout
         self.grid_size = grid_size
 
-        self.layer1 = nn.Conv2d(chunk_size, 256, kernel_size=3, stride=1, padding=1, bias=True)
-        self.layer2 = nn.Conv2d(256, 128, kernel_size=5, stride=1, padding=2, bias=True)
-        self.layer3 = nn.Conv2d(128, 64, kernel_size=5, stride=1, padding=2, bias=True)
-        self.layer4 = SeparableConv2d(64, 32, kernel_size=5, stride=1, padding=2, bias=True)
+        self.layer1 = nn.Conv2d(
+            chunk_size, 256, kernel_size=3, stride=1, padding=1, bias=True)
+        self.layer2 = nn.Conv2d(256, 128, kernel_size=5,
+                                stride=1, padding=2, bias=True)
+        self.layer3 = nn.Conv2d(128, 64, kernel_size=5,
+                                stride=1, padding=2, bias=True)
+        self.layer4 = SeparableConv2d(
+            64, 32, kernel_size=5, stride=1, padding=2, bias=True)
         self.layer5 = InceptionConv2d(32, 16)
 
         self.drop_selu = nn.Sequential(nn.Dropout(p=dropout), nn.SELU())

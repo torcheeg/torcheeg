@@ -18,7 +18,7 @@ class Select(LabelTransform):
     :obj:`Select` allows multiple values to be selected and returned as a list. Suitable for multi-classification tasks or multi-task learning.
 
     .. code-block:: python
-        
+
         from torcheeg import transforms
 
         t = transforms.Select(key=['valence', 'arousal'])
@@ -30,6 +30,7 @@ class Select(LabelTransform):
 
     .. automethod:: __call__
     '''
+
     def __init__(self, key: Union[str, List]):
         super(Select, self).__init__()
         self.key = key
@@ -39,7 +40,7 @@ class Select(LabelTransform):
         r'''
         Args:
             y (dict): A dictionary describing the EEG signal samples, usually as the last return value for each sample in :obj:`Dataset`.
-            
+
         Returns:
             str or list: Selected value or selected value list.
         '''

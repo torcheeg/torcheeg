@@ -146,7 +146,7 @@ class _DANNLikeTrainer(ClassifierTrainer):
                 self.scheduled_alpha = 2.0 / (1.0 + np.exp(-10 * p)) - 1
 
             if self.lr_scheduler:
-                self.lr_factor = 1.0 / ((1.0 + self.lr_scheduler_gamma * p)**
+                self.lr_factor = 1.0 / ((1.0 + self.lr_scheduler_gamma * p) **
                                         self.lr_scheduler_decay)
 
     def _domain_loss_fn(self, x_source_feat: torch.Tensor,

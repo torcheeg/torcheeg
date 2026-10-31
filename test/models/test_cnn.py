@@ -114,11 +114,14 @@ class TestCNN(unittest.TestCase):
         batch_norm_fields = ['weight', 'bias', 'running_mean',
                              'running_var', 'num_batches_tracked']
         expected_keys = ['block1.0.weight']
-        expected_keys.extend('block1.1.' + field for field in batch_norm_fields)
+        expected_keys.extend(
+            'block1.1.' + field for field in batch_norm_fields)
         expected_keys.append('block1.2.weight')
-        expected_keys.extend('block1.3.' + field for field in batch_norm_fields)
+        expected_keys.extend(
+            'block1.3.' + field for field in batch_norm_fields)
         expected_keys.extend(['block2.0.weight', 'block2.1.weight'])
-        expected_keys.extend('block2.2.' + field for field in batch_norm_fields)
+        expected_keys.extend(
+            'block2.2.' + field for field in batch_norm_fields)
         expected_keys.append('lin.weight')
         for chunk_size in (128, 151):
             with self.subTest(chunk_size=chunk_size):
@@ -131,8 +134,8 @@ class TestCNN(unittest.TestCase):
                        kernel_1=63, kernel_2=15)
         for conv in (model.block1[0], model.block2[0]):
             reference = torch.nn.Conv2d(conv.in_channels, conv.out_channels,
-                conv.kernel_size, groups=conv.groups,
-                padding=(0, conv.kernel_size[1] // 2), bias=False)
+                                        conv.kernel_size, groups=conv.groups,
+                                        padding=(0, conv.kernel_size[1] // 2), bias=False)
             reference.load_state_dict(conv.state_dict())
             eeg = torch.randn(2, conv.in_channels, 32, 128)
             torch.testing.assert_close(conv(eeg), reference(eeg))

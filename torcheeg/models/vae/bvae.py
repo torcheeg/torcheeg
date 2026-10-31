@@ -13,7 +13,7 @@ class BEncoder(nn.Module):
         import torch
 
         from torcheeg.models import BEncoder
-        
+
         encoder = BEncoder(in_channels=4)
         mock_eeg = torch.randn(1, 4, 9, 9)
         mu, logvar = encoder(mock_eeg)
@@ -23,6 +23,7 @@ class BEncoder(nn.Module):
         grid_size (tuple): Spatial dimensions of grid-like EEG representation. (default: :obj:`(9, 9)`)
         hid_channels (int): The number of hidden nodes in the first convolutional layer, which is also used as the dimension of output mu and var. (default: :obj:`32`)
     '''
+
     def __init__(self,
                  in_channels: int = 4,
                  grid_size: Tuple[int, int] = (9, 9),
@@ -119,6 +120,7 @@ class BDecoder(nn.Module):
         out_channels (int): The generated feature dimension of each electrode. (default: :obj:`4`)
         grid_size (tuple): Spatial dimensions of grid-like EEG representation. (default: :obj:`(9, 9)`)
     '''
+
     def __init__(self,
                  in_channels: int = 64,
                  out_channels: int = 4,

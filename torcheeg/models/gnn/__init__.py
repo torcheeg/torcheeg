@@ -1,4 +1,4 @@
 from .dgcnn import DGCNN
-from .lggnet import LGGNet
 from .gin import GIN
+from .lggnet import LGGNet
 from .rgnn import RGNN

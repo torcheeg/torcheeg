@@ -1,6 +1,6 @@
 import os
 import re
-from typing import Iterator, Dict, Tuple, Union
+from typing import Dict, Iterator, Tuple, Union
 
 import pandas as pd
 from sklearn import model_selection
@@ -9,6 +9,7 @@ from torcheeg.datasets.module.base_dataset import BaseDataset
 
 from .base_model_selection import BaseModelSelection
 from .utils import create_subset, read_indices, write_indices
+
 
 class KFold(BaseModelSelection):
     r'''
@@ -46,7 +47,7 @@ class KFold(BaseModelSelection):
             train_loader = DataLoader(train_dataset)
             test_loader = DataLoader(test_dataset)
             ...
-    
+
     Args:
         n_splits (int): Number of folds. Must be at least 2. (default: :obj:`5`)
         shuffle (bool): Whether to shuffle the data before splitting into batches. Note that the samples within each split will not be shuffled. (default: :obj:`False`)

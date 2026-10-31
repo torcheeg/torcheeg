@@ -17,10 +17,10 @@ In this tutorial, we'll walk through how to leverage TorchEEG for training a Dyn
 # - Remove the baseline from the signal
 # - Convert the preprocessed signals into Tensors
 # The code below demonstrates these steps:
-# 
+#
 
-from torcheeg.datasets import AMIGOSDataset
 from torcheeg import transforms
+from torcheeg.datasets import AMIGOSDataset
 
 dataset = AMIGOSDataset(io_path=f'./examples_amigos_dgcnn/amigos',
                         root_path='./data_preprocessed',
@@ -59,12 +59,11 @@ k_fold = KFoldGroupbyTrial(n_splits=5,
 # After that, we'll train the model for 50 epochs, utilizing TorchEEG's `ClassifierTrainer`.
 #
 
-from torch.utils.data import DataLoader
-from torcheeg.models import DGCNN
-
-from torcheeg.trainers import ClassifierTrainer
-
 import pytorch_lightning as pl
+from torch.utils.data import DataLoader
+
+from torcheeg.models import DGCNN
+from torcheeg.trainers import ClassifierTrainer
 
 for i, (train_dataset, val_dataset) in enumerate(k_fold.split(dataset)):
     train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True)

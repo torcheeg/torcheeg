@@ -6,7 +6,7 @@ from ..base_transform import LabelTransform
 class Mapping(LabelTransform):
     r'''
     Mapping the label according to a certain dictionary.
-    
+
     .. code-block:: python
 
         from torcheeg import transforms
@@ -23,7 +23,7 @@ class Mapping(LabelTransform):
     .. code-block:: python
 
         from torcheeg import transforms
-        
+
         t = Mapping({
             'left_hand': 0,
             'right_hand': 1,
@@ -39,6 +39,7 @@ class Mapping(LabelTransform):
 
     .. automethod:: __call__
     '''
+
     def __init__(self, map_dict: float, default: float = -1) -> None:
         super(Mapping, self).__init__()
         self.map_dict = map_dict
@@ -49,7 +50,7 @@ class Mapping(LabelTransform):
         r'''
         Args:
             label (int, float, or list): The input label or list of labels.
-            
+
         Returns:
             int, float, or list: The output label or list of labels after binarization.
         '''

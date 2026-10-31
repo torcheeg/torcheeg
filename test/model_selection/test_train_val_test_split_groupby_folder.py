@@ -1,5 +1,5 @@
-import tempfile
 import os
+import tempfile
 import unittest
 
 from torcheeg.model_selection import TrainValTestSplitGroupbyFolder

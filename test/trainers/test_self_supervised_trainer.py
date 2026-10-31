@@ -5,7 +5,8 @@ import torch
 import torch.nn as nn
 from torch.utils.data import Dataset
 from torch.utils.data.dataloader import DataLoader
-from torcheeg.trainers import SimCLRTrainer, BYOLTrainer
+
+from torcheeg.trainers import BYOLTrainer, SimCLRTrainer
 
 
 class DummyDataset(Dataset):
@@ -57,7 +58,6 @@ class TestSelfSupervisedTrainer(unittest.TestCase):
 
         trainer = BYOLTrainer(model, extract_channels=10)
         trainer.fit(train_loader, val_loader, max_epochs=1, max_steps=1)
-
 
 
 if __name__ == '__main__':

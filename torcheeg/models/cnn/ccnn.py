@@ -44,6 +44,7 @@ class CCNN(nn.Module):
         num_classes (int): The number of classes to predict. (default: :obj:`2`)
         dropout (float): Probability of an element to be zeroed in the dropout layers. (default: :obj:`0.25`)
     '''
+
     def __init__(self, in_channels: int = 4, grid_size: Tuple[int, int] = (9, 9), num_classes: int = 2, dropout: float = 0.5):
         super(CCNN, self).__init__()
         self.in_channels = in_channels
@@ -53,13 +54,16 @@ class CCNN(nn.Module):
 
         self.conv1 = nn.Sequential(nn.ZeroPad2d((1, 2, 1, 2)), nn.Conv2d(self.in_channels, 64, kernel_size=4, stride=1),
                                    nn.ReLU())
-        self.conv2 = nn.Sequential(nn.ZeroPad2d((1, 2, 1, 2)), nn.Conv2d(64, 128, kernel_size=4, stride=1), nn.ReLU())
-        self.conv3 = nn.Sequential(nn.ZeroPad2d((1, 2, 1, 2)), nn.Conv2d(128, 256, kernel_size=4, stride=1), nn.ReLU())
-        self.conv4 = nn.Sequential(nn.ZeroPad2d((1, 2, 1, 2)), nn.Conv2d(256, 64, kernel_size=4, stride=1), nn.ReLU())
+        self.conv2 = nn.Sequential(nn.ZeroPad2d((1, 2, 1, 2)), nn.Conv2d(
+            64, 128, kernel_size=4, stride=1), nn.ReLU())
+        self.conv3 = nn.Sequential(nn.ZeroPad2d((1, 2, 1, 2)), nn.Conv2d(
+            128, 256, kernel_size=4, stride=1), nn.ReLU())
+        self.conv4 = nn.Sequential(nn.ZeroPad2d((1, 2, 1, 2)), nn.Conv2d(
+            256, 64, kernel_size=4, stride=1), nn.ReLU())
 
         self.lin1 = nn.Sequential(
             nn.Linear(self.grid_size[0] * self.grid_size[1] * 64, 1024),
-            nn.SELU(), # Not mentioned in paper
+            nn.SELU(),  # Not mentioned in paper
             nn.Dropout2d(self.dropout)
         )
         self.lin2 = nn.Linear(1024, self.num_classes)

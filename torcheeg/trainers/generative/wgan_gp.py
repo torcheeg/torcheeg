@@ -45,7 +45,7 @@ class WGANGPTrainer(pl.LightningModule):
     - Related Project: https://github.com/eriklindernoren/PyTorch-GAN
 
     .. code-block:: python
-        
+
         g_model = BGenerator(in_channels=128)
         d_model = BDiscriminator(in_channels=4)
         trainer = WGANGPTrainer(generator, discriminator)
@@ -64,7 +64,7 @@ class WGANGPTrainer(pl.LightningModule):
         metric_extractor (nn.Module): The feature extractor model for computing the FID score. (default: :obj:`None`)
         metric_classifier (nn.Module): The classifier model for computing the IS score. (default: :obj:`None`)
         metric_num_features (int): The number of features extracted by the metric_extractor. If not specified, it will be inferred from the :obj:`in_channels` attribute of the metric_extractor. (default: :obj:`None`)
-    
+
     .. automethod:: fit
     .. automethod:: test
     '''
@@ -134,7 +134,8 @@ class WGANGPTrainer(pl.LightningModule):
                 )
                 self.metric_num_features = self.metric_extractor.in_channels
             if not (not self.metric_num_features is None):
-                raise ValueError('The metric_num_features should be specified.')
+                raise ValueError(
+                    'The metric_num_features should be specified.')
             self.test_fid = FrechetInceptionDistance(self.metric_extractor,
                                                      self.metric_num_features)
 
@@ -408,7 +409,7 @@ class CWGANGPTrainer(WGANGPTrainer):
     - Related Project: https://github.com/eriklindernoren/PyTorch-GAN
 
     .. code-block:: python
-        
+
         g_model = BGenerator(in_channels=128)
         d_model = BDiscriminator(in_channels=4)
         trainer = WGANGPTrainer(generator, discriminator)
@@ -426,7 +427,7 @@ class CWGANGPTrainer(WGANGPTrainer):
         devices (int): The number of GPUs to use. (default: :obj:`1`)
         accelerator (str): The accelerator to use. Availabel options are: 'cpu', 'gpu'. (default: :obj:`"cpu"`)
         metrics (List[str]): The metrics to use. The metrics to use. Availabel options are: 'fid', 'is'. (default: :obj:`[]`)
-    
+
     .. automethod:: fit
     .. automethod:: test
     '''

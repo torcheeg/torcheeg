@@ -1,6 +1,5 @@
 from importlib import import_module as _import_module
 
-
 _EXPORTS = {
     'plot_signal': '.raw',
     'plot_raw_topomap': '.topomap',

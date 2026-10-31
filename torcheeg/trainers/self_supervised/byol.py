@@ -49,7 +49,7 @@ class BYOLTrainer(pl.LightningModule):
         from torcheeg.datasets import DEAPDataset
         from torcheeg import transforms
         from torcheeg.datasets.constants import DEAP_CHANNEL_LOCATION_DICT
-        
+
         contras_dataset = DEAPDataset(
             io_path=f'./io/deap',
             root_path='./data_preprocessed_python',
@@ -101,9 +101,9 @@ class BYOLTrainer(pl.LightningModule):
 
         self.student_model = extractor
         self.student_projector = self._build_mlp(extract_channels, proj_hid_channels,
-                                          proj_channels)
+                                                 proj_channels)
         self.student_predictor = self._build_mlp(proj_channels, proj_hid_channels,
-                                          proj_channels)
+                                                 proj_channels)
 
         self.teacher_model, self.teacher_projector = self.teacher()
 

@@ -1,6 +1,7 @@
 import unittest
 
-from torcheeg.datasets import SleepEDFxDataset, HMCDataset, ISRUCDataset, P2018Dataset
+from torcheeg.datasets import (HMCDataset, ISRUCDataset, P2018Dataset,
+                               SleepEDFxDataset)
 
 
 class TestSleepStageDetectionDataset(unittest.TestCase):

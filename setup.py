@@ -1,4 +1,4 @@
-from setuptools import setup, find_packages
+from setuptools import find_packages, setup
 
 __version__ = '1.1.3'
 URL = 'https://github.com/tczhangzhi/torcheeg'
@@ -41,8 +41,7 @@ readme = open('README.rst').read()
 setup(
     name='torcheeg',
     version='1.1.3',
-    description=
-    'TorchEEG is a library built on PyTorch for EEG signal analysis. TorchEEG aims to provide a plug-and-play EEG analysis tool, so that researchers can quickly reproduce EEG analysis work and start new EEG analysis research without paying attention to technical details unrelated to the research focus.',
+    description='TorchEEG is a library built on PyTorch for EEG signal analysis. TorchEEG aims to provide a plug-and-play EEG analysis tool, so that researchers can quickly reproduce EEG analysis work and start new EEG analysis research without paying attention to technical details unrelated to the research focus.',
     license='MIT',
     author='TorchEEG Team',
     author_email='tczhangzhi@gmail.com',

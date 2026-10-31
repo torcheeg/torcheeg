@@ -15,10 +15,9 @@ signal, while 'baseline' corresponds to the processed baseline signal.
 """
 
 import numpy as np
-from torcheeg import transforms
 
-from torcheeg.datasets.constants import \
-    DEAP_CHANNEL_LOCATION_DICT
+from torcheeg import transforms
+from torcheeg.datasets.constants import DEAP_CHANNEL_LOCATION_DICT
 
 t = transforms.ToGrid(DEAP_CHANNEL_LOCATION_DICT)
 eeg = t(eeg=np.random.randn(32, 128))['eeg']

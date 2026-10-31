@@ -4,8 +4,11 @@ from typing import Dict, Iterator, List, Tuple, Union
 import pandas as pd
 
 from torcheeg.datasets.module.base_dataset import BaseDataset
+
 from .base_model_selection import BaseModelSelection
-from .utils import create_subset, read_indices, validate_partitions, write_partitions
+from .utils import (create_subset, read_indices, validate_partitions,
+                    write_partitions)
+
 
 class TrainValTestSplitCrossTrial(BaseModelSelection):
     r'''
@@ -47,7 +50,8 @@ class TrainValTestSplitCrossTrial(BaseModelSelection):
         self.train_trials = list(train_trials)
         self.val_trials = list(val_trials)
         self.test_trials = list(test_trials)
-        validate_partitions([self.train_trials, self.val_trials, self.test_trials])
+        validate_partitions(
+            [self.train_trials, self.val_trials, self.test_trials])
         super().__init__(split_path=split_path)
 
     def build(self, info: pd.DataFrame, split_path: Union[None, str] = None) -> None:
@@ -62,7 +66,8 @@ class TrainValTestSplitCrossTrial(BaseModelSelection):
         self._prepare(dataset, 'trial_id', files)
         subsets = []
         for name in files:
-            indices = read_indices(os.path.join(self.split_path, name), len(dataset))
+            indices = read_indices(os.path.join(
+                self.split_path, name), len(dataset))
             subsets.append(create_subset(dataset, indices))
         yield tuple(subsets)
 
