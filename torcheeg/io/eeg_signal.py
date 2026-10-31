@@ -8,10 +8,6 @@ import lmdb
 
 class _EEGSignalIO:
 
-    @property
-    def write_pointer(self):
-        return len(self)
-
     def keys(self):
         raise NotImplementedError(
             "Method keys is not implemented in class "
@@ -32,7 +28,7 @@ class _EEGSignalIO:
 
     def write_eeg(self,
                   eeg: Union[any, torch.Tensor],
-                  key: Union[str, None] = None) -> str:
+                  key: str) -> str:
         raise NotImplementedError(
             "Method write_eeg is not implemented in class "
             + self.__class__.__name__
@@ -76,16 +72,16 @@ class MemoryEEGSignalIO(_EEGSignalIO):
 
     def write_eeg(self,
                   eeg: Union[any, torch.Tensor],
-                  key: Union[str, None] = None) -> str:
+                  key: str) -> str:
         r'''
         Write EEG signal to memory.
 
         Args:
             eeg (any): EEG signal samples to be written into the database.
-            key (str): The key of the EEG signal to be inserted, if not specified, it will be an auto-incrementing
+            key (str): Sample key. An existing key replaces its sample.
         '''
-        if key is None:
-            key = str(self.write_pointer)
+        if not isinstance(key, str):
+            raise TypeError('key must be a string.')
 
         if eeg is None:
             raise ValueError(f'Save None to the memory with the key {key}!')
@@ -122,20 +118,20 @@ class LMDBEEGSignalIO(_EEGSignalIO):
 
     def write_eeg(self,
                   eeg: Union[any, torch.Tensor],
-                  key: Union[str, None] = None) -> str:
+                  key: str) -> str:
         r'''
         Write EEG signal to database.
 
         Args:
             eeg (any): EEG signal samples to be written into the database.
-            key (str, optional): The key of the EEG signal to be inserted, if not specified, it will be an auto-incrementing integer.
+            key (str): Sample key. An existing key replaces its sample.
 
         Returns:
-            int: The index of written EEG signals in the database.
+            str: The key of the written EEG signal.
         '''
 
-        if key is None:
-            key = str(self.write_pointer)
+        if not isinstance(key, str):
+            raise TypeError('key must be a string.')
 
         if eeg is None:
             raise ValueError(f'Save None to the LMDB with the key {key}!')
@@ -223,20 +219,20 @@ class PickleEEGSignalIO(_EEGSignalIO):
 
     def write_eeg(self,
                   eeg: Union[any, torch.Tensor],
-                  key: Union[str, None] = None) -> str:
+                  key: str) -> str:
         r'''
             Write EEG signal to folder.
     
             Args:
                 eeg (any): EEG signal samples to be written into the folder.
-                key (str, optional): The key of the EEG signal to be inserted, if not specified, it will be an auto-incrementing integer.
+                key (str): Sample key. An existing key replaces its sample.
     
             Returns:
-                int: The index of written EEG signals in the folder.
+                str: The key of the written EEG signal.
             '''
 
-        if key is None:
-            key = str(self.write_pointer)
+        if not isinstance(key, str):
+            raise TypeError('key must be a string.')
 
         if eeg is None:
             raise ValueError(f'Save None to the LMDB with the key {key}!')
@@ -296,7 +292,7 @@ class EEGSignalIO:
     .. code-block:: python
 
         eeg_io = EEGSignalIO('YOUR_PATH')
-        key = eeg_io.write_eeg(np.random.randn(32, 128))
+        key = eeg_io.write_eeg(np.random.randn(32, 128), key='sample_0')
         eeg = eeg_io.read_eeg(key)
         eeg.shape
         >>> (32, 128)
@@ -346,16 +342,16 @@ class EEGSignalIO:
 
     def write_eeg(self,
                   eeg: Union[any, torch.Tensor],
-                  key: Union[str, None] = None) -> str:
+                  key: str) -> str:
         r'''
         Write EEG signal to database.
 
         Args:
             eeg (any): EEG signal samples to be written into the database.
-            key (str, optional): The key of the EEG signal to be inserted, if not specified, it will be an auto-incrementing integer.
+            key (str): Sample key. An existing key replaces its sample.
 
         Returns:
-            int: The index of written EEG signals in the database.
+            str: The key of the written EEG signal.
         '''
 
         return self._io.write_eeg(eeg=eeg, key=key)
