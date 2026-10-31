@@ -9,7 +9,6 @@ from pathlib import Path
 from types import ModuleType
 import unittest
 
-from einops import rearrange, repeat, einsum
 import numpy as np
 import torch
 from torch import nn
@@ -24,6 +23,8 @@ from torcheeg.models import SlimSeiz
 class TestSlimSeizNative(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
+        from einops import rearrange, repeat, einsum
+
         cls.path = Path(os.environ['TORCHEEG_SLIMSEIZ_SOURCE'])
         source = cls.path.read_bytes()
         if hashlib.sha256(source).hexdigest() != SlimSeiz.SOURCE_SHA256:
