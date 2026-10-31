@@ -1,5 +1,0 @@
-SLEEPEDFX_CHANNEL_LIST = [
-    'FPZ-CZ', 'PZ-OZ'  # *PSG.edf
-]
-
-SLEEPEDFX_RAW_CHANNEL_LIST = ['EEG Fpz-Cz', 'EEG Pz-Oz']

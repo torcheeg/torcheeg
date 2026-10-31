@@ -19,7 +19,23 @@ from .utils import compute_fingerprint, ensure_cache
 _log = logging.getLogger('torcheeg')
 
 
+class _RequiredMetadata:
+    def __set_name__(self, owner, name):
+        self._name = name
+
+    def __get__(self, instance, owner):
+        raise NotImplementedError(
+            "Attribute " + self._name + " is not implemented in class "
+            + owner.__name__
+        )
+
+
 class BaseDataset(Dataset):
+
+    channels = _RequiredMetadata()
+    grid = _RequiredMetadata()
+    positions = _RequiredMetadata()
+    adjacency = _RequiredMetadata()
 
     def __init__(self,
                  io_path: Union[None, str] = None,

@@ -22,11 +22,11 @@ def plot_signal(tensor: torch.Tensor,
         import torch
 
         from torcheeg.visualizers import plot_signal
-        from torcheeg.datasets.constants import DEAP_CHANNEL_LIST
+        from torcheeg.datasets import DEAPDataset
 
         eeg = torch.randn(32, 128)
         img = plot_signal(eeg,
-                          channel_list=DEAP_CHANNEL_LIST,
+                          channel_list=DEAPDataset.channels,
                           sampling_rate=128)
         # If using jupyter, the output image will be drawn on notebooks.
 
@@ -38,7 +38,7 @@ def plot_signal(tensor: torch.Tensor,
 
     Args:
         tensor (torch.Tensor): The input EEG signal, the shape should be [number of channels, number of data points].
-        channel_list (list): The channel name lists corresponding to the input EEG signal. If the dataset in TorchEEG is used, please refer to the CHANNEL_LIST related constants in the :obj:`torcheeg.datasets.constants` module.
+        channel_list (list): The channel name lists corresponding to the input EEG signal. If the dataset in TorchEEG is used, use the corresponding Dataset class's ``channels`` attribute.
         sampling_rate (int): Sample rate of the data.
         montage (any): Channel positions and digitization points defined in obj:`mne`. (default: :obj:`mne.channels.make_standard_montage('standard_1020')`)
 

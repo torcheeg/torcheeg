@@ -8,7 +8,7 @@ from scipy.signal import butter, filtfilt, iirnotch
 
 from ...utils import get_random_dir_path
 from ..base_dataset import BaseDataset
-from ..constants.auditory_attention.aved import AVED_CHANNEL_LIST
+from ..utils import get_positions
 
 
 def _apply_notch_filter(eeg_data: np.ndarray, sampling_rate: float) -> np.ndarray:
@@ -155,6 +155,58 @@ class AVEDDataset(BaseDataset):
         verbose (bool): Whether to display logs during processing, such as progress bars, etc. (default: :obj:`True`)
     '''
 
+    channels = ['FP1', 'FP2', 'F7', 'F3', 'FZ', 'F4', 'F8', 'FT7', 'FC3', 'FCZ', 'FC4', 'FT8', 'T3', 'C3',
+                'CZ', 'C4', 'T4', 'TP7', 'CP3', 'CPZ', 'CP4', 'TP8', 'A1', 'T5', 'P3', 'PZ', 'P4', 'T6', 'A2', 'O1', 'OZ', 'O2']
+
+    grid = [
+        ['-', '-', '-', 'FP1', '-', 'FP2', '-', '-', '-'],
+        ['F7', '-', 'F3', '-', 'FZ', '-', 'F4', '-', 'F8'],
+        ['FT7', '-', 'FC3', '-', 'FCZ', '-', 'FC4', '-', 'FT8'],
+        ['T3', '-', 'C3', '-', 'CZ', '-', 'C4', '-', 'T4'],
+        ['TP7', '-', 'CP3', '-', 'CPZ', '-', 'CP4', '-', 'TP8'],
+        ['T5', '-', 'P3', '-', 'PZ', '-', 'P4', '-', 'T6'],
+        ['-', '-', '-', 'O1', 'OZ', 'O2', '-', '-', '-'],
+        ['A1', '-', '-', '-', '-', '-', '-', '-', 'A2']
+    ]
+
+    adjacency = {'A1': [],
+                 'A2': [],
+                 'C3': ['FC3', 'CP3'],
+                 'C4': ['FC4', 'CP4'],
+                 'CP3': ['C3', 'P3'],
+                 'CP4': ['C4', 'P4'],
+                 'CPZ': ['CZ', 'PZ'],
+                 'CZ': ['FCZ', 'CPZ'],
+                 'F3': ['FP1', 'FC3'],
+                 'F4': ['FP2', 'FC4'],
+                 'F7': ['FT7'],
+                 'F8': ['FT8'],
+                 'FC3': ['F3', 'C3'],
+                 'FC4': ['F4', 'C4'],
+                 'FCZ': ['FZ', 'CZ'],
+                 'FP1': ['F3', 'FZ'],
+                 'FP2': ['FZ', 'F4'],
+                 'FT7': ['F7', 'T3'],
+                 'FT8': ['F8', 'T4'],
+                 'FZ': ['FP1', 'FP2', 'FCZ'],
+                 'O1': ['P3', 'PZ', 'OZ'],
+                 'O2': ['PZ', 'P4', 'OZ'],
+                 'OZ': ['PZ', 'O1', 'O2'],
+                 'P3': ['CP3', 'O1'],
+                 'P4': ['CP4', 'O2'],
+                 'PZ': ['CPZ', 'O1', 'OZ', 'O2'],
+                 'T3': ['FT7', 'TP7'],
+                 'T4': ['FT8', 'TP8'],
+                 'T5': ['TP7'],
+                 'T6': ['TP8'],
+                 'TP7': ['T3', 'T5'],
+                 'TP8': ['T4', 'T6']}
+
+    raw_channels = ['HEOL', 'HEOR', 'FP1', 'FP2', 'VEOU', 'VEOL', 'F7', 'F3', 'FZ', 'F4', 'F8', 'FT7', 'FC3', 'FCZ', 'FC4',
+                    'FT8', 'T3', 'C3', 'CZ', 'C4', 'T4', 'TP7', 'CP3', 'CPZ', 'CP4', 'TP8', 'A1', 'T5', 'P3', 'PZ', 'P4', 'T6', 'A2', 'O1', 'OZ', 'O2']
+
+    positions = get_positions(channels)
+
     def __init__(self,
                  root_path: str = './eeg_raw',
                  chunk_size: int = 128,
@@ -226,7 +278,7 @@ class AVEDDataset(BaseDataset):
             raw = mne.io.read_raw_eeglab(
                 trial_path, preload=True, verbose=False)
             raw.rename_channels({name: name.upper() for name in raw.ch_names})
-            raw.pick(AVED_CHANNEL_LIST[:num_channel])
+            raw.pick(AVEDDataset.channels[:num_channel])
             original_sr = raw.info['sfreq']
             eeg_data = raw.get_data()
 

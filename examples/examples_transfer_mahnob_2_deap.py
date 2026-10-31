@@ -27,7 +27,7 @@ In this tutorial, we demonstrate how to use TorchEEG to implement transfer learn
 
 from torcheeg import transforms
 from torcheeg.datasets import MAHNOBDataset
-from torcheeg.datasets.constants import MAHNOB_CHANNEL_LOCATION_DICT
+from torcheeg.datasets.utils import get_locations
 from torcheeg.transforms import after_hook_normalize
 
 dataset = MAHNOBDataset(
@@ -37,7 +37,8 @@ dataset = MAHNOBDataset(
         transforms.BandDifferentialEntropy(sampling_rate=128,
                                            apply_to_baseline=True),
         transforms.BaselineRemoval(),
-        transforms.ToGrid(MAHNOB_CHANNEL_LOCATION_DICT)
+        transforms.ToGrid(get_locations(
+            MAHNOBDataset.channels, MAHNOBDataset.grid))
     ]),
     online_transform=transforms.ToTensor(),
     after_subject=after_hook_normalize,
@@ -130,14 +131,15 @@ state_dict = model.state_dict()
 #
 
 from torcheeg.datasets import DEAPDataset
-from torcheeg.datasets.constants import DEAP_CHANNEL_LOCATION_DICT
+from torcheeg.datasets.utils import get_locations
 
 dataset = DEAPDataset(
     io_path=f'./examples_transfer_mahnob_2_deap/deap',
     root_path='./data_preprocessed_python',
     offline_transform=transforms.Compose([
         transforms.BandDifferentialEntropy(apply_to_baseline=True),
-        transforms.ToGrid(DEAP_CHANNEL_LOCATION_DICT, apply_to_baseline=True)
+        transforms.ToGrid(get_locations(DEAPDataset.channels,
+                          DEAPDataset.grid), apply_to_baseline=True)
     ]),
     online_transform=transforms.Compose(
         [transforms.BaselineRemoval(),

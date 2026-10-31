@@ -13,10 +13,9 @@ import pandas as pd
 import torch
 from torch.utils.data import DataLoader
 
-from torcheeg import transforms
+from torcheeg import datasets, transforms
 from torcheeg.datasets import (BaseDataset, ConcatDataset, CSVFolderDataset,
-                               FolderDataset, MNERawDataset, PairDataset,
-                               constants)
+                               FolderDataset, MNERawDataset, PairDataset)
 from torcheeg.model_selection import (KFoldCrossSubject, Subcategory,
                                       train_test_split)
 
@@ -388,51 +387,107 @@ class TestLazyDatasetCopy(unittest.TestCase):
                 self._assert_samples(duplicate)
 
 
-class TestDatasetConstants(unittest.TestCase):
-    def test_auditory_montages_preserve_order_and_cover_all_channels(self):
-        for prefix, count in (('AVED', 32), ('DTU', 64), ('KUL', 64)):
-            with self.subTest(dataset=prefix):
-                channels = getattr(constants, prefix + '_CHANNEL_LIST')
-                locations = getattr(constants, prefix +
-                                    '_CHANNEL_LOCATION_DICT')
-                adjacency = np.asarray(
-                    getattr(constants, prefix + '_ADJACENCY_MATRIX'))
-                self.assertEqual(len(channels), count)
-                self.assertEqual(len(set(channels)), count)
+class TestDatasetMetadata(unittest.TestCase):
+    def test_missing_metadata_raises_on_class_access(self):
+        for name in ('channels', 'grid', 'positions', 'adjacency'):
+            with self.subTest(attribute=name):
+                with self.assertRaisesRegex(
+                        NotImplementedError,
+                        f'Attribute {name} is not implemented in class BaseDataset'):
+                    getattr(BaseDataset, name)
+
+    def test_montages_support_grid_and_graph_transforms(self):
+        from torcheeg.datasets.utils import get_adjacency, get_locations
+
+        for cls in (
+                datasets.AVEDDataset,
+                datasets.AVEDProcessedDataset,
+                datasets.DTUDataset,
+                datasets.DTUProcessedDataset,
+                datasets.KULDataset,
+                datasets.KULProcessedDataset,
+                datasets.AMIGOSDataset,
+                datasets.BCI2022Dataset,
+                datasets.DEAPDataset,
+                datasets.DREAMERDataset,
+                datasets.FACEDDataset,
+                datasets.FACEDFeatureDataset,
+                datasets.MAHNOBDataset,
+                datasets.MPEDFeatureDataset,
+                datasets.SEEDDataset,
+                datasets.SEEDFeatureDataset,
+                datasets.SEEDIVDataset,
+                datasets.SEEDIVFeatureDataset,
+                datasets.SEEDVDataset,
+                datasets.SEEDVFeatureDataset,
+                datasets.BCICIV2aDataset,
+                datasets.StrokePatientsMIDataset,
+                datasets.StrokePatientsMIProcessedDataset,
+                datasets.M3CVDataset,
+                datasets.HMCDataset,
+                datasets.ISRUCDataset,
+                datasets.P2018Dataset,
+                datasets.SleepEDFxDataset,
+                datasets.SanDiegoSSVEPDataset,
+                datasets.TSUBenckmarkDataset,
+        ):
+            with self.subTest(dataset=cls.__name__):
+                channels = cls.channels
+                self.assertEqual(len(set(channels)), len(channels))
+                try:
+                    layout = cls.grid
+                except NotImplementedError:
+                    continue
+                locations = get_locations(channels, layout)
                 self.assertEqual(set(locations), set(channels))
-                self.assertEqual(adjacency.shape, (count, count))
-                np.testing.assert_array_equal(adjacency, adjacency.T)
-                grid = transforms.ToGrid(locations)(
-                    eeg=np.ones((count, 8)))['eeg']
-                for channel in channels:
+                sample = np.arange(len(channels) * 8).reshape(len(channels), 8)
+                grid = transforms.ToGrid(locations)(eeg=sample)['eeg']
+                for index, channel in enumerate(channels):
                     row, column = locations[channel]
                     np.testing.assert_array_equal(
-                        grid[:, row, column], np.ones(8))
-        self.assertEqual(constants.DTU_CHANNEL_LIST[47], 'CZ')
-        self.assertEqual(constants.KUL_CHANNEL_LIST[47], 'CZ')
-        self.assertEqual(
-            constants.DTUPROCESSED_AVAILABLE_CHANNEL_LIST[-2:], ['EXG1', 'EXG2'])
-        self.assertTrue({'O1', 'OZ', 'O2'} <= set(constants.AVED_CHANNEL_LIST))
+                        grid[:, row, column], sample[index])
+                try:
+                    adjacency = cls.adjacency
+                except NotImplementedError:
+                    continue
+                matrix = np.asarray(get_adjacency(channels, adjacency))
+                self.assertEqual(matrix.shape, (len(channels), len(channels)))
+
+    def test_changed_channel_order_invalidates_cache_fingerprint(self):
+        from unittest.mock import patch
+
+        from torcheeg.datasets.utils import compute_fingerprint
+
+        cls = datasets.SEEDDataset
+        before = compute_fingerprint(cls, {}, [], 'unused')
+        with patch.object(cls, 'channels', cls.channels[::-1]):
+            after = compute_fingerprint(cls, {}, [], 'unused')
+        self.assertNotEqual(before, after)
+        self.assertEqual(before, compute_fingerprint(cls, {}, [], 'unused'))
+
+    def test_auditory_montages_match_verified_headers(self):
+        self.assertEqual(datasets.DTUDataset.channels[47], 'CZ')
+        self.assertEqual(datasets.KULDataset.channels[47], 'CZ')
+        self.assertEqual(datasets.DTUProcessedDataset.available_channels[-2:],
+                         ['EXG1', 'EXG2'])
+        self.assertEqual(len(datasets.AVEDDataset.channels), 32)
+        self.assertTrue({'O1', 'OZ', 'O2'} <= set(
+            datasets.AVEDDataset.channels))
         self.assertFalse({'HEOL', 'HEOR', 'VEOU', 'VEOL'} &
-                         set(constants.AVED_CHANNEL_LIST))
+                         set(datasets.AVEDDataset.channels))
 
     def test_sleep_channels_follow_reader_defaults(self):
-        from torcheeg.datasets import (HMCDataset, ISRUCDataset, P2018Dataset,
-                                       SleepEDFxDataset)
-        for cls, channels in (
-                (HMCDataset, constants.HMC_CHANNEL_LIST),
-                (ISRUCDataset, constants.ISRUC_CHANNEL_LIST),
-                (P2018Dataset, constants.P2018_CHANNEL_LIST),
-                (SleepEDFxDataset, constants.SLEEPEDFX_RAW_CHANNEL_LIST)):
+        for cls in (datasets.HMCDataset, datasets.ISRUCDataset,
+                    datasets.P2018Dataset, datasets.SleepEDFxDataset):
             with self.subTest(dataset=cls.__name__):
                 self.assertEqual(inspect.signature(
-                    cls.__init__).parameters['channels'].default, channels)
+                    cls.__init__).parameters['channels'].default, cls.channels)
+                with self.assertRaises(NotImplementedError):
+                    cls.positions
 
     def test_grid_adjacency_ignores_empty_cells_and_includes_diagonals(self):
-        from torcheeg.datasets.constants.utils import \
-            format_adj_list_from_location_list
-        adjacency = format_adj_list_from_location_list(
-            [['A', '-'], ['B', 'C']])
+        from torcheeg.datasets.utils import get_grid_adjacency
+        adjacency = get_grid_adjacency([['A', '-'], ['B', 'C']])
         self.assertEqual({key: set(value) for key, value in adjacency.items()},
                          {'A': {'B', 'C'}, 'B': {'A', 'C'}, 'C': {'A', 'B'}})
 

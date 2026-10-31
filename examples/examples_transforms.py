@@ -17,9 +17,10 @@ signal, while 'baseline' corresponds to the processed baseline signal.
 import numpy as np
 
 from torcheeg import transforms
-from torcheeg.datasets.constants import DEAP_CHANNEL_LOCATION_DICT
+from torcheeg.datasets import DEAPDataset
+from torcheeg.datasets.utils import get_locations
 
-t = transforms.ToGrid(DEAP_CHANNEL_LOCATION_DICT)
+t = transforms.ToGrid(get_locations(DEAPDataset.channels, DEAPDataset.grid))
 eeg = t(eeg=np.random.randn(32, 128))['eeg']
 print(eeg.shape)
 
@@ -55,11 +56,13 @@ transformed_eeg = transforms.BandDifferentialEntropy()(eeg=eeg)['eeg']
 # ToDynamicG.
 #
 
-from torcheeg.datasets.constants import DEAP_ADJACENCY_MATRIX
+from torcheeg.datasets import DEAPDataset
+from torcheeg.datasets.utils import get_adjacency
 from torcheeg.transforms.graph import ToG
 
 eeg = np.random.randn(32, 128)
-transformed_eeg = ToG(DEAP_ADJACENCY_MATRIX)(eeg=eeg)['eeg']
+transformed_eeg = ToG(get_adjacency(DEAPDataset.channels,
+                      DEAPDataset.adjacency))(eeg=eeg)['eeg']
 print(transformed_eeg)
 
 ######################################################################
@@ -99,7 +102,7 @@ from torcheeg import transforms
 
 t = transforms.Compose([
     transforms.BandDifferentialEntropy(),
-    transforms.ToGrid(DEAP_CHANNEL_LOCATION_DICT)
+    transforms.ToGrid(get_locations(DEAPDataset.channels, DEAPDataset.grid))
 ])
 eeg = t(eeg=np.random.randn(32, 128))['eeg']
 print(eeg.shape)
@@ -114,7 +117,8 @@ print(eeg.shape)
 
 t = transforms.Compose([
     transforms.BandDifferentialEntropy(apply_to_baseline=True),
-    transforms.ToGrid(DEAP_CHANNEL_LOCATION_DICT, apply_to_baseline=True),
+    transforms.ToGrid(get_locations(DEAPDataset.channels,
+                      DEAPDataset.grid), apply_to_baseline=True),
     transforms.BaselineRemoval()
 ])
 eeg = t(eeg=np.random.randn(32, 128), baseline=np.random.randn(32, 128))['eeg']

@@ -48,7 +48,7 @@ class BYOLTrainer(pl.LightningModule):
 
         from torcheeg.datasets import DEAPDataset
         from torcheeg import transforms
-        from torcheeg.datasets.constants import DEAP_CHANNEL_LOCATION_DICT
+        from torcheeg.datasets.utils import get_locations
 
         contras_dataset = DEAPDataset(
             io_path=f'./io/deap',
@@ -57,7 +57,7 @@ class BYOLTrainer(pl.LightningModule):
                 transforms.BandDifferentialEntropy(sampling_rate=128,
                                                 apply_to_baseline=True),
                 transforms.BaselineRemoval(),
-                transforms.ToGrid(DEAP_CHANNEL_LOCATION_DICT)
+                transforms.ToGrid(get_locations(DEAPDataset.channels, DEAPDataset.grid))
             ]),
             online_transform=transforms.Compose([
                 transforms.ToTensor(),

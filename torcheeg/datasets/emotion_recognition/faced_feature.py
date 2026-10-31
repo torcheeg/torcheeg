@@ -6,6 +6,7 @@ import numpy as np
 
 from ...utils import get_random_dir_path
 from ..base_dataset import BaseDataset
+from ..utils import get_positions
 from .faced import _EMOTION_DICT, _VALENCE_DICT
 
 
@@ -42,10 +43,11 @@ class FACEDFeatureDataset(BaseDataset):
 
         from torcheeg.datasets import FACEDFeatureDataset
         from torcheeg import transforms
-        from torcheeg.datasets.constants import FACED_CHANNEL_LOCATION_DICT
+        from torcheeg.datasets import FACEDDataset
+        from torcheeg.datasets.utils import get_locations
 
         dataset = FACEDFeatureDataset(root_path='./EEG_Features/DE',
-                                       offline_transform=transforms.ToGrid(FACED_CHANNEL_LOCATION_DICT),
+                                       offline_transform=transforms.ToGrid(get_locations(FACEDDataset.channels, FACEDDataset.grid)),
                                        online_transform=transforms.ToTensor(),
                                        label_transform=transforms.Select('emotion'))
         print(dataset[0])
@@ -59,11 +61,12 @@ class FACEDFeatureDataset(BaseDataset):
 
         from torcheeg.datasets import FACEDFeatureDataset
         from torcheeg import transforms
-        from torcheeg.datasets.constants import FACED_ADJACENCY_MATRIX
+        from torcheeg.datasets import FACEDDataset
+        from torcheeg.datasets.utils import get_adjacency
         from torcheeg.transforms.pyg import ToG
 
         dataset = FACEDFeatureDataset(root_path='./EEG_Features/DE',
-                                       online_transform=ToG(FACED_ADJACENCY_MATRIX),
+                                       online_transform=ToG(get_adjacency(FACEDDataset.channels, FACEDDataset.adjacency)),
                                        label_transform=transforms.Select('emotion'))
         print(dataset[0])
         # EEG signal (torch_geometric.data.Data),
@@ -84,6 +87,56 @@ class FACEDFeatureDataset(BaseDataset):
         num_worker (int): Number of subprocesses to use for data loading. 0 means that the data will be loaded in the main process. (default: :obj:`0`)
         verbose (bool): Whether to display logs during processing, such as progress bars, etc. (default: :obj:`True`)    
     '''
+
+    channels = [
+        'FP1', 'FP2', 'FZ', 'F3', 'F4', 'F7', 'F8', 'FC1', 'FC2', 'FC5', 'FC6',
+        'CZ', 'C3', 'C4', 'T7', 'T8', 'CP1', 'CP2', 'CP5', 'CP6', 'PZ', 'P3', 'P4',
+        'P7', 'P8', 'PO3', 'PO4', 'OZ', 'O1', 'O2'
+    ]
+
+    grid = [['-', '-', '-', 'FP1', '-', 'FP2', '-', '-', '-'],
+            ['F7', '-', 'F3', '-', 'FZ', '-', 'F4', '-', 'F8'],
+            ['-', 'FC5', '-', 'FC1', '-', 'FC2', '-', 'FC6', '-'],
+            ['T7', '-', 'C3', '-', 'CZ', '-', 'C4', '-', 'T8'],
+            ['-', 'CP5', '-', 'CP1', '-', 'CP2', '-', 'CP6', '-'],
+            ['P7', '-', 'P3', '-', 'PZ', '-', 'P4', '-', 'P8'],
+            ['-', '-', '-', 'PO3', '-', 'PO4', '-', '-', '-'],
+            ['-', '-', '-', 'O1', 'OZ', 'O2', '-', '-', '-']]
+
+    adjacency = {
+        'FP1': ['F3', 'FZ'],
+        'FP2': ['FZ', 'F4'],
+        'F7': ['FC5'],
+        'F3': ['FC1', 'FC5'],
+        'FZ': ['AF4', 'FC2', 'FC1'],
+        'F4': ['AF4', 'FC6', 'FC2'],
+        'F8': ['FC6'],
+        'FC5': ['F7', 'F3', 'C3', 'T7'],
+        'FC1': ['F3', 'FZ', 'CZ', 'C3'],
+        'FC2': ['FZ', 'F4', 'C4', 'CZ'],
+        'FC6': ['F4', 'F8', 'T8', 'C4'],
+        'T7': ['FC5', 'CP5'],
+        'C3': ['FC5', 'FC1', 'CP1', 'CP5'],
+        'CZ': ['FC1', 'FC2', 'CP2', 'CP1'],
+        'C4': ['FC2', 'FC6', 'CP6', 'CP2'],
+        'T8': ['FC6', 'CP6'],
+        'CP5': ['T7', 'C3', 'P3', 'P7'],
+        'CP1': ['C3', 'CZ', 'PZ', 'P3'],
+        'CP2': ['CZ', 'C4', 'P4', 'PZ'],
+        'CP6': ['C4', 'T8', 'P8', 'P4'],
+        'P7': ['CP5'],
+        'P3': ['CP5', 'CP1', 'PO3'],
+        'PZ': ['CP1', 'CP2', 'PO4', 'PO3'],
+        'P4': ['CP2', 'CP6', 'PO4'],
+        'P8': ['CP6'],
+        'PO3': ['P3', 'PZ', 'OZ', 'O1'],
+        'PO4': ['PZ', 'P4', 'O2', 'OZ'],
+        'O1': ['PO3', 'OZ'],
+        'OZ': ['PO3', 'PO4', 'O2', 'O1'],
+        'O2': ['PO4', 'OZ']
+    }
+
+    positions = get_positions(channels)
 
     def _rename_pkl_files(self, root_path):
         for dirpath, dirnames, filenames in os.walk(root_path):

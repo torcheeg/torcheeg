@@ -17,14 +17,15 @@ This guide will help you understand how to easily load and manipulate these data
 
 from torcheeg import transforms
 from torcheeg.datasets import DEAPDataset
-from torcheeg.datasets.constants import DEAP_CHANNEL_LOCATION_DICT
+from torcheeg.datasets.utils import get_locations
 
 dataset = DEAPDataset(
     io_path=f'./deap',
     root_path='./data_preprocessed_python',
     offline_transform=transforms.Compose([
         transforms.BandDifferentialEntropy(apply_to_baseline=True),
-        transforms.ToGrid(DEAP_CHANNEL_LOCATION_DICT, apply_to_baseline=True)
+        transforms.ToGrid(get_locations(DEAPDataset.channels,
+                          DEAPDataset.grid), apply_to_baseline=True)
     ]),
     online_transform=transforms.Compose(
         [transforms.BaselineRemoval(),

@@ -21,22 +21,22 @@ def plot_graph(data: 'pyg.data.Data',
     r'''
     Visualize a graph structure. For the electrode position information, please refer to constants grouped by dataset:
 
-    - datasets.constants.emotion_recognition.deap.DEAP_CHANNEL_LOCATION_DICT
-    - datasets.constants.emotion_recognition.dreamer.DREAMER_CHANNEL_LOCATION_DICT
-    - datasets.constants.emotion_recognition.seed.SEED_CHANNEL_LOCATION_DICT
+    - get_locations(DEAPDataset.channels, DEAPDataset.grid)
+    - get_locations(DREAMERDataset.channels, DREAMERDataset.grid)
+    - get_locations(SEEDDataset.channels, SEEDDataset.grid)
     - ...
 
     .. code-block:: python
 
         from torcheeg.visualizers import plot_graph
-        from torcheeg.datasets.constants import (DEAP_ADJACENCY_MATRIX,
-                                                DEAP_CHANNEL_LOCATION_DICT)
+        from torcheeg.datasets import DEAPDataset
+        from torcheeg.datasets.utils import get_adjacency, get_locations
         from torcheeg.transforms.graph import ToG
         import numpy as np
 
         eeg = np.random.randn(32, 128)
-        g = ToG(DEAP_ADJACENCY_MATRIX)(eeg=eeg)['eeg']
-        img = plot_graph(g, DEAP_CHANNEL_LOCATION_DICT)
+        g = ToG(get_adjacency(DEAPDataset.channels, DEAPDataset.adjacency))(eeg=eeg)['eeg']
+        img = plot_graph(g, get_locations(DEAPDataset.channels, DEAPDataset.grid))
         # If using jupyter, the output image will be drawn on notebooks.
 
     .. image:: _static/plot_graph.png

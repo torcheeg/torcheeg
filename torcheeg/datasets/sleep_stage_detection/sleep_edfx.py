@@ -116,6 +116,18 @@ class SleepEDFxDataset(BaseDataset):
         verbose (bool): Whether to display logs during processing, such as progress bars, etc. (default: :obj:`True`)
     '''
 
+    channels = ['EEG Fpz-Cz', 'EEG Pz-Oz']
+
+    raw_channels = ['EEG Fpz-Cz', 'EEG Pz-Oz']
+
+    grid = [['-', '-', '-', 'EEG Fpz-Cz', '-', '-', '-'],
+            ['-', '-', '-', '-', '-', '-', '-'],
+            ['-', '-', '-', '-', '-', '-', '-'],
+            ['-', '-', '-', '-', '-', '-', '-'],
+            ['-', '-', '-', '-', '-', '-', '-'],
+            ['-', '-', '-', '-', '-', '-', '-'],
+            ['-', '-', '-', 'EEG Pz-Oz', '-', '-', '-']]
+
     def __init__(self,
                  root_path: str = './sleep-edf-database-expanded-1.0.0/',
                  studies: List = ['cassette', 'telemetry'],

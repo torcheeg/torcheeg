@@ -12,7 +12,7 @@ class PickElectrode(EEGTransform):
     .. code-block:: python
 
         from torcheeg import transforms
-        from torcheeg.datasets.constants import DEAP_CHANNEL_LIST
+        from torcheeg.datasets import DEAPDataset
 
         t = transforms.PickElectrode(transforms.PickElectrode.to_index_list(
             ['FP1', 'AF3', 'F3', 'F7',
@@ -21,7 +21,7 @@ class PickElectrode(EEGTransform):
              'PO3','O1', 'FP2', 'AF4',
              'F4', 'F8', 'FC6', 'FC2',
              'C4', 'T8', 'CP6', 'CP2',
-             'P4', 'P8', 'PO4', 'O2'], DEAP_CHANNEL_LIST))
+             'P4', 'P8', 'PO4', 'O2'], DEAPDataset.channels))
         t(eeg=np.random.randn(32, 128))['eeg'].shape
         >>> (28, 128)
 
@@ -66,7 +66,7 @@ class PickElectrode(EEGTransform):
         r'''
         Args:
             electrode_list (list): picked electrode name, consisting of strings.
-            dataset_electrode_list (list): The description of the electrode information contained in the EEG signal in the dataset, consisting of strings. For the electrode position information, please refer to constants grouped by dataset :obj:`datasets.constants`.
+            dataset_electrode_list (list): The description of the electrode information contained in the EEG signal in the dataset, consisting of strings. For the electrode position information, please refer to constants grouped by dataset :obj:`datasets`.
             strict_mode: (bool): Whether to use strict mode. In strict mode, unmatched picked electrode names are thrown as errors. Otherwise, unmatched picked electrode names are automatically ignored. (default: :obj:`False`)
         Returns:
             list: Selected electrode list, consisting of integers representing the corresponding electrode indices.

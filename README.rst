@@ -256,15 +256,14 @@ e.g. ``./tmp_in/data_preprocessed_python``.
    from torcheeg.datasets import DEAPDataset
    from torcheeg import transforms
 
-   from torcheeg.datasets.constants import \
-       DEAP_CHANNEL_LOCATION_DICT
+   from torcheeg.datasets.utils import get_locations
 
    dataset = DEAPDataset(
        io_path=f'./tmp_out/examples_pipeline/deap',
        root_path='./tmp_in/data_preprocessed_python',
        offline_transform=transforms.Compose([
            transforms.BandDifferentialEntropy(apply_to_baseline=True),
-           transforms.ToGrid(DEAP_CHANNEL_LOCATION_DICT, apply_to_baseline=True)
+           transforms.ToGrid(get_locations(DEAPDataset.channels, DEAPDataset.grid), apply_to_baseline=True)
        ]),
        online_transform=transforms.Compose(
            [transforms.BaselineRemoval(),

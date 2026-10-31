@@ -18,17 +18,18 @@ class ToG(EEGTransform):
 
     :obj:`TorchEEG` provides some common graph structures. Consider using the following adjacency matrices depending on the dataset (with different EEG acquisition systems):
 
-    - datasets.constants.emotion_recognition.deap.DEAP_ADJACENCY_MATRIX
-    - datasets.constants.emotion_recognition.dreamer.DREAMER_ADJACENCY_MATRIX
-    - datasets.constants.emotion_recognition.seed.SEED_ADJACENCY_MATRIX
+    - get_adjacency(DEAPDataset.channels, DEAPDataset.adjacency)
+    - get_adjacency(DREAMERDataset.channels, DREAMERDataset.adjacency)
+    - get_adjacency(SEEDDataset.channels, SEEDDataset.adjacency)
     - ...
 
     .. code-block:: python
 
         from torcheeg.transforms.pyg import ToG
-        from torcheeg.datasets.constants import DEAP_ADJACENCY_MATRIX
+        from torcheeg.datasets import DEAPDataset
+        from torcheeg.datasets.utils import get_adjacency
 
-        t = ToG(adj=DEAP_ADJACENCY_MATRIX)
+        t = ToG(adj=get_adjacency(DEAPDataset.channels, DEAPDataset.adjacency))
         t(eeg=np.random.randn(32, 128))['eeg']
         >>> torch_geometric.data.Data
 

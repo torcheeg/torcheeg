@@ -24,13 +24,14 @@ class GIN(nn.Module):
         from torcheeg.datasets import DEAPDataset
         from torcheeg import transforms
         from torcheeg.transforms.pyg import ToG
-        from torcheeg.datasets.constants import SEED_STANDARD_ADJACENCY_MATRIX
+        from torcheeg.datasets import SEEDDataset
+        from torcheeg.datasets.utils import get_standard_adjacency
         from torcheeg.models import GIN
         from torch_geometric.data import DataLoader
 
         dataset = DEAPDataset(root_path='./data_preprocessed_python',
                               offline_transform=transforms.BandDifferentialEntropy(),
-                              online_transform=ToG(SEED_STANDARD_ADJACENCY_MATRIX),
+                              online_transform=ToG(get_standard_adjacency(SEEDDataset.channels, SEEDDataset.positions)),
                               label_transform=transforms.Compose([
                                   transforms.Select('valence'),
                                   transforms.Binary(5.0),

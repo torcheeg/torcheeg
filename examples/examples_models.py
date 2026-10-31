@@ -40,7 +40,6 @@ pred = model(eeg)
 
 from torcheeg import transforms
 from torcheeg.datasets import DEAPDataset
-from torcheeg.datasets.constants import DEAP_CHANNEL_LIST
 
 dataset = DEAPDataset(io_path=f'./deap',
                       root_path='./data_preprocessed_python',
@@ -55,7 +54,7 @@ dataset = DEAPDataset(io_path=f'./deap',
                                'PO3', 'O1', 'FP2', 'AF4',
                                'F4', 'F8', 'FC6', 'FC2',
                                'C4', 'T8', 'CP6', 'CP2',
-                               'P4', 'P8', 'PO4', 'O2'], DEAP_CHANNEL_LIST)),
+                               'P4', 'P8', 'PO4', 'O2'], DEAPDataset.channels)),
                           transforms.To2d()
                       ]),
                       online_transform=transforms.ToTensor(),

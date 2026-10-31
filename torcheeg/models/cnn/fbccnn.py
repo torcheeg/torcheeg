@@ -17,14 +17,14 @@ class FBCCNN(nn.Module):
 
         from torcheeg.datasets import DEAPDataset
         from torcheeg import transforms
-        from torcheeg.datasets.constants import DEAP_CHANNEL_LOCATION_DICT
+        from torcheeg.datasets.utils import get_locations
         from torcheeg.models import FBCCNN
         from torch.utils.data import DataLoader
 
         dataset = DEAPDataset(root_path='./data_preprocessed_python',
                               online_transform=transforms.Compose([
                                   transforms.BandPowerSpectralDensity(),
-                                  transforms.ToGrid(DEAP_CHANNEL_LOCATION_DICT)
+                                  transforms.ToGrid(get_locations(DEAPDataset.channels, DEAPDataset.grid))
                               ]),
                               label_transform=transforms.Compose([
                                   transforms.Select('valence'),

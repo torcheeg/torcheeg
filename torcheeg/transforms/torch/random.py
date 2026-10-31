@@ -806,8 +806,8 @@ class RandomHemisphereChannelShuffle(RandomEEGTransform):
 
     .. code-block:: python
 
-        transform = RandomChannelShuffle(location_list=M3CV_LOCATION_LIST,
-                                         channel_location_dict=M3CV_CHANNEL_LOCATION_DICT)
+        transform = RandomChannelShuffle(location_list=M3CVDataset.grid,
+                                         channel_location_dict=get_locations(M3CVDataset.channels, M3CVDataset.grid))
         transform(eeg=torch.randn(32, 128))['eeg'].shape
         >>> (32, 128)
 

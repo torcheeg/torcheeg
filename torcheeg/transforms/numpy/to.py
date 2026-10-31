@@ -96,17 +96,18 @@ class ToGrid(EEGTransform):
     r'''
     A transform method to project the EEG signals of different channels onto the grid according to the electrode positions to form a 3D EEG signal representation with the size of [number of data points, width of grid, height of grid]. For the electrode position information, please refer to constants grouped by dataset:
 
-    - datasets.constants.emotion_recognition.deap.DEAP_CHANNEL_LOCATION_DICT
-    - datasets.constants.emotion_recognition.dreamer.DREAMER_CHANNEL_LOCATION_DICT
-    - datasets.constants.emotion_recognition.seed.SEED_CHANNEL_LOCATION_DICT
+    - get_locations(DEAPDataset.channels, DEAPDataset.grid)
+    - get_locations(DREAMERDataset.channels, DREAMERDataset.grid)
+    - get_locations(SEEDDataset.channels, SEEDDataset.grid)
     - ...
 
     .. code-block:: python
 
         from torcheeg import transforms
-        from torcheeg.datasets.constants import DEAP_CHANNEL_LOCATION_DICT
+        from torcheeg.datasets import DEAPDataset
+        from torcheeg.datasets.utils import get_locations
 
-        t = transforms.ToGrid(DEAP_CHANNEL_LOCATION_DICT)
+        t = transforms.ToGrid(get_locations(DEAPDataset.channels, DEAPDataset.grid))
         t(eeg=np.random.randn(32, 128))['eeg'].shape
         >>> (128, 9, 9)
 
@@ -200,17 +201,18 @@ class ToInterpolatedGrid(EEGTransform):
     r'''
     A transform method to project the EEG signals of different channels onto the grid according to the electrode positions to form a 3D EEG signal representation with the size of [number of data points, width of grid, height of grid]. For the electrode position information, please refer to constants grouped by dataset:
 
-    - datasets.constants.emotion_recognition.deap.DEAP_CHANNEL_LOCATION_DICT
-    - datasets.constants.emotion_recognition.dreamer.DREAMER_CHANNEL_LOCATION_DICT
-    - datasets.constants.emotion_recognition.seed.SEED_CHANNEL_LOCATION_DICT
+    - get_locations(DEAPDataset.channels, DEAPDataset.grid)
+    - get_locations(DREAMERDataset.channels, DREAMERDataset.grid)
+    - get_locations(SEEDDataset.channels, SEEDDataset.grid)
     - ...
 
     .. code-block:: python
 
         from torcheeg import transforms
-        from torcheeg.datasets.constants import DEAP_CHANNEL_LOCATION_DICT
+        from torcheeg.datasets import DEAPDataset
+        from torcheeg.datasets.utils import get_locations
 
-        t = ToInterpolatedGrid(DEAP_CHANNEL_LOCATION_DICT)
+        t = ToInterpolatedGrid(get_locations(DEAPDataset.channels, DEAPDataset.grid))
         t(eeg=np.random.randn(32, 128))['eeg'].shape
         >>> (128, 9, 9)
 

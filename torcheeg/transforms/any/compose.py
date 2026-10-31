@@ -29,7 +29,7 @@ class Compose(BaseTransform):
         t = transforms.Compose([
             transforms.BandDifferentialEntropy(),
             transforms.MeanStdNormalize(),
-            transforms.ToGrid(DEAP_CHANNEL_LOCATION_DICT)
+            transforms.ToGrid(get_locations(DEAPDataset.channels, DEAPDataset.grid))
         ])
         t(eeg=np.random.randn(32, 128))['eeg'].shape
         >>> (128, 9, 9)

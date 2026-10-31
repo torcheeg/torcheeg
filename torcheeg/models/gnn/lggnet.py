@@ -125,7 +125,8 @@ class LGGNet(nn.Module):
         from torcheeg.datasets import SEEDDataset
         from torcheeg.models import LGGNet
         from torcheeg import transforms
-        from torcheeg.datasets.constants import SEED_GENERAL_REGION_LIST
+        from torcheeg.datasets.utils import get_regions
+        from torcheeg.datasets.montage import GENERAL_REGION_LIST
 
         dataset = SEEDDataset(root_path='./Preprocessed_EEG',
                               offline_transform=transforms.Compose([
@@ -139,23 +140,23 @@ class LGGNet(nn.Module):
                                   transforms.Select('emotion'),
                                   transforms.Lambda(lambda x: x + 1)
                               ]))
-        model = LGGNet(region_list=SEED_GENERAL_REGION_LIST, chunk_size=128, num_electrodes=32, hid_channels=32, num_classes=2)
+        model = LGGNet(region_list=get_regions(SEEDDataset.channels, GENERAL_REGION_LIST), chunk_size=128, num_electrodes=32, hid_channels=32, num_classes=2)
 
         x, y = next(iter(DataLoader(dataset, batch_size=64)))
         model(x)
 
     The current built-in :obj:`region_list` includs:
 
-    - torcheeg.datasets.constants.emotion_recognition.amigos.AMIGOS_GENERAL_REGION_LIST
-    - torcheeg.datasets.constants.emotion_recognition.amigos.AMIGOS_FRONTAL_REGION_LIST
-    - torcheeg.datasets.constants.emotion_recognition.amigos.AMIGOS_HEMISPHERE_REGION_LIST
-    - torcheeg.datasets.constants.emotion_recognition.deap.DEAP_GENERAL_REGION_LIST
+    - get_regions(AMIGOSDataset.channels, GENERAL_REGION_LIST)
+    - get_regions(AMIGOSDataset.channels, FRONTAL_REGION_LIST)
+    - get_regions(AMIGOSDataset.channels, HEMISPHERE_REGION_LIST)
+    - get_regions(DEAPDataset.channels, GENERAL_REGION_LIST)
     - ...
-    - torcheeg.datasets.constants.emotion_recognition.dreamer.DREAMER_GENERAL_REGION_LIST
+    - get_regions(DREAMERDataset.channels, GENERAL_REGION_LIST)
     - ...
-    - torcheeg.datasets.constants.emotion_recognition.mahnob.MAHNOB_GENERAL_REGION_LIST
+    - get_regions(MAHNOBDataset.channels, GENERAL_REGION_LIST)
     - ...
-    - torcheeg.datasets.constants.emotion_recognition.seed.SEED_GENERAL_REGION_LIST
+    - get_regions(SEEDDataset.channels, GENERAL_REGION_LIST)
     - ...
 
     Args:

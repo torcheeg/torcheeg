@@ -9,6 +9,7 @@ from scipy.io import loadmat
 
 from ...utils import get_random_dir_path
 from ..base_dataset import BaseDataset
+from ..utils import get_grid_adjacency, get_positions
 
 
 class StrokePatientsMIDataset(BaseDataset):
@@ -63,6 +64,22 @@ class StrokePatientsMIDataset(BaseDataset):
         num_worker (int): Number of subprocesses to use for data loading. 0 means that the data will be loaded in the main process. (default: :obj:`0`)
         verbose (bool): Whether to display logs during processing, such as progress bars, etc. (default: :obj:`True`)
     '''
+
+    channels = ['FP1', 'FP2', 'Fz', 'F3', 'F4', 'F7', 'F8', 'FCz', 'FC3', 'FC4', 'FT7',
+                'FT8', 'Cz', 'C3', 'C4', 'T3', 'T4', 'CPz', 'CP3', 'CP4', 'TP7', 'TP8',
+                'Pz', 'P3', 'P4', 'T5', 'T6', 'Oz', 'O1', 'O2']
+
+    grid = [['-',   'FP1',  '-',    'FP2',   '-'],
+            ['F7',  'F3',   'Fz',   'F4',   'F8'],
+            ['FT7',  'FC3', 'FCz',  'FC4', 'FT8'],
+            ['T3',   'C3',  'Cz',   'C4',   'T4'],
+            ['TP7',  'CP3',  'CPz',   'CP4', 'TP8'],
+            ['T5',   'P3',   'Pz',  'P4',   'T6'],
+            ['-',    'O1',  'Oz',   'O2',    '-']]
+
+    adjacency = get_grid_adjacency(grid)
+
+    positions = get_positions(channels)
 
     def __init__(
         self,
@@ -315,6 +332,22 @@ class StrokePatientsMIProcessedDataset(StrokePatientsMIDataset):
         num_worker (int): Number of subprocesses to use for data loading. 0 means that the data will be loaded in the main process. (default: :obj:`0`)
         verbose (bool): Whether to display logs during processing, such as progress bars, etc. (default: :obj:`True`)
     '''
+
+    channels = ['FP1', 'FP2', 'Fz', 'F3', 'F4', 'F7', 'F8', 'FCz', 'FC3', 'FC4', 'FT7',
+                'FT8', 'Cz', 'C3', 'C4', 'T3', 'T4', 'CPz', 'CP3', 'CP4', 'TP7', 'TP8',
+                'Pz', 'P3', 'P4', 'T5', 'T6', 'Oz', 'O1', 'O2']
+
+    grid = [['-',   'FP1',  '-',    'FP2',   '-'],
+            ['F7',  'F3',   'Fz',   'F4',   'F8'],
+            ['FT7',  'FC3', 'FCz',  'FC4', 'FT8'],
+            ['T3',   'C3',  'Cz',   'C4',   'T4'],
+            ['TP7',  'CP3',  'CPz',   'CP4', 'TP8'],
+            ['T5',   'P3',   'Pz',  'P4',   'T6'],
+            ['-',    'O1',  'Oz',   'O2',    '-']]
+
+    adjacency = get_grid_adjacency(grid)
+
+    positions = get_positions(channels)
 
     def __init__(self,
                  root_path='./StrokePatientsMIDataset',

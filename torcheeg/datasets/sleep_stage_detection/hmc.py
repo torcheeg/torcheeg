@@ -109,6 +109,16 @@ class HMCDataset(BaseDataset):
         verbose (bool): Whether to display logs during processing, such as progress bars, etc. (default: :obj:`True`)
     '''
 
+    channels = ['EEG F4-M1', 'EEG C4-M1', 'EEG O2-M1', 'EEG C3-M2']
+
+    grid = [['-', '-', '-', '-', '-', '-', '-'],
+            ['-', '-', '-', '-', '-', 'EEG F4-M1', '-'],
+            ['-', '-', '-', '-', '-', '-', '-'],
+            ['-', 'EEG C3-M2', '-', '-', '-', 'EEG C4-M1', '-'],
+            ['-', '-', '-', '-', '-', '-', '-'],
+            ['-', '-', '-', '-', '-', '-', '-'],
+            ['-', '-', '-', '-', 'EEG O2-M1', '-', '-']]
+
     def __init__(self,
                  root_path: str = './HMC/recordings',
                  channels: List = ['EEG F4-M1',

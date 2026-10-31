@@ -1,1 +1,0 @@
-ISRUC_CHANNEL_LIST = ['F3-M2', 'C3-M2', 'O1-M2', 'F4-M1', 'C4-M1', 'O2-M1']

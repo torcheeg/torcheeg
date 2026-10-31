@@ -8,6 +8,7 @@ import scipy.io as scio
 
 from ...utils import get_random_dir_path
 from ..base_dataset import BaseDataset
+from ..utils import get_positions
 
 _log = logging.getLogger('torcheeg')
 
@@ -39,12 +40,12 @@ class AMIGOSDataset(BaseDataset):
         from torcheeg.datasets import AMIGOSDataset
         from torcheeg import transforms
 
-        from torcheeg.datasets.constants.emotion_recognition.amigos import AMIGOS_CHANNEL_LOCATION_DICT
+        from torcheeg.datasets.utils import get_locations
 
         dataset = AMIGOSDataset(root_path='./data_preprocessed',
                                 offline_transform=transforms.Compose([
                                     transforms.BandDifferentialEntropy(),
-                                    transforms.ToGrid(AMIGOS_CHANNEL_LOCATION_DICT)
+                                    transforms.ToGrid(get_locations(AMIGOSDataset.channels, AMIGOSDataset.grid))
                                 ]),
                                 online_transform=transforms.ToTensor(),
                                 label_transform=transforms.Compose([
@@ -84,11 +85,11 @@ class AMIGOSDataset(BaseDataset):
         from torcheeg import transforms
         from torcheeg.transforms.pyg import ToG
 
-        from torcheeg.datasets.constants.emotion_recognition.amigos import AMIGOS_ADJACENCY_MATRIX
+        from torcheeg.datasets.utils import get_adjacency
 
         dataset = AMIGOSDataset(root_path='./data_preprocessed',
                                 online_transform=transforms.Compose(
-                                    [ToG(AMIGOS_ADJACENCY_MATRIX)]),
+                                    [ToG(get_adjacency(AMIGOSDataset.channels, AMIGOSDataset.adjacency))]),
                                 label_transform=transforms.Compose([
                                     transforms.Select('valence'),
                                     transforms.Binary(5.0),
@@ -118,6 +119,40 @@ class AMIGOSDataset(BaseDataset):
         num_worker (int): Number of subprocesses to use for data loading. 0 means that the data will be loaded in the main process. (default: :obj:`0`)
         verbose (bool): Whether to display logs during processing, such as progress bars, etc. (default: :obj:`True`)
     '''
+
+    channels = [
+        'AF3', 'F7', 'F3', 'FC5', 'T7', 'P7', 'O1', 'O2', 'P8', 'T8', 'FC6', 'F4',
+        'F8', 'AF4'
+    ]
+
+    grid = [['-', '-', '-', '-', '-', '-', '-', '-', '-'],
+            ['-', '-', '-', 'AF3', '-', 'AF4', '-', '-', '-'],
+            ['F7', '-', 'F3', '-', '-', '-', 'F4', '-', 'F8'],
+            ['-', 'FC5', '-', '-', '-', '-', '-', 'FC6', '-'],
+            ['T7', '-', '-', '-', '-', '-', '-', '-', 'T8'],
+            ['-', '-', '-', '-', '-', '-', '-', '-', '-'],
+            ['P7', '-', '-', '-', '-', '-', '-', '-', 'P8'],
+            ['-', '-', '-', '-', '-', '-', '-', '-', '-'],
+            ['-', '-', '-', 'O1', '-', 'O2', '-', '-', '-']]
+
+    adjacency = {
+        'AF3': ['F3', 'AF4'],
+        'AF4': ['AF3', 'F4'],
+        'F7': ['F3', 'FC5', 'T7'],
+        'F3': ['AF3', 'F7', 'FC5'],
+        'F4': ['AF4', 'F8', 'FC6'],
+        'F8': ['F4', 'FC6', 'T8'],
+        'FC5': ['F7', 'F3', 'T7'],
+        'FC6': ['F4', 'F8', 'T8'],
+        'T7': ['F7', 'FC5', 'P7'],
+        'T8': ['F8', 'FC6', 'P8'],
+        'P7': ['T7'],
+        'P8': ['T8'],
+        'O1': ['O2'],
+        'O2': ['O1']
+    }
+
+    positions = get_positions(channels)
 
     def __init__(self,
                  root_path: str = './data_preprocessed',

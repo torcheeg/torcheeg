@@ -3,7 +3,8 @@ import unittest
 import numpy as np
 import torch
 
-from torcheeg.datasets.constants import DEAP_CHANNEL_LOCATION_DICT
+from torcheeg.datasets import DEAPDataset
+from torcheeg.datasets.utils import get_locations
 from torcheeg.transforms import (BandDifferentialEntropy, BaselineCorrection,
                                  BaselineRemoval, Binary, Compose, Lambda,
                                  MeanStdNormalize, RandomMask, RandomNoise,
@@ -62,7 +63,7 @@ class TestAnyTransforms(unittest.TestCase):
         transform = Compose([
             BandDifferentialEntropy(),
             MeanStdNormalize(),
-            ToGrid(DEAP_CHANNEL_LOCATION_DICT)
+            ToGrid(get_locations(DEAPDataset.channels, DEAPDataset.grid))
         ])
         self.assertEqual(
             tuple(transform(eeg=np.random.randn(32, 128))['eeg'].shape),

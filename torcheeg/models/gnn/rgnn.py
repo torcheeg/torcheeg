@@ -67,20 +67,20 @@ class RGNN(torch.nn.Module):
         from torcheeg.datasets import SEEDDataset
         from torcheeg.models import RGNN
         from torcheeg.transforms.pyg import ToG
-        from torcheeg.datasets.constants import SEED_STANDARD_ADJACENCY_MATRIX
+        from torcheeg.datasets.utils import get_standard_adjacency
         from torch_geometric.data import DataLoader
 
 
         dataset = SEEDDataset(root_path='./Preprocessed_EEG',
                               offline_transform=transforms.BandDifferentialEntropy(),
-                              online_transform=ToG(SEED_STANDARD_ADJACENCY_MATRIX),
+                              online_transform=ToG(get_standard_adjacency(SEEDDataset.channels, SEEDDataset.positions)),
                               label_transform=transforms.Compose([
                                   transforms.Select('emotion'),
                                   transforms.Lambda(lambda x: int(x) + 1),
                               ]),
                               num_worker=8)
 
-        model = RGNN(adj=torch.Tensor(SEED_STANDARD_ADJACENCY_MATRIX),
+        model = RGNN(adj=torch.Tensor(get_standard_adjacency(SEEDDataset.channels, SEEDDataset.positions)),
                      in_channels=5,
                      num_electrodes=62,
                      hid_channels=32,

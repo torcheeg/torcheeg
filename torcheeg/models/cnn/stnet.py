@@ -57,13 +57,13 @@ class STNet(nn.Module):
 
         from torcheeg.datasets import DEAPDataset
         from torcheeg import transforms
-        from torcheeg.datasets.constants import DEAP_CHANNEL_LOCATION_DICT
+        from torcheeg.datasets.utils import get_locations
         from torcheeg.models import STNet
         from torch.utils.data import DataLoader
 
         dataset = DEAPDataset(root_path='./data_preprocessed_python',
                               offline_transform=transforms.Compose([
-                                  transforms.ToGrid(DEAP_CHANNEL_LOCATION_DICT)
+                                  transforms.ToGrid(get_locations(DEAPDataset.channels, DEAPDataset.grid))
                               ]),
                               online_transform=transforms.ToTensor(),
                               label_transform=transforms.Compose([

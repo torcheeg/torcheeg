@@ -3,7 +3,9 @@ import unittest
 import torch
 from torch_geometric.data import Batch, Data
 
-from torcheeg.datasets.constants import DEAP_GENERAL_REGION_LIST
+from torcheeg.datasets import DEAPDataset
+from torcheeg.datasets.montage import GENERAL_REGION_LIST
+from torcheeg.datasets.utils import get_regions
 from torcheeg.models import DGCNN, GIN, RGNN, LGGNet
 
 
@@ -18,7 +20,7 @@ class TestGNN(unittest.TestCase):
 
     def test_lggnet(self):
         eeg = torch.rand(2, 1, 32, 128)
-        model = LGGNet(DEAP_GENERAL_REGION_LIST,
+        model = LGGNet(get_regions(DEAPDataset.channels, GENERAL_REGION_LIST),
                        num_electrodes=32, chunk_size=128)
         pred = model(eeg)
         self.assertEqual(tuple(pred.shape), (2, 2))

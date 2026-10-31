@@ -73,7 +73,7 @@ seed_everything(42)
 
 from torcheeg import transforms
 from torcheeg.datasets import DEAPDataset
-from torcheeg.datasets.constants import DEAP_CHANNEL_LOCATION_DICT
+from torcheeg.datasets.utils import get_locations
 
 dataset = DEAPDataset(
     io_path=f'./examples_vanilla_torch/deap',
@@ -81,7 +81,8 @@ dataset = DEAPDataset(
     offline_transform=transforms.Compose([
         transforms.BandDifferentialEntropy(apply_to_baseline=True),
         transforms.BaselineRemoval(),
-        transforms.ToGrid(DEAP_CHANNEL_LOCATION_DICT)
+        transforms.ToGrid(get_locations(
+            DEAPDataset.channels, DEAPDataset.grid))
     ]),
     online_transform=transforms.ToTensor(),
     label_transform=transforms.Compose([

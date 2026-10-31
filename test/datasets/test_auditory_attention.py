@@ -10,8 +10,6 @@ from torcheeg.datasets import (AVEDDataset, AVEDProcessedDataset, DTUDataset,
                                DTUProcessedDataset, KULDataset,
                                KULProcessedDataset)
 from torcheeg.datasets.auditory_attention import aved
-from torcheeg.datasets.constants import (AVED_CHANNEL_LIST,
-                                         AVED_RAW_CHANNEL_LIST)
 
 
 class TestAuditoryAttention(unittest.TestCase):
@@ -71,12 +69,12 @@ class TestAuditoryAttention(unittest.TestCase):
         self.assertEqual(item['eeg'].shape, (32, 128))
 
     def test_aved_reader_selects_named_eeg_channels_before_referencing(self):
-        names = AVED_RAW_CHANNEL_LIST[::-1]
+        names = AVEDDataset.raw_channels[::-1]
         data = np.arange(len(names) * 128,
                          dtype=float).reshape(len(names), 128)
         raw = mne.io.RawArray(data, mne.create_info(
             names, 128, 'eeg'), verbose=False)
-        expected = data[[names.index(name) for name in AVED_CHANNEL_LIST]]
+        expected = data[[names.index(name) for name in AVEDDataset.channels]]
         expected = expected - expected.mean(axis=0, keepdims=True)
         with tempfile.TemporaryDirectory() as path:
             folder = os.path.join(path, 'audio_only', 'sub1')
@@ -94,7 +92,7 @@ class TestAuditoryAttention(unittest.TestCase):
                 np.testing.assert_allclose(sample, expected)
 
     def test_aved_reader_rejects_missing_eeg_instead_of_substituting_eog(self):
-        names = [name for name in AVED_RAW_CHANNEL_LIST if name != 'O2']
+        names = [name for name in AVEDDataset.raw_channels if name != 'O2']
         raw = mne.io.RawArray(np.zeros((len(names), 128)),
                               mne.create_info(names, 128, 'eeg'), verbose=False)
         with tempfile.TemporaryDirectory() as path:

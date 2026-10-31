@@ -20,10 +20,10 @@ def plot_adj_connectivity(adj: torch.Tensor,
         import torch
 
         from torcheeg.visualizers import plot_adj_connectivity
-        from torcheeg.datasets.constants import SEED_CHANNEL_LIST
+        from torcheeg.datasets import SEEDDataset
 
         adj = torch.randn(62, 62) # relationship between 62 electrodes
-        img = plot_adj_connectivity(adj, SEED_CHANNEL_LIST)
+        img = plot_adj_connectivity(adj, SEEDDataset.channels)
         # If using jupyter, the output image will be drawn on notebooks.
 
     .. image:: _static/plot_adj_connectivity.png

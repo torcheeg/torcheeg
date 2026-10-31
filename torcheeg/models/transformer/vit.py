@@ -120,12 +120,12 @@ class ViT(nn.Module):
         from torcheeg import transforms
         from torcheeg.models import ViT
         from torch.utils.data import DataLoader
-        from torcheeg.datasets.constants import DEAP_CHANNEL_LOCATION_DICT
+        from torcheeg.datasets.utils import get_locations
 
         dataset = DEAPDataset(root_path='./data_preprocessed_python',
                               offline_transform=transforms.Compose([
                                   transforms.MinMaxNormalize(axis=-1),
-                                  transforms.ToGrid(DEAP_CHANNEL_LOCATION_DICT)
+                                  transforms.ToGrid(get_locations(DEAPDataset.channels, DEAPDataset.grid))
                               ]),
                               online_transform=transforms.Compose([
                                   transforms.ToTensor(),
@@ -151,7 +151,7 @@ class ViT(nn.Module):
                     root_path='./data_preprocessed_python',
                     offline_transform=transforms.Compose([
                         transforms.BandDifferentialEntropy(sampling_rate=128),
-                        transforms.ToGrid(DEAP_CHANNEL_LOCATION_DICT)
+                        transforms.ToGrid(get_locations(DEAPDataset.channels, DEAPDataset.grid))
                     ]),
                     online_transform=transforms.Compose([
                         transforms.ToTensor(),

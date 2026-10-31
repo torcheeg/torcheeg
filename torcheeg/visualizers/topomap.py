@@ -21,11 +21,11 @@ def plot_raw_topomap(tensor: torch.Tensor,
     .. code-block:: python
 
         from torcheeg.visualizers import plot_raw_topomap
-        from torcheeg.datasets.constants import DEAP_CHANNEL_LIST
+        from torcheeg.datasets import DEAPDataset
 
         eeg = torch.randn(32, 128)
         img = plot_raw_topomap(eeg,
-                         channel_list=DEAP_CHANNEL_LIST,
+                         channel_list=DEAPDataset.channels,
                          sampling_rate=128)
         # If using jupyter, the output image will be drawn on notebooks.
 
@@ -37,7 +37,7 @@ def plot_raw_topomap(tensor: torch.Tensor,
 
     Args:
         tensor (torch.Tensor): The input EEG signal, the shape should be [number of channels, number of data points].
-        channel_list (list): The channel name lists corresponding to the input EEG signal. If the dataset in TorchEEG is used, please refer to the CHANNEL_LIST related constants in the :obj:`torcheeg.datasets.constants` module.
+        channel_list (list): The channel name lists corresponding to the input EEG signal. If the dataset in TorchEEG is used, use the corresponding Dataset class's ``channels`` attribute.
         sampling_rate (int): Sample rate of the data.
         plot_second_list (list): The time (second) at which the topographic map is drawn. (default: :obj:`[0.0, 0.25, 0.5, 0.75]`)
         montage (any): Channel positions and digitization points defined in obj:`mne`. (default: :obj:`mne.channels.make_standard_montage('standard_1020')`)
@@ -82,11 +82,11 @@ def plot_feature_topomap(tensor: torch.Tensor,
     .. code-block:: python
 
         from torcheeg.visualizers import plot_feature_topomap
-        from torcheeg.datasets.constants import DEAP_CHANNEL_LIST
+        from torcheeg.datasets import DEAPDataset
 
         eeg = torch.randn(32, 4)
         img = plot_feature_topomap(eeg,
-                         channel_list=DEAP_CHANNEL_LIST,
+                         channel_list=DEAPDataset.channels,
                          feature_list=["theta", "alpha", "beta", "gamma"])
         # If using jupyter, the output image will be drawn on notebooks.
 
@@ -98,7 +98,7 @@ def plot_feature_topomap(tensor: torch.Tensor,
 
     Args:
         tensor (torch.Tensor): The input EEG signal, the shape should be [number of channels, dimensions of features].
-        channel_list (list): The channel name lists corresponding to the input EEG signal. If the dataset in TorchEEG is used, please refer to the CHANNEL_LIST related constants in the :obj:`torcheeg.datasets.constants` module.
+        channel_list (list): The channel name lists corresponding to the input EEG signal. If the dataset in TorchEEG is used, use the corresponding Dataset class's ``channels`` attribute.
         feature_list (list): . The names of feature dimensions displayed on the output image, whose length should be consistent with the dimensions of features. If set to None, the dimension index of the feature is used instead. (default: :obj:`None`)
         montage (any): Channel positions and digitization points defined in obj:`mne`. (default: :obj:`mne.channels.make_standard_montage('standard_1020')`)
         fig_shape (Tuple[int, int], optional): The shape of the sub graphs (width, height). If `None`, the layout is automatically set to (1, len(feature_list)). (default: :obj:`None`)

@@ -7,6 +7,7 @@ import scipy.io as scio
 
 from ...utils import get_random_dir_path
 from ..base_dataset import BaseDataset
+from ..utils import get_grid_adjacency, get_positions
 
 _log = logging.getLogger('torcheeg')
 
@@ -70,6 +71,37 @@ class BCICIV2aDataset(BaseDataset):
         num_worker (int): Number of subprocesses to use for data loading. 0 means that the data will be loaded in the main process. (default: :obj:`0`)
         verbose (bool): Whether to display logs during processing, such as progress bars, etc. (default: :obj:`True`)
     '''
+
+    channels = [
+        'FZ', '0', '1', '2', '3', '4', '5', 'C3', '6', 'CZ', '7', 'C4', '8', '9', '10', '11', '12', '13', '14', 'PZ', '15', '16'
+    ]
+
+    grid = [['-',  '-',  '-',  'FZ', '-',  '-',  '-'],
+            ['-',  '0',  '1',  '2',  '3',  '4',  '-'],
+            ['5',  'C3', '6',  'CZ', '7',  'C4', '8'],
+            ['-',  '9',  '10', '11', '12', '13', '-'],
+            ['-',  '-',  '14', 'PZ', '15', '-',  '-'],
+            ['-',  '-',  '-',  '16', '-',  '-',  '-']]
+
+    adjacency = get_grid_adjacency(grid)
+
+    positions = get_positions(channels, {'0': 'FC3',
+                                         '1': 'FC1',
+                                         '2': 'FCZ',
+                                         '3': 'FC2',
+                                         '4': 'FC4',
+                                         '5': 'C5',
+                                         '6': 'C1',
+                                         '7': 'C2',
+                                         '8': 'C6',
+                                         '9': 'CP3',
+                                         '10': 'CP1',
+                                         '11': 'CPZ',
+                                         '12': 'CP2',
+                                         '13': 'CP4',
+                                         '14': 'P1',
+                                         '15': 'P2',
+                                         '16': 'POZ'})
 
     def __init__(self,
                  root_path: str = './BCICIV_2a_mat',
