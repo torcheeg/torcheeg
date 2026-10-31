@@ -8,17 +8,6 @@ torcheeg.datasets
 
 .. currentmodule:: torcheeg.datasets
 
-Cached dataset views
---------------------
-
-Data partitioning copies a dataset's metadata and shares its cached signals.
-For datasets using lazy IO, each view keeps its own dictionary of record paths
-and opens the required record when reading a sample. Copying or splitting a
-lazy dataset preserves lazy loading; it does not open all record databases.
-Metadata changes in one view do not change another view. Writes to the shared
-signal cache are visible to all views, so use separate storage for independent
-signal data.
-
 Emotion Recognition Datasets
 ----------------------------------
 
