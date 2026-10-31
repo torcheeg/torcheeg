@@ -3,27 +3,17 @@ from typing import Tuple, Union
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch_scatter import scatter_add
 
 
-class _LazyLoader:
-    def __init__(self, lib_name):
-        self._lib_name = lib_name
-        self._module = None
-
-    def __getattr__(self, name):
-        if self._module is None:
-            try:
-                self._module = __import__(self._lib_name)
-            except ImportError:
-                raise ImportError(
-                    f"To use this functionality, you need to install `{self._lib_name}`. "
-                    f"Please refer to https://pytorch-geometric.readthedocs.io/en/latest/notes/installation.html"
-                )
-        return getattr(self._module, name)
+from ...utils import LazyLoader as _LazyLoader
 
 
-_pyg = _LazyLoader('torch_geometric')
+_pyg = _LazyLoader(
+    'torch_geometric',
+    install_hint='See https://pytorch-geometric.readthedocs.io/en/latest/notes/installation.html')
+_scatter = _LazyLoader(
+    'torch_scatter',
+    install_hint='See https://pytorch-geometric.readthedocs.io/en/latest/notes/installation.html')
 
 
 def _maybe_num_electrodes(index: torch.Tensor, num_electrodes: Union[int, None] = None) -> int:
@@ -126,6 +116,7 @@ class RGNN(torch.nn.Module):
                  learn_edge_weights: bool = True):
 
         super(RGNN, self).__init__()
+        scatter_add = _scatter.scatter_add
         self.num_electrodes = num_electrodes
         self.in_channels = in_channels
         self.num_electrodes = num_electrodes

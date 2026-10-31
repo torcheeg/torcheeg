@@ -9,9 +9,6 @@ from torcheeg.datasets.module.base_dataset import BaseDataset
 from .base_model_selection import BaseModelSelection
 from .utils import create_subset, read_indices, validate_groups, write_indices
 
-__all__ = ['TrainTestSplitPerSubjectGroupbyTrial']
-
-
 class TrainTestSplitPerSubjectGroupbyTrial(BaseModelSelection):
     r'''
     Split samples within each trial into training and test sets for each subject.

@@ -7,9 +7,6 @@ from torcheeg.datasets.module.base_dataset import BaseDataset
 from .base_model_selection import BaseModelSelection
 from .utils import create_subset, read_indices, validate_partitions, write_partitions
 
-__all__ = ['TrainValTestSplitCrossSubject']
-
-
 class TrainValTestSplitCrossSubject(BaseModelSelection):
     r'''
     A tool class for cross-subject dataset splitting, to divide the dataset

@@ -9,9 +9,6 @@ from torcheeg.datasets.module.base_dataset import BaseDataset
 from .base_model_selection import BaseModelSelection
 from .utils import create_subset, read_indices, validate_partitions, write_partitions
 
-__all__ = ['KFoldCrossSubjectTrainValTest']
-
-
 class KFoldCrossSubjectTrainValTest(BaseModelSelection):
     r'''
     A tool class for k-fold cross-validation at the subject level, additionally

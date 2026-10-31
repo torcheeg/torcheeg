@@ -56,6 +56,7 @@ Transformers.
    torcheeg.models
    torcheeg.transforms
    torcheeg.trainers
+   torcheeg.visualizers
    torcheeg.utils
 
 Indices and tables

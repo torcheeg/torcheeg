@@ -12,9 +12,6 @@ from torcheeg.datasets.module.base_dataset import BaseDataset
 from .base_model_selection import BaseModelSelection
 from .utils import create_subset, read_indices, write_indices
 
-__all__ = ['Subcategory']
-
-
 class Subcategory(BaseModelSelection):
     r'''
     A tool class for separating out subsets of specified categories, often used to extract data for a certain type of paradigm, or for a certain type of task. Each subset in the formed subset list contains only one type of data.

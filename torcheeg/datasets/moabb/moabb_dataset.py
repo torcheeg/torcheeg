@@ -8,8 +8,12 @@ import pandas as pd
 
 from ..module.base_dataset import BaseDataset
 
-from moabb.datasets.base import BaseDataset as _MOABBDataset
-from moabb.paradigms.base import BaseParadigm as _MOABBParadigm
+from ...utils import LazyLoader
+
+_MOABBDataset = LazyLoader(
+    'moabb.datasets.base', install_hint='Install with `pip install moabb`.').BaseDataset
+_MOABBParadigm = LazyLoader(
+    'moabb.paradigms.base', install_hint='Install with `pip install moabb`.').BaseParadigm
 
 _log = logging.getLogger('torcheeg')
 

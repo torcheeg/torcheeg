@@ -6,15 +6,8 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from ..utils.cache import (ensure_cache as _ensure_cache, compute_fingerprint as
+from ..utils import (ensure_cache as _ensure_cache, compute_fingerprint as
                            _compute_fingerprint, validate_cache)
-
-__all__ = [
-    'compute_fingerprint', 'validate_cache', 'ensure_cache', 'validate_metadata',
-    'validate_groups', 'validate_partitions', 'write_partitions', 'validate_indices',
-    'write_indices', 'read_indices', 'create_subset'
-]
-
 
 def validate_metadata(info, columns=()):
     if not isinstance(info, pd.DataFrame):

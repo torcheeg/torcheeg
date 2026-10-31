@@ -9,9 +9,6 @@ from torcheeg.datasets.module.base_dataset import BaseDataset
 from ..utils import get_random_dir_path
 from .utils import create_subset, ensure_cache, read_indices, write_indices
 
-__all__ = ['train_test_split_cross_subject']
-
-
 def train_test_split_cross_subject(
         dataset: BaseDataset,
         test_size: Union[int, float] = 0.2,

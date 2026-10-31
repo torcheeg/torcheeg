@@ -50,7 +50,7 @@ Numpy-based Transforms
     ARRCoefficient
     BandSpectralEntropy
     PearsonCorrelation
-    PhaseLockingCorrelation
+    PhaseLockingValue
     MeanStdNormalize
     MinMaxNormalize
     PickElectrode
