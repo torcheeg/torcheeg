@@ -1,4 +1,5 @@
 import gc
+import inspect
 import multiprocessing
 import os
 import shutil
@@ -14,7 +15,8 @@ from torch.utils.data import DataLoader
 
 from torcheeg import transforms
 from torcheeg.datasets import (BaseDataset, ConcatDataset, CSVFolderDataset,
-                               FolderDataset, MNERawDataset, PairDataset)
+                               FolderDataset, MNERawDataset, PairDataset,
+                               constants)
 from torcheeg.model_selection import (KFoldCrossSubject, Subcategory,
                                       train_test_split)
 
@@ -384,6 +386,55 @@ class TestLazyDatasetCopy(unittest.TestCase):
                 torch.testing.assert_close(torch.cat([batch[0] for batch in batches]),
                                            torch.from_numpy(expected))
                 self._assert_samples(duplicate)
+
+
+class TestDatasetConstants(unittest.TestCase):
+    def test_auditory_montages_preserve_order_and_cover_all_channels(self):
+        for prefix, count in (('AVED', 32), ('DTU', 64), ('KUL', 64)):
+            with self.subTest(dataset=prefix):
+                channels = getattr(constants, prefix + '_CHANNEL_LIST')
+                locations = getattr(constants, prefix +
+                                    '_CHANNEL_LOCATION_DICT')
+                adjacency = np.asarray(
+                    getattr(constants, prefix + '_ADJACENCY_MATRIX'))
+                self.assertEqual(len(channels), count)
+                self.assertEqual(len(set(channels)), count)
+                self.assertEqual(set(locations), set(channels))
+                self.assertEqual(adjacency.shape, (count, count))
+                np.testing.assert_array_equal(adjacency, adjacency.T)
+                grid = transforms.ToGrid(locations)(
+                    eeg=np.ones((count, 8)))['eeg']
+                for channel in channels:
+                    row, column = locations[channel]
+                    np.testing.assert_array_equal(
+                        grid[:, row, column], np.ones(8))
+        self.assertEqual(constants.DTU_CHANNEL_LIST[47], 'CZ')
+        self.assertEqual(constants.KUL_CHANNEL_LIST[47], 'CZ')
+        self.assertEqual(
+            constants.DTUPROCESSED_AVAILABLE_CHANNEL_LIST[-2:], ['EXG1', 'EXG2'])
+        self.assertTrue({'O1', 'OZ', 'O2'} <= set(constants.AVED_CHANNEL_LIST))
+        self.assertFalse({'HEOL', 'HEOR', 'VEOU', 'VEOL'} &
+                         set(constants.AVED_CHANNEL_LIST))
+
+    def test_sleep_channels_follow_reader_defaults(self):
+        from torcheeg.datasets import (HMCDataset, ISRUCDataset, P2018Dataset,
+                                       SleepEDFxDataset)
+        for cls, channels in (
+                (HMCDataset, constants.HMC_CHANNEL_LIST),
+                (ISRUCDataset, constants.ISRUC_CHANNEL_LIST),
+                (P2018Dataset, constants.P2018_CHANNEL_LIST),
+                (SleepEDFxDataset, constants.SLEEPEDFX_RAW_CHANNEL_LIST)):
+            with self.subTest(dataset=cls.__name__):
+                self.assertEqual(inspect.signature(
+                    cls).parameters['channels'].default, channels)
+
+    def test_grid_adjacency_ignores_empty_cells_and_includes_diagonals(self):
+        from torcheeg.datasets.constants.utils import \
+            format_adj_list_from_location_list
+        adjacency = format_adj_list_from_location_list(
+            [['A', '-'], ['B', 'C']])
+        self.assertEqual({key: set(value) for key, value in adjacency.items()},
+                         {'A': {'B', 'C'}, 'B': {'A', 'C'}, 'C': {'A', 'B'}})
 
 
 if __name__ == '__main__':

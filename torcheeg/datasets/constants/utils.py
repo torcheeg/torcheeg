@@ -48,6 +48,29 @@ def format_adj_matrix_from_adj_list(channel_list: List,
     return adj_matrix.tolist()
 
 
+def format_adj_list_from_location_list(location_list):
+    adjacency_list = {}
+    rows = len(location_list)
+    columns = len(location_list[0]) if rows else 0
+    for row, values in enumerate(location_list):
+        for column, channel in enumerate(values):
+            if channel == '-':
+                continue
+            neighbors = []
+            for row_delta in (-1, 0, 1):
+                for column_delta in (-1, 0, 1):
+                    if row_delta == column_delta == 0:
+                        continue
+                    neighbor_row = row + row_delta
+                    neighbor_column = column + column_delta
+                    if 0 <= neighbor_row < rows and 0 <= neighbor_column < columns:
+                        neighbor = location_list[neighbor_row][neighbor_column]
+                        if neighbor != '-':
+                            neighbors.append(neighbor)
+            adjacency_list[channel] = neighbors
+    return adjacency_list
+
+
 DEFAULT_GLOBAL_CHANNEL_LIST = [('FP1', 'FP2'), ('AF3', 'AF4'), ('F5', 'F6'),
                                ('FC5', 'FC6'), ('C5', 'C6'), ('CP5', 'CP6'),
                                ('P5', 'P6'), ('PO5', 'PO6'), ('O1', 'O2')]
@@ -67,7 +90,7 @@ def format_adj_matrix_from_standard(
     - Related Project: https://github.com/zhongpeixiang/RGNN
 
     Args:
-        channel_list (list): The channel name lists corresponding to the input EEG signal. If the dataset in TorchEEG is used, please refer to the CHANNEL_LIST related constants in the :obj:`torcheeg.constants` module.
+        channel_list (list): The channel name lists corresponding to the input EEG signal. If the dataset in TorchEEG is used, please refer to the CHANNEL_LIST related constants in the :obj:`torcheeg.datasets.constants` module.
         standard_channel_location_dict (dict): Electrode location information. Represented in dictionary form, where :obj:`key` corresponds to the electrode name and :obj:`value` corresponds to (x, y, z) of the electrode on the grid. please refer to STANDARD_1005_CHANNEL_LOCATION_DICT and STANDARD_1020_CHANNEL_LOCATION_DICT.
         delta (float): The calibration constant. Due to differences in electrode coordinate scales, the values in the original paper are not recommended. 0.00056 means 20% more nodes are connected to each other. (default: :obj:`0.00056`)
         global_channel_list (float): To leverage the differential asymmetry information, the authors initialize the global inter-channel relations in the adjacency matrix. (default: :obj:`[('FP1', 'FP2'), ('AF3', 'AF4'), ('F5', 'F6'), ('FC5', 'FC6'), ('C5', 'C6'), ('CP5', 'CP6'), ('P5', 'P6'), ('PO5', 'PO6'), ('O1', 'O2')]`)

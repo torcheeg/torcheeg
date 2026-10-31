@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 
 from ...utils import LazyLoader
-from ..module.base_dataset import BaseDataset
+from ..base_dataset import BaseDataset
 
 _MOABBDataset = LazyLoader(
     'moabb.datasets.base', install_hint='Install with `pip install moabb`.').BaseDataset
