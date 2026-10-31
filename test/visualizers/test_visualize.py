@@ -1,7 +1,9 @@
 import unittest
+from typing import get_type_hints
 
 import numpy as np
 import torch
+from torch_geometric.data import Data
 
 from torcheeg.datasets.constants import (DEAP_ADJACENCY_MATRIX,
                                          DEAP_CHANNEL_LIST,
@@ -15,6 +17,9 @@ from torcheeg.visualizers import (plot_2d_tensor, plot_3d_tensor,
 
 
 class TestVisualize(unittest.TestCase):
+
+    def test_plot_graph_type_annotation(self):
+        self.assertIs(get_type_hints(plot_graph)['data'], Data)
 
     def test_plot_raw_topomap(self):
         mock_eeg = torch.randn(32, 128)
