@@ -299,6 +299,13 @@ If you would like to contribute new datasets, deep learning methods, and extensi
                 </a>
             </td>
             <td align="center">
+                <a href="https://github.com/katsugtgz">
+                    <img src="https://avatars.githubusercontent.com/u/196550311?v=4" width="100;" alt="katsugtgz"/>
+                    <br />
+                    <sub><b>Muhammad Naufal Mahdi</b></sub>
+                </a>
+            </td>
+            <td align="center">
                 <a href="https://github.com/gitter-badger">
                     <img src="https://avatars.githubusercontent.com/u/8518239?v=4" width="100;" alt="gitter-badger"/>
                     <br />
@@ -312,6 +319,8 @@ If you would like to contribute new datasets, deep learning methods, and extensi
                     <sub><b>ShenHan</b></sub>
                 </a>
             </td>
+		</tr>
+		<tr>
             <td align="center">
                 <a href="https://github.com/sanjay7178">
                     <img src="https://avatars.githubusercontent.com/u/97831658?v=4" width="100;" alt="sanjay7178"/>
@@ -319,8 +328,6 @@ If you would like to contribute new datasets, deep learning methods, and extensi
                     <sub><b>Sai Sanjay </b></sub>
                 </a>
             </td>
-		</tr>
-		<tr>
             <td align="center">
                 <a href="https://github.com/Nhix00">
                     <img src="https://avatars.githubusercontent.com/u/75837033?v=4" width="100;" alt="Nhix00"/>
@@ -343,12 +350,21 @@ If you would like to contribute new datasets, deep learning methods, and extensi
                 </a>
             </td>
             <td align="center">
+                <a href="https://github.com/dexhunter">
+                    <img src="https://avatars.githubusercontent.com/u/6930518?v=4" width="100;" alt="dexhunter"/>
+                    <br />
+                    <sub><b>Dex Hünter</b></sub>
+                </a>
+            </td>
+            <td align="center">
                 <a href="https://github.com/dawin2015">
                     <img src="https://avatars.githubusercontent.com/u/12325204?v=4" width="100;" alt="dawin2015"/>
                     <br />
                     <sub><b>Liu-darong</b></sub>
                 </a>
             </td>
+		</tr>
+		<tr>
             <td align="center">
                 <a href="https://github.com/Alexanderstaehle">
                     <img src="https://avatars.githubusercontent.com/u/48824183?v=4" width="100;" alt="Alexanderstaehle"/>
