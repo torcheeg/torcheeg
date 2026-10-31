@@ -1,0 +1,11 @@
+EEGWaveNet external backend notice
+
+The TorchEEG interface does not distribute the author source or weights.
+Repository: https://github.com/IoBT-VISTEC/EEGWaveNet
+Pinned revision: 3b1909873f6cde2d8b5a916327791cf9a59f975c
+Source file: architecture.py
+SHA256: 6922fecd52bfd240dca4ce7475ea94657fc750b2e05f65e2eda52cfa09caf408
+
+No license is stated in the inspected author repository. Obtain and use the
+complete original implementation separately under applicable terms. This
+interface does not grant rights to redistribute the author implementation.

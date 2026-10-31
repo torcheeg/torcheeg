@@ -1,0 +1,43 @@
+name: EEGWaveNet complete author network
+
+on:
+  pull_request:
+    paths:
+      - 'torcheeg/models/cnn/eegwavenet.py'
+      - 'torcheeg/models/cnn/__init__.py'
+      - 'test/models/test_eegwavenet*.py'
+      - 'test/examples/test_bciciv2a_eegwavenet.py'
+      - 'examples/examples_bciciv2a_eegwavenet.py'
+      - 'docs/source/user_guide/eegwavenet.rst'
+      - '.github/workflows/eegwavenet-native.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  eegwavenet:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      OMP_NUM_THREADS: '2'
+      MPLBACKEND: Agg
+      TORCHEEG_EEGWAVENET_SOURCE: external/architecture.py
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Obtain and hash the complete separate author file
+        run: |
+          mkdir external
+          curl --fail --location --retry 3 https://raw.githubusercontent.com/IoBT-VISTEC/EEGWaveNet/3b1909873f6cde2d8b5a916327791cf9a59f975c/architecture.py --output external/architecture.py
+          echo '6922fecd52bfd240dca4ce7475ea94657fc750b2e05f65e2eda52cfa09caf408  external/architecture.py' | sha256sum --check
+      - name: Install matching CPU dependencies
+        run: |
+          python -m pip install torch==2.6.0 torchvision==0.21.0 --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install torch-scatter==2.1.2 torch-sparse==0.6.18 --only-binary=:all: --find-links https://data.pyg.org/whl/torch-2.6.0+cpu.html
+          python -m pip install -e '.[model,dataset]'
+      - name: Compare the full original network and independent workflow
+        run: |
+          python -m unittest test.models.test_eegwavenet test.models.test_eegwavenet_native test.examples.test_bciciv2a_eegwavenet
