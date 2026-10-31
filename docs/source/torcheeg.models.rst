@@ -90,6 +90,7 @@ Transformer
    MSCFormer
    TMSANet
    HSLT
+   SleepTransformer
    EEGPT
    EEGPTClassifier
    EEGPTRegression

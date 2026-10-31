@@ -51,3 +51,5 @@ from .mscformer import MSCFormer
 from .tmsanet import TMSANet
 
 from .hslt import HSLT
+
+from .sleeptransformer import SleepTransformer

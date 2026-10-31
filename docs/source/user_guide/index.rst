@@ -101,3 +101,4 @@ the same library workflow as a reusable assistant skill.
    hslt
    slimseiz
    bidann
+   sleeptransformer
