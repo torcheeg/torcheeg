@@ -344,6 +344,13 @@ If you would like to contribute new datasets, deep learning methods, and extensi
                 </a>
             </td>
             <td align="center">
+                <a href="https://github.com/dexhunter">
+                    <img src="https://avatars.githubusercontent.com/u/6930518?v=4" width="100;" alt="dexhunter"/>
+                    <br />
+                    <sub><b>Dex Hünter</b></sub>
+                </a>
+            </td>
+            <td align="center">
                 <a href="https://github.com/dawin2015">
                     <img src="https://avatars.githubusercontent.com/u/12325204?v=4" width="100;" alt="dawin2015"/>
                     <br />
@@ -357,6 +364,8 @@ If you would like to contribute new datasets, deep learning methods, and extensi
                     <sub><b>Alexanderstaehle</b></sub>
                 </a>
             </td>
+		</tr>
+		<tr>
             <td align="center">
                 <a href="https://github.com/adityasingh2400">
                     <img src="https://avatars.githubusercontent.com/u/60082699?v=4" width="100;" alt="adityasingh2400"/>
