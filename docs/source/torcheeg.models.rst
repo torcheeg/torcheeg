@@ -49,6 +49,7 @@ Recurrent Neural Networks
 
    GRU
    BiDANN
+   SleepEEGNet
    BiDANNLoss
    LSTM
 
