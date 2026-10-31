@@ -79,7 +79,7 @@ class TestSEEDVCNT(unittest.TestCase):
         from torcheeg.datasets.module.base_dataset import BaseDataset
         from torcheeg.datasets.module._cache import configuration_signature
 
-        parameter = inspect.signature(SEEDVDataset).parameters['data_format']
+        parameter = inspect.signature(SEEDVDataset.__init__).parameters['data_format']
         self.assertEqual(parameter.kind, inspect.Parameter.KEYWORD_ONLY)
         signatures = []
         with patch.object(BaseDataset, '__init__', return_value=None) as initialize:
