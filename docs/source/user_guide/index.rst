@@ -59,6 +59,7 @@ the same library workflow as a reusable assistant skill.
 
    foundation_models
    cache
+   seed_v_cnt
    moabb
    eegpt_decoders
    eegpt_finetuning
