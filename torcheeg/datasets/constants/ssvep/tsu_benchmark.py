@@ -1,5 +1,7 @@
-from ..utils import format_adj_matrix_from_standard, format_channel_location_dict, format_adj_matrix_from_adj_list
 from ..standard_1005 import STANDARD_1005_CHANNEL_LOCATION_DICT
+from ..utils import (format_adj_matrix_from_adj_list,
+                     format_adj_matrix_from_standard,
+                     format_channel_location_dict)
 
 TSUBENCHMARK_CHANNEL_LIST = [
     'FP1', 'FPZ', 'FP2', 'AF3', 'AF4', 'F7', 'F5', 'F3', 'F1', 'FZ', 'F2', 'F4',

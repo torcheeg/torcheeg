@@ -1,7 +1,6 @@
 import unittest
 
-from torcheeg.datasets import TSUBenckmarkDataset
-from torcheeg.datasets import SanDiegoSSVEPDataset
+from torcheeg.datasets import SanDiegoSSVEPDataset, TSUBenckmarkDataset
 
 
 class TestSSVEPDataset(unittest.TestCase):

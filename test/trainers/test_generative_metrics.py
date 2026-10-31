@@ -21,8 +21,10 @@ class EEGFeatureExtractor(nn.Module):
 
 class TestGenerativeMetrics(unittest.TestCase):
     def setUp(self):
-        self.real = torch.tensor([[0., 0.], [2., 0.], [0., 2.], [2., 2.]], dtype=torch.float64)
-        self.fake = torch.tensor([[1., 0.], [4., 0.], [1., 1.], [4., 1.]], dtype=torch.float64)
+        self.real = torch.tensor(
+            [[0., 0.], [2., 0.], [0., 2.], [2., 2.]], dtype=torch.float64)
+        self.fake = torch.tensor(
+            [[1., 0.], [4., 0.], [1., 1.], [4., 1.]], dtype=torch.float64)
 
     def make_metric(self, **kwargs):
         return FrechetInceptionDistance(nn.Identity(), 2, **kwargs)
@@ -43,9 +45,11 @@ class TestGenerativeMetrics(unittest.TestCase):
         metric.update(self.real, real=True)
         metric.update(self.fake, real=False)
         real, fake = self.real.numpy(), self.fake.numpy()
-        cov_real, cov_fake = np.cov(real, rowvar=False), np.cov(fake, rowvar=False)
+        cov_real, cov_fake = np.cov(
+            real, rowvar=False), np.cov(fake, rowvar=False)
         expected = np.square(real.mean(axis=0) - fake.mean(axis=0)).sum()
-        expected += np.trace(cov_real + cov_fake - 2 * sqrtm(cov_real @ cov_fake).real)
+        expected += np.trace(cov_real + cov_fake - 2 *
+                             sqrtm(cov_real @ cov_fake).real)
         self.assertAlmostEqual(metric.compute().item(), expected, places=10)
 
     def test_equal_distributions_have_zero_distance(self):
@@ -70,7 +74,8 @@ class TestGenerativeMetrics(unittest.TestCase):
         self.assertEqual(metric.real_features_num_samples.item(), 0)
         self.assertEqual(metric.fake_features_num_samples.item(), 0)
         self.assertEqual(metric.real_features_sum.count_nonzero().item(), 0)
-        self.assertEqual(metric.fake_features_cov_sum.count_nonzero().item(), 0)
+        self.assertEqual(
+            metric.fake_features_cov_sum.count_nonzero().item(), 0)
 
     def test_reset_can_preserve_real_distribution(self):
         metric = self.make_metric(reset_real_features=False)

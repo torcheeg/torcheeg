@@ -70,9 +70,11 @@ def draw(spec):
     for fold in range(folds):
         x = start + fold * (panel_w + gap)
         if folds > 1:
-            text(parts, x + 176, 115, 'Fold %s' % (fold + 1), 18, anchor='middle')
+            text(parts, x + 176, 115, 'Fold %s' %
+                 (fold + 1), 18, anchor='middle')
         if mode == 'sample':
-            text(parts, x + 176, 217, 'Subject 1' if per_subject else 'Samples', 16, MUTED, 'middle')
+            text(parts, x + 176, 217,
+                 'Subject 1' if per_subject else 'Samples', 16, MUTED, 'middle')
             for sample in range(12):
                 block(parts, x + 58 + sample * 20, 240,
                       held_out(stem, mode, fold, 0, 0, sample, folds))
@@ -84,7 +86,8 @@ def draw(spec):
                      'Trial %s' % (trial + 1), 14, MUTED, 'middle')
             for subject in range(subjects):
                 y = top + subject * 48
-                text(parts, x + 88, y + 23, 'Subject %s' % (subject + 1), 14, MUTED, 'end')
+                text(parts, x + 88, y + 23, 'Subject %s' %
+                     (subject + 1), 14, MUTED, 'end')
                 for trial in range(3):
                     for sample in range(6):
                         block(parts, x + 98 + trial * 68 + (sample % 3) * 20,
@@ -99,7 +102,8 @@ def draw(spec):
 
 
 def main():
-    output = Path(__file__).resolve().parents[1] / 'source' / '_static' / 'splits'
+    output = Path(__file__).resolve(
+    ).parents[1] / 'source' / '_static' / 'splits'
     output.mkdir(parents=True, exist_ok=True)
     for spec in SPECS:
         (output / (spec[0] + '.svg')).write_text(draw(spec), encoding='utf-8')

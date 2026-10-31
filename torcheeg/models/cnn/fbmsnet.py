@@ -1,11 +1,14 @@
-import torch.nn.functional as F
-from typing import Tuple, Optional
+from typing import Optional, Tuple
+
 import torch
 import torch.nn as nn
-from .fbcnet import VarLayer, MaxLayer, StdLayer, LogVarLayer, LinearWithConstraint, MeanLayer, swish, Conv2dWithConstraint
+import torch.nn.functional as F
+
+from .fbcnet import (Conv2dWithConstraint, LinearWithConstraint, LogVarLayer,
+                     MaxLayer, MeanLayer, StdLayer, VarLayer, swish)
 
 
-## CONV_SAME_PADDING
+# CONV_SAME_PADDING
 def _calc_same_pad(i: int, k: int, s: int, d: int):
     return max((-(i // -s) - 1) * s + (k - 1) * d + 1 - i, 0)
 
@@ -19,12 +22,12 @@ def _same_pad_arg(input_size, kernel_size, stride, dilation, **_):
 
 
 def _conv2d_same(x,
-                weight: torch.Tensor,
-                bias: Optional[torch.Tensor] = None,
-                stride: Tuple[int, int] = (1, 1),
-                padding: Tuple[int, int] = (0, 0),
-                dilation: Tuple[int, int] = (1, 1),
-                groups: int = 1):
+                 weight: torch.Tensor,
+                 bias: Optional[torch.Tensor] = None,
+                 stride: Tuple[int, int] = (1, 1),
+                 padding: Tuple[int, int] = (0, 0),
+                 dilation: Tuple[int, int] = (1, 1),
+                 groups: int = 1):
     ih, iw = x.size()[-2:]
     kh, kw = weight.size()[-2:]
     pad_h = _calc_same_pad(ih, kh, stride[0], dilation[0])
@@ -52,10 +55,10 @@ class SamePadConv2d(nn.Conv2d):
 
     def forward(self, x):
         return _conv2d_same(x, self.weight, self.bias, self.stride, self.padding,
-                           self.dilation, self.groups)
+                            self.dilation, self.groups)
 
 
-## MIX_CONV
+# MIX_CONV
 def _create_conv2d_pad(in_chs, out_chs, kernel_size, **kwargs):
     padding = kwargs.pop('padding', '')
     kwargs.setdefault('bias', False)
@@ -142,13 +145,13 @@ class MixedConv2d(nn.ModuleDict):
             self.add_module(
                 str(idx),
                 _create_conv2d_pad(in_ch,
-                                  out_ch,
-                                  k,
-                                  stride=stride,
-                                  padding=padding,
-                                  dilation=dilation,
-                                  groups=conv_groups,
-                                  **kwargs))
+                                   out_ch,
+                                   k,
+                                   stride=stride,
+                                   padding=padding,
+                                   dilation=dilation,
+                                   groups=conv_groups,
+                                   **kwargs))
         self.splits = in_splits
 
     def forward(self, x):
@@ -199,7 +202,7 @@ class FBMSNet(nn.Module):
 
             x, y = next(iter(DataLoader(dataset, batch_size=64)))
             model(x)
-            
+
         Args:
             num_electrodes (int): The number of electrodes. 
             chunk_size (int): Number of data points included in each EEG chunk. 
@@ -257,16 +260,17 @@ class FBMSNet(nn.Module):
             self.temporal_layer = MaxLayer(dim=3)
         else:
             raise ValueError(f'Unsupported temporal aggregation: {temporal}.')
-        self.center_dim = self.feature_dim(in_channels, num_electrodes, chunk_size)[-1]
+        self.center_dim = self.feature_dim(
+            in_channels, num_electrodes, chunk_size)[-1]
         self.fc = self._build_classifier(self.center_dim, num_classes)
 
     def _build_spatial_block(self,
-            in_chan,
-            out_chan,
-            num_electrodes,
-            weight_norm=True,
-            *args,
-            **kwargs):
+                             in_chan,
+                             out_chan,
+                             num_electrodes,
+                             weight_norm=True,
+                             *args,
+                             **kwargs):
         return nn.Sequential(
             Conv2dWithConstraint(in_chan,
                                  out_chan, (num_electrodes, 1),

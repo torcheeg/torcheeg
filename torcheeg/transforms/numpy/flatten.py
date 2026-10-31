@@ -12,13 +12,14 @@ class Flatten(EEGTransform):
     .. code-block:: python
 
         from torcheeg import transforms
-        
+
         t = transforms.Flatten()
         t(eeg=np.random.randn(62, 5))['eeg'].shape
         >>> (310,)
 
     .. automethod:: __call__
     '''
+
     def __call__(self,
                  *args,
                  eeg: np.ndarray,

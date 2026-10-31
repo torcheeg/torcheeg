@@ -1,6 +1,7 @@
-import torch.nn as nn
 from functools import reduce
 from operator import __add__
+
+import torch.nn as nn
 
 
 class Conv2dSamePadding(nn.Conv2d):

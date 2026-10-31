@@ -28,7 +28,7 @@ class TestAnyTransforms(unittest.TestCase):
         transformed_eeg = transform(eeg=eeg, baseline=np.ones(
             (128, 9, 9)))['eeg']
         self.assertTrue(np.abs(eeg - (transformed_eeg + 1.0)).sum() < 1e-6)
-        
+
         transform = BaselineRemoval()
         transformed_eeg = transform(eeg=eeg)['eeg']
         self.assertTrue(np.abs(eeg - transformed_eeg).sum() < 1e-6)
@@ -72,9 +72,9 @@ class TestAnyTransforms(unittest.TestCase):
         info = {'valence': 4.5, 'arousal': 5.5, 'subject_id': 7}
         transform = Compose([Select(key='valence'), Binary(threshold=5.0)])
         self.assertEqual(transform(y=info)['y'], 0)
-    
+
     def test_baseline_correction(self):
-        #torch
+        # torch
         transform = Compose([
             ToTensor(apply_to_baseline=True),
             Resize(size=(64, 64), apply_to_baseline=True),
@@ -82,18 +82,18 @@ class TestAnyTransforms(unittest.TestCase):
             RandomMask(p=0.1),
             BaselineCorrection()
         ])
-        transformed_eeg,transformed_baseline = transform(eeg= np.random.randn(128, 9, 9),
-                                    baseline= np.random.randn(128, 9, 9)).values()
+        transformed_eeg, transformed_baseline = transform(eeg=np.random.randn(128, 9, 9),
+                                                          baseline=np.random.randn(128, 9, 9)).values()
         self.assertEqual(tuple(transformed_eeg.shape), (128, 64, 64))
         self.assertEqual(tuple(transformed_baseline.shape), (128, 64, 64))
-        
-        #numpy
+
+        # numpy
         eeg = np.random.randn(128, 9, 9)
         transform = BaselineCorrection()
         transformed_eeg = transform(eeg=eeg, baseline=np.ones(
             (128, 9, 9)))['eeg']
         self.assertTrue(np.abs(eeg - (transformed_eeg + 1.0)).sum() < 1e-6)
-        
+
         transform = BaselineCorrection()
         transformed_eeg = transform(eeg=eeg)['eeg']
         self.assertTrue(np.abs(eeg - transformed_eeg).sum() < 1e-6)

@@ -28,6 +28,7 @@ class RearrangeElectrode(EEGTransform):
 
     .. automethod:: __call__
     '''
+
     def __init__(self,
                  source: List[str],
                  target: List[str],

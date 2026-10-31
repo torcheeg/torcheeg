@@ -76,7 +76,8 @@ class P2018Dataset(BaseDataset):
     def __init__(
             self,
             root_path: str = './P2018/training/',
-            channels: List = ['F3-M2', 'F4-M1', 'C3-M2', 'C4-M1', 'O1-M2', 'O2-M1'],
+            channels: List = ['F3-M2', 'F4-M1',
+                              'C3-M2', 'C4-M1', 'O1-M2', 'O2-M1'],
             l_freq: float = 0.5,
             h_freq: float = 30,
             sfreq: int = 100,

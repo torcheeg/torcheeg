@@ -6,8 +6,11 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from ..utils import (ensure_cache as _ensure_cache, compute_fingerprint as
-                           _compute_fingerprint, validate_cache)
+
+from ..utils import compute_fingerprint as _compute_fingerprint
+from ..utils import ensure_cache as _ensure_cache
+from ..utils import validate_cache
+
 
 def validate_metadata(info, columns=()):
     if not isinstance(info, pd.DataFrame):
@@ -17,13 +20,15 @@ def validate_metadata(info, columns=()):
     columns = [columns] if isinstance(columns, str) else list(columns)
     for column in columns:
         if column not in info or info[column].isna().any():
-            raise ValueError(f'The dataset must contain nonmissing {column} values.')
+            raise ValueError(
+                f'The dataset must contain nonmissing {column} values.')
 
 
 def validate_groups(values):
     names = [str(value) for value in values]
     if len(set(names)) != len(names):
-        raise ValueError('Subject IDs must have distinct string representations.')
+        raise ValueError(
+            'Subject IDs must have distinct string representations.')
     return names
 
 
@@ -40,7 +45,8 @@ def validate_partitions(partitions):
         if len(values) != len(ids):
             raise ValueError('Partition IDs must not contain duplicates.')
         if seen & values:
-            raise ValueError('Train, validation and test IDs must be disjoint.')
+            raise ValueError(
+                'Train, validation and test IDs must be disjoint.')
         seen.update(values)
 
 
@@ -86,7 +92,8 @@ def _serialize_configuration(value):
         return value.tolist()
     if isinstance(value, np.random.RandomState):
         return value.get_state()
-    raise TypeError(f'Unsupported split configuration value: {type(value).__name__}')
+    raise TypeError(
+        f'Unsupported split configuration value: {type(value).__name__}')
 
 
 def compute_fingerprint(info, columns, configuration):
@@ -133,7 +140,8 @@ def write_indices(path, indices):
     indices = np.asarray(indices)
     if (indices.ndim != 1 or indices.dtype.kind not in 'iu' or not indices.size
             or (indices < 0).any() or len(np.unique(indices)) != len(indices)):
-        raise ValueError('Split indices must be nonempty integer row positions.')
+        raise ValueError(
+            'Split indices must be nonempty integer row positions.')
     os.makedirs(os.path.dirname(os.fspath(path)) or '.', exist_ok=True)
     pd.DataFrame({'index': indices}).to_csv(path, index=False)
 

@@ -17,16 +17,17 @@ In this tutorial, we'll demonstrate how you can leverage TorchEEG to train a Con
 # - Remove the baseline from the signal
 # - Map the preprocessed signals onto a 2D grid
 # For online processing, we convert the EEG signals into PyTorch Tensors, ensuring they are compatible with neural network inputs.
-# 
+#
 
-from torcheeg.datasets import SEEDDataset
 from torcheeg import transforms
+from torcheeg.datasets import SEEDDataset
 from torcheeg.datasets.constants import SEED_CHANNEL_LOCATION_DICT
 
 dataset = SEEDDataset(io_path=f'./examples_seed_ccnn/seed',
                       root_path='./Preprocessed_EEG',
                       offline_transform=transforms.Compose([
-                          transforms.BandDifferentialEntropy(sampling_rate=200),
+                          transforms.BandDifferentialEntropy(
+                              sampling_rate=200),
                           transforms.ToGrid(SEED_CHANNEL_LOCATION_DICT)
                       ]),
                       online_transform=transforms.ToTensor(),
@@ -46,7 +47,8 @@ dataset = SEEDDataset(io_path=f'./examples_seed_ccnn/seed',
 
 from torcheeg.model_selection import KFoldGroupbyTrial
 
-k_fold = KFoldGroupbyTrial(n_splits=5, split_path=f'./examples_seed_ccnn/split')
+k_fold = KFoldGroupbyTrial(
+    n_splits=5, split_path=f'./examples_seed_ccnn/split')
 
 ######################################################################
 # Step 3: Define the Model and Initiate Training
@@ -60,12 +62,11 @@ k_fold = KFoldGroupbyTrial(n_splits=5, split_path=f'./examples_seed_ccnn/split')
 # We then train the model for 50 epochs using the ``ClassifierTrainer``.
 #
 
-from torch.utils.data import DataLoader
-from torcheeg.models import CCNN
-
-from torcheeg.trainers import ClassifierTrainer
-
 import pytorch_lightning as pl
+from torch.utils.data import DataLoader
+
+from torcheeg.models import CCNN
+from torcheeg.trainers import ClassifierTrainer
 
 for i, (train_dataset, val_dataset) in enumerate(k_fold.split(dataset)):
     train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True)

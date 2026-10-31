@@ -1,5 +1,4 @@
 import torch
-
 from einops.layers.torch import Rearrange
 from torch import nn
 from torch.nn import functional as F
@@ -150,6 +149,7 @@ class TCNet(nn.Module):
         eegnet_kernel_size (int): Kernel size for EEGNet's temporal convolution. (default: :obj:`32`)
         eegnet_dropout (float): Dropout rate for EEGNet layers. (default: :obj:`0.2`)
     '''
+
     def __init__(self,
                  num_classes: int = 2,
                  num_electrodes: int = 22,

@@ -21,6 +21,7 @@ class Lambda(BaseTransform):
 
     .. automethod:: __call__
     '''
+
     def __init__(self,
                  lambd: Callable,
                  targets: List[str] = ['eeg', 'baseline', 'y']):

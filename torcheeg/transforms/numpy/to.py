@@ -130,9 +130,11 @@ class ToGrid(EEGTransform):
             if any(isinstance(value, (bool, np.bool_))
                    or not isinstance(value, (int, np.integer)) or value < 0
                    for value in (row, column)):
-                raise ValueError('ToGrid positions must be nonnegative integer grid indices.')
+                raise ValueError(
+                    'ToGrid positions must be nonnegative integer grid indices.')
         if len(set(positions)) != len(positions):
-            raise ValueError('ToGrid electrodes must have distinct grid positions.')
+            raise ValueError(
+                'ToGrid electrodes must have distinct grid positions.')
         self.height = max(row for row, _ in positions) + 1
         self.width = max(column for _, column in positions) + 1
 
@@ -153,7 +155,8 @@ class ToGrid(EEGTransform):
 
     def apply(self, eeg: np.ndarray, **kwargs) -> np.ndarray:
         if eeg.ndim != 2 or eeg.shape[0] != len(self.channel_location_dict):
-            raise ValueError('ToGrid requires [electrodes, time points] with one row per channel mapping.')
+            raise ValueError(
+                'ToGrid requires [electrodes, time points] with one row per channel mapping.')
         # num_electrodes x timestep
         outputs = np.zeros([self.height, self.width, eeg.shape[-1]])
         # 9 x 9 x timestep
@@ -174,7 +177,8 @@ class ToGrid(EEGTransform):
             np.ndarray: The revered results with the shape of [number of electrodes, number of data points].
         '''
         if eeg.ndim != 3 or eeg.shape[1:] != (self.height, self.width):
-            raise ValueError('ToGrid.reverse requires [time points, height, width] matching the grid.')
+            raise ValueError(
+                'ToGrid.reverse requires [time points, height, width] matching the grid.')
         # timestep x 9 x 9
         eeg = eeg.transpose(1, 2, 0)
         # 9 x 9 x timestep
@@ -244,7 +248,6 @@ class ToInterpolatedGrid(EEGTransform):
                                     1]):max(self.location_array[:,
                                                                 1]):self.height *
             1j, ]
-
 
     def __call__(self,
                  *args,

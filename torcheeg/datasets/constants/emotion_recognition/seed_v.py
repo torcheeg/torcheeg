@@ -95,14 +95,14 @@ SEED_V_ADJACENCY_LIST = {
 }
 
 SEED_V_ADJACENCY_MATRIX = format_adj_matrix_from_adj_list(SEED_V_CHANNEL_LIST,
-                                                        SEED_V_ADJACENCY_LIST)
+                                                          SEED_V_ADJACENCY_LIST)
 
 SEED_V_STANDARD_ADJACENCY_MATRIX = format_adj_matrix_from_standard(
     SEED_V_CHANNEL_LIST, STANDARD_1005_CHANNEL_LOCATION_DICT)
 
 SEED_V_GENERAL_REGION_LIST = format_region_channel_list(SEED_V_CHANNEL_LIST,
-                                                      GENERAL_REGION_LIST)
+                                                        GENERAL_REGION_LIST)
 SEED_V_FRONTAL_REGION_LIST = format_region_channel_list(SEED_V_CHANNEL_LIST,
-                                                      FRONTAL_REGION_LIST)
+                                                        FRONTAL_REGION_LIST)
 SEED_V_HEMISPHERE_REGION_LIST = format_region_channel_list(
     SEED_V_CHANNEL_LIST, HEMISPHERE_REGION_LIST)

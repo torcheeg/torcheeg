@@ -1,1 +1,1 @@
-from .to import ToG, ToDynamicG
+from .to import ToDynamicG, ToG

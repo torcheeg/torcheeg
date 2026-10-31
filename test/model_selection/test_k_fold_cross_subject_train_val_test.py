@@ -99,7 +99,8 @@ class TestKFoldCrossSubjectTrainValTest(unittest.TestCase):
                 self._make_splitter(os.path.join(path, 'split')).split(dataset))
         for a, b in zip(first, repeated):
             for x, y in zip(a, b):
-                self.assertEqual(list(x.info['clip_id']), list(y.info['clip_id']))
+                self.assertEqual(
+                    list(x.info['clip_id']), list(y.info['clip_id']))
 
     def test_changed_fold_configuration_is_rejected(self):
         dataset = _make_dataset()

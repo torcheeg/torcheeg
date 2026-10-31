@@ -1,7 +1,6 @@
 from typing import Dict, Union
 
 import numpy as np
-
 import torch
 
 from ..base_transform import EEGTransform

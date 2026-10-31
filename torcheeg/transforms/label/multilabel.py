@@ -1,10 +1,12 @@
-from typing import Dict, List, Optional, Callable
+from typing import Callable, Dict, List, Optional
+
 from ..base_transform import LabelTransform
+
 
 class Multilabel(LabelTransform):
     r'''
     Apply multiple label transforms independently and combine their results into a list.
-    
+
     .. code-block:: python
 
         from torcheeg import transforms
@@ -24,6 +26,7 @@ class Multilabel(LabelTransform):
 
     .. automethod:: __call__
     '''
+
     def __init__(self, transforms: List[LabelTransform], type_fn: Optional[Callable] = list):
         super(Multilabel, self).__init__()
         self.transforms = transforms
@@ -33,7 +36,7 @@ class Multilabel(LabelTransform):
         r'''
         Args:
             y (dict): A dictionary containing the input labels.
-            
+
         Returns:
             dict: A dictionary containing the processed labels as a list.
         '''
@@ -52,6 +55,7 @@ class Multilabel(LabelTransform):
             'transforms': self.transforms
         })
 
+
 if __name__ == '__main__':
     from torcheeg import transforms
 
@@ -63,7 +67,7 @@ if __name__ == '__main__':
         transforms.Select('subject_id')
     ])
     print(t(y={'valence': 4.5, 'arousal': 5.5, 'subject_id': 7})['y'])
-    #>>> [0, 7]
+    # >>> [0, 7]
 
     t = transforms.Compose([
         transforms.Select(['valence', 'arousal']),
@@ -73,4 +77,4 @@ if __name__ == '__main__':
         ])
     ])
     print(t(y={'valence': 4.5, 'arousal': 5.5, 'subject_id': 7})['y'])
-    #>>> [0, 7]
+    # >>> [0, 7]

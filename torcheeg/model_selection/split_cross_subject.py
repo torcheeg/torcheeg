@@ -1,5 +1,5 @@
 import os
-from typing import Tuple, Callable, Union
+from typing import Callable, Tuple, Union
 
 import pandas as pd
 from sklearn import model_selection
@@ -8,6 +8,7 @@ from torcheeg.datasets.module.base_dataset import BaseDataset
 
 from ..utils import get_random_dir_path
 from .utils import create_subset, ensure_cache, read_indices, write_indices
+
 
 def train_test_split_cross_subject(
         dataset: BaseDataset,
@@ -91,14 +92,16 @@ def train_test_split_cross_subject(
                 shuffle=shuffle)
 
         if len(train_subject_ids) == 0 or len(test_subject_ids) == 0:
-            raise ValueError(f'The number of training or testing subjects is zero.')
+            raise ValueError(
+                f'The number of training or testing subjects is zero.')
 
         train_info = info[info['subject_id'].isin(train_subject_ids)]
         test_info = info[info['subject_id'].isin(test_subject_ids)]
 
         write_indices(os.path.join(split_path, 'train.csv'),
                       train_info.index.to_numpy())
-        write_indices(os.path.join(split_path, 'test.csv'), test_info.index.to_numpy())
+        write_indices(os.path.join(split_path, 'test.csv'),
+                      test_info.index.to_numpy())
 
     configuration = {
         'splitter': 'train_test_split_cross_subject',
@@ -115,8 +118,10 @@ def train_test_split_cross_subject(
     ensure_cache(dataset.info, ['subject_id'], split_path, configuration,
                  ['train.csv', 'test.csv'], write_split)
 
-    train_info = read_indices(os.path.join(split_path, 'train.csv'), len(dataset))
-    test_info = read_indices(os.path.join(split_path, 'test.csv'), len(dataset))
+    train_info = read_indices(os.path.join(
+        split_path, 'train.csv'), len(dataset))
+    test_info = read_indices(os.path.join(
+        split_path, 'test.csv'), len(dataset))
 
     train_dataset = create_subset(dataset, train_info)
 

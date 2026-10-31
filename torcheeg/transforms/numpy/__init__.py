@@ -5,10 +5,10 @@ from .concatenate import *
 from .correlation import *
 from .downsample import *
 from .flatten import *
+from .flip import *
 from .normalize import *
 from .pick import *
 from .rearrange import *
 from .reshape import *
 from .spectrum import *
 from .to import *
-from .flip import *

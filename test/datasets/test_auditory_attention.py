@@ -1,6 +1,8 @@
 import unittest
 
-from torcheeg.datasets import DTUDataset, DTUProcessedDataset, KULDataset, KULProcessedDataset, AVEDDataset, AVEDProcessedDataset
+from torcheeg.datasets import (AVEDDataset, AVEDProcessedDataset, DTUDataset,
+                               DTUProcessedDataset, KULDataset,
+                               KULProcessedDataset)
 
 
 class TestAuditoryAttention(unittest.TestCase):

@@ -4,9 +4,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-
 from ...utils import LazyLoader as _LazyLoader
-
 
 _pyg = _LazyLoader(
     'torch_geometric',
@@ -21,9 +19,9 @@ def _maybe_num_electrodes(index: torch.Tensor, num_electrodes: Union[int, None] 
 
 
 def _add_remaining_self_loops(edge_index: torch.Tensor,
-                             edge_weight: Union[torch.Tensor, None] = None,
-                             fill_value: float = 1.0,
-                             num_electrodes: Union[int, None] = None) -> Tuple[torch.Tensor, torch.Tensor]:
+                              edge_weight: Union[torch.Tensor, None] = None,
+                              fill_value: float = 1.0,
+                              num_electrodes: Union[int, None] = None) -> Tuple[torch.Tensor, torch.Tensor]:
     num_electrodes = _maybe_num_electrodes(edge_index, num_electrodes)
     row, col = edge_index
 

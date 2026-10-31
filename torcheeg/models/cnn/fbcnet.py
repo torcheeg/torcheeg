@@ -134,6 +134,7 @@ class FBCNet(nn.Module):
         stride_factor (int): The stride factor. (default: :obj:`4`)
         weight_norm (bool): Whether to use weight renormalization technique in Conv2dWithConstraint. (default: :obj:`True`)
     '''
+
     def __init__(self,
                  num_electrodes: int = 20,
                  chunk_size: int = 1000,
@@ -160,9 +161,9 @@ class FBCNet(nn.Module):
             )
 
         self.scb = self._build_spatial_block(num_S,
-                            num_electrodes,
-                            self.in_channels,
-                            weight_norm=weight_norm)
+                                             num_electrodes,
+                                             self.in_channels,
+                                             weight_norm=weight_norm)
 
         if temporal == 'VarLayer':
             self.temporal_layer = VarLayer(dim=3)
@@ -178,9 +179,9 @@ class FBCNet(nn.Module):
             raise NotImplementedError
 
         self.last_layer = self._build_classifier(self.num_S * self.in_channels *
-                                          self.stride_factor,
-                                          num_classes,
-                                          weight_norm=weight_norm)
+                                                 self.stride_factor,
+                                                 num_classes,
+                                                 weight_norm=weight_norm)
 
     def _build_spatial_block(self, num_S, num_electrodes, in_channels, weight_norm=True):
         return nn.Sequential(

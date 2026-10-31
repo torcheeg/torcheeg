@@ -1,5 +1,6 @@
-import mne
 import logging
+
+import mne
 
 __version__ = '1.1.3'
 

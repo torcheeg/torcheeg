@@ -39,6 +39,7 @@ class Compose(BaseTransform):
 
     .. automethod:: __call__
     '''
+
     def __init__(self, transforms: List[Callable]):
         super(Compose, self).__init__()
         self.transforms = transforms

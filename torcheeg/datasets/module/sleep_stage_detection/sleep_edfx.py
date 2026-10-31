@@ -136,7 +136,8 @@ class SleepEDFxDataset(BaseDataset):
             io_path = get_random_dir_path(dir_prefix='datasets')
 
         if not ('cassette' in studies or 'telemetry' in studies):
-            raise ValueError('studies must contain either "cassette" or "telemetry"')
+            raise ValueError(
+                'studies must contain either "cassette" or "telemetry"')
 
         params = {
             'root_path': root_path,
@@ -207,7 +208,8 @@ class SleepEDFxDataset(BaseDataset):
         num_timepoint = 3000
 
         epochs_data = np.random.rand(num_epochs, num_channel, num_timepoint)
-        epochs_label = ['Sleep stage W', 'Sleep stage N1', 'Sleep stage N2', 'Sleep stage N3']
+        epochs_label = ['Sleep stage W', 'Sleep stage N1',
+                        'Sleep stage N2', 'Sleep stage N3']
 
         return {
             'record': ('fake_record', 'fake_record'),

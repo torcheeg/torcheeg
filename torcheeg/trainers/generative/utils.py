@@ -116,7 +116,8 @@ class FrechetInceptionDistance(Metric):
         if not self.reset_real_features:
             real_features_sum = deepcopy(self.real_features_sum)
             real_features_cov_sum = deepcopy(self.real_features_cov_sum)
-            real_features_num_samples = deepcopy(self.real_features_num_samples)
+            real_features_num_samples = deepcopy(
+                self.real_features_num_samples)
             super().reset()
             self.real_features_sum = real_features_sum
             self.real_features_cov_sum = real_features_cov_sum

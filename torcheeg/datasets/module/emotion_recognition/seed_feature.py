@@ -205,7 +205,8 @@ class SEEDFeatureDataset(BaseDataset):
             trial_samples = np.concatenate(
                 trial_samples,
                 axis=-1)[:, :
-                         num_channel]  # timestep(n*k), channel(62), features(5)
+                         # timestep(n*k), channel(62), features(5)
+                         num_channel]
 
             if before_trial:
                 trial_samples = before_trial(trial_samples)

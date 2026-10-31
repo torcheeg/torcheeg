@@ -110,7 +110,7 @@ class VanillaTransformer(nn.Module):
                             head_channels=64,
                             mlp_channels=64,
                             num_classes=2)
-        
+
         x, y = next(iter(DataLoader(dataset, batch_size=64)))
         model(x)
 
@@ -125,6 +125,7 @@ class VanillaTransformer(nn.Module):
         mlp_channels (int): The number of hidden nodes in the fully connected layer of each transformer block. (default: :obj:`64`)
         num_classes (int): The number of classes to predict. (default: :obj:`2`)
     '''
+
     def __init__(self,
                  num_electrodes: int = 32,
                  chunk_size: int = 128,

@@ -1,7 +1,7 @@
+from typing import List, Union
+
 import numpy as np
 import torch
-
-from typing import List, Union
 
 
 def after_hook_normalize(
@@ -16,7 +16,7 @@ def after_hook_normalize(
 
         from torcheeg.datasets import DEAPDataset
         from torcheeg.transforms import after_hook_normalize
-        
+
         dataset = DEAPDataset(root_path='./data_preprocessed_python',
                               offline_transform=transforms.Compose([
                                   transforms.BandDifferentialEntropy(),
@@ -54,7 +54,7 @@ def after_hook_normalize(
     Args:
         data (list): A list of :obj:`np.ndarray` or :obj:`torch.Tensor`, one of which corresponds to an EEG signal in trial.
         eps (float): The term added to the denominator to improve numerical stability (default: :obj:`1e-6`)
-        
+
     Returns:
         list: The normalized results of a trial. It is a list of :obj:`np.ndarray` or :obj:`torch.Tensor`, one of which corresponds to an EEG signal in trial.
     '''
@@ -114,7 +114,7 @@ def after_hook_running_norm(
         from functools import partial
         from torcheeg.datasets import DEAPDataset
         from torcheeg.transforms import after_hook_running_norm
-        
+
         dataset = DEAPDataset(root_path='./data_preprocessed_python',
                               offline_transform=transforms.Compose([
                                   transforms.BandDifferentialEntropy(),
@@ -126,7 +126,7 @@ def after_hook_running_norm(
                                   transforms.Select('valence'),
                                   transforms.Binary(5.0),
                               ]))
-    
+
     Args:
         data (list): A list of :obj:`np.ndarray` or :obj:`torch.Tensor`, one of which corresponds to an EEG signal in trial.
         decay_rate (float): The decay rate used in the running normalization (default: :obj:`0.9`)
@@ -217,7 +217,7 @@ def after_hook_linear_dynamical_system(
                                   transforms.Select('valence'),
                                   transforms.Binary(5.0),
                               ]))
-    
+
     Args:
         data (list): A list of :obj:`np.ndarray` or :obj:`torch.Tensor`, one of which corresponds to an EEG signal in trial.
         V0 (float): The initial variance of the linear dynamical system (default: :obj:`0.01`)
@@ -225,7 +225,7 @@ def after_hook_linear_dynamical_system(
         T (float): The term added to the diagonal of the covariance matrix (default: :obj:`0.0001`)
         C (float): The coefficient of the linear dynamical system (default: :obj:`1`)
         sigma (float): The variance of the linear dynamical system (default: :obj:`1`)
-        
+
     Returns:
         list: The normalized results of a trial. It is a list of :obj:`np.ndarray` or :obj:`torch.Tensor`, one of which corresponds to an EEG signal in trial.
     '''

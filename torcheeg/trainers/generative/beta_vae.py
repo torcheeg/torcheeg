@@ -26,7 +26,7 @@ class BetaVAETrainer(pl.LightningModule):
     - Related Project: https://github.com/eriklindernoren/PyTorch-GAN
 
     .. code-block:: python
-        
+
         from torcheeg.models import BEncoder, BDecoder
         from torcheeg.trainers import BetaVAETrainer
 
@@ -46,7 +46,7 @@ class BetaVAETrainer(pl.LightningModule):
         metric_extractor (nn.Module): The feature extraction model used to calculate the FID and IS metrics. (default: :obj:`None`)
         metric_classifier (nn.Module): The classification model used to calculate the IS metric. (default: :obj:`None`)
         metric_num_features (int): The number of features extracted by the feature extraction model. (default: :obj:`None`)
-    
+
     .. automethod:: fit
     .. automethod:: test
     '''
@@ -101,7 +101,8 @@ class BetaVAETrainer(pl.LightningModule):
                 )
                 self.metric_num_features = self.metric_extractor.in_channels
             if not (not self.metric_num_features is None):
-                raise ValueError('The metric_num_features should be specified.')
+                raise ValueError(
+                    'The metric_num_features should be specified.')
             self.test_fid = FrechetInceptionDistance(self.metric_extractor,
                                                      self.metric_num_features)
 
@@ -382,7 +383,7 @@ class CBetaVAETrainer(BetaVAETrainer):
     - Related Project: https://github.com/eriklindernoren/PyTorch-GAN
 
     .. code-block:: python
-        
+
         encoder = BCEncoder(in_channels=4, num_classes=2)
         decoder = BCDecoder(in_channels=64, out_channels=4, num_classes=2)
         trainer = CVAETrainer(encoder, decoder)
@@ -401,7 +402,7 @@ class CBetaVAETrainer(BetaVAETrainer):
         metric_extractor (nn.Module): The feature extraction model used to calculate the FID and IS metrics. (default: :obj:`None`)
         metric_classifier (nn.Module): The classification model used to calculate the IS metric. (default: :obj:`None`)
         metric_num_features (int): The number of features extracted by the feature extraction model. (default: :obj:`None`)
-    
+
     .. automethod:: fit
     .. automethod:: test
     '''

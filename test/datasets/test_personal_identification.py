@@ -2,6 +2,7 @@ import unittest
 
 from torcheeg.datasets import M3CVDataset
 
+
 class TestPersonalIdentification(unittest.TestCase):
 
     def test_bciciv_2a_dataset(self):

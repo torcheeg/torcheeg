@@ -1,5 +1,5 @@
 import pdb
-from typing import Dict, List, Callable
+from typing import Callable, Dict, List
 
 from ..base_transform import BaseTransform
 
@@ -21,12 +21,13 @@ class PDB(BaseTransform):
         ])
         t(eeg=torch.randn(128, 9, 9))['eeg'].shape
         >>> (128, 64, 64)
-    
+
     Args:
         targets (list): What data to transform via the PDB. (default: :obj:`['eeg', 'baseline', 'y']`)
 
     .. automethod:: __call__
     '''
+
     def __init__(self, targets: List[str] = ['eeg', 'baseline', 'y']):
         super(PDB, self).__init__()
         self._targets = targets

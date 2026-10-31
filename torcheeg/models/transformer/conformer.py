@@ -1,7 +1,7 @@
-import torch.nn as nn
 import math
-import torch
 
+import torch
+import torch.nn as nn
 import torch.nn.functional as F
 from einops import rearrange
 from einops.layers.torch import Rearrange
@@ -57,7 +57,8 @@ class MultiHeadAttention(nn.Module):
                             "b n (h d) -> b h n d",
                             h=self.heads)
         keys = rearrange(self.keys(x), "b n (h d) -> b h n d", h=self.heads)
-        values = rearrange(self.values(x), "b n (h d) -> b h n d", h=self.heads)
+        values = rearrange(self.values(
+            x), "b n (h d) -> b h n d", h=self.heads)
         energy = torch.einsum('bhqd, bhkd -> bhqk', queries, keys)
         if mask is not None:
             fill_value = torch.finfo(torch.float32).min
@@ -208,6 +209,7 @@ class Conformer(nn.Module):
         forward_dropout (float): The dropout rate of the feedforward layer. (default: :obj:`0.5`)
         num_classes (int): The number of classes. (default: :obj:`2`)
     '''
+
     def __init__(self,
                  num_electrodes: int = 62,
                  sampling_rate: int = 200,

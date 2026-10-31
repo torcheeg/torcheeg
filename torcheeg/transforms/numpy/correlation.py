@@ -1,8 +1,7 @@
 from typing import Dict, Tuple, Union
 
-from scipy.signal import hilbert
-
 import numpy as np
+from scipy.signal import hilbert
 
 from ..base_transform import EEGTransform
 
@@ -58,9 +57,10 @@ class PearsonCorrelation(CorrelationTransform):
     Args:
         absolute (bool): Whether to take the absolute value of the correlation coefficient. (default: :obj:`128`)
         apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (default: :obj:`False`)
-    
+
     .. automethod:: __call__
     '''
+
     def __init__(self, absolute: bool = False, apply_to_baseline: bool = False):
         super(PearsonCorrelation,
               self).__init__(apply_to_baseline=apply_to_baseline)

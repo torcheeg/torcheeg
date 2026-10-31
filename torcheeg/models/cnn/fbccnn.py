@@ -41,6 +41,7 @@ class FBCCNN(nn.Module):
         grid_size (tuple): Spatial dimensions of grid-like EEG representation. (default: :obj:`(9, 9)`)
         num_classes (int): The number of classes to predict. (default: :obj:`2`)
     '''
+
     def __init__(self, in_channels: int = 4, grid_size: Tuple[int, int] = (9, 9), num_classes: int = 2):
         super(FBCCNN, self).__init__()
         self.num_classes = num_classes
@@ -61,7 +62,8 @@ class FBCCNN(nn.Module):
                                     nn.BatchNorm2d(128))
         self.block7 = nn.Sequential(nn.Conv2d(128, 32, kernel_size=3, padding=1, stride=1), nn.ReLU(),
                                     nn.BatchNorm2d(32))
-        self.lin1 = nn.Sequential(nn.Linear(grid_size[0] * grid_size[1] * 32, 512), nn.ReLU())
+        self.lin1 = nn.Sequential(
+            nn.Linear(grid_size[0] * grid_size[1] * 32, 512), nn.ReLU())
         self.lin2 = nn.Sequential(nn.Linear(512, 128), nn.ReLU())
         self.lin3 = nn.Linear(128, num_classes)
 

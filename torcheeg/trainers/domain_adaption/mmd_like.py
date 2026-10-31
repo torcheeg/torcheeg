@@ -133,7 +133,7 @@ class _MMDLikeTrainer(ClassifierTrainer):
             self.weight_factor = 2.0 / (1.0 + np.exp(-10 * p)) - 1
 
             if self.lr_scheduler:
-                self.lr_factor = 1.0 / ((1.0 + self.lr_scheduler_gamma * p)**
+                self.lr_factor = 1.0 / ((1.0 + self.lr_scheduler_gamma * p) **
                                         self.lr_scheduler_decay)
 
         if self.weight_scheduler:
@@ -230,8 +230,8 @@ class _MMDLikeTrainer(ClassifierTrainer):
             "params": self.classifier.parameters(),
             "lr": 10 * self.lr
         }],
-                                     lr=self.lr,
-                                     weight_decay=self.weight_decay)
+            lr=self.lr,
+            weight_decay=self.weight_decay)
         if self.lr_scheduler:
             scheduler = torch.optim.lr_scheduler.LambdaLR(
                 optimizer, lr_lambda=lambda epoch: self.lr_factor)

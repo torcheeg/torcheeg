@@ -1,6 +1,8 @@
 import unittest
 
-from torcheeg.transforms import Select, Binary, BinariesToCategory, StringToInt, BinaryOneVSRest, FixCategory, Mapping, Multilabel, Normalize
+from torcheeg.transforms import (BinariesToCategory, Binary, BinaryOneVSRest,
+                                 FixCategory, Mapping, Multilabel, Normalize,
+                                 Select, StringToInt)
 
 
 class TestLabelTransforms(unittest.TestCase):

@@ -4,7 +4,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import torch
 from matplotlib import colors
-from pylab import cm
 
 from .utils import _plot_to_image
 
@@ -38,7 +37,7 @@ def plot_3d_tensor(tensor: torch.Tensor,
     ndarray = tensor.detach().cpu().numpy()
 
     filled = np.ones_like(ndarray, dtype=bool)
-    colormap = cm.get_cmap(color)
+    colormap = plt.get_cmap(color)
 
     ndarray = (ndarray - ndarray.min()) / (ndarray.max() - ndarray.min())
 
@@ -54,7 +53,6 @@ def plot_3d_tensor(tensor: torch.Tensor,
     plt.show()
 
     return np.array(img)
-
 
 
 def plot_2d_tensor(tensor: torch.Tensor,
@@ -90,7 +88,7 @@ def plot_2d_tensor(tensor: torch.Tensor,
     fig = plt.figure()
     ax = plt.axes()
 
-    colormap = cm.get_cmap(color)
+    colormap = plt.get_cmap(color)
     ax.imshow(ndarray, cmap=colormap, interpolation='nearest')
 
     img = _plot_to_image(fig)

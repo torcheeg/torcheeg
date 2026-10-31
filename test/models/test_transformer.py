@@ -2,8 +2,8 @@ import unittest
 
 import torch
 
-from torcheeg.models import (ArjunViT, ATCNet, Conformer, SimpleViT, TCNet,
-                             VanillaTransformer, ViT, LaBraM, DARNet, MHANet)
+from torcheeg.models import (ArjunViT, ATCNet, Conformer, DARNet, LaBraM,
+                             MHANet, SimpleViT, TCNet, VanillaTransformer, ViT)
 
 
 class TestTransformer(unittest.TestCase):

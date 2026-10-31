@@ -30,6 +30,7 @@ class FixCategory(LabelTransform):
 
     .. automethod:: __call__
     '''
+
     def __init__(self, value: Union[int, str, List]):
         super(FixCategory, self).__init__()
         self.value = value
@@ -38,7 +39,7 @@ class FixCategory(LabelTransform):
         r'''
         Args:
             y (any): A label or label list describing the EEG signal samples.
-            
+
         Returns:
             any: FixCategoryeded value pre-set by `value`.
         '''

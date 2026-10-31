@@ -1,6 +1,6 @@
 import os
 import re
-from typing import Iterator, Callable, Dict, Tuple, Union
+from typing import Callable, Dict, Iterator, Tuple, Union
 
 import pandas as pd
 from sklearn import model_selection
@@ -9,6 +9,7 @@ from torcheeg.datasets.module.base_dataset import BaseDataset
 
 from .base_model_selection import BaseModelSelection
 from .utils import create_subset, read_indices, write_indices
+
 
 class KFoldCrossSubject(BaseModelSelection):
     r'''
@@ -89,16 +90,19 @@ class KFoldCrossSubject(BaseModelSelection):
                     lambda info: self.label_transform(y=info.to_dict())['y'],
                     axis=1).mean()
                 subject_labels.append(subject_label)
-            enumerater = enumerate(self._k_fold.split(subject_ids, subject_labels))
+            enumerater = enumerate(
+                self._k_fold.split(subject_ids, subject_labels))
         else:
             enumerater = enumerate(self._k_fold.split(subject_ids))
         for fold_id, (train_index_subject_ids, test_index_subject_ids) in enumerater:
             if len(train_index_subject_ids) == 0 or len(test_index_subject_ids) == 0:
-                raise ValueError(f'The number of training or testing subjects is zero.')
+                raise ValueError(
+                    f'The number of training or testing subjects is zero.')
             train_subject_ids = [
                 subject_ids[index] for index in train_index_subject_ids
             ]
-            test_subject_ids = [subject_ids[index] for index in test_index_subject_ids]
+            test_subject_ids = [subject_ids[index]
+                                for index in test_index_subject_ids]
             train_info = []
             for train_subject_id in train_subject_ids:
                 train_info.append(info[info['subject_id'] == train_subject_id])

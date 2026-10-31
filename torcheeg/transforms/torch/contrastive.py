@@ -36,7 +36,7 @@ class Contrastive(EEGTransform):
         Args:
             eeg (torch.Tensor): The input EEG signals in shape of [number of electrodes, number of data points].
             baseline (torch.Tensor, optional) : The corresponding baseline signal, if apply_to_baseline is set to True and baseline is passed, the baseline signal will be transformed with the same way as the experimental signal.
-            
+
         Returns:
             list of torch.Tensor: The transformed results of multiple views.
         '''

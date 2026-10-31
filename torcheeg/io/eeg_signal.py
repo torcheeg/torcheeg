@@ -1,16 +1,51 @@
-import pickle
 import os
+import pickle
+import threading
+import weakref
 from typing import Union
 
-import torch
 import lmdb
+import torch
+
+# Weak values let the last owner release the native environment.
+_LMDB_ENV_CACHE = weakref.WeakValueDictionary()
+_LMDB_ENV_LOCK = threading.Lock()
+_LMDB_ENV_PID = os.getpid()
+
+
+def _reset_lmdb_after_fork() -> None:
+    global _LMDB_ENV_CACHE, _LMDB_ENV_LOCK, _LMDB_ENV_PID
+    inherited = list(_LMDB_ENV_CACHE.values())
+    _LMDB_ENV_CACHE = weakref.WeakValueDictionary()
+    # An inherited lock may have been held by a thread absent in the child.
+    _LMDB_ENV_LOCK = threading.Lock()
+    _LMDB_ENV_PID = os.getpid()
+    for environment in inherited:
+        environment.close()
+
+
+if hasattr(os, 'register_at_fork'):
+    os.register_at_fork(after_in_child=_reset_lmdb_after_fork)
+
+
+def _get_lmdb_environment(path: str, io_size: int) -> lmdb.Environment:
+    if _LMDB_ENV_PID != os.getpid():
+        _reset_lmdb_after_fork()
+    with _LMDB_ENV_LOCK:
+        environment = _LMDB_ENV_CACHE.get(path)
+        if environment is not None:
+            try:
+                environment.info()
+            except lmdb.Error:
+                environment = None
+        if environment is None:
+            environment = lmdb.open(path=path, map_size=io_size, lock=False,
+                                    max_spare_txns=0)
+            _LMDB_ENV_CACHE[path] = environment
+        return environment
 
 
 class _EEGSignalIO:
-
-    @property
-    def write_pointer(self):
-        return len(self)
 
     def keys(self):
         raise NotImplementedError(
@@ -32,7 +67,7 @@ class _EEGSignalIO:
 
     def write_eeg(self,
                   eeg: Union[any, torch.Tensor],
-                  key: Union[str, None] = None) -> str:
+                  key: str) -> str:
         raise NotImplementedError(
             "Method write_eeg is not implemented in class "
             + self.__class__.__name__
@@ -65,27 +100,28 @@ class MemoryEEGSignalIO(_EEGSignalIO):
 
         Args:
             key (str): The index of the EEG signal to be queried.
-            
+
         Returns:
             any: The EEG signal sample.
         '''
         if key not in self._memory:
-            raise KeyError(f'Unable to index the EEG signal sample with key {key}!')
+            raise KeyError(
+                f'Unable to index the EEG signal sample with key {key}!')
 
         return self._memory[key]
 
     def write_eeg(self,
                   eeg: Union[any, torch.Tensor],
-                  key: Union[str, None] = None) -> str:
+                  key: str) -> str:
         r'''
         Write EEG signal to memory.
 
         Args:
             eeg (any): EEG signal samples to be written into the database.
-            key (str): The key of the EEG signal to be inserted, if not specified, it will be an auto-incrementing
+            key (str): Sample key. An existing key replaces its sample.
         '''
-        if key is None:
-            key = str(self.write_pointer)
+        if not isinstance(key, str):
+            raise TypeError('key must be a string.')
 
         if eeg is None:
             raise ValueError(f'Save None to the memory with the key {key}!')
@@ -108,13 +144,16 @@ class LMDBEEGSignalIO(_EEGSignalIO):
         self.io_size = io_size
 
         os.makedirs(self.io_path, exist_ok=True)
-        self._env = lmdb.open(path=self.io_path,
-                              map_size=self.io_size,
-                              lock=False)
+        self._env_path = os.path.realpath(self.io_path)
+        self._env_obj = None
+        self._env_pid = None
 
-    def __del__(self):
-        if hasattr(self, '_env'):
-            self._env.close()
+    @property
+    def _env(self) -> lmdb.Environment:
+        if self._env_obj is None or self._env_pid != os.getpid():
+            self._env_obj = _get_lmdb_environment(self._env_path, self.io_size)
+            self._env_pid = os.getpid()
+        return self._env_obj
 
     def __len__(self):
         with self._env.begin(write=False) as transaction:
@@ -122,20 +161,20 @@ class LMDBEEGSignalIO(_EEGSignalIO):
 
     def write_eeg(self,
                   eeg: Union[any, torch.Tensor],
-                  key: Union[str, None] = None) -> str:
+                  key: str) -> str:
         r'''
         Write EEG signal to database.
 
         Args:
             eeg (any): EEG signal samples to be written into the database.
-            key (str, optional): The key of the EEG signal to be inserted, if not specified, it will be an auto-incrementing integer.
+            key (str): Sample key. An existing key replaces its sample.
 
         Returns:
-            int: The index of written EEG signals in the database.
+            str: The key of the written EEG signal.
         '''
 
-        if key is None:
-            key = str(self.write_pointer)
+        if not isinstance(key, str):
+            raise TypeError('key must be a string.')
 
         if eeg is None:
             raise ValueError(f'Save None to the LMDB with the key {key}!')
@@ -145,7 +184,7 @@ class LMDBEEGSignalIO(_EEGSignalIO):
             with self._env.begin(write=True) as transaction:
                 transaction.put(key.encode(), pickle.dumps(eeg))
         except lmdb.MapFullError:
-            self.io_size = self.io_size * 2
+            self.io_size = max(self.io_size, self._env.info()['map_size']) * 2
             self._env.set_mapsize(self.io_size)
             try_again = True
         if try_again:
@@ -158,7 +197,7 @@ class LMDBEEGSignalIO(_EEGSignalIO):
 
         Args:
             key (str): The index of the EEG signal to be queried.
-            
+
         Returns:
             any: The EEG signal sample.
         '''
@@ -166,7 +205,8 @@ class LMDBEEGSignalIO(_EEGSignalIO):
             eeg = transaction.get(key.encode())
 
         if eeg is None:
-            raise KeyError(f'Unable to index the EEG signal sample with key {key}!')
+            raise KeyError(
+                f'Unable to index the EEG signal sample with key {key}!')
 
         return pickle.loads(eeg)
 
@@ -194,17 +234,17 @@ class LMDBEEGSignalIO(_EEGSignalIO):
         return [self.read_eeg(key) for key in self.keys()]
 
     def __getstate__(self):
-        # pickle for Pallarel
+        # Each process must acquire its own environment.
         state = self.__dict__.copy()
-        del state['_env']
+        state['_env_obj'] = None
+        state['_env_pid'] = None
         return state
 
     def __setstate__(self, state):
-        # pickle for Pallarel
         self.__dict__.update(state)
-        self._env = lmdb.open(path=self.io_path,
-                              map_size=self.io_size,
-                              lock=False)
+        self._env_path = state.get('_env_path', os.path.realpath(self.io_path))
+        self._env_obj = None
+        self._env_pid = None
 
     def __copy__(self):
         # LMDB does not allow reopening the same environment in one process.
@@ -223,20 +263,20 @@ class PickleEEGSignalIO(_EEGSignalIO):
 
     def write_eeg(self,
                   eeg: Union[any, torch.Tensor],
-                  key: Union[str, None] = None) -> str:
+                  key: str) -> str:
         r'''
             Write EEG signal to folder.
-    
+
             Args:
                 eeg (any): EEG signal samples to be written into the folder.
-                key (str, optional): The key of the EEG signal to be inserted, if not specified, it will be an auto-incrementing integer.
-    
+                key (str): Sample key. An existing key replaces its sample.
+
             Returns:
-                int: The index of written EEG signals in the folder.
+                str: The key of the written EEG signal.
             '''
 
-        if key is None:
-            key = str(self.write_pointer)
+        if not isinstance(key, str):
+            raise TypeError('key must be a string.')
 
         if eeg is None:
             raise ValueError(f'Save None to the LMDB with the key {key}!')
@@ -249,10 +289,10 @@ class PickleEEGSignalIO(_EEGSignalIO):
     def read_eeg(self, key: str) -> any:
         r'''
             Query the corresponding EEG signal in the folder according to the index.
-    
+
             Args:
                 key (str): The index of the EEG signal to be queried.
-                
+
             Returns:
                 any: The EEG signal sample.
             '''
@@ -267,7 +307,7 @@ class PickleEEGSignalIO(_EEGSignalIO):
     def keys(self):
         r'''
             Get all keys in the PickleEEGSignalIO.
-    
+
             Returns:
                 list: The list of keys in the PickleEEGSignalIO.
             '''
@@ -276,7 +316,7 @@ class PickleEEGSignalIO(_EEGSignalIO):
     def eegs(self):
         r'''
             Get all EEG signals in the PickleEEGSignalIO.
-    
+
             Returns:
                 list: The list of EEG signals in the PickleEEGSignalIO.
             '''
@@ -296,11 +336,11 @@ class EEGSignalIO:
     .. code-block:: python
 
         eeg_io = EEGSignalIO('YOUR_PATH')
-        key = eeg_io.write_eeg(np.random.randn(32, 128))
+        key = eeg_io.write_eeg(np.random.randn(32, 128), key='sample_0')
         eeg = eeg_io.read_eeg(key)
         eeg.shape
         >>> (32, 128)
-    
+
     Args:
         io_path (str): Where the database is stored.
         io_size (int, optional): The maximum capacity of the database. It will increase according to the size of the dataset. (default: :obj:`1024`)
@@ -346,16 +386,16 @@ class EEGSignalIO:
 
     def write_eeg(self,
                   eeg: Union[any, torch.Tensor],
-                  key: Union[str, None] = None) -> str:
+                  key: str) -> str:
         r'''
         Write EEG signal to database.
 
         Args:
             eeg (any): EEG signal samples to be written into the database.
-            key (str, optional): The key of the EEG signal to be inserted, if not specified, it will be an auto-incrementing integer.
+            key (str): Sample key. An existing key replaces its sample.
 
         Returns:
-            int: The index of written EEG signals in the database.
+            str: The key of the written EEG signal.
         '''
 
         return self._io.write_eeg(eeg=eeg, key=key)
@@ -366,7 +406,7 @@ class EEGSignalIO:
 
         Args:
             key (str): The index of the EEG signal to be queried.
-            
+
         Returns:
             any: The EEG signal sample.
         '''

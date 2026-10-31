@@ -6,8 +6,11 @@ import numpy as np
 import pandas as pd
 
 from torcheeg.datasets.module.base_dataset import BaseDataset
+
 from .base_model_selection import BaseModelSelection
-from .utils import create_subset, read_indices, validate_partitions, write_partitions
+from .utils import (create_subset, read_indices, validate_partitions,
+                    write_partitions)
+
 
 class KFoldCrossSubjectTrainValTest(BaseModelSelection):
     r'''
@@ -49,7 +52,8 @@ class KFoldCrossSubjectTrainValTest(BaseModelSelection):
         if isinstance(n_folds, (bool, np.bool_)) or not isinstance(n_folds, Integral):
             raise TypeError('n_folds must be an integer.')
         if not 3 <= n_folds <= len(self.all_subjects):
-            raise ValueError('n_folds must be between 3 and the number of subjects.')
+            raise ValueError(
+                'n_folds must be between 3 and the number of subjects.')
         if not isinstance(shuffle, (bool, np.bool_)):
             raise TypeError('shuffle must be a boolean.')
         if random_state is not None:
@@ -71,7 +75,8 @@ class KFoldCrossSubjectTrainValTest(BaseModelSelection):
 
     def build(self, info: pd.DataFrame, split_path: Union[None, str] = None) -> None:
         if set(info['subject_id']) != set(self.all_subjects):
-            raise ValueError('all_subjects must match the dataset subject_id values.')
+            raise ValueError(
+                'all_subjects must match the dataset subject_id values.')
         split_path = self.split_path if split_path is None else split_path
         folds = self._make_folds()
         for fold_id in range(self.n_folds):
@@ -98,7 +103,8 @@ class KFoldCrossSubjectTrainValTest(BaseModelSelection):
             subsets = []
             for name in ('train', 'val', 'test'):
                 indices = read_indices(
-                    os.path.join(self.split_path, f'fold_{fold_id}/{name}.csv'),
+                    os.path.join(self.split_path,
+                                 f'fold_{fold_id}/{name}.csv'),
                     len(dataset))
                 subsets.append(create_subset(dataset, indices))
             yield tuple(subsets)

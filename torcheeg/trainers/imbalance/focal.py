@@ -42,6 +42,7 @@ class FocalLoss(nn.Module):
         else:
             return loss
 
+
 class FocalLossTrainer(ClassifierTrainer):
     r'''
         A trainer class for EEG classification with Focal loss for imbalanced datasets.
@@ -115,13 +116,15 @@ class FocalLossTrainer(ClassifierTrainer):
             _weight = None
             self._weight = _weight
         elif self.rule == "reweight":
-            effective_num = 1.0 - np.power(self.beta_reweight, self._class_frequency)
+            effective_num = 1.0 - \
+                np.power(self.beta_reweight, self._class_frequency)
             _weight = (1.0 - self.beta_reweight) / np.array(effective_num)
             _weight = _weight / np.sum(_weight) * self.num_classes
             self._weight = torch.tensor(_weight).float()
         else:
             _weight = [1.0] * self.num_classes
-            effective_num = 1.0 - np.power(self.beta_reweight, self._class_frequency)
+            effective_num = 1.0 - \
+                np.power(self.beta_reweight, self._class_frequency)
             _drw_weight = (1.0 - self.beta_reweight) / np.array(effective_num)
             _drw_weight = _drw_weight / np.sum(_drw_weight) * self.num_classes
             self._drw_weight = torch.tensor(_drw_weight).float()
@@ -134,7 +137,8 @@ class FocalLossTrainer(ClassifierTrainer):
         epoch = self.current_epoch
         if epoch == self.drw_epochs and self.rule == "drw":
             # reset the weight buffer in FocalLoss
-            self.focal_fn = FocalLoss(gamma=self.gamma, weight=self._drw_weight).to(self.device)
+            self.focal_fn = FocalLoss(
+                gamma=self.gamma, weight=self._drw_weight).to(self.device)
         return super().on_train_epoch_start()
 
     def training_step(self, batch: Tuple[torch.Tensor],

@@ -6,8 +6,10 @@ import numpy as np
 import pandas as pd
 
 from torcheeg.datasets.module.base_dataset import BaseDataset
+
 from .base_model_selection import BaseModelSelection
 from .utils import create_subset, read_indices, validate_groups, write_indices
+
 
 class TrainTestSplitPerSubjectGroupbyTrial(BaseModelSelection):
     r'''
@@ -47,13 +49,14 @@ class TrainTestSplitPerSubjectGroupbyTrial(BaseModelSelection):
                                                           (int, float, np.number)):
             raise TypeError('train_size must be a real number.')
         if not 0 < train_size < 1:
-            raise ValueError('train_size must be strictly between zero and one.')
+            raise ValueError(
+                'train_size must be strictly between zero and one.')
         if not isinstance(shuffle, (bool, np.bool_)):
             raise TypeError('shuffle must be a boolean.')
         if random_state is not None:
             if isinstance(
-                    random_state,
-                (bool, np.bool_)) or not isinstance(random_state, (int, np.integer)):
+                random_state,
+                    (bool, np.bool_)) or not isinstance(random_state, (int, np.integer)):
                 raise TypeError('random_state must be None or an integer.')
             if not 0 <= random_state <= 2**32 - 1:
                 raise ValueError('random_state must be in [0, 2**32 - 1].')
@@ -119,7 +122,8 @@ class TrainTestSplitPerSubjectGroupbyTrial(BaseModelSelection):
                 subsets = []
                 for partition in ('train', 'test'):
                     indices = read_indices(
-                        os.path.join(self.split_path, self._filename(value, partition)),
+                        os.path.join(self.split_path,
+                                     self._filename(value, partition)),
                         len(dataset))
                     subsets.append(create_subset(dataset, indices))
                 yield tuple(subsets)

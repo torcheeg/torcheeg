@@ -59,7 +59,8 @@ class TestTrainValTestSplitCrossSubject(unittest.TestCase):
 
     def test_unknown_partition_ids_are_rejected(self):
         with self.assertRaisesRegex(ValueError, 'Unknown'):
-            list(self._make_splitter(train_subjects=[0, 1, 99]).split(_make_dataset()))
+            list(self._make_splitter(train_subjects=[
+                 0, 1, 99]).split(_make_dataset()))
 
     def test_unassigned_ids_can_be_intentionally_excluded(self):
         train, val, test = next(

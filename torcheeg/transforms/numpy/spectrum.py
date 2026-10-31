@@ -1,9 +1,9 @@
+import io
 from typing import Dict, Union
 
-import io
-import pywt
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
+import pywt
 
 from ..base_transform import EEGTransform
 
@@ -25,7 +25,7 @@ class CWTSpectrum(EEGTransform):
         .. code-block:: python
 
             from torcheeg import transforms
-        
+
             t = Compose([
                 CWTSpectrum(),
                 ToTensor(),
@@ -50,9 +50,10 @@ class CWTSpectrum(EEGTransform):
             total_scale: (int): The total wavelet scales to use. (default: :obj:`128`)
             contourf: (bool): Whether to output the np.ndarray corresponding to the image with content of filled contours. (default: :obj:`False`)
             apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (default: :obj:`False`)
-        
+
         .. automethod:: __call__
     '''
+
     def __init__(self,
                  sampling_rate: int = 250,
                  wavelet: str = 'morl',
@@ -151,9 +152,10 @@ class DWTDecomposition(EEGTransform):
 
         Args:
             apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (default: :obj:`False`)
-        
+
         .. automethod:: __call__
     '''
+
     def __init__(self, apply_to_baseline: bool = False):
         super(DWTDecomposition,
               self).__init__(apply_to_baseline=apply_to_baseline)

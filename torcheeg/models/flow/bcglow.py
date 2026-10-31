@@ -113,6 +113,7 @@ class _ActNorm(nn.Module):
 
     After initialization, `bias` and `logs` will be trained as parameters.
     """
+
     def __init__(self, num_features, scale=1.0):
         super().__init__()
         # register mean and scale
@@ -488,10 +489,10 @@ class FlowStep(nn.Module):
         # 3. coupling
         if flow_coupling == "additive":
             self.block = _get_block(in_channels // 2, in_channels // 2,
-                                   hidden_channels)
+                                    hidden_channels)
         elif flow_coupling == "affine":
             self.block = _get_block(in_channels // 2, in_channels,
-                                   hidden_channels)
+                                    hidden_channels)
 
     def forward(self, input, logdet=None, reverse=False):
         if not reverse:
@@ -619,6 +620,7 @@ class FlowNet(nn.Module):
                 z, logdet = layer(z, logdet=0, reverse=True)
         return z
 
+
 class BCGlow(nn.Module):
     r'''
     This class implements a conditional normalized flow model that allows generating samples of specified classes. A flow-based model is dedicated to train an encoder that encodes the input as a hidden variable and makes the hidden variable obey the standard normal distribution. By good design, the encoder should be reversible. On this basis, as soon as the encoder is trained, the corresponding decoder can be used to generate samples from a Gaussian distribution according to the inverse operation. In particular, the Glow model is a easy-to-use flow-based model that replaces the operation of permutating the channel axes by introducing a 1x1 reversible convolution.
@@ -635,7 +637,7 @@ class BCGlow(nn.Module):
         import torch
 
         from torcheeg.models.flow import BGlow
-        
+
         eeg = torch.randn(1, 4, 32, 32)
         y = torch.randint(0, 2, (2, ))
         model = BGlow(num_classes=2)
@@ -654,22 +656,23 @@ class BCGlow(nn.Module):
         LU_decomposed (bool): Whether to use LU decomposed 1x1 convs. (default: :obj:`True`)
         learnable_prior (bool): Whether to train top layer (prior). (default: :obj:`True`)
         num_classes (int): The number of classes. During the generation process, additional category labels are provided to guide the generation of samples for the specified category. (default: :obj:`2`)
-        
+
     .. automethod:: sample
     '''
+
     def __init__(self,
-        in_channels: int = 4,
-        grid_size: tuple = (32, 32),
-        hidden_channels: int = 64,
-        num_steps: int = 32,
-        num_blocks: int = 3,
-        actnorm_scale: float = 1.0,
-        flow_permutation: str = "invconv",
-        flow_coupling: str = "affine",
-        LU_decomposed: bool = True,
-        num_classes: int = 2,
-        learn_top: bool = True
-    ):
+                 in_channels: int = 4,
+                 grid_size: tuple = (32, 32),
+                 hidden_channels: int = 64,
+                 num_steps: int = 32,
+                 num_blocks: int = 3,
+                 actnorm_scale: float = 1.0,
+                 flow_permutation: str = "invconv",
+                 flow_coupling: str = "affine",
+                 LU_decomposed: bool = True,
+                 num_classes: int = 2,
+                 learn_top: bool = True
+                 ):
         super().__init__()
         self.flow = FlowNet(
             image_shape=[grid_size[0], grid_size[1], in_channels],

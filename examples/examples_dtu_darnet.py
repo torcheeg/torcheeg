@@ -12,27 +12,29 @@ In this tutorial, we'll walk through how to leverage TorchEEG for training a DAR
 #
 # First, let's prepare the DTU dataset using TorchEEG's built-in functionality. Each sample in the dataset is 1 second long, containing 64 EEG data points.
 
-import torch
 import os
+
 import numpy as np
 import pytorch_lightning as pl
+import torch
 from mne.decoding import CSP
-from torcheeg.trainers import ClassifierTrainer
-from torcheeg.models import DARNet
 from torch.utils.data import DataLoader
-from torcheeg.model_selection import KFoldPerSubjectGroupbyTrial
-from torcheeg.datasets import DTUProcessedDataset
+
 from torcheeg import transforms
+from torcheeg.datasets import DTUProcessedDataset
+from torcheeg.model_selection import KFoldPerSubjectGroupbyTrial
+from torcheeg.models import DARNet
+from torcheeg.trainers import ClassifierTrainer
 
 dataset = DTUProcessedDataset(io_path=f'./.torcheeg/dtu',
-                           root_path='./DATA_preproc',
-                           label_transform=transforms.Compose([
-                               transforms.Select('attended_speaker'),
-                               transforms.Lambda(lambd=lambda x: x - 1)
-                           ]),
-                           chunk_size=64,
-                           overlap=32,
-                           num_worker=4)
+                              root_path='./DATA_preproc',
+                              label_transform=transforms.Compose([
+                                  transforms.Select('attended_speaker'),
+                                  transforms.Lambda(lambd=lambda x: x - 1)
+                              ]),
+                              chunk_size=64,
+                              overlap=32,
+                              num_worker=4)
 
 ######################################################################
 # Step 2: Divide the Training and Test samples in the Dataset
@@ -74,7 +76,7 @@ for i, (train_dataset, val_dataset) in enumerate(k_fold.split(dataset)):
         X.append(sample[0])
         y.append(sample[1])
     csp.fit(X, y)
-    
+
     def csp_transform(eeg: np.ndarray) -> np.ndarray:
         eeg = np.expand_dims(eeg, axis=0)
         eeg = csp.transform(eeg)

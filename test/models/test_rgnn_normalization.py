@@ -15,7 +15,8 @@ class TestRGNNNormalization(unittest.TestCase):
                      num_layers=2, num_classes=2, dropout=0.).eval()
         x = torch.randn(2, 3, 2, requires_grad=True)
         edge_index = torch.ones(3, 3).nonzero().t().contiguous()
-        batch = Batch.from_data_list([Data(x=row, edge_index=edge_index) for row in x])
+        batch = Batch.from_data_list(
+            [Data(x=row, edge_index=edge_index) for row in x])
         actual = model(batch)
         actual.square().sum().backward()
 
@@ -32,7 +33,8 @@ class TestRGNNNormalization(unittest.TestCase):
             features = normalized.t() @ features
         features = F.relu(F.linear(features, parameters['conv1.lin.weight'],
                                    parameters['conv1.lin.bias']))
-        expected = F.linear(features.sum(dim=1), parameters['fc.weight'], parameters['fc.bias'])
+        expected = F.linear(features.sum(
+            dim=1), parameters['fc.weight'], parameters['fc.bias'])
         expected.square().sum().backward()
 
         torch.testing.assert_close(actual, expected, rtol=1e-5, atol=1e-6)

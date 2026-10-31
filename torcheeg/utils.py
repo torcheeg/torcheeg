@@ -1,4 +1,6 @@
 import atexit
+import hashlib
+import json
 import logging
 import os
 import random
@@ -10,12 +12,9 @@ import tempfile
 import time
 import urllib
 from functools import partial
-from typing import Optional
-
-import hashlib
-import json
 from importlib import import_module as _import_module
 from pathlib import Path
+from typing import Optional
 
 _log = logging.getLogger('torcheeg')
 
@@ -142,13 +141,14 @@ def validate_cache(path, fingerprint, files=None):
         if not isinstance(checksums, dict) or not checksums:
             raise ValueError('Incomplete cache; use a new cache path.')
         if set(checksums) != set(_list_files(path)):
-            raise ValueError('Cache output files have changed; use a new cache path.')
+            raise ValueError(
+                'Cache output files have changed; use a new cache path.')
         if files is not None and set(checksums) != set(files):
             raise ValueError('Incomplete cache; use a new cache path.')
         for name, checksum in checksums.items():
             file = path / name
             if file.is_symlink() or os.path.commonpath(
-                (str(file.resolve()), str(path.resolve()))) != str(path.resolve()):
+                    (str(file.resolve()), str(path.resolve()))) != str(path.resolve()):
                 raise ValueError('Invalid cache output path.')
             if compute_checksum(file) != checksum:
                 raise ValueError('Corrupt cache; use a new cache path.')

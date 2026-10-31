@@ -17,7 +17,7 @@ class EQLoss(nn.Module):
                  lambd: float = 0.005):
         '''
         Equalization loss for imbalanced datasets.
-    
+
         - Paper: Tan J, Wang C, Li B, et al. Equalization loss for long-tailedobject recognition[C]//Proceedings of the IEEE/CVF conference on computervision and pattern recognition. 2020: 11662-11671.
         - URL: https://openaccess.thecvf.com/content_CVPR_2020/papersTan_Equalization_Loss_for_Long-Tailed_Object_Recognition_CVPR_2020_paper.pdf
         - Related Project: https://github.com/tztztztztz/eql.detectron2
@@ -47,7 +47,7 @@ class EQLoss(nn.Module):
 class EQLossTrainer(ClassifierTrainer):
     r'''
         A trainer class for EEG classification with Equalization (EQ) loss for imbalanced datasets.
-    
+
         - Paper: Tan J, Wang C, Li B, et al. Equalization loss for long-tailedobject recognition[C]//Proceedings of the IEEE/CVF conference on computervision and pattern recognition. 2020: 11662-11671.
         - URL: https://openaccess.thecvf.com/content_CVPR_2020/papersTan_Equalization_Loss_for_Long-Tailed_Object_Recognition_CVPR_2020_paper.pdf
         - Related Project: https://github.com/tztztztztz/eql.detectron2
@@ -71,7 +71,7 @@ class EQLossTrainer(ClassifierTrainer):
             devices (int): The number of devices to use. (default: :obj:`1`)
             accelerator (str): The accelerator to use. Availabel options are: 'cpu', 'gpu'. (default: :obj:`"cpu"`)
             metrics (list of str): The metrics to use. Availabel options are: 'precision', 'recall', 'f1score', 'accuracy', 'matthews', 'auroc', and 'kappa'. (default: :obj:`["accuracy"]`)
-        
+
         .. automethod:: fit
         .. automethod:: test
     '''

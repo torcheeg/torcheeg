@@ -37,6 +37,7 @@ class GRU(nn.Module):
         hid_channels (int): The number of hidden nodes in the GRU layers and the fully connected layer. (default: :obj:`64`)
         num_classes (int): The number of classes to predict. (default: :obj:`2`)
     '''
+
     def __init__(self,
                  num_electrodes: int = 32,
                  hid_channels: int = 64,

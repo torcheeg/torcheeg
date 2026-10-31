@@ -168,12 +168,15 @@ class TestTrainTestSplitPerSubjectGroupbyTrial(unittest.TestCase):
         self._assert_folds(self._dataset, list(splitter.split(self._dataset)))
         self.assertEqual(splitter.subjects,
                          sorted(['../01', 'a/b', 'a%b', '空 格', '004']))
-        self.assertEqual(len(list(splitter.split(self._dataset, subject='a/b'))), 1)
+        self.assertEqual(
+            len(list(splitter.split(self._dataset, subject='a/b'))), 1)
         self.assertFalse(Path(self._directory.name, '01.csv').exists())
 
     def test_ambiguous_string_representation_is_rejected(self):
-        self._dataset.info['subject_id'] = self._dataset.info.subject_id.astype(object)
-        self._dataset.info.loc[self._dataset.info.subject_id == 1, 'subject_id'] = '0'
+        self._dataset.info['subject_id'] = self._dataset.info.subject_id.astype(
+            object)
+        self._dataset.info.loc[self._dataset.info.subject_id ==
+                               1, 'subject_id'] = '0'
         with self.assertRaisesRegex(ValueError, 'distinct'):
             list(self._make_splitter().split(self._dataset))
 
@@ -181,9 +184,12 @@ class TestTrainTestSplitPerSubjectGroupbyTrial(unittest.TestCase):
         cases = [({
             'train_size': value
         }, ValueError) for value in (0, 1, -1, float('nan'))]
-        cases += [({'train_size': value}, TypeError) for value in (True, '0.8')]
-        cases += [({'random_state': value}, ValueError) for value in (-1, 2**32)]
-        cases += [({'random_state': value}, TypeError) for value in (True, 1.5)]
+        cases += [({'train_size': value}, TypeError)
+                  for value in (True, '0.8')]
+        cases += [({'random_state': value}, ValueError)
+                  for value in (-1, 2**32)]
+        cases += [({'random_state': value}, TypeError)
+                  for value in (True, 1.5)]
         cases += [({'shuffle': 'yes'}, TypeError)]
         for parameters, error in cases:
             with self.subTest(parameters=parameters), self.assertRaises(error):
@@ -221,7 +227,8 @@ class TestTrainTestSplitPerSubjectGroupbyTrial(unittest.TestCase):
     def test_corrupted_cache_files_are_rejected(self):
         for name in ('train_subject_0.csv', 'manifest.json'):
             with self.subTest(name=name), tempfile.TemporaryDirectory() as path:
-                splitter = self._make_splitter(split_path=os.path.join(path, 'split'))
+                splitter = self._make_splitter(
+                    split_path=os.path.join(path, 'split'))
                 list(splitter.split(self._dataset))
                 Path(path, 'split', name).write_text('corrupt')
                 with self.assertRaises(ValueError):

@@ -1,9 +1,8 @@
-import os
 import csv
+import os
+from typing import Dict
 
 import pandas as pd
-
-from typing import Dict
 
 
 class MetaInfoIO:
@@ -30,6 +29,7 @@ class MetaInfoIO:
     Args:
         io_path (str): Where the table is stored.
     '''
+
     def __init__(self, io_path: str) -> None:
         self.io_path = io_path
         if not os.path.exists(self.io_path):
@@ -51,7 +51,7 @@ class MetaInfoIO:
 
         Args:
             obj (dict): The description to be written into the table.
-        
+
         Returns:
             int: The index of written EEG description in the table.
         '''

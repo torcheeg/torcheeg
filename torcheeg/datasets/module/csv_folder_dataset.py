@@ -1,11 +1,12 @@
+import os
 from typing import Any, Callable, Dict, Tuple, Union
-import pandas as pd
+
 import mne
 import numpy as np
-import os
+import pandas as pd
 
-from .base_dataset import BaseDataset
 from ...utils import get_random_dir_path
+from .base_dataset import BaseDataset
 
 
 def default_read_fn(file_path, **kwargs):

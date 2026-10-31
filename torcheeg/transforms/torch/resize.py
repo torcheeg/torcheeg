@@ -25,6 +25,7 @@ class Resize(EEGTransform):
 
     .. automethod:: __call__
     '''
+
     def __init__(self,
                  size: Union[Sequence[int], int],
                  interpolation: str = "bilinear",
@@ -56,9 +57,11 @@ class Resize(EEGTransform):
 
         eeg = eeg.unsqueeze(0)
 
-        align_corners = False if self.interpolation in ["bilinear", "bicubic"] else None
+        align_corners = False if self.interpolation in [
+            "bilinear", "bicubic"] else None
 
-        interpolated_x = interpolate(eeg, size=self.size, mode=self.interpolation, align_corners=align_corners)
+        interpolated_x = interpolate(
+            eeg, size=self.size, mode=self.interpolation, align_corners=align_corners)
 
         return interpolated_x.squeeze(0)
 

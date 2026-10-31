@@ -24,9 +24,11 @@ class TestInputValidation(unittest.TestCase):
         with self.assertRaises(ValueError):
             ViT(chunk_size=129, t_patch_size=32)
         with self.assertRaises(ValueError):
-            FBMSNet(in_channels=9, num_electrodes=22, chunk_size=129, stride_factor=4)
+            FBMSNet(in_channels=9, num_electrodes=22,
+                    chunk_size=129, stride_factor=4)
         with self.assertRaisesRegex(ValueError, 'temporal'):
-            FBMSNet(in_channels=9, num_electrodes=22, chunk_size=512, temporal='unknown')
+            FBMSNet(in_channels=9, num_electrodes=22,
+                    chunk_size=512, temporal='unknown')
 
     def test_missing_dataset_directory_is_a_file_error(self):
         with tempfile.TemporaryDirectory() as path:
@@ -40,11 +42,12 @@ class TestInputValidation(unittest.TestCase):
                 io = EEGSignalIO(path, io_mode=mode)
                 try:
                     with self.assertRaises(ValueError):
-                        io.write_eeg(None)
+                        io.write_eeg(None, key='invalid')
                     with self.assertRaises(KeyError):
                         io.read_eeg('missing')
-                    key = io.write_eeg(np.zeros((2, 3)))
-                    np.testing.assert_array_equal(io.read_eeg(key), np.zeros((2, 3)))
+                    key = io.write_eeg(np.zeros((2, 3)), key='sample')
+                    np.testing.assert_array_equal(
+                        io.read_eeg(key), np.zeros((2, 3)))
                 finally:
                     del io
 
