@@ -1,0 +1,45 @@
+name: SEED-V complete CNT reader
+
+on:
+  pull_request:
+    paths:
+      - 'torcheeg/datasets/module/emotion_recognition/seed_v.py'
+      - 'test/datasets/test_seed_v_cnt.py'
+      - 'docs/source/user_guide/seed_v_cnt.rst'
+      - '.github/workflows/seed-v-cnt.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  cnt:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        mne: ['1.9.0', '1.13.2']
+    env:
+      OMP_NUM_THREADS: '2'
+      MPLBACKEND: Agg
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Install an explicit complete reader runtime
+        run: |
+          python -m pip install torch==2.6.0 torchvision==0.21.0 torchaudio==2.6.0 --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install torch-scatter==2.1.2 torch-sparse==0.6.18 --only-binary=:all: --find-links https://data.pyg.org/whl/torch-2.6.0+cpu.html
+          echo 'torch==2.6.0' > cnt-constraints.txt
+          echo 'torchaudio==2.6.0' >> cnt-constraints.txt
+          echo 'numpy==2.2.6' >> cnt-constraints.txt
+          echo 'scipy==1.15.3' >> cnt-constraints.txt
+          echo 'mne==${{ matrix.mne }}' >> cnt-constraints.txt
+          # These CNT/SEED tests do not use the optional MOABB integration.
+          python -m pip install -e '.[model]' -c cnt-constraints.txt
+      - name: Verify actual wire values, overflow and allocation protection
+        run: |
+          python -c "import mne,numpy; assert mne.__version__ == '${{ matrix.mne }}'; assert numpy.__version__ == '2.2.6'"
+          python -m unittest test.datasets.test_seed_v_cnt test.datasets.test_emotion_recognition

@@ -3,6 +3,7 @@ from typing import Callable, Dict, Tuple, Union
 
 import mne
 import numpy as np
+from packaging.version import Version
 
 from ....utils import get_random_dir_path
 from ..base_dataset import BaseDataset
@@ -94,7 +95,7 @@ class SEEDVDataset(BaseDataset):
         # label (int)
 
     Args:
-        root_path (str): Downloaded data files in matlab (unzipped EEG_raw.zip) formats (default: :obj:`'./EEG_raw'`)
+        root_path (str): Downloaded Neuroscan CNT files (unzipped EEG_raw.zip) (default: :obj:`'./EEG_raw'`)
         chunk_size (int): Number of data points included in each EEG chunk as training or test samples. If set to -1, the EEG signal of a trial is used as a sample of a chunk. (default: :obj:`800`)
         overlap (int): The number of overlapping data points between different chunks when dividing EEG chunks. (default: :obj:`0`)
         num_channel (int): Number of channels used, of which the first 62 channels are EEG signals. (default: :obj:`62`)
@@ -107,7 +108,8 @@ class SEEDVDataset(BaseDataset):
         io_size (int): Maximum size database may grow to; used to size the memory mapping. If database grows larger than ``map_size``, an exception will be raised and the user must close and reopen. (default: :obj:`1048576`)
         io_mode (str): Storage mode of EEG signal. When io_mode is set to :obj:`lmdb`, TorchEEG provides an efficient database (LMDB) for storing EEG signals. LMDB may not perform well on limited operating systems, where a file system based EEG signal storage is also provided. When io_mode is set to :obj:`pickle`, pickle-based persistence files are used. When io_mode is set to :obj:`memory`, memory are used. (default: :obj:`lmdb`)
         num_worker (int): Number of subprocesses to use for data loading. 0 means that the data will be loaded in the main process. (default: :obj:`0`)
-        verbose (bool): Whether to display logs during processing, such as progress bars, etc. (default: :obj:`True`)    
+        verbose (bool): Whether to display logs during processing, such as progress bars, etc. (default: :obj:`True`)
+        data_format (str): Keyword-only Neuroscan CNT sample encoding passed to MNE: ``'auto'``, ``'int16'`` or ``'int32'``. Keep ``'auto'`` unless the encoding is known from the data provider. Some invalid sample-count headers require a compatible newer MNE and an explicit verified encoding; no format is guessed or silently retried. Use a new ``io_path`` when changing the format. (default: :obj:`'auto'`)
     '''
 
     def __init__(self,
@@ -126,7 +128,11 @@ class SEEDVDataset(BaseDataset):
                  io_size: int = 1048576,
                  io_mode: str = 'lmdb',
                  num_worker: int = 0,
-                 verbose: bool = True):
+                 verbose: bool = True,
+                 *,
+                 data_format: str = 'auto'):
+        if data_format not in ('auto', 'int16', 'int32'):
+            raise ValueError("data_format must be 'auto', 'int16' or 'int32'.")
         if io_path is None:
             io_path = get_random_dir_path(dir_prefix='datasets')
 
@@ -147,7 +153,8 @@ class SEEDVDataset(BaseDataset):
             'io_size': io_size,
             'io_mode': io_mode,
             'num_worker': num_worker,
-            'verbose': verbose
+            'verbose': verbose,
+            'data_format': data_format
         }
         super().__init__(**params)
         # save all arguments to __dict__
@@ -155,18 +162,66 @@ class SEEDVDataset(BaseDataset):
 
     @staticmethod
     def read_record(record: str,
+                    data_format: str = 'auto',
                     **kwargs) -> Dict:
+        if data_format not in ('auto', 'int16', 'int32'):
+            raise ValueError("data_format must be 'auto', 'int16' or 'int32'.")
+        reader_options = {'data_format': data_format}
+        if data_format != 'auto':
+            # Older readers may allocate from the header during construction,
+            # before get_data. Inspect only the fixed Neuroscan header here.
+            file_size = os.path.getsize(record)
+            with open(record, 'rb') as stream:
+                header = stream.read(900)
+            if len(header) == 900:
+                channels = int.from_bytes(header[370:372], 'little')
+                samples = int.from_bytes(header[864:868], 'little')
+                width = 2 if data_format == 'int16' else 4
+                if channels and samples > file_size // (channels * width):
+                    if Version(mne.__version__) >= Version('1.12') and file_size < 2 ** 31:
+                        # MNE can recompute from its event table for these files.
+                        # The caller has already supplied the sample encoding.
+                        reader_options['recompute_n_samples'] = True
+                    else:
+                        raise ValueError(
+                            'CNT sample count exceeds the file-size bound. '
+                            'Verify the file; a compatible MNE with sample-count '
+                            'recomputation is required before loading this header.'
+                        )
+        try:
+            eeg_raw = mne.io.read_raw_cnt(record, **reader_options)
+        except (OverflowError, RuntimeError, ValueError) as error:
+            message = str(error)
+            if data_format == 'auto' and (
+                'out of bounds for int32' in message
+                or 'Could not automatically compute the number of bytes per' in message
+            ):
+                raise ValueError(
+                    'Cannot infer the Neuroscan CNT encoding from this header. '
+                    'Verify the file and its sample encoding with the data provider; '
+                    "then use data_format='int16' or 'int32' with a compatible MNE "
+                    'version. An explicit format does not repair arbitrary corruption.'
+                ) from error
+            raise
 
-        eeg_raw = mne.io.read_raw_cnt(record)
+        with eeg_raw:
+            if data_format != 'auto':
+                # Include every channel and the header in a conservative upper
+                # bound before get_data can allocate from an invalid sample count.
+                bytes_per_sample = 2 if data_format == 'int16' else 4
+                upper_bound = os.path.getsize(record) // (
+                    len(eeg_raw.ch_names) * bytes_per_sample)
+                if eeg_raw.n_times > upper_bound:
+                    raise ValueError(
+                        'CNT sample count exceeds the file-size bound for '
+                        f'{data_format}. Verify the file and use an MNE version '
+                        'that supports its header; refusing to allocate EEG data.'
+                    )
+            useless_ch = ['M1', 'M2', 'VEO', 'HEO']
+            eeg_raw.drop_channels(useless_ch)
+            data_matrix = eeg_raw.get_data()
 
-        useless_ch = ['M1', 'M2', 'VEO', 'HEO']
-        eeg_raw.drop_channels(useless_ch)
-
-        data_matrix = eeg_raw.get_data()
-
-        return {
-            'data_matrix': data_matrix,
-        }
+        return {'data_matrix': data_matrix}
 
     @staticmethod
     def fake_record(record: str, **kwargs) -> Dict:
@@ -346,5 +401,6 @@ class SEEDVDataset(BaseDataset):
                 'after_trial': self.after_trial,
                 'num_worker': self.num_worker,
                 'verbose': self.verbose,
+                'data_format': self.data_format,
                 'io_size': self.io_size
             })
