@@ -227,7 +227,7 @@ TorchEEG is currently in beta; Please let us know if you encounter a bug by fili
 If you would like to contribute new datasets, deep learning methods, and extensions to the core, please first open an issue and then send a PR. If you are planning to contribute back bug fixes, please do so without any further discussion.
 
 ## Thanks for the support
-[![Stargazers repo roster for @torcheeg/torcheeg](https://reporoster.com/stars/torcheeg/torcheeg)](https://github.com/torcheeg/torcheeg/stargazers)
+[![GitHub stars](https://img.shields.io/github/stars/torcheeg/torcheeg?style=social)](https://github.com/torcheeg/torcheeg/stargazers)
 
 ## Thanks for the contributors
 <!-- readme: collaborators,contributors -start -->
