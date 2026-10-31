@@ -58,6 +58,7 @@ setup(
         'test': test_requires,
         'model': model_plugin_requires,
         'foundation': ['safetensors>=0.4.3'],
+        'yasa': ['yasa==0.8.1'],
         'dataset': dataset_plugin_requires,
         'trainer': trainer_plugin_requires,
         'transforms': transforms_plugin_requires

@@ -103,3 +103,4 @@ the same library workflow as a reusable assistant skill.
    bidann
    sleeptransformer
    sleepeegnet
+   yasa

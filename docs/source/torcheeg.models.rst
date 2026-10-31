@@ -219,3 +219,13 @@ Diffusion Models
 
    BUNet
    BCUNet
+
+Traditional pretrained models
+-----------------------------
+
+.. autosummary::
+   :toctree: generated
+   :nosignatures:
+   :template: traditionalmodeltemplate.rst
+
+   YASASleepStaging
