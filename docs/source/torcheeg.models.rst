@@ -48,6 +48,8 @@ Recurrent Neural Networks
    :template: modeltemplate.rst
 
    GRU
+   BiDANN
+   BiDANNLoss
    LSTM
 
 Graph Neural Networks
