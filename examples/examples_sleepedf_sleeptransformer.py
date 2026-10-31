@@ -1,6 +1,6 @@
 """
 Train the complete SleepTransformer on subject-held-out Sleep-EDF
-================================================================
+=================================================================
 
 Obtain authorized Sleep-EDF Expanded EDF pairs from PhysioNet and put paired
 files in root-path/sleep-cassette. This fixed teaching workflow reads EEG

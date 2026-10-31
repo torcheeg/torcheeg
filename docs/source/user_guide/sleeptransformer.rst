@@ -53,7 +53,7 @@ weight decay again when reproducing this explicit penalty. PyTorch and
 TensorFlow initialization/dropout random streams are not claimed identical.
 
 Checkpoints and complete native verification
--------------------------------------------
+--------------------------------------------
 
 Use standard ``state_dict`` for PyTorch checkpoints. ``native_state_dict``
 exports all 65 TensorFlow variable names/layouts. ``load_native_state_dict``
