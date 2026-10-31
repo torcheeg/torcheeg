@@ -37,7 +37,8 @@ jobs:
           echo 'numpy==2.2.6' >> cnt-constraints.txt
           echo 'scipy==1.15.3' >> cnt-constraints.txt
           echo 'mne==${{ matrix.mne }}' >> cnt-constraints.txt
-          python -m pip install -e '.[model,dataset]' -c cnt-constraints.txt
+          # These CNT/SEED tests do not use the optional MOABB integration.
+          python -m pip install -e '.[model]' -c cnt-constraints.txt
       - name: Verify actual wire values, overflow and allocation protection
         run: |
           python -c "import mne,numpy; assert mne.__version__ == '${{ matrix.mne }}'; assert numpy.__version__ == '2.2.6'"
