@@ -14,6 +14,7 @@ import mne
 import numpy as np
 
 from torcheeg.models import YASASleepStaging
+from test.models._optional_yasa import matching_yasa_available
 
 EXAMPLE = Path(__file__).resolve().parents[2] / 'examples/examples_sleepedf_yasa.py'
 spec = importlib.util.spec_from_file_location('sleepedf_yasa_example', EXAMPLE)
@@ -67,7 +68,7 @@ class TestSleepEDFYASAExample(unittest.TestCase):
             self.assertEqual(original, output.read_bytes())
 
     @unittest.skipUnless(
-        importlib.util.find_spec('yasa'),
+        matching_yasa_available(),
         'Optional full pretrained YASA backend not installed.',
     )
     def test_full_pretrained_workflow_accesses_annotations_only_after_prediction(self):

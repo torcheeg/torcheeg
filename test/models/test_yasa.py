@@ -1,6 +1,5 @@
 """Optional-backend boundaries and full real pretrained YASA classifier parity."""
 
-import importlib.util
 from itertools import product
 from pathlib import Path
 import tempfile
@@ -12,6 +11,7 @@ import mne
 import numpy as np
 
 from torcheeg.models import YASASleepStaging
+from test.models._optional_yasa import matching_yasa_available
 from torcheeg.models.traditional.yasa import _WEIGHT_HASHES
 
 
@@ -68,7 +68,7 @@ class TestYASABoundaries(unittest.TestCase):
 
 
 @unittest.skipUnless(
-    importlib.util.find_spec('yasa'), 'Optional full YASA 0.8.1 backend not installed.'
+    matching_yasa_available(), 'Optional full YASA 0.8.1 backend not installed.'
 )
 class TestYASACompleteBackend(unittest.TestCase):
     @staticmethod
