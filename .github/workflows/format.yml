@@ -1,0 +1,29 @@
+name: Formatting
+
+on:
+  pull_request:
+  push:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+      - name: Install formatters
+        run: python -m pip install autopep8==2.3.2 isort==9.0.2 pycodestyle==2.15.0
+      - name: Check import ordering
+        run: git ls-files -z -- '*.py' | xargs -0 isort --check-only --diff
+      - name: Check Python formatting
+        run: git ls-files -z -- '*.py' | xargs -0 autopep8 --diff --exit-code
