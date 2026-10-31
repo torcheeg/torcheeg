@@ -44,11 +44,11 @@ class TestLGGNetNative(unittest.TestCase):
                 model = LGGNet(DEAP_GENERAL_REGION_LIST, chunk_size=chunk_size)
                 self.assertTrue(torch.equal(rng, torch.get_rng_state()))
                 self.assertEqual(set(model.state_dict()), set(native.state_dict()))
-                model.load_state_dict(native.state_dict(), strict=True)
                 for name, value in model.state_dict().items():
                     torch.testing.assert_close(
                         value, native.state_dict()[name], rtol=0, atol=0
                     )
+                model.load_state_dict(native.state_dict(), strict=True)
                 eeg = torch.randn(2, 1, 32, chunk_size)
                 target = torch.tensor([0, 1])
                 rng = torch.get_rng_state().clone()
