@@ -1,10 +1,12 @@
 """Compare complete MSCFormer against a separately supplied pinned package."""
 
 import hashlib
+import inspect
 import os
 from pathlib import Path
 import sys
 import unittest
+from unittest.mock import patch
 
 import torch
 from torch.nn import functional as F
@@ -31,8 +33,14 @@ class TestMSCFormerNative(unittest.TestCase):
             self.assertEqual(
                 hashlib.sha256((root / name).read_bytes()).hexdigest(), digest, name
             )
-        sys.path.insert(0, str(root))
-        from braindecode.models import MSCFormer as Native
+        # Keep the pinned package first only during import. Leaving its root
+        # in sys.path can shadow TorchEEG's test package in spawned workers.
+        with patch.object(sys, 'path', [str(root), *sys.path]):
+            from braindecode.models import MSCFormer as Native
+        self.assertEqual(
+            Path(inspect.getfile(Native)).resolve(),
+            (root / 'braindecode/models/mscformer.py').resolve(),
+        )
 
         for seed, config, native_config in [
             (19, {}, dict(n_chans=22, n_times=1000, n_outputs=4)),
