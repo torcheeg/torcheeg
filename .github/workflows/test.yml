@@ -52,11 +52,7 @@ jobs:
           python -m pip install --only-binary=torch-scatter,torch-sparse torch-scatter==2.1.2 torch-sparse==0.6.18 --find-links "https://data.pyg.org/whl/torch-${PYG_TORCH_VERSION}+cpu.html"
       - name: Install package and dependencies
         run: |
-          echo "torch==$TORCH_VERSION" > constraints.txt
-          echo "torchvision==$TORCHVISION_VERSION" >> constraints.txt
-          echo "torch-scatter==2.1.2" >> constraints.txt
-          echo "torch-sparse==0.6.18" >> constraints.txt
-          echo 'lmdb==1.4.1' >> constraints.txt
+          printf '%s\n' "torch==$TORCH_VERSION" "torchvision==$TORCHVISION_VERSION" 'torch-scatter==2.1.2' 'torch-sparse==0.6.18' 'lmdb==1.4.1' > constraints.txt
           python -m pip install -e '.[test,model,trainer,transforms,dataset]' -c constraints.txt
       - name: Run tests
         run: python -m unittest discover -s test -t .
