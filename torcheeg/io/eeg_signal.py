@@ -371,14 +371,6 @@ class EEGSignalIO:
     Copying does not create an independent database. Convert a copy to memory
     or use a separate path when independent storage is required.
 
-    Independent LMDB wrappers for the same canonical path share one environment
-    per process. The environment stays alive while a wrapper or another caller
-    holds it; the cache does not retain it after the last reference is released.
-    Spawned workers acquire their own environment, and forked workers reopen
-    inherited environments before use. Finish preprocessing writes before
-    starting reader workers. LMDB still uses :obj:`lock=False`; callers must
-    coordinate writes, map resizing and readers as required by py-lmdb.
-
     Omitting :obj:`key` generates an unused integer-string key and preserves
     existing samples. Supplying an explicit key replaces the sample stored
     under that key. Automatic writes to an initially empty store use
