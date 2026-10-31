@@ -17,7 +17,7 @@ class BaselineRemoval(EEGTransform):
             transforms.BandDifferentialEntropy(apply_to_baseline=True),
             transforms.ToTensor(apply_to_baseline=True),
             transforms.BaselineRemoval(),
-            transforms.ToGrid(DEAP_CHANNEL_LOCATION_DICT)
+            transforms.ToGrid(get_locations(DEAPDataset.channels, DEAPDataset.grid))
         ])
 
         t(eeg=np.random.randn(32, 128), baseline=np.random.randn(32, 128))['eeg'].shape

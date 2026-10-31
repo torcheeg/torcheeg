@@ -5,7 +5,7 @@ from typing import Dict, Iterator, Tuple, Union
 import pandas as pd
 from sklearn import model_selection
 
-from torcheeg.datasets.module.base_dataset import BaseDataset
+from torcheeg.datasets.base_dataset import BaseDataset
 
 from .base_model_selection import BaseModelSelection
 from .utils import create_subset, read_indices, write_indices

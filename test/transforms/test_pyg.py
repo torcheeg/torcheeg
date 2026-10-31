@@ -4,18 +4,21 @@ import numpy as np
 import torch
 from torch_geometric.data import Data
 
-from torcheeg.datasets.constants import DEAP_ADJACENCY_MATRIX
+from torcheeg.datasets import DEAPDataset
+from torcheeg.datasets.utils import get_adjacency
 from torcheeg.transforms import ToDynamicG, ToG
 
 
 class TestPyGTransforms(unittest.TestCase):
     def test_to_g(self):
         eeg = np.random.randn(32, 128)
-        transformed_eeg = ToG(DEAP_ADJACENCY_MATRIX)(eeg=eeg)['eeg']
+        transformed_eeg = ToG(get_adjacency(
+            DEAPDataset.channels, DEAPDataset.adjacency))(eeg=eeg)['eeg']
         self.assertTrue(isinstance(transformed_eeg, Data))
 
         eeg = torch.randn(32, 128)
-        transformed_eeg = ToG(DEAP_ADJACENCY_MATRIX)(eeg=eeg)['eeg']
+        transformed_eeg = ToG(get_adjacency(
+            DEAPDataset.channels, DEAPDataset.adjacency))(eeg=eeg)['eeg']
         self.assertTrue(isinstance(transformed_eeg, Data))
 
     def test_to_dynamic_g(self):

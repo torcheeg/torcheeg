@@ -2,8 +2,8 @@ import unittest
 
 import numpy as np
 
-from torcheeg.datasets import constants
-from torcheeg.datasets.constants.utils import format_channel_location_dict
+from torcheeg import datasets
+from torcheeg.datasets.utils import get_locations
 from torcheeg.transforms import Compose, ToGrid
 
 
@@ -11,10 +11,10 @@ class TestGrid(unittest.TestCase):
     def test_location_helper_omits_channels_absent_from_grid(self):
         channels = ['C4', 'Cz', 'C3']
         grid = [['C3', '-', 'C4']]
-        mapping = format_channel_location_dict(channels, grid)
+        mapping = get_locations(channels, grid)
         self.assertEqual(mapping, {'C4': [0, 2], 'C3': [0, 0]})
         self.assertEqual(list(mapping), ['C4', 'C3'])
-        self.assertEqual(format_channel_location_dict(['Cz'], grid), {})
+        self.assertEqual(get_locations(['Cz'], grid), {})
         self.assertEqual(channels, ['C4', 'Cz', 'C3'])
 
     def test_non_square_grid_roundtrip_matches_channel_order(self):
@@ -117,10 +117,14 @@ class TestGrid(unittest.TestCase):
 
     def test_public_grids_with_missing_positions_require_channel_selection(self):
         checked = 0
-        for name in dir(constants):
-            if not name.endswith('CHANNEL_LOCATION_DICT'):
+        for cls in vars(datasets).values():
+            if not isinstance(cls, type) or not issubclass(cls, datasets.BaseDataset):
                 continue
-            mapping = getattr(constants, name)
+            try:
+                mapping = get_locations(cls.channels, cls.grid)
+            except NotImplementedError:
+                continue
+            name = cls.__name__
             positions = [location for location in mapping.values()
                          if location is not None]
             if not positions or not all(len(location) == 2 for location in positions):

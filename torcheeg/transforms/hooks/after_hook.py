@@ -20,7 +20,7 @@ def after_hook_normalize(
         dataset = DEAPDataset(root_path='./data_preprocessed_python',
                               offline_transform=transforms.Compose([
                                   transforms.BandDifferentialEntropy(),
-                                  transforms.ToGrid(DEAP_CHANNEL_LOCATION_DICT)
+                                  transforms.ToGrid(get_locations(DEAPDataset.channels, DEAPDataset.grid))
                               ]),
                               online_transform=transforms.ToTensor(),
                               after_trial=after_hook_normalize,
@@ -41,7 +41,7 @@ def after_hook_normalize(
         DEAPDataset(root_path='./data_preprocessed_python',
                               offline_transform=transforms.Compose([
                                   transforms.BandDifferentialEntropy(),
-                                  transforms.ToGrid(DEAP_CHANNEL_LOCATION_DICT)
+                                  transforms.ToGrid(get_locations(DEAPDataset.channels, DEAPDataset.grid))
                               ]),
                               online_transform=transforms.ToTensor(),
                               after_trial=partial(after_hook_normalize, eps=1e-5),
@@ -93,12 +93,12 @@ def after_hook_running_norm(
 
         from torcheeg.datasets import DEAPDataset
         from torcheeg.transforms import after_hook_running_norm
-        from torcheeg.datasets.constants import DEAP_CHANNEL_LOCATION_DICT
+        from torcheeg.datasets.utils import get_locations
 
         dataset = DEAPDataset(root_path='./data_preprocessed_python',
                               offline_transform=transforms.Compose([
                                   transforms.BandDifferentialEntropy(),
-                                  transforms.ToGrid(DEAP_CHANNEL_LOCATION_DICT)
+                                  transforms.ToGrid(get_locations(DEAPDataset.channels, DEAPDataset.grid))
                               ]),
                               online_transform=transforms.ToTensor(),
                               after_trial=after_hook_running_norm,
@@ -118,7 +118,7 @@ def after_hook_running_norm(
         dataset = DEAPDataset(root_path='./data_preprocessed_python',
                               offline_transform=transforms.Compose([
                                   transforms.BandDifferentialEntropy(),
-                                  transforms.ToGrid(DEAP_CHANNEL_LOCATION_DICT)
+                                  transforms.ToGrid(get_locations(DEAPDataset.channels, DEAPDataset.grid))
                               ]),
                               online_transform=transforms.ToTensor(),
                               after_trial=partial(after_hook_running_norm, decay_rate=0.9, eps=1e-6),
@@ -189,7 +189,7 @@ def after_hook_linear_dynamical_system(
         dataset = DEAPDataset(root_path='./data_preprocessed_python',
                               offline_transform=transforms.Compose([
                                   transforms.BandDifferentialEntropy(),
-                                  transforms.ToGrid(DEAP_CHANNEL_LOCATION_DICT)
+                                  transforms.ToGrid(get_locations(DEAPDataset.channels, DEAPDataset.grid))
                               ]),
                               online_transform=transforms.ToTensor(),
                               after_trial=after_hook_linear_dynamical_system,
@@ -209,7 +209,7 @@ def after_hook_linear_dynamical_system(
         dataset = DEAPDataset(root_path='./data_preprocessed_python',
                               offline_transform=transforms.Compose([
                                   transforms.BandDifferentialEntropy(),
-                                  transforms.ToGrid(DEAP_CHANNEL_LOCATION_DICT)
+                                  transforms.ToGrid(get_locations(DEAPDataset.channels, DEAPDataset.grid))
                               ]),
                               online_transform=transforms.ToTensor(),
                               after_trial=partial(after_hook_linear_dynamical_system, V0=0.01, A=1, T=0.0001, C=1, sigma=1),

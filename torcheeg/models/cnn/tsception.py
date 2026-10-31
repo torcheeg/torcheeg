@@ -16,7 +16,6 @@ class TSCeption(nn.Module):
 
         from torcheeg.datasets import DEAPDataset
         from torcheeg import transforms
-        from torcheeg.datasets.constants import DEAP_CHANNEL_LIST
         from torcheeg.models import TSCeption
         from torch.utils.data import DataLoader
 
@@ -32,7 +31,7 @@ class TSCeption(nn.Module):
                                   'PO3','O1', 'FP2', 'AF4',
                                   'F4', 'F8', 'FC6', 'FC2',
                                   'C4', 'T8', 'CP6', 'CP2',
-                                  'P4', 'P8', 'PO4', 'O2'], DEAP_CHANNEL_LIST)),
+                                  'P4', 'P8', 'PO4', 'O2'], DEAPDataset.channels)),
                                   transforms.To2d()
                               ]),
                               online_transform=transforms.ToTensor(),

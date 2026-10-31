@@ -21,8 +21,8 @@ import numpy as np
 from pytorch_lightning.callbacks import ModelCheckpoint
 
 from torcheeg import transforms
-from torcheeg.datasets import SEEDFeatureDataset
-from torcheeg.datasets.constants import SEED_CHANNEL_LOCATION_DICT
+from torcheeg.datasets import SEEDDataset, SEEDFeatureDataset
+from torcheeg.datasets.utils import get_locations
 from torcheeg.transforms import after_hook_normalize
 
 dataset = SEEDFeatureDataset(
@@ -30,7 +30,7 @@ dataset = SEEDFeatureDataset(
     root_path='./ExtractedFeatures',
     after_session=after_hook_normalize,
     offline_transform=transforms.Compose(
-        [transforms.ToGrid(SEED_CHANNEL_LOCATION_DICT)]),
+        [transforms.ToGrid(get_locations(SEEDDataset.channels, SEEDDataset.grid))]),
     online_transform=transforms.ToTensor(),  # seed do not have baseline signals
     label_transform=transforms.Compose(
         [transforms.Select('emotion'),

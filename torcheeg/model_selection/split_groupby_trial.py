@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 from sklearn import model_selection
 
-from torcheeg.datasets.module.base_dataset import BaseDataset
+from torcheeg.datasets.base_dataset import BaseDataset
 
 from ..utils import get_random_dir_path
 from .utils import create_subset, ensure_cache, read_indices, write_indices

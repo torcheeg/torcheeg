@@ -1,14 +1,23 @@
+import gc
+import inspect
+import multiprocessing
 import os
 import shutil
+import tempfile
 import unittest
+from copy import copy
 
 import mne
 import numpy as np
 import pandas as pd
+import torch
+from torch.utils.data import DataLoader
 
-from torcheeg import transforms
+from torcheeg import datasets, transforms
 from torcheeg.datasets import (BaseDataset, ConcatDataset, CSVFolderDataset,
                                FolderDataset, MNERawDataset, PairDataset)
+from torcheeg.model_selection import (KFoldCrossSubject, Subcategory,
+                                      train_test_split)
 
 mne.set_log_level('CRITICAL')
 
@@ -244,6 +253,241 @@ class TestFolderDataset(unittest.TestCase):
         self.assertEqual(first_item[0].shape, (14, 128))
         last_item = dataset[-1]
         self.assertEqual(last_item[0].shape, (14, 128))
+
+
+class TestLazyDatasetCopy(unittest.TestCase):
+    _modes = ('pickle', 'lmdb')
+
+    def setUp(self):
+        self._directory = tempfile.TemporaryDirectory()
+        self.addCleanup(self._directory.cleanup)
+        self._counter = 0
+        self._eeg = np.arange(800, dtype=float).reshape(2, 400)
+
+    def _make_dataset(self, mode):
+        self._counter += 1
+        raw_list = [mne.io.RawArray(self._eeg + 1000 * subject,
+                                    mne.create_info(['C3', 'C4'], 100, 'eeg'),
+                                    verbose='ERROR') for subject in (1, 2)]
+        return MNERawDataset(
+            raw_list=raw_list,
+            info_list=[{'subject_id': subject, 'trial_id': 0}
+                       for subject in (1, 2)],
+            chunk_size=100, io_mode=mode, lazy_threshold=0,
+            io_path=os.path.join(self._directory.name, f'cache_{self._counter}'), verbose=False)
+
+    def _assert_samples(self, dataset):
+        self.assertTrue(dataset.is_lazy())
+        self.assertEqual(dataset.eeg_io_router, {})
+        for index in range(len(dataset)):
+            signal, info = dataset[index]
+            start = int(info['clip_id'].split('_')[-1])
+            expected = self._eeg[:, start:start + 100] + \
+                1000 * info['subject_id']
+            np.testing.assert_array_equal(signal, expected)
+
+    def test_copy_preserves_lazy_reads_after_original_is_deleted(self):
+        for mode in self._modes:
+            with self.subTest(mode=mode):
+                dataset = self._make_dataset(mode)
+                duplicate = copy(dataset)
+                self.assertEqual(duplicate.io_path, dataset.io_path)
+                self.assertEqual(duplicate.io_mode, mode)
+                del dataset
+                gc.collect()
+                self._assert_samples(duplicate)
+
+    def test_metadata_and_path_dictionaries_are_independent(self):
+        for mode in self._modes:
+            with self.subTest(mode=mode):
+                dataset = self._make_dataset(mode)
+                duplicate = copy(dataset)
+                self.assertIsNot(duplicate.info, dataset.info)
+                self.assertIsNot(duplicate.eeg_signal_paths,
+                                 dataset.eeg_signal_paths)
+                signal, _ = dataset[0]
+                duplicate.info.loc[0, 'subject_id'] = 99
+                duplicate.eeg_signal_paths['unused'] = 'not opened'
+                actual, info = duplicate[0]
+                np.testing.assert_array_equal(actual, signal)
+                self.assertEqual(info['subject_id'], 99)
+                self.assertEqual(dataset.info.loc[0, 'subject_id'], 1)
+                self.assertNotIn('unused', dataset.eeg_signal_paths)
+
+    def test_subcategory_partitions_read_all_samples(self):
+        for mode in self._modes:
+            with self.subTest(mode=mode):
+                dataset = self._make_dataset(mode)
+                splitter = Subcategory(
+                    criteria='subject_id', split_path=dataset.io_path + '-categories')
+                subsets = list(splitter.split(dataset))
+                self.assertEqual(len(subsets), 2)
+                self.assertEqual([set(subset.info.subject_id)
+                                 for subset in subsets], [{1}, {2}])
+                for subset in subsets:
+                    self.assertEqual(len(subset), 4)
+                    self._assert_samples(subset)
+                for subset in splitter.split(dataset):
+                    self._assert_samples(subset)
+
+    def test_subject_folds_preserve_lazy_loading_and_isolation(self):
+        for mode in self._modes:
+            with self.subTest(mode=mode):
+                dataset = self._make_dataset(mode)
+                splitter = KFoldCrossSubject(
+                    n_splits=2, split_path=dataset.io_path + '-folds')
+                folds = list(splitter.split(dataset))
+                self.assertEqual(len(folds), 2)
+                for train, test in folds:
+                    self.assertFalse(set(train.info.subject_id)
+                                     & set(test.info.subject_id))
+                    self.assertEqual(set(train.info.clip_id) | set(
+                        test.info.clip_id), set(dataset.info.clip_id))
+                    self._assert_samples(train)
+                    self._assert_samples(test)
+
+    def test_sample_split_reads_each_cached_row(self):
+        for mode in self._modes:
+            with self.subTest(mode=mode):
+                dataset = self._make_dataset(mode)
+                train, test = train_test_split(dataset, test_size=0.25, random_state=42,
+                                               split_path=dataset.io_path + '-samples')
+                self.assertEqual((len(train), len(test)), (6, 2))
+                self.assertFalse(set(train.info.clip_id)
+                                 & set(test.info.clip_id))
+                self.assertEqual(set(train.info.clip_id) | set(
+                    test.info.clip_id), set(dataset.info.clip_id))
+                self._assert_samples(train)
+                self._assert_samples(test)
+
+    def test_copy_keeps_the_existing_shared_storage_contract(self):
+        for mode in self._modes:
+            with self.subTest(mode=mode):
+                dataset = self._make_dataset(mode)
+                duplicate = copy(dataset)
+                info = duplicate.read_info(0)
+                replacement = np.full((2, 100), 7.)
+                duplicate.write_eeg(
+                    info['_record_id'], info['clip_id'], replacement)
+                np.testing.assert_array_equal(dataset[0][0], replacement)
+                np.testing.assert_array_equal(duplicate[0][0], replacement)
+
+    def test_spawned_loader_reads_a_copied_lazy_dataset(self):
+        if 'spawn' not in multiprocessing.get_all_start_methods():
+            self.skipTest('requires spawn')
+        expected = np.stack([self._eeg[:, start:start + 100] + 1000 * subject
+                             for subject in (1, 2) for start in range(0, 400, 100)])
+        for mode in self._modes:
+            with self.subTest(mode=mode):
+                duplicate = copy(self._make_dataset(mode))
+                batches = list(DataLoader(duplicate, batch_size=2, num_workers=2,
+                                          multiprocessing_context='spawn', timeout=30))
+                torch.testing.assert_close(torch.cat([batch[0] for batch in batches]),
+                                           torch.from_numpy(expected))
+                self._assert_samples(duplicate)
+
+
+class TestDatasetMetadata(unittest.TestCase):
+    def test_missing_metadata_raises_on_class_access(self):
+        for name in ('channels', 'grid', 'adjacency'):
+            with self.subTest(attribute=name):
+                with self.assertRaisesRegex(
+                        NotImplementedError,
+                        f'Attribute {name} is not implemented in class BaseDataset'):
+                    getattr(BaseDataset, name)
+
+    def test_montages_support_grid_and_graph_transforms(self):
+        from torcheeg.datasets.utils import get_adjacency, get_locations
+
+        for cls in (
+                datasets.AVEDDataset,
+                datasets.AVEDProcessedDataset,
+                datasets.DTUDataset,
+                datasets.DTUProcessedDataset,
+                datasets.KULDataset,
+                datasets.KULProcessedDataset,
+                datasets.AMIGOSDataset,
+                datasets.BCI2022Dataset,
+                datasets.DEAPDataset,
+                datasets.DREAMERDataset,
+                datasets.FACEDDataset,
+                datasets.FACEDFeatureDataset,
+                datasets.MAHNOBDataset,
+                datasets.MPEDFeatureDataset,
+                datasets.SEEDDataset,
+                datasets.SEEDFeatureDataset,
+                datasets.SEEDIVDataset,
+                datasets.SEEDIVFeatureDataset,
+                datasets.SEEDVDataset,
+                datasets.SEEDVFeatureDataset,
+                datasets.BCICIV2aDataset,
+                datasets.StrokePatientsMIDataset,
+                datasets.StrokePatientsMIProcessedDataset,
+                datasets.M3CVDataset,
+                datasets.HMCDataset,
+                datasets.ISRUCDataset,
+                datasets.P2018Dataset,
+                datasets.SleepEDFxDataset,
+                datasets.SanDiegoSSVEPDataset,
+                datasets.TSUBenckmarkDataset,
+        ):
+            with self.subTest(dataset=cls.__name__):
+                channels = cls.channels
+                self.assertEqual(len(set(channels)), len(channels))
+                try:
+                    layout = cls.grid
+                except NotImplementedError:
+                    continue
+                locations = get_locations(channels, layout)
+                self.assertEqual(set(locations), set(channels))
+                sample = np.arange(len(channels) * 8).reshape(len(channels), 8)
+                grid = transforms.ToGrid(locations)(eeg=sample)['eeg']
+                for index, channel in enumerate(channels):
+                    row, column = locations[channel]
+                    np.testing.assert_array_equal(
+                        grid[:, row, column], sample[index])
+                try:
+                    adjacency = cls.adjacency
+                except NotImplementedError:
+                    continue
+                matrix = np.asarray(get_adjacency(channels, adjacency))
+                self.assertEqual(matrix.shape, (len(channels), len(channels)))
+
+    def test_changed_channel_order_invalidates_cache_fingerprint(self):
+        from unittest.mock import patch
+
+        from torcheeg.datasets.utils import compute_fingerprint
+
+        cls = datasets.SEEDDataset
+        before = compute_fingerprint(cls, {}, [], 'unused')
+        with patch.object(cls, 'channels', cls.channels[::-1]):
+            after = compute_fingerprint(cls, {}, [], 'unused')
+        self.assertNotEqual(before, after)
+        self.assertEqual(before, compute_fingerprint(cls, {}, [], 'unused'))
+
+    def test_auditory_montages_match_verified_headers(self):
+        self.assertEqual(datasets.DTUDataset.channels[47], 'CZ')
+        self.assertEqual(datasets.KULDataset.channels[47], 'CZ')
+        self.assertEqual(datasets.DTUProcessedDataset.available_channels[-2:],
+                         ['EXG1', 'EXG2'])
+        self.assertEqual(len(datasets.AVEDDataset.channels), 32)
+        self.assertTrue({'O1', 'OZ', 'O2'} <= set(
+            datasets.AVEDDataset.channels))
+        self.assertFalse({'HEOL', 'HEOR', 'VEOU', 'VEOL'} &
+                         set(datasets.AVEDDataset.channels))
+
+    def test_sleep_channels_follow_reader_defaults(self):
+        for cls in (datasets.HMCDataset, datasets.ISRUCDataset,
+                    datasets.P2018Dataset, datasets.SleepEDFxDataset):
+            with self.subTest(dataset=cls.__name__):
+                self.assertEqual(inspect.signature(
+                    cls.__init__).parameters['channels'].default, cls.channels)
+
+    def test_grid_adjacency_ignores_empty_cells_and_includes_diagonals(self):
+        from torcheeg.datasets.utils import get_grid_adjacency
+        adjacency = get_grid_adjacency([['A', '-'], ['B', 'C']])
+        self.assertEqual({key: set(value) for key, value in adjacency.items()},
+                         {'A': {'B', 'C'}, 'B': {'A', 'C'}, 'C': {'A', 'B'}})
 
 
 if __name__ == '__main__':

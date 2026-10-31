@@ -18,12 +18,11 @@ class MTCNN(nn.Module):
 
         from torcheeg.datasets import DEAPDataset
         from torcheeg import transforms
-        from torcheeg.datasets.constants import DEAP_CHANNEL_LOCATION_DICT, DEAP_CHANNEL_LIST
+        from torcheeg.datasets.utils import get_locations
         from torcheeg.models import MTCNN
-        from torcheeg.datasets.constants.emotion_recognition.utils import format_channel_location_dict
         from torch.utils.data import DataLoader
 
-        DEAP_LOCATION_LIST = [['-', '-', 'AF3', 'FP1', '-', 'FP2', 'AF4', '-', '-'],
+        DEAPDataset.grid = [['-', '-', 'AF3', 'FP1', '-', 'FP2', 'AF4', '-', '-'],
                               ['F7', '-', 'F3', '-', 'FZ', '-', 'F4', '-', 'F8'],
                               ['-', 'FC5', '-', 'FC1', '-', 'FC2', '-', 'FC6', '-'],
                               ['T7', '-', 'C3', '-', 'CZ', '-', 'C4', '-', 'T8'],
@@ -31,7 +30,7 @@ class MTCNN(nn.Module):
                               ['P7', '-', 'P3', '-', 'PZ', '-', 'P4', '-', 'P8'],
                               ['-', '-', '-', 'PO3', '-', 'PO4', '-', '-', '-'],
                               ['-', '-', '-', 'O1', 'OZ', 'O2', '-', '-', '-']]
-        DEAP_CHANNEL_LOCATION_DICT = format_channel_location_dict(DEAP_CHANNEL_LIST, DEAP_LOCATION_LIST)
+        get_locations(DEAPDataset.channels, DEAPDataset.grid) = get_locations(DEAPDataset.channels, DEAPDataset.grid)
 
         dataset = DEAPDataset(root_path='./data_preprocessed_python',
                               online_transform=transforms.Compose([
@@ -39,7 +38,7 @@ class MTCNN(nn.Module):
                                       transforms.BandDifferentialEntropy(),
                                       transforms.BandPowerSpectralDensity()
                                   ]),
-                                  transforms.ToGrid(DEAP_CHANNEL_LOCATION_DICT)
+                                  transforms.ToGrid(get_locations(DEAPDataset.channels, DEAPDataset.grid))
                               ]),
                               label_transform=transforms.Compose([
                                   transforms.Select('valence'),

@@ -47,11 +47,12 @@ class HorizontalFlip(EEGTransform):
     .. code-block:: python
 
         from torcheeg import transforms
-        from torcheeg.datasets.constants.motor_imagery import BCICIV2A_LOCATION_DICT
+        from torcheeg.datasets import BCICIV2aDataset
+        from torcheeg.datasets.utils import get_locations
 
         eeg = np.random.randn(32, 4, 22, 128)
         t = transforms.HorizontalFlip(
-            location_dict=BCICIV2A_LOCATION_DICT,
+            location_dict=get_locations(BCICIV2aDataset.channels, BCICIV2aDataset.grid),
             channel_dim=2
         )
         t(eeg=eeg)['eeg'].shape

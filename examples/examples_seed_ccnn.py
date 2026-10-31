@@ -21,14 +21,15 @@ In this tutorial, we'll demonstrate how you can leverage TorchEEG to train a Con
 
 from torcheeg import transforms
 from torcheeg.datasets import SEEDDataset
-from torcheeg.datasets.constants import SEED_CHANNEL_LOCATION_DICT
+from torcheeg.datasets.utils import get_locations
 
 dataset = SEEDDataset(io_path=f'./examples_seed_ccnn/seed',
                       root_path='./Preprocessed_EEG',
                       offline_transform=transforms.Compose([
                           transforms.BandDifferentialEntropy(
                               sampling_rate=200),
-                          transforms.ToGrid(SEED_CHANNEL_LOCATION_DICT)
+                          transforms.ToGrid(get_locations(
+                              SEEDDataset.channels, SEEDDataset.grid))
                       ]),
                       online_transform=transforms.ToTensor(),
                       label_transform=transforms.Compose([

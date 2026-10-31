@@ -3,9 +3,8 @@ import unittest
 import numpy as np
 from scipy.signal import hilbert
 
-from torcheeg.datasets.constants import (DEAP_CHANNEL_LIST,
-                                         DEAP_CHANNEL_LOCATION_DICT,
-                                         M3CV_CHANNEL_LOCATION_DICT)
+from torcheeg.datasets import DEAPDataset, M3CVDataset
+from torcheeg.datasets.utils import get_locations
 from torcheeg.transforms import (ARRCoefficient, BandApproximateEntropy,
                                  BandBinPower,
                                  BandDetrendedFluctuationAnalysis,
@@ -37,7 +36,7 @@ class TestNumpyTransforms(unittest.TestCase):
     def test_horizontal_flip(self):
         eeg = np.random.randn(32, 128)
         transformed_eeg = HorizontalFlip(
-            location_dict=DEAP_CHANNEL_LOCATION_DICT, channel_dim=0)(eeg=eeg)
+            location_dict=get_locations(DEAPDataset.channels, DEAPDataset.grid), channel_dim=0)(eeg=eeg)
         self.assertEqual(transformed_eeg['eeg'].shape, (32, 128))
 
     def test_flatten(self):
@@ -76,11 +75,11 @@ class TestNumpyTransforms(unittest.TestCase):
             'P3', 'P7', 'PO3', 'O1', 'FP2', 'AF4', 'F4', 'F8', 'FC6', 'FC2',
             'C4', 'T8', 'CP6', 'CP2', 'P4', 'P8', 'PO4', 'O2'
         ]
-        pick_list = PickElectrode.to_index_list(pick, DEAP_CHANNEL_LIST)
+        pick_list = PickElectrode.to_index_list(pick, DEAPDataset.channels)
         self.assertEqual(len(pick_list), 28)
 
         transformed_eeg = PickElectrode(
-            PickElectrode.to_index_list(pick, DEAP_CHANNEL_LIST))(eeg=eeg)
+            PickElectrode.to_index_list(pick, DEAPDataset.channels))(eeg=eeg)
         self.assertEqual(transformed_eeg['eeg'].shape, (28, 128))
 
     def test_to_2d(self):
@@ -90,21 +89,23 @@ class TestNumpyTransforms(unittest.TestCase):
 
     def test_to_grid(self):
         eeg = np.random.randn(32, 128)
-        transformed_eeg = ToGrid(DEAP_CHANNEL_LOCATION_DICT)(eeg=eeg)
+        transformed_eeg = ToGrid(get_locations(
+            DEAPDataset.channels, DEAPDataset.grid))(eeg=eeg)
         self.assertEqual(transformed_eeg['eeg'].shape, (128, 9, 9))
 
     def test_to_interpolated_grid(self):
         eeg = np.random.randn(32, 128)
-        transformed_eeg = ToInterpolatedGrid(DEAP_CHANNEL_LOCATION_DICT)(
+        transformed_eeg = ToInterpolatedGrid(get_locations(DEAPDataset.channels, DEAPDataset.grid))(
             eeg=eeg)
         self.assertEqual(transformed_eeg['eeg'].shape, (128, 9, 9))
 
         eeg = np.random.randn(64, 128)
-        transformed_eeg = ToInterpolatedGrid(M3CV_CHANNEL_LOCATION_DICT)(
+        transformed_eeg = ToInterpolatedGrid(get_locations(M3CVDataset.channels, M3CVDataset.grid))(
             eeg=eeg)
         self.assertEqual(transformed_eeg['eeg'].shape, (128, 9, 11))
 
-        pos_array = list(M3CV_CHANNEL_LOCATION_DICT.values())
+        pos_array = list(get_locations(
+            M3CVDataset.channels, M3CVDataset.grid).values())
         for i, channel_signal in enumerate(eeg):
             x, y = pos_array[i]
             self.assertTrue(

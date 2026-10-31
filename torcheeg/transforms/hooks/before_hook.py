@@ -17,7 +17,7 @@ def before_hook_normalize(data: np.ndarray,
 
         dataset = SEEDFeatureDataset(root_path='./ExtractedFeatures',
                                      feature=['de_movingAve'],
-                                     offline_transform=transforms.ToGrid       (SEED_CHANNEL_LOCATION_DICT),
+                                     offline_transform=transforms.ToGrid       (get_locations(SEEDDataset.channels, SEEDDataset.grid)),
                                      online_transform=transforms.ToTensor(),
                                      before_trial=before_hook_normalize,
                                      label_transform=transforms.Compose([
@@ -35,7 +35,7 @@ def before_hook_normalize(data: np.ndarray,
 
         dataset = SEEDFeatureDataset(root_path='./ExtractedFeatures',
                                      feature=['de_movingAve'],
-                                     offline_transform=transforms.ToGrid       (SEED_CHANNEL_LOCATION_DICT),
+                                     offline_transform=transforms.ToGrid       (get_locations(SEEDDataset.channels, SEEDDataset.grid)),
                                      online_transform=transforms.ToTensor(),
                                      before_trial=partial(before_hook_normalize, eps=1e-5),
                                      label_transform=transforms.Compose([

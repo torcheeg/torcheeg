@@ -29,7 +29,7 @@ from torch.utils.data import DataLoader
 
 from torcheeg import transforms
 from torcheeg.datasets import DEAPDataset
-from torcheeg.datasets.constants import DEAP_CHANNEL_LOCATION_DICT
+from torcheeg.datasets.utils import get_locations
 from torcheeg.model_selection import KFoldGroupbyTrial
 from torcheeg.models import CCNN
 from torcheeg.trainers import ClassifierTrainer
@@ -39,7 +39,8 @@ dataset = DEAPDataset(
     root_path='./data_preprocessed_python',
     offline_transform=transforms.Compose([
         transforms.BandDifferentialEntropy(apply_to_baseline=True),
-        transforms.ToGrid(DEAP_CHANNEL_LOCATION_DICT, apply_to_baseline=True)
+        transforms.ToGrid(get_locations(DEAPDataset.channels,
+                          DEAPDataset.grid), apply_to_baseline=True)
     ]),
     online_transform=transforms.Compose(
         [transforms.BaselineRemoval(),
@@ -156,7 +157,7 @@ from torch.utils.data import DataLoader
 
 from torcheeg import transforms
 from torcheeg.datasets import DEAPDataset
-from torcheeg.datasets.constants import DEAP_CHANNEL_LOCATION_DICT
+from torcheeg.datasets.utils import get_locations
 from torcheeg.model_selection import LeaveOneSubjectOut
 from torcheeg.models import CCNN
 from torcheeg.trainers import CORALTrainer
@@ -166,7 +167,8 @@ dataset = DEAPDataset(
     root_path='./data_preprocessed_python',
     offline_transform=transforms.Compose([
         transforms.BandDifferentialEntropy(apply_to_baseline=True),
-        transforms.ToGrid(DEAP_CHANNEL_LOCATION_DICT, apply_to_baseline=True)
+        transforms.ToGrid(get_locations(DEAPDataset.channels,
+                          DEAPDataset.grid), apply_to_baseline=True)
     ]),
     online_transform=transforms.Compose(
         [transforms.BaselineRemoval(),
