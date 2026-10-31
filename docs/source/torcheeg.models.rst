@@ -86,6 +86,7 @@ Transformer
    DBConformer
    MSCFormer
    TMSANet
+   HSLT
    EEGPT
    EEGPTClassifier
    EEGPTRegression
