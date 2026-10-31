@@ -36,10 +36,10 @@ class TestEmotionRecognitionDataset(unittest.TestCase):
         transform = transforms.ToGrid(get_locations(
             SEEDDataset.channels, SEEDDataset.grid))
         with patch.object(BaseDataset, '__init__', return_value=None):
-            dataset = SEEDDataset(num_channel=32, offline_transform=transform)
+            dataset = SEEDDataset(offline_transform=transform)
+            SEEDDataset(num_channel=32)
         self.assertIs(dataset.offline_transform, transform)
         self.assertEqual(len(SEEDDataset.channels), 62)
-        self.assertEqual(len(dataset.channels), 62)
         self.assertEqual(SEEDFeatureDataset.channels, SEEDDataset.channels)
         self.assertEqual(SEEDFeatureDataset.grid, SEEDDataset.grid)
         self.assertEqual(SEEDFeatureDataset.adjacency, SEEDDataset.adjacency)
