@@ -31,7 +31,7 @@ jobs:
           repository: pquochuy/SleepTransformer
           ref: 26167f26ddd8bb59ce787e56655c6e99ba446d2d
           path: external-reference
-      - uses: conda-incubator/setup-miniconda@04b72d7799e2bae3771b041de9b46c710d29caab # v4
+      - uses: conda-incubator/setup-miniconda@be893c923ea9cf1cf7cd510fbdde27c7e18cbdcb # v4
         with:
           miniforge-version: latest
           activate-environment: legacy-tf1
