@@ -6,6 +6,7 @@ on:
       - 'torcheeg/models/traditional/**'
       - 'torcheeg/models/__init__.py'
       - 'test/models/test_yasa.py'
+      - 'test/models/_optional_yasa.py'
       - 'test/examples/test_sleepedf_yasa.py'
       - 'examples/examples_sleepedf_yasa.py'
       - 'docs/source/user_guide/yasa.rst'
@@ -38,4 +39,5 @@ jobs:
           python -m pip install -e '.[model,dataset,yasa]' -c native-constraints.txt
       - name: Compare all eight full classifiers and independent physical example
         run: |
+          python -c "from test.models._optional_yasa import matching_yasa_available; assert matching_yasa_available()"
           python -m unittest test.models.test_yasa test.examples.test_sleepedf_yasa
