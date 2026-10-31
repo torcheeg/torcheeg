@@ -5,6 +5,9 @@ on:
     paths:
       - 'torcheeg/models/gnn/lggnet.py'
       - 'test/models/test_lggnet*.py'
+      - 'test/examples/test_deap_lggnet.py'
+      - 'examples/examples_deap_lggnet.py'
+      - 'docs/source/user_guide/lggnet.rst'
       - '.github/workflows/lggnet-reference.yml'
   workflow_dispatch:
 
@@ -37,4 +40,4 @@ jobs:
           echo 'torchaudio==2.6.0' >> native-constraints.txt
           python -m pip install -e '.[model,dataset]' -c native-constraints.txt
       - name: Compare complete published model and test metadata queries
-        run: python -m unittest test.models.test_lggnet test.models.test_lggnet_native test.models.test_gnn
+        run: python -m unittest test.models.test_lggnet test.models.test_lggnet_native test.models.test_gnn test.examples.test_deap_lggnet

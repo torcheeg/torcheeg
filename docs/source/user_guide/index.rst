@@ -99,6 +99,7 @@ the same library workflow as a reusable assistant skill.
    tmsanet
    adfcnn
    hslt
+   lggnet
    slimseiz
    bidann
    sleeptransformer
