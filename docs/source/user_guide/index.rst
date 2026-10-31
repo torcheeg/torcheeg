@@ -102,3 +102,4 @@ the same library workflow as a reusable assistant skill.
    slimseiz
    bidann
    sleeptransformer
+   sleepeegnet
