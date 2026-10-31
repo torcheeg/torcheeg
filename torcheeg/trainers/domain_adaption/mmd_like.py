@@ -11,10 +11,10 @@ from torch.utils.data import DataLoader
 
 from ..classifier import ClassifierTrainer, classification_metrics
 
-log = logging.getLogger('torcheeg')
+_log = logging.getLogger('torcheeg')
 
 
-class DualDataLoader:
+class _DualDataLoader:
 
     def __init__(self, ref_dataloader: DataLoader,
                  other_dataloader: DataLoader):
@@ -22,12 +22,12 @@ class DualDataLoader:
         self.other_dataloader = other_dataloader
 
     def __iter__(self):
-        return self.dual_iterator()
+        return self._dual_iterator()
 
     def __len__(self):
         return len(self.ref_dataloader)
 
-    def dual_iterator(self):
+    def _dual_iterator(self):
         other_it = iter(self.other_dataloader)
         for data in self.ref_dataloader:
             try:
@@ -113,7 +113,7 @@ class _MMDLikeTrainer(ClassifierTrainer):
             max_epochs (int): The maximum number of epochs to train. (default: :obj:`300`)
         '''
 
-        train_loader = DualDataLoader(source_loader, target_loader)
+        train_loader = _DualDataLoader(source_loader, target_loader)
 
         self.num_batches = len(train_loader)
         self.non_warmup_epochs = max_epochs - self.warmup_epochs
@@ -141,7 +141,10 @@ class _MMDLikeTrainer(ClassifierTrainer):
 
     def _domain_loss_fn(self, x_source_feat: torch.Tensor,
                         x_target_feat: torch.Tensor) -> torch.Tensor:
-        raise NotImplementedError
+        raise NotImplementedError(
+            "Method _domain_loss_fn is not implemented in class "
+            + self.__class__.__name__
+        )
 
     def training_step(self, batch: Tuple[torch.Tensor],
                       batch_idx: int) -> torch.Tensor:
@@ -208,7 +211,7 @@ class _MMDLikeTrainer(ClassifierTrainer):
         for key, value in self.trainer.logged_metrics.items():
             if key.startswith("train_"):
                 str += f"{key}: {value:.3f} "
-        log.info(str + '\n')
+        _log.info(str + '\n')
 
         # reset the metrics
         self.train_domain_loss.reset()

@@ -70,10 +70,14 @@ class MeanStdNormalize(EEGTransform):
                 axis = 1
             else:
                 axis = self.axis
-            assert len(self.mean) == eeg.shape[
-                axis], f'The given normalized axis has {eeg.shape[axis]} dimensions, which does not match the given mean\'s dimension {len(self.mean)}.'
-            assert len(self.std) == eeg.shape[
-                axis], f'The given normalized axis has {eeg.shape[axis]} dimensions, which does not match the given std\'s dimension {len(self.std)}.'
+            if not (len(self.mean) == eeg.shape[axis]):
+                raise ValueError(
+                    f"The given normalized axis has {eeg.shape[axis]} dimensions, which does not match the given mean's dimension {len(self.mean)}."
+                )
+            if not (len(self.std) == eeg.shape[axis]):
+                raise ValueError(
+                    f"The given normalized axis has {eeg.shape[axis]} dimensions, which does not match the given std's dimension {len(self.std)}."
+                )
             shape = [1] * len(eeg.shape)
             shape[axis] = -1
             mean = self.mean.reshape(*shape)
@@ -81,7 +85,7 @@ class MeanStdNormalize(EEGTransform):
 
         if np.any(std == 0):
             std[std == 0] = 1
-            
+
         return (eeg - mean) / std
 
     @property
@@ -161,9 +165,10 @@ class MinMaxNormalize(EEGTransform):
         else:
             if self.axis is None:
                 # given overall min/max
-                assert isinstance(self.min, float) and isinstance(
-                    self.max, float
-                ), f'The given normalized axis is None, which requires a float number as min/max to normalize the samples, but get {type(self.min)} and {type(self.max)}.'
+                if not (isinstance(self.min, float) and isinstance(self.max, float)):
+                    raise TypeError(
+                        f'The given normalized axis is None, which requires a float number as min/max to normalize the samples, but get {type(self.min)} and {type(self.max)}.'
+                    )
 
                 min = self.min
                 max = self.max
@@ -171,10 +176,14 @@ class MinMaxNormalize(EEGTransform):
                 # given axis min/max
                 axis = self.axis
 
-                assert len(self.min) == eeg.shape[
-                    axis], f'The given normalized axis has {eeg.shape[axis]} dimensions, which does not match the given min\'s dimension {len(self.min)}.'
-                assert len(self.max) == eeg.shape[
-                    axis], f'The given normalized axis has {eeg.shape[axis]} dimensions, which does not match the given max\'s dimension {len(self.max)}.'
+                if not (len(self.min) == eeg.shape[axis]):
+                    raise ValueError(
+                        f"The given normalized axis has {eeg.shape[axis]} dimensions, which does not match the given min's dimension {len(self.min)}."
+                    )
+                if not (len(self.max) == eeg.shape[axis]):
+                    raise ValueError(
+                        f"The given normalized axis has {eeg.shape[axis]} dimensions, which does not match the given max's dimension {len(self.max)}."
+                    )
 
                 shape = [1] * len(eeg.shape)
                 shape[axis] = -1

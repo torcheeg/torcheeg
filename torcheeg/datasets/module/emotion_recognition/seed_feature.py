@@ -237,9 +237,10 @@ class SEEDFeatureDataset(BaseDataset):
                 yield {'eeg': t_eeg, 'key': clip_id, 'info': record_info}
 
     def set_records(self, root_path: str = './ExtractedFeatures', **kwargs):
-        assert os.path.exists(
-            root_path
-        ), f'root_path ({root_path}) does not exist. Please download the dataset and set the root_path to the downloaded path.'
+        if not (os.path.exists(root_path)):
+            raise FileNotFoundError(
+                f'root_path ({root_path}) does not exist. Please download the dataset and set the root_path to the downloaded path.'
+            )
         file_list = os.listdir(root_path)
         skip_set = ['label.mat', 'readme.txt']
         file_list = [f for f in file_list if f not in skip_set]
