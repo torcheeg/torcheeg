@@ -1,0 +1,40 @@
+name: LGGNet published checkpoint compatibility
+
+on:
+  pull_request:
+    paths:
+      - 'torcheeg/models/gnn/lggnet.py'
+      - 'test/models/test_lggnet*.py'
+      - '.github/workflows/lggnet-reference.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  published:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      OMP_NUM_THREADS: '2'
+      MPLBACKEND: Agg
+      TORCHEEG_LGGNET_REFERENCE: external-reference/torcheeg/models/gnn/lggnet.py
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7
+        with:
+          repository: torcheeg/torcheeg
+          ref: f3fdf72c0f01f89e0b0760bf5309ebba2f334ccb
+          path: external-reference
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Install matching CPU dependencies
+        run: |
+          python -m pip install torch==2.6.0 torchvision==0.21.0 torchaudio==2.6.0 --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install torch-scatter==2.1.2 torch-sparse==0.6.18 --only-binary=:all: --find-links https://data.pyg.org/whl/torch-2.6.0+cpu.html
+          echo 'torch==2.6.0' > native-constraints.txt
+          echo 'torchaudio==2.6.0' >> native-constraints.txt
+          python -m pip install -e '.[model,dataset]' -c native-constraints.txt
+      - name: Compare complete published model and test metadata queries
+        run: python -m unittest test.models.test_lggnet test.models.test_lggnet_native test.models.test_gnn
