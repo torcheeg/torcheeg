@@ -19,7 +19,7 @@ from torcheeg.transforms import (ARRCoefficient, BandApproximateEntropy,
                                  CWTSpectrum, Downsample, DWTDecomposition,
                                  Flatten, MapChunk, MeanStdNormalize,
                                  MinMaxNormalize, OrderElectrode,
-                                 PearsonCorrelation, PhaseLockingCorrelation,
+                                 PearsonCorrelation, PhaseLockingValue,
                                  PickElectrode, RearrangeElectrode,
                                  SetSamplingRate, To2d, ToGrid,
                                  ToInterpolatedGrid, HorizontalFlip)
@@ -202,9 +202,9 @@ class TestNumpyTransforms(unittest.TestCase):
         transformed_eeg = PearsonCorrelation()(eeg=eeg)
         self.assertEqual(transformed_eeg['eeg'].shape, (1, 32, 32))
 
-    def test_phase_locking_correlation(self):
+    def test_phase_locking_value(self):
         eeg = np.random.randn(32, 128)
-        transformed_eeg = PhaseLockingCorrelation()(eeg=eeg)
+        transformed_eeg = PhaseLockingValue()(eeg=eeg)
         self.assertEqual(transformed_eeg['eeg'].shape, (1, 32, 32))
 
     def test_ap_entropy(self):
