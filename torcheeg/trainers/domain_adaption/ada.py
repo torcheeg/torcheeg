@@ -130,6 +130,7 @@ class ADATrainer(_MMDLikeTrainer):
     .. automethod:: fit
     .. automethod:: test
     '''
+
     def __init__(self,
                  extractor: nn.Module,
                  classifier: nn.Module,

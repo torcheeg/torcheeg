@@ -7,10 +7,10 @@ from .mmd_like import _MMDLikeTrainer
 
 
 def _gaussian_kernel(x_source,
-                    x_target,
-                    mul_kernel=2.0,
-                    num_kernels=5,
-                    sigma=None):
+                     x_target,
+                     mul_kernel=2.0,
+                     num_kernels=5,
+                     sigma=None):
     n_samples = int(x_source.shape[0]) + int(x_target.shape[0])
     total = torch.cat([x_source, x_target], dim=0)
     total0 = total.unsqueeze(0).expand(int(total.size(0)), int(total.size(0)),
@@ -32,16 +32,16 @@ def _gaussian_kernel(x_source,
 
 
 def _maximum_mean_discrepancy(x_source,
-                             x_target,
-                             mul_kernel=2.0,
-                             num_kernels=5,
-                             sigma=None):
+                              x_target,
+                              mul_kernel=2.0,
+                              num_kernels=5,
+                              sigma=None):
     batch_size = int(x_source.shape[0])
     kernels = _gaussian_kernel(x_source,
-                              x_target,
-                              mul_kernel=mul_kernel,
-                              num_kernels=num_kernels,
-                              sigma=sigma)
+                               x_target,
+                               mul_kernel=mul_kernel,
+                               num_kernels=num_kernels,
+                               sigma=sigma)
     XX = kernels[:batch_size, :batch_size]
     YY = kernels[batch_size:, batch_size:]
     XY = kernels[:batch_size, batch_size:]
@@ -107,6 +107,7 @@ class DANTrainer(_MMDLikeTrainer):
     .. automethod:: fit
     .. automethod:: test
     '''
+
     def __init__(self,
                  extractor: nn.Module,
                  classifier: nn.Module,
@@ -127,7 +128,7 @@ class DANTrainer(_MMDLikeTrainer):
                                          lr=lr,
                                          weight_decay=weight_decay,
                                          weight_domain=weight_domain,
-                                        weight_scheduler=weight_scheduler,
+                                         weight_scheduler=weight_scheduler,
                                          lr_scheduler_gamma=lr_scheduler_gamma,
                                          lr_scheduler_decay=lr_scheduler_decay,
                                          warmup_epochs=warmup_epochs,

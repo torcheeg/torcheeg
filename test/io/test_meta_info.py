@@ -1,6 +1,6 @@
 import os
-import unittest
 import tempfile
+import unittest
 
 from torcheeg.io import MetaInfoIO
 
@@ -24,24 +24,29 @@ class TestMetaInfoIO(unittest.TestCase):
         io_io_path = os.path.join(self._io_path, 'signals')
         io = MetaInfoIO(io_path=io_io_path)
 
-        io.write_info({'subject_id': 0, 'clip_id': 0, 'baseline_id': 0, 'valence': 0, 'arousal': 0})
+        io.write_info({'subject_id': 0, 'clip_id': 0,
+                      'baseline_id': 0, 'valence': 0, 'arousal': 0})
 
-        io.write_info({'subject_id': 0, 'clip_id': 1, 'baseline_id': 0, 'valence': 0, 'arousal': 0})
+        io.write_info({'subject_id': 0, 'clip_id': 1,
+                      'baseline_id': 0, 'valence': 0, 'arousal': 0})
 
     def test_len(self):
         io_io_path = os.path.join(self._io_path, 'signals')
         io = MetaInfoIO(io_path=io_io_path)
 
-        io.write_info({'subject_id': 0, 'clip_id': 0, 'baseline_id': 0, 'valence': 0, 'arousal': 0})
+        io.write_info({'subject_id': 0, 'clip_id': 0,
+                      'baseline_id': 0, 'valence': 0, 'arousal': 0})
 
-        io.write_info({'subject_id': 0, 'clip_id': 1, 'baseline_id': 0, 'valence': 0, 'arousal': 0})
+        io.write_info({'subject_id': 0, 'clip_id': 1,
+                      'baseline_id': 0, 'valence': 0, 'arousal': 0})
         self.assertEqual(len(io), 2)
 
     def test_read_info(self):
         io_io_path = os.path.join(self._io_path, 'signals')
         io = MetaInfoIO(io_path=io_io_path)
 
-        info = {'subject_id': 0, 'clip_id': 1, 'baseline_id': 0, 'valence': 0, 'arousal': 0}
+        info = {'subject_id': 0, 'clip_id': 1,
+                'baseline_id': 0, 'valence': 0, 'arousal': 0}
         io_info_index = io.write_info(info)
         io_info = io.read_info(io_info_index)
         for key in info.keys():
@@ -51,9 +56,11 @@ class TestMetaInfoIO(unittest.TestCase):
         io_io_path = os.path.join(self._io_path, 'signals')
         io = MetaInfoIO(io_path=io_io_path)
 
-        io.write_info({'subject_id': 0, 'clip_id': 0, 'baseline_id': 0, 'valence': 0, 'arousal': 0})
+        io.write_info({'subject_id': 0, 'clip_id': 0,
+                      'baseline_id': 0, 'valence': 0, 'arousal': 0})
 
-        io.write_info({'subject_id': 0, 'clip_id': 1, 'baseline_id': 0, 'valence': 0, 'arousal': 0})
+        io.write_info({'subject_id': 0, 'clip_id': 1,
+                      'baseline_id': 0, 'valence': 0, 'arousal': 0})
         self.assertEqual(len(io.read_all()), 2)
 
 

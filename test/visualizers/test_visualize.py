@@ -10,8 +10,8 @@ from torcheeg.datasets.constants import (DEAP_ADJACENCY_MATRIX,
                                          SEED_GENERAL_REGION_LIST)
 from torcheeg.transforms.graph import ToG
 from torcheeg.visualizers import (plot_2d_tensor, plot_3d_tensor,
-                            plot_adj_connectivity, plot_feature_topomap,
-                            plot_graph, plot_raw_topomap, plot_signal)
+                                  plot_adj_connectivity, plot_feature_topomap,
+                                  plot_graph, plot_raw_topomap, plot_signal)
 
 
 class TestVisualize(unittest.TestCase):

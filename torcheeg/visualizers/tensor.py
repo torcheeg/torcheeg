@@ -56,7 +56,6 @@ def plot_3d_tensor(tensor: torch.Tensor,
     return np.array(img)
 
 
-
 def plot_2d_tensor(tensor: torch.Tensor,
                    color: Union[colors.Colormap, str] = 'hsv'):
     r'''

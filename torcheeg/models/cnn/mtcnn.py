@@ -57,6 +57,7 @@ class MTCNN(nn.Module):
         num_classes (int): The number of classes to predict. (default: :obj:`2`)
         dropout (float): Probability of an element to be zeroed in the dropout layers. (default: :obj:`0.2`)
     '''
+
     def __init__(self,
                  in_channels: int = 8,
                  grid_size: Tuple[int, int] = (8, 9),

@@ -10,7 +10,7 @@ In this tutorial, we'll showcase how you can use TorchEEG to train a Tsception m
 # Step 1: Initialize the Dataset
 # ----------------------------------------------
 #
-# First off, we'll use the DREAMER dataset provided by TorchEEG. Each EEG sample in this dataset spans 1 second and contains 128 data points. For each trial, the baseline signal lasts 61 seconds. 
+# First off, we'll use the DREAMER dataset provided by TorchEEG. Each EEG sample in this dataset spans 1 second and contains 128 data points. For each trial, the baseline signal lasts 61 seconds.
 # During offline preprocessing, we perform several steps:
 # - Divide each electrode's EEG signal into 4 frequency sub-bands
 # - Compute the differential entropy of each sub-band as a feature
@@ -20,8 +20,8 @@ In this tutorial, we'll showcase how you can use TorchEEG to train a Tsception m
 # Let's see how to accomplish these steps in code.
 #
 
-from torcheeg.datasets import DREAMERDataset
 from torcheeg import transforms
+from torcheeg.datasets import DREAMERDataset
 
 dataset = DREAMERDataset(io_path='./examples_dreamer_tsception/dreamer',
                          mat_path='./DREAMER.mat',
@@ -60,12 +60,11 @@ k_fold = KFoldGroupbyTrial(n_splits=5,
 # Here, each EEG sample contains 128 data points across 14 electrodes. We'll train this model for 50 epochs using TorchEEG's `ClassifierTrainer`.
 #
 
-from torch.utils.data import DataLoader
-from torcheeg.models import TSCeption
-
-from torcheeg.trainers import ClassifierTrainer
-
 import pytorch_lightning as pl
+from torch.utils.data import DataLoader
+
+from torcheeg.models import TSCeption
+from torcheeg.trainers import ClassifierTrainer
 
 for i, (train_dataset, val_dataset) in enumerate(k_fold.split(dataset)):
     train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True)

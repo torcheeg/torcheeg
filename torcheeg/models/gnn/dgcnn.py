@@ -4,13 +4,14 @@ import torch.nn.functional as F
 
 
 class GraphConvolution(nn.Module):
-    def __init__(self, in_channels: int, out_channels: int, bias: bool=False):
+    def __init__(self, in_channels: int, out_channels: int, bias: bool = False):
 
         super(GraphConvolution, self).__init__()
 
         self.in_channels = in_channels
         self.out_channels = out_channels
-        self.weight = nn.Parameter(torch.FloatTensor(in_channels, out_channels))
+        self.weight = nn.Parameter(
+            torch.FloatTensor(in_channels, out_channels))
         nn.init.xavier_normal_(self.weight)
         self.bias = None
         if bias:
@@ -27,7 +28,7 @@ class GraphConvolution(nn.Module):
 
 
 class Linear(nn.Module):
-    def __init__(self, in_channels: int, out_channels: int, bias: bool=True):
+    def __init__(self, in_channels: int, out_channels: int, bias: bool = True):
         super(Linear, self).__init__()
         self.linear = nn.Linear(in_channels, out_channels, bias=bias)
         nn.init.xavier_normal_(self.linear.weight)
@@ -38,7 +39,7 @@ class Linear(nn.Module):
         return self.linear(inputs)
 
 
-def _normalize_adjacency(A: torch.Tensor, symmetry: bool=False) -> torch.Tensor:
+def _normalize_adjacency(A: torch.Tensor, symmetry: bool = False) -> torch.Tensor:
     A = F.relu(A)
     if symmetry:
         A = A + torch.transpose(A, 0, 1)
@@ -81,7 +82,7 @@ class Chebynet(nn.Module):
             if i == 0:
                 result = self.gc1[i](x, adj[i])
             else:
-                result = result+  self.gc1[i](x, adj[i])
+                result = result + self.gc1[i](x, adj[i])
         result = F.relu(result)
         return result
 
@@ -130,6 +131,7 @@ class DGCNN(nn.Module):
         hid_channels (int): The number of hidden nodes in the first fully connected layer. (default: :obj:`32`)
         num_classes (int): The number of classes to predict. (default: :obj:`2`)
     '''
+
     def __init__(self,
                  in_channels: int = 5,
                  num_electrodes: int = 62,
@@ -147,7 +149,8 @@ class DGCNN(nn.Module):
         self.BN1 = nn.BatchNorm1d(in_channels)
         self.fc1 = Linear(num_electrodes * hid_channels, 64)
         self.fc2 = Linear(64, num_classes)
-        self.A = nn.Parameter(torch.FloatTensor(num_electrodes, num_electrodes))
+        self.A = nn.Parameter(torch.FloatTensor(
+            num_electrodes, num_electrodes))
         nn.init.xavier_normal_(self.A)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:

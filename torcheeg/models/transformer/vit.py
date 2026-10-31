@@ -180,6 +180,7 @@ class ViT(nn.Module):
         dropout (float): Probability of an element to be zeroed in the dropout layers of the transformer layers. (default: :obj:`0.0`)
         pool_func (str): The pool function before the classifier, optionally including :obj:`cls` and :obj:`mean`, where :obj:`cls` represents selecting classification-related token and :obj:`mean` represents the average pooling. (default: :obj:`cls`)
     '''
+
     def __init__(self,
                  chunk_size: int = 128,
                  grid_size: Tuple[int, int] = (9, 9),

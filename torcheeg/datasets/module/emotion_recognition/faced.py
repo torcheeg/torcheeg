@@ -253,7 +253,8 @@ class FACEDDataset(BaseDataset):
         for trial_id in range(len(samples)):
             trial_samples = samples[
                 trial_id, :
-                num_channel]  # default 30(remove A1 and A2 from 32 channels), 30s*250hz(time points)
+                # default 30(remove A1 and A2 from 32 channels), 30s*250hz(time points)
+                num_channel]
             if before_trial:
                 trial_samples = before_trial(trial_samples)
 

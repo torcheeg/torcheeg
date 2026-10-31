@@ -13,7 +13,7 @@ class BGenerator(nn.Module):
         import torch
 
         from torcheeg.models.gan.bgan import BGenerator
-        
+
         g_model = BGenerator(in_channels=128)
         z = torch.normal(mean=0, std=1, size=(1, 128))
         fake_X = g_model(z)
@@ -23,6 +23,7 @@ class BGenerator(nn.Module):
         out_channels (int): The generated feature dimension of each electrode. (default: :obj:`4`)
         grid_size (tuple): Spatial dimensions of grid-like EEG representation. (default: :obj:`(9, 9)`)
     '''
+
     def __init__(self,
                  in_channels: int = 128,
                  out_channels: int = 4,
@@ -101,6 +102,7 @@ class BDiscriminator(nn.Module):
         grid_size (tuple): Spatial dimensions of grid-like EEG representation. (default: :obj:`(9, 9)`)
         hid_channels (int): The number of hidden nodes in the first fully connected layer. (default: :obj:`32`)
     '''
+
     def __init__(self,
                  in_channels: int = 4,
                  grid_size: Tuple[int, int] = (9, 9),

@@ -14,25 +14,23 @@ In this tutorial, we demonstrate a complete deep learning workflow using TorchEE
 ######################################################################
 # Step 1: Initialize the Dataset
 # ------------------------------
-# 
+#
 # We use the DEAP dataset supported by TorchEEG. Each EEG sample is set to
 # be 1 second long, encompassing 128 data points. The baseline signal is 3
 # seconds long, which we divide into three sections and then average to
 # obtain the trial’s baseline signal.
-# 
+#
 # During offline preprocessing, we divide each electrode’s EEG signal into
 # 4 sub-bands, calculate the differential entropy for each sub-band as a
 # feature, perform debaselining, and map onto a grid. Finally, the
 # preprocessed EEG signals are saved locally. For online processing, we
 # convert all EEG signals into Tensors, making them suitable for neural
 # network input.
-# 
+#
 
-from torcheeg.datasets import DEAPDataset
 from torcheeg import transforms
-
-from torcheeg.datasets.constants import \
-    DEAP_CHANNEL_LOCATION_DICT
+from torcheeg.datasets import DEAPDataset
+from torcheeg.datasets.constants import DEAP_CHANNEL_LOCATION_DICT
 
 dataset = DEAPDataset(
     io_path=f'./examples_pipeline/deap',
@@ -54,12 +52,12 @@ dataset = DEAPDataset(
 ######################################################################
 # Step 2: Split the Dataset into Training and Test Sets
 # -----------------------------------------------------
-# 
+#
 # In this case, we use per-subject 5-fold cross-validation to split the
 # dataset. During this process, we separate each subject’s EEG samples
 # into training and test sets. We use 4 folds for training and 1 fold for
 # testing.
-# 
+#
 
 from torcheeg.model_selection import KFoldGroupbyTrial
 
@@ -72,21 +70,20 @@ k_fold = KFoldGroupbyTrial(n_splits=10,
 ######################################################################
 # Step 3: Define the Model and Initiate Training
 # ----------------------------------------------
-# 
+#
 # We loop through each cross-validation set, and for each one, we
 # initialize the CCNN model and define its hyperparameters. For instance,
 # each EEG sample contains 4-channel features from 4 sub-bands, and the
 # grid size is 9x9.
-# 
+#
 # We then train the model for 50 epochs using the ``ClassifierTrainer``.
-# 
-
-from torch.utils.data import DataLoader
-from torcheeg.models import CCNN
-
-from torcheeg.trainers import ClassifierTrainer
+#
 
 import pytorch_lightning as pl
+from torch.utils.data import DataLoader
+
+from torcheeg.models import CCNN
+from torcheeg.trainers import ClassifierTrainer
 
 for i, (train_dataset, val_dataset) in enumerate(k_fold.split(dataset)):
     train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True)

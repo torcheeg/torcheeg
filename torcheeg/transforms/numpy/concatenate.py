@@ -1,4 +1,4 @@
-from typing import Callable, Sequence, Dict, Union
+from typing import Callable, Dict, Sequence, Union
 
 import numpy as np
 
@@ -24,9 +24,10 @@ class Concatenate(EEGTransform):
         transforms (list, tuple): a sequence of transforms.
         axis (int): The axis along which the arrays will be joined. If axis is None, arrays are flattened before use (default: :obj:`-1`).
         apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (default: :obj:`False`)
-    
+
     .. automethod:: __call__
     '''
+
     def __init__(self,
                  transforms: Sequence[Callable],
                  axis: int = -1,
@@ -40,7 +41,7 @@ class Concatenate(EEGTransform):
         Args:
             eeg (np.ndarray): The input EEG signals in shape of [number of electrodes, number of data points].
             baseline (np.ndarray, optional) : The corresponding baseline signal, if apply_to_baseline is set to True and baseline is passed, the baseline signal will be transformed with the same way as the experimental signal.
-            
+
         Returns:
             np.ndarray: The combined results of multiple transforms.
         '''
@@ -121,9 +122,10 @@ class MapChunk(EEGTransform):
     Args:
         transform (EEGTransform): a transform
         apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (default: :obj:`False`)
-    
+
     .. automethod:: __call__
     '''
+
     def __init__(self,
                  transform: EEGTransform,
                  chunk_size: int = 250,
@@ -140,7 +142,7 @@ class MapChunk(EEGTransform):
         Args:
             eeg (np.ndarray): The input EEG signals in shape of [number of electrodes, number of data points].
             baseline (np.ndarray, optional) : The corresponding baseline signal, if apply_to_baseline is set to True and baseline is passed, the baseline signal will be transformed with the same way as the experimental signal.
-            
+
         Returns:
             np.ndarray: The combined results of a transform from multiple chunks.
         '''

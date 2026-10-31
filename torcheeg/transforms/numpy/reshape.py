@@ -1,4 +1,4 @@
-from typing import Dict, Union, Tuple
+from typing import Dict, Tuple, Union
 
 import numpy as np
 
@@ -12,13 +12,14 @@ class Reshape(EEGTransform):
     .. code-block:: python
 
         from torcheeg import transforms
-        
+
         t = transforms.Reshape((6, 15, 4))
         t(eeg=np.random.randn(6, 60))['eeg'].shape
         >>> (6, 15, 4)
 
     .. automethod:: __call__
     '''
+
     def __init__(self, shape: Tuple[int, ...]) -> None:
         r'''
         Args:
@@ -26,7 +27,7 @@ class Reshape(EEGTransform):
         '''
         super().__init__()
         self.shape = shape
-        
+
     def __call__(self,
                  *args,
                  eeg: np.ndarray,

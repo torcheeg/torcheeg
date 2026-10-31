@@ -1,4 +1,4 @@
-from typing import Union, Dict
+from typing import Dict, Union
 
 import numpy as np
 from spectrum import aryule
@@ -22,9 +22,10 @@ class ARRCoefficient(EEGTransform):
         order (int): The order of autoregressive process to be fitted. (default: :obj:`4`)
         norm (str): Use a biased or unbiased correlation. (default: :obj:`biased`)
         apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (default: :obj:`False`)
-    
+
     .. automethod:: __call__
     '''
+
     def __init__(self,
                  order: int = 4,
                  norm: str = 'biased',

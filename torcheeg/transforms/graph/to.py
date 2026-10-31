@@ -4,11 +4,8 @@ import numpy as np
 import torch
 from scipy.signal import hilbert
 
-from ..base_transform import EEGTransform
-
-
 from ...utils import LazyLoader
-
+from ..base_transform import EEGTransform
 
 pyg = LazyLoader(
     'torch_geometric',

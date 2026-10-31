@@ -3,13 +3,12 @@ import multiprocessing as mp
 import os
 import tempfile
 import threading
+import unittest
 from pathlib import Path
 from unittest.mock import patch
 
 import numpy as np
 import pandas as pd
-
-import unittest
 
 from torcheeg import model_selection
 from torcheeg.datasets import BaseDataset
@@ -95,7 +94,8 @@ class TestModelSelectionUtils(unittest.TestCase):
 
     def test_samples_and_groups_form_complete_disjoint_partitions(self):
         dataset = _make_dataset()
-        self._assert_partition(dataset, list(self._make_splitter().split(dataset)))
+        self._assert_partition(dataset, list(
+            self._make_splitter().split(dataset)))
 
     def test_nonconsecutive_duplicate_and_string_dataframe_indices(self):
         for labels in (range(1000, 1125), ['row'] * 125,
@@ -176,7 +176,8 @@ class TestModelSelectionUtils(unittest.TestCase):
     def test_empty_existing_directory_is_initialized(self):
         os.makedirs(self._split_path)
         dataset = _make_dataset()
-        self._assert_partition(dataset, list(self._make_splitter().split(dataset)))
+        self._assert_partition(dataset, list(
+            self._make_splitter().split(dataset)))
 
     def test_partial_cache_is_rejected_before_any_fold(self):
         dataset = _make_dataset()
@@ -218,7 +219,8 @@ class TestModelSelectionUtils(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError, 'Simulated'):
                 list(splitter.split(dataset))
         self.assertFalse(Path(self._split_path).exists())
-        self.assertFalse(list(Path(self._directory.name).glob('.torcheeg-split-*')))
+        self.assertFalse(
+            list(Path(self._directory.name).glob('.torcheeg-split-*')))
         self._assert_partition(dataset, list(splitter.split(dataset)))
 
     def test_parallel_threads_wait_for_complete_cache(self):

@@ -28,7 +28,8 @@ class TestLazyLoader(unittest.TestCase):
         error = ImportError('backend binary incompatible')
         module = SimpleNamespace(value=42)
         with patch('torcheeg.utils._import_module', side_effect=[error, module]):
-            lazy = LazyLoader('backend', install_hint='See backend installation docs.')
+            lazy = LazyLoader(
+                'backend', install_hint='See backend installation docs.')
             with self.assertRaisesRegex(ImportError, 'See backend installation docs') as caught:
                 lazy.value
             self.assertIs(caught.exception.__cause__, error)

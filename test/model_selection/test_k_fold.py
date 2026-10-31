@@ -2,8 +2,9 @@ import os
 import tempfile
 import unittest
 
-from torcheeg.model_selection import (KFold, KFoldCrossSubject, KFoldCrossTrial,
-                                      KFoldGroupbyTrial, Subcategory)
+from torcheeg.model_selection import (KFold, KFoldCrossSubject,
+                                      KFoldCrossTrial, KFoldGroupbyTrial,
+                                      Subcategory)
 
 from .test_utils import _make_dataset
 
@@ -88,7 +89,8 @@ class TestKFoldSplits(unittest.TestCase):
 
     def test_subject_folds_follow_first_occurrence_order(self):
         dataset = _make_dataset()
-        subjects = ['subject_z', 'subject_a', 'subject_m', 'subject_b', 'subject_y']
+        subjects = ['subject_z', 'subject_a',
+                    'subject_m', 'subject_b', 'subject_y']
         dataset.info['subject_id'] = dataset.info['subject_id'].map(
             dict(enumerate(subjects)))
         splitter = KFoldCrossSubject(n_splits=5, split_path=self._split_path)
@@ -100,7 +102,8 @@ class TestKFoldSplits(unittest.TestCase):
     def test_mixed_trial_id_types_are_not_coerced(self):
         dataset = _make_dataset()
         trials = [10, 'trial_a', 30, 'trial_b', 50]
-        dataset.info['trial_id'] = dataset.info['trial_id'].map(dict(enumerate(trials)))
+        dataset.info['trial_id'] = dataset.info['trial_id'].map(
+            dict(enumerate(trials)))
         splitter = KFoldCrossTrial(n_splits=5, split_path=self._split_path)
         folds = list(splitter.split(dataset))
         self.assertEqual([test.info['trial_id'].unique().tolist() for _, test in folds],

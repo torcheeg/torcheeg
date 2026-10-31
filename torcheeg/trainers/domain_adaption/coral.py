@@ -19,7 +19,7 @@ def _compute_covariance(data, eps: float = 1e-6):
 
     mult_left_terms = torch.mm(data.t(), data)
     covariance_matrix = 1 / ((n - 1) * torch.add(mult_left_terms, -1 *
-                                                (mult_right_terms)) + eps)
+                                                 (mult_right_terms)) + eps)
 
     return covariance_matrix
 
@@ -81,6 +81,7 @@ class CORALTrainer(_MMDLikeTrainer):
     .. automethod:: fit
     .. automethod:: test
     '''
+
     def __init__(self,
                  extractor: nn.Module,
                  classifier: nn.Module,

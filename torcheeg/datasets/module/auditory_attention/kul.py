@@ -262,10 +262,12 @@ class KULDataset(BaseDataset):
             if rereference:
                 raw_eeg = _apply_rereference(raw_eeg, rereference)
 
-            raw_eeg = _apply_fir_filter(raw_eeg, lowpass, highpass, original_sr)
+            raw_eeg = _apply_fir_filter(
+                raw_eeg, lowpass, highpass, original_sr)
 
             if original_sr != sampling_rate:
-                raw_eeg = _apply_downsample(raw_eeg, original_sr, sampling_rate)
+                raw_eeg = _apply_downsample(
+                    raw_eeg, original_sr, sampling_rate)
 
             eeg_data.append(raw_eeg)
             attended_ear_data.append(attended_ear)

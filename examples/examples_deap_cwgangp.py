@@ -10,25 +10,23 @@ In this tutorial, we'll walk through how to train a Conditional Wasserstein Gene
 ######################################################################
 # Step 1: Initialize the Dataset
 # ------------------------------
-# 
+#
 # We use the DEAP dataset supported by TorchEEG. Each EEG sample is set to
 # be 1 second long, encompassing 128 data points. The baseline signal is 3
 # seconds long, which we divide into three sections and then average to
 # obtain the trial’s baseline signal.
-# 
+#
 # During offline preprocessing, we divide each electrode’s EEG signal into
 # 4 sub-bands, calculate the differential entropy for each sub-band as a
 # feature, perform debaselining, and map onto a grid. Finally, the
 # preprocessed EEG signals are saved locally. For online processing, we
 # convert all EEG signals into Tensors, making them suitable for neural
 # network input.
-# 
+#
 
-from torcheeg.datasets import DEAPDataset
 from torcheeg import transforms
-
-from torcheeg.datasets.constants import \
-    DEAP_CHANNEL_LOCATION_DICT
+from torcheeg.datasets import DEAPDataset
+from torcheeg.datasets.constants import DEAP_CHANNEL_LOCATION_DICT
 
 dataset = DEAPDataset(
     io_path=f'./examples_deap_cwgangp/deap',
@@ -50,12 +48,12 @@ dataset = DEAPDataset(
 ######################################################################
 # Step 2: Split the Dataset into Training and Test Sets
 # -----------------------------------------------------
-# 
+#
 # In this case, we use per-subject 5-fold cross-validation to split the
 # dataset. During this process, we separate each subject’s EEG samples
 # into training and test sets. We use 4 folds for training and 1 fold for
 # testing.
-# 
+#
 
 from torcheeg.model_selection import KFoldGroupbyTrial
 
@@ -87,15 +85,16 @@ class Extractor(CCNN):
 ######################################################################
 # Step 3: Define the Model and Initiate Training
 # ----------------------------------------------
-# 
+#
 # Now we're ready to train the classifier and feature extractor, followed by the CWGAN-GP model.
-# 
+#
 
-from torch.utils.data import DataLoader
-from torcheeg.trainers import ClassifierTrainer, CWGANGPTrainer
-from torcheeg.models import CCNN, BCGenerator, BCDiscriminator
 
 import pytorch_lightning as pl
+from torch.utils.data import DataLoader
+
+from torcheeg.models import CCNN, BCDiscriminator, BCGenerator
+from torcheeg.trainers import ClassifierTrainer, CWGANGPTrainer
 
 for i, (train_dataset, val_dataset) in enumerate(k_fold.split(dataset)):
     train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True)
@@ -117,7 +116,7 @@ for i, (train_dataset, val_dataset) in enumerate(k_fold.split(dataset)):
                 enable_progress_bar=True,
                 enable_model_summary=True,
                 limit_val_batches=0.0)
-    
+
     extractor = Extractor(num_classes=2, in_channels=4, grid_size=(9, 9))
     extractor.load_state_dict(classifier.state_dict())
 
@@ -125,16 +124,16 @@ for i, (train_dataset, val_dataset) in enumerate(k_fold.split(dataset)):
     d_model = BCDiscriminator(in_channels=4)
 
     trainer = CWGANGPTrainer(g_model,
-                              d_model,
-                              metric_extractor=extractor,
-                              metric_classifier=classifier,
-                              metric_num_features=9 * 9 * 64,
-                              metrics=['fid', 'is'],
+                             d_model,
+                             metric_extractor=extractor,
+                             metric_classifier=classifier,
+                             metric_num_features=9 * 9 * 64,
+                             metrics=['fid', 'is'],
                              accelerator='gpu')
     trainer.fit(train_loader, val_loader, max_epochs=1)
     trainer.test(val_loader)
 
 ######################################################################
-# 
+#
 # That's it! You've successfully trained a C-WGAN-GP model on the DEAP EEG dataset and evaluated it using FID and KID metrics.
 #

@@ -12,8 +12,9 @@ from torch.utils.data import Dataset
 from tqdm import tqdm
 
 from torcheeg.io import EEGSignalIO, MetaInfoIO
+
 from ...utils import get_random_dir_path
-from ..utils import ensure_cache, compute_fingerprint
+from ..utils import compute_fingerprint, ensure_cache
 
 _log = logging.getLogger('torcheeg')
 
@@ -102,7 +103,8 @@ class BaseDataset(Dataset):
                                               total=len(records),
                                               disable=not self.verbose,
                                               desc='[PROCESS]'))
-            self.init_io(io_path=path, io_size=self.io_size, io_mode=self.io_mode)
+            self.init_io(io_path=path, io_size=self.io_size,
+                         io_mode=self.io_mode)
             if self.io_mode == 'memory':
                 self.eeg_io_router = {
                     item['record']: item['eeg_io']

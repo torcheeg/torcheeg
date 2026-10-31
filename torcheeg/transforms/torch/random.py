@@ -1,7 +1,7 @@
 from typing import Dict, Union
 
-import torch
 import numpy as np
+import torch
 from sklearn.decomposition import PCA
 from torch.fft import fft, ifft
 from torch.nn.functional import pad
@@ -34,7 +34,7 @@ class RandomEEGTransform(EEGTransform):
 class RandomNoise(RandomEEGTransform):
     '''
     Add random noise conforming to the normal distribution on the EEG signal.
-    
+
     .. code-block:: python
 
         from torcheeg import transforms
@@ -51,6 +51,7 @@ class RandomNoise(RandomEEGTransform):
 
     .. automethod:: __call__
     '''
+
     def __init__(self,
                  mean: float = 0.0,
                  std: float = 1.0,
@@ -89,7 +90,7 @@ class RandomNoise(RandomEEGTransform):
 class RandomMask(RandomEEGTransform):
     '''
     Overlay the EEG signal using a random mask, and the value of the overlaid data points was set to 0.0.
-    
+
     .. code-block:: python
 
         transform = RandomMask()
@@ -103,6 +104,7 @@ class RandomMask(RandomEEGTransform):
 
     .. automethod:: __call__
     '''
+
     def __init__(self,
                  ratio: float = 0.5,
                  p: float = 0.5,
@@ -139,7 +141,7 @@ class RandomMask(RandomEEGTransform):
 class RandomMask2D(RandomEEGTransform):
     '''
     Overlay the EEG signal using a random mask, and the value of the overlaid data points was set to 0.0. The mask is applied to the three dimensions of the input tensor, where the first dimension represents the number of channels (bands, or something like that), the second dimension denotes the number of electrodes and the second dimension represents the number of time points. The mask is applied to the electrode dimension.
-    
+
     .. code-block:: python
 
         transform = RandomMask()
@@ -153,6 +155,7 @@ class RandomMask2D(RandomEEGTransform):
 
     .. automethod:: __call__
     '''
+
     def __init__(self,
                  ratio: float = 0.5,
                  p: float = 0.5,
@@ -193,7 +196,7 @@ class RandomMask2D(RandomEEGTransform):
 class RandomMaskGrid(RandomEEGTransform):
     '''
     Overlay the EEG signal using a random mask, and the value of the overlaid data points was set to 0.0. The mask is applied to the last three dimensions of the input tensor, where the second dimension represents the height of the grid and the third dimension represents the width of the grid. The mask is applied to the height and width dimensions.
-    
+
     .. code-block:: python
 
         transform = RandomMaskGrid()
@@ -207,6 +210,7 @@ class RandomMaskGrid(RandomEEGTransform):
 
     .. automethod:: __call__
     '''
+
     def __init__(self,
                  ratio: float = 0.5,
                  p: float = 0.5,
@@ -245,7 +249,7 @@ class RandomMaskGrid(RandomEEGTransform):
 class RandomWindowSlice(RandomEEGTransform):
     '''
     Randomly applies a slice transformation with a given probability, where the original time series is sliced by a window, and the sliced data is scaled to the original size. It is worth noting that the random position where each channel slice starts is the same.
-    
+
     .. code-block:: python
 
         transform = RandomWindowSlice()
@@ -268,6 +272,7 @@ class RandomWindowSlice(RandomEEGTransform):
 
     .. automethod:: __call__
     '''
+
     def __init__(self,
                  window_size: int = 120,
                  series_dim: int = -1,
@@ -362,7 +367,7 @@ class RandomWindowSlice(RandomEEGTransform):
 class RandomWindowWarp(RandomEEGTransform):
     '''
     Apply the window warping with a given probability, where a part of time series data is warpped by speeding it up or down.
-    
+
     .. code-block:: python
 
         transform = RandomWindowWarp()
@@ -386,6 +391,7 @@ class RandomWindowWarp(RandomEEGTransform):
 
     .. automethod:: __call__
     '''
+
     def __init__(self,
                  window_size: int = 12,
                  warp_size: int = 24,
@@ -490,7 +496,7 @@ class RandomWindowWarp(RandomEEGTransform):
 class RandomPCANoise(RandomEEGTransform):
     '''
     Add noise with a given probability, where the noise is added to the principal components of each channel of the EEG signal. In particular, the noise added by each channel is different.
-    
+
     .. code-block:: python
 
         transform = RandomPCANoise()
@@ -515,6 +521,7 @@ class RandomPCANoise(RandomEEGTransform):
 
     .. automethod:: __call__
     '''
+
     def __init__(self,
                  mean: float = 0.0,
                  std: float = 1.0,
@@ -601,7 +608,7 @@ class RandomPCANoise(RandomEEGTransform):
 class RandomFlip(RandomEEGTransform):
     '''
     Applies a random transformation with a given probability to reverse the direction of the input signal in the specified dimension, commonly used for left-right and bottom-up reversal of EEG caps and reversal of timing.
-    
+
     .. code-block:: python
 
         transform = RandomFlip(dim=-1)
@@ -619,6 +626,7 @@ class RandomFlip(RandomEEGTransform):
 
     .. automethod:: __call__
     '''
+
     def __init__(self, dim=-1, p: float = 0.5, apply_to_baseline: bool = False):
         super(RandomFlip, self).__init__(p=p,
                                          apply_to_baseline=apply_to_baseline)
@@ -650,7 +658,7 @@ class RandomFlip(RandomEEGTransform):
 class RandomSignFlip(RandomEEGTransform):
     '''
     Apply a random transformation such that the input signal becomes the opposite of the reversed sign with a given probability
-    
+
     .. code-block:: python
 
         transform = RandomSignFlip()
@@ -663,6 +671,7 @@ class RandomSignFlip(RandomEEGTransform):
 
     .. automethod:: __call__
     '''
+
     def __init__(self, p: float = 0.5, apply_to_baseline: bool = False):
         super(RandomSignFlip,
               self).__init__(p=p, apply_to_baseline=apply_to_baseline)
@@ -689,7 +698,7 @@ class RandomSignFlip(RandomEEGTransform):
 class RandomShift(RandomEEGTransform):
     '''
     Apply a shift with a specified probability, after which the specified dimension is shifted backward, and the part shifted out of the Tensor is added to the front of that dimension.
-    
+
     .. code-block:: python
 
         transform = RandomShift(dim=-1, shift_min=8, shift_max=24)
@@ -705,6 +714,7 @@ class RandomShift(RandomEEGTransform):
 
     .. automethod:: __call__
     '''
+
     def __init__(self,
                  p: float = 0.5,
                  shift_min: int = 8,
@@ -751,7 +761,7 @@ class RandomShift(RandomEEGTransform):
 class RandomChannelShuffle(RandomEEGTransform):
     '''
     Apply a shuffle with a specified probability, after which the order of the channels is randomly shuffled.
-    
+
     .. code-block:: python
 
         transform = RandomChannelShuffle()
@@ -764,6 +774,7 @@ class RandomChannelShuffle(RandomEEGTransform):
 
     .. automethod:: __call__
     '''
+
     def __init__(self, p: float = 0.5, apply_to_baseline: bool = False):
         super(RandomChannelShuffle,
               self).__init__(p=p, apply_to_baseline=apply_to_baseline)
@@ -792,7 +803,7 @@ class RandomChannelShuffle(RandomEEGTransform):
 class RandomHemisphereChannelShuffle(RandomEEGTransform):
     '''
     Apply a shuffle with a specified probability on a single hemisphere (either left or right), after which the order of the channels is randomly shuffled.
-    
+
     .. code-block:: python
 
         transform = RandomChannelShuffle(location_list=M3CV_LOCATION_LIST,
@@ -806,6 +817,7 @@ class RandomHemisphereChannelShuffle(RandomEEGTransform):
 
     .. automethod:: __call__
     '''
+
     def __init__(self,
                  location_list,
                  channel_location_dict,
@@ -863,7 +875,7 @@ class RandomHemisphereChannelShuffle(RandomEEGTransform):
 class RandomFrequencyShift(RandomEEGTransform):
     '''
     Apply a frequency shift with a specified probability, after which the EEG signals of all channels are equally shifted in the frequency domain.
-    
+
     .. code-block:: python
 
         transform = RandomFrequencyShift()
@@ -888,6 +900,7 @@ class RandomFrequencyShift(RandomEEGTransform):
 
     .. automethod:: __call__
     '''
+
     def __init__(self,
                  p: float = 0.5,
                  sampling_rate: int = 128,

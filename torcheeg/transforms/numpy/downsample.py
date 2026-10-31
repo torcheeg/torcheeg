@@ -1,12 +1,10 @@
-from typing import Union, Dict
+from typing import Dict, Union
 
 import numpy as np
-
-from ..base_transform import EEGTransform
 import scipy
 
-
 from ...utils import LazyLoader
+from ..base_transform import EEGTransform
 
 
 class Downsample(EEGTransform):
@@ -144,9 +142,12 @@ class SetSamplingRate(EEGTransform):
               eeg: np.ndarray,
               **kwargs
               ) -> np.ndarray:
-        samplerate = LazyLoader('samplerate', install_hint='Install with `pip install samplerate`.')
-        resampy = LazyLoader('resampy', install_hint='Install with `pip install resampy`.')
-        soxr = LazyLoader('soxr', install_hint='Install with `pip install soxr`.')
+        samplerate = LazyLoader(
+            'samplerate', install_hint='Install with `pip install samplerate`.')
+        resampy = LazyLoader(
+            'resampy', install_hint='Install with `pip install resampy`.')
+        soxr = LazyLoader(
+            'soxr', install_hint='Install with `pip install soxr`.')
 
         eeg = eeg.astype(np.float32)
 
@@ -205,7 +206,7 @@ class SetSamplingRate(EEGTransform):
     @property
     def __repr__(self) -> any:
         return f'''{
-                'original_sampling_rate': self.original_rate,
+            'original_sampling_rate': self.original_rate,
                 'target_sampling_rate': self.new_rate,
                 'apply_to_baseline':self.apply_to_baseline
                 'axis': self.axis,

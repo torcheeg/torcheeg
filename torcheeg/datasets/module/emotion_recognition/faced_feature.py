@@ -177,7 +177,8 @@ class FACEDFeatureDataset(BaseDataset):
         for trial_id in range(len(data)):
             trial_samples = data[
                 trial_id, :
-                num_channel]  # 30(channels), 30s(time points), 5(frequency bands)
+                # 30(channels), 30s(time points), 5(frequency bands)
+                num_channel]
 
             trial_meta_info = {'subject_id': subject_id, 'trial_id': trial_id}
 

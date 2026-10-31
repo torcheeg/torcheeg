@@ -71,7 +71,6 @@ def plot_raw_topomap(tensor: torch.Tensor,
     return np.array(img)
 
 
-
 def plot_feature_topomap(tensor: torch.Tensor,
                          channel_list: List[str],
                          feature_list: Union[List[str], None] = None,

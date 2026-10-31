@@ -14,7 +14,7 @@ class SSTEmotionNet(nn.Module):
     - URL: https://dl.acm.org/doi/abs/10.1145/3394171.3413724
     - Related Project: https://github.com/ziyujia/SST-EmotionNet
     - Related Project: https://github.com/LexieLiu01/SST-Emotion-Net-Pytorch-Version-
-    
+
     Below is a recommended suite for use in emotion recognition tasks:
 
     .. code-block:: python
@@ -68,6 +68,7 @@ class SSTEmotionNet(nn.Module):
         task_dropout (int): Probability of an element to be zeroed in the dropout layers from task-specific classification blocks. (default: :obj:`0.0`)
         num_classes (int): The number of classes to predict. (default: :obj:`2`)
     '''
+
     def __init__(self,
                  grid_size: Tuple[int, int] = (32, 32),
                  spectral_in_channels: int = 5,
@@ -184,7 +185,8 @@ class DenseNet3D(nn.Module):
 
         if reduction != 0.0:
             if not (reduction <= 1.0 and reduction > 0.0):
-                raise ValueError('reduction value must lie between 0.0 and 1.0.')
+                raise ValueError(
+                    'reduction value must lie between 0.0 and 1.0.')
 
         if not ((depth - 4) % 3 == 0):
             raise ValueError('Depth must be 3 N + 4.')
@@ -311,7 +313,8 @@ class DenseBlock(nn.Module):
         layers = []
 
         for i in range(num_layers):
-            convLayer = ConvBlock(num_filters, growth_rate, bottleneck, dropout)
+            convLayer = ConvBlock(
+                num_filters, growth_rate, bottleneck, dropout)
             num_filters = num_filters + growth_rate
             layers.append(convLayer)
 

@@ -5,7 +5,10 @@ import torch
 import torch.nn as nn
 from torch.utils.data import Dataset
 from torch.utils.data.dataloader import DataLoader
-from torcheeg.trainers.imbalance import LALossTrainer, LDAMLossTrainer, EQLossTrainer, FocalLossTrainer, WCELossTrainer
+
+from torcheeg.trainers.imbalance import (EQLossTrainer, FocalLossTrainer,
+                                         LALossTrainer, LDAMLossTrainer,
+                                         WCELossTrainer)
 
 
 class DummyDataset(Dataset):

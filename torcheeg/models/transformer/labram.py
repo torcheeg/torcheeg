@@ -289,7 +289,7 @@ class TemporalConv(nn.Module):
 class LaBraM(nn.Module):
     '''
     Implementation of Large Brain Model (LaBraM) for EEG signal processing.
-    
+
     - Paper: Jiang W, Zhao L, Lu B. Large Brain Model for Learning Generic Representations with Tremendous EEG Data in BCI[C]//The Twelfth International Conference on Learning Representations.
     - URL: https://openreview.net/forum?id=QzTpTRVtrP
     - Related Project: https://github.com/935963004/LaBraM/
@@ -325,6 +325,7 @@ class LaBraM(nn.Module):
         use_abs_pos_emb (bool): If True, use absolute positional embeddings. (default: :obj:`True`)
         **kwargs: Additional keyword arguments
     '''
+
     def __init__(self, chunk_size=1600, patch_size=200, out_chans=8, num_classes=1000, embed_dim=200, depth=12,
                  num_heads=10, mlp_ratio=4., qkv_bias=False, qk_norm=partial(nn.LayerNorm, eps=1e-6), qk_scale=None, drop_rate=0., attn_drop_rate=0.,
                  drop_path_rate=0., norm_layer=partial(nn.LayerNorm, eps=1e-6), init_values=0.0,

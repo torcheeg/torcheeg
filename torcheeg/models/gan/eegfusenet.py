@@ -1,6 +1,6 @@
+import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import torch
 
 
 class EEGfuseNet(nn.Module):
@@ -15,7 +15,7 @@ class EEGfuseNet(nn.Module):
         import torch
 
         from torcheeg.models.gan.eegfusenet import EEGfuseNet
-        
+
         model = EEGfuseNet(num_electrodes=20,
                            hid_channels_gru=16,
                            num_layers_gru=1,
@@ -127,7 +127,8 @@ class EEGfuseNet(nn.Module):
                                                       stride=1,
                                                       padding=0)
         self.deconv1 = nn.ConvTranspose2d(16 * hid_channels_cnn,
-                                          in_channels, (1, int(chunk_size / 2 + 1)),
+                                          in_channels, (1, int(
+                                              chunk_size / 2 + 1)),
                                           stride=1,
                                           padding=(0, int(chunk_size / 4)))
 
@@ -204,7 +205,7 @@ class EFDiscriminator(nn.Module):
     - URL: https://github.com/KAZABANA/EEGfusenet
 
     .. code-block:: python
-    
+
         g_model=EEGfuseNet(num_electrodes=20,hid_channels_gru=16,num_layers_gru=1,hid_channels_cnn=1,chunk_size=128)
         d_model = EFDiscriminator(num_electrodes=20,hid_channels_cnn=1,chunk_size=128)
         X = torch.rand(128,1,20,128)

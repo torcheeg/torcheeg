@@ -97,7 +97,7 @@ class CenterLossTrainer(ClassifierTrainer):
             class Classifier(FBMSNet):
                 def forward(self, x):
                     return self.fc(x)
-                
+
             extractor  = Extractor(num_classes=4,
                                    num_electrodes=22,
                                    chunk_size=512,
@@ -107,12 +107,12 @@ class CenterLossTrainer(ClassifierTrainer):
                                     num_electrodes=22,
                                     chunk_size=512,
                                     in_channels=9)
-            
+
             trainer = CenterLossTrainer(extractor=extractor, 
                                         classifier=classifier,
                                         num_classes=4,
                                         feature_dim=1152)
-        
+
         Args:
             extractor (nn.Module): The extractor which transforms eegsignal into 1D feature code.
             classifier (nn.Module): The classifier that predict from the extractor output which class the siginals belong to.
@@ -164,7 +164,7 @@ class CenterLossTrainer(ClassifierTrainer):
         self.center_loss_val = torchmetrics.MeanMetric()
         self.predict_loss_val = torchmetrics.MeanMetric()
 
-        #test
+        # test
         self.test_loss = torchmetrics.MeanMetric()
         self.center_loss_test = torchmetrics.MeanMetric()
         self.predict_loss_test = torchmetrics.MeanMetric()
@@ -310,7 +310,7 @@ class CenterLossTrainer(ClassifierTrainer):
         y_hat = self.classifier(feat)
         pre_loss = self.ce_fn(y_hat, y)
 
-        #Total loss
+        # Total loss
         loss = pre_loss + self.lammda * centerloss
 
         self.test_loss.update(loss)

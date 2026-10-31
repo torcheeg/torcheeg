@@ -27,6 +27,7 @@ class BCGenerator(nn.Module):
         grid_size (tuple): Spatial dimensions of grid-like EEG representation. (default: :obj:`(9, 9)`)
         num_classes (int): The number of classes. (default: :obj:`2`)
     '''
+
     def __init__(self,
                  in_channels: int = 128,
                  out_channels: int = 4,
@@ -113,6 +114,7 @@ class BCDiscriminator(nn.Module):
         hid_channels (int): The number of hidden nodes in the first fully connected layer. (default: :obj:`32`)
         num_classes (int): The number of classes. (default: :obj:`2`)
     '''
+
     def __init__(self,
                  in_channels: int = 4,
                  grid_size: Tuple[int, int] = (9, 9),

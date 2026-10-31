@@ -93,10 +93,12 @@ class TestBaseModelSelection(unittest.TestCase):
                 target = getattr(model_selection, name)
                 if name[0].isupper():
                     splitter = target(split_path=path, **parameters)
-                    self.assertIsInstance(splitter, model_selection.BaseModelSelection)
+                    self.assertIsInstance(
+                        splitter, model_selection.BaseModelSelection)
                     run = lambda: list(splitter.split(dataset))
                 else:
-                    run = lambda: [target(dataset, split_path=path, **parameters)]
+                    run = lambda: [
+                        target(dataset, split_path=path, **parameters)]
                 original = run()
                 repeated = run()
                 self.assertGreater(len(original), 0)
@@ -104,7 +106,8 @@ class TestBaseModelSelection(unittest.TestCase):
                 covered = set()
                 for first, second in zip(original, repeated):
                     first = first if isinstance(first, tuple) else (first, )
-                    second = second if isinstance(second, tuple) else (second, )
+                    second = second if isinstance(
+                        second, tuple) else (second, )
                     self.assertEqual(len(first), len(second))
                     clips = [set(subset.info['clip_id']) for subset in first]
                     covered.update(set.union(*clips))
@@ -140,7 +143,8 @@ class TestBaseModelSelection(unittest.TestCase):
                     for subset, cached in zip(first, second):
                         pd.testing.assert_frame_equal(subset.info, cached.info)
                         positions = subset.info['clip_id'].astype(int).tolist()
-                        expected = dataset.info.iloc[positions].reset_index(drop=True)
+                        expected = dataset.info.iloc[positions].reset_index(
+                            drop=True)
                         pd.testing.assert_frame_equal(subset.info, expected)
                         np.testing.assert_array_equal(subset[0][0],
                                                       dataset[positions[0]][0])
@@ -155,4 +159,5 @@ class TestBaseModelSelection(unittest.TestCase):
                     with self.assertRaisesRegex(ValueError, 'changed'):
                         run()
                 finally:
-                    dataset.info = dataset.info.iloc[::-1].reset_index(drop=True)
+                    dataset.info = dataset.info.iloc[::-
+                                                     1].reset_index(drop=True)

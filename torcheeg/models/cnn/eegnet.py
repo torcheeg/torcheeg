@@ -26,7 +26,8 @@ class Conv2dWithConstraint(nn.Conv2d):
         super(Conv2dWithConstraint, self).__init__(*args, **kwargs)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        self.weight.data = torch.renorm(self.weight.data, p=2, dim=0, maxnorm=self.max_norm)
+        self.weight.data = torch.renorm(
+            self.weight.data, p=2, dim=0, maxnorm=self.max_norm)
         return super(Conv2dWithConstraint, self).forward(x)
 
 
@@ -88,6 +89,7 @@ class EEGNet(nn.Module):
         kernel_2 (int): The filter size of block 2. (default: :obj:`16`)
         dropout (float): Probability of an element to be zeroed in the dropout layers. (default: :obj:`0.25`)
     '''
+
     def __init__(self,
                  chunk_size: int = 151,
                  num_electrodes: int = 60,
@@ -110,7 +112,8 @@ class EEGNet(nn.Module):
         self.dropout = dropout
 
         self.block1 = nn.Sequential(
-            _Conv2dWithSamePadding(1, self.F1, (1, self.kernel_1), stride=1, padding=(0, 0), bias=False),
+            _Conv2dWithSamePadding(
+                1, self.F1, (1, self.kernel_1), stride=1, padding=(0, 0), bias=False),
             nn.BatchNorm2d(self.F1, momentum=0.01, affine=True, eps=1e-3),
             Conv2dWithConstraint(self.F1,
                                  self.F1 * self.D, (self.num_electrodes, 1),
@@ -123,13 +126,15 @@ class EEGNet(nn.Module):
 
         self.block2 = nn.Sequential(
             _Conv2dWithSamePadding(self.F1 * self.D,
-                      self.F1 * self.D, (1, self.kernel_2),
-                      stride=1,
-                      padding=(0, 0),
-                      bias=False,
-                      groups=self.F1 * self.D),
-            nn.Conv2d(self.F1 * self.D, self.F2, 1, padding=(0, 0), groups=1, bias=False, stride=1),
-            nn.BatchNorm2d(self.F2, momentum=0.01, affine=True, eps=1e-3), nn.ELU(), nn.AvgPool2d((1, 8), stride=8),
+                                   self.F1 * self.D, (1, self.kernel_2),
+                                   stride=1,
+                                   padding=(0, 0),
+                                   bias=False,
+                                   groups=self.F1 * self.D),
+            nn.Conv2d(self.F1 * self.D, self.F2, 1, padding=(0, 0),
+                      groups=1, bias=False, stride=1),
+            nn.BatchNorm2d(self.F2, momentum=0.01, affine=True,
+                           eps=1e-3), nn.ELU(), nn.AvgPool2d((1, 8), stride=8),
             nn.Dropout(p=dropout))
 
         self.lin = nn.Linear(self.feature_dim(), num_classes, bias=False)

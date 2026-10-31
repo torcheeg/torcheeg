@@ -168,5 +168,6 @@ class TestDomainAdaptionTrainer(unittest.TestCase):
         trainer.fit(train_loader, val_loader, max_epochs=2)
         trainer.test(test_loader)
 
+
 if __name__ == '__main__':
     unittest.main()

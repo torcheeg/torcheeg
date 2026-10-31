@@ -1,9 +1,9 @@
 import os
-from pathlib import Path
 import subprocess
 import sys
 import textwrap
 import unittest
+from pathlib import Path
 
 
 class TestUtilsImports(unittest.TestCase):
@@ -32,6 +32,7 @@ class TestUtilsImports(unittest.TestCase):
             assert download_url is utils.download_url
             assert not any(name.startswith('torcheeg.visualizers') for name in sys.modules)
         ''')
+
 
 if __name__ == '__main__':
     unittest.main()

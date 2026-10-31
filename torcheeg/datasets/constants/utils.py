@@ -1,6 +1,6 @@
-import numpy as np
+from typing import Dict, List, Tuple
 
-from typing import List, Tuple, Dict
+import numpy as np
 
 
 def format_region_channel_list(channel_list, region_list):

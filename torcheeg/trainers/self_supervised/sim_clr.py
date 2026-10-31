@@ -46,7 +46,7 @@ class SimCLRTrainer(pl.LightningModule):
         from torcheeg.datasets import DEAPDataset
         from torcheeg import transforms
         from torcheeg.datasets.constants import DEAP_CHANNEL_LOCATION_DICT
-        
+
         contras_dataset = DEAPDataset(
             io_path=f'./io/deap',
             root_path='./data_preprocessed_python',
@@ -83,6 +83,7 @@ class SimCLRTrainer(pl.LightningModule):
 
     .. automethod:: fit
     '''
+
     def __init__(self,
                  extractor: nn.Module,
                  extract_channels: int,
@@ -98,7 +99,7 @@ class SimCLRTrainer(pl.LightningModule):
 
         self.extractor = extractor
         self.projector = self._build_mlp(extract_channels, proj_hid_channels,
-                                  proj_channels)
+                                         proj_channels)
         self.lr = lr
         self.weight_decay = weight_decay
         self.temperature = temperature

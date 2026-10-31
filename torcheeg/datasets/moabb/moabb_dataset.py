@@ -1,14 +1,14 @@
-import os
-import mne
-import logging
-import numpy as np
 import itertools
+import logging
+import os
 from typing import Any, Callable, Dict, Tuple, Union
+
+import mne
+import numpy as np
 import pandas as pd
 
-from ..module.base_dataset import BaseDataset
-
 from ...utils import LazyLoader
+from ..module.base_dataset import BaseDataset
 
 _MOABBDataset = LazyLoader(
     'moabb.datasets.base', install_hint='Install with `pip install moabb`.').BaseDataset
@@ -17,6 +17,7 @@ _MOABBParadigm = LazyLoader(
 
 _log = logging.getLogger('torcheeg')
 
+
 class MOABBDataset(BaseDataset):
     '''
     Mother of all BCI Benchmarks (MoABB) aims at building a comprehensive benchmark of popular Brain-Computer Interface (BCI) algorithms applied on an extensive list of freely availabel EEG datasets. This class implements the conversion of MOABB datasets to TorchEEG datasets, allowing to import any MOABB datasets to use them like TorchEEG datasets.
@@ -24,10 +25,10 @@ class MOABBDataset(BaseDataset):
     A tiny case shows the use of :obj:`MOABBDataset`:
 
     .. code-block:: python
-        
+
         from moabb.datasets import BNCI2014001
         from moabb.paradigms import LeftRightImagery
-        
+
         from torcheeg import transforms
         import torcheeg.datasets.moabb as moabb_dataset
 
@@ -43,7 +44,7 @@ class MOABBDataset(BaseDataset):
                                label_transform=transforms.Compose([
                                    transforms.Select('label')
                                ]))
-    
+
     Args:
         dataset (MOABBDataset): an instance of :obj:`BaseDataset` defined by moabb.
         paradigm (MOABBParadigm): an instance of :obj:`BaseParadigm` defined by moabb.
@@ -60,6 +61,7 @@ class MOABBDataset(BaseDataset):
         download_path (str): The path to download raw data. If set to :obj:`None`, the raw data will be downloaded to :obj:`f'{self.io_path}/raw'`. If the path already exists, the download will be skipped. (default: :obj:`None`)
         num_worker (int): Number of subprocesses to use for data loading. 0 means that the data will be loaded in the main process. (default: :obj:`0`)
     '''
+
     def __init__(self,
                  dataset: _MOABBDataset,
                  paradigm: _MOABBParadigm,
@@ -182,10 +184,10 @@ class MOABBDataset(BaseDataset):
                     end_at = start_at + chunk_size
 
                     yield {
-                            'eeg': t_eeg,
-                            'key': clip_id,
-                            'info': record_info
-                        }
+                        'eeg': t_eeg,
+                        'key': clip_id,
+                        'info': record_info
+                    }
 
     def set_records(self,
                     dataset: _MOABBDataset,

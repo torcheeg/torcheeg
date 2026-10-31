@@ -221,6 +221,7 @@ class SimpleViT(nn.Module):
         mlp_channels (int): The number of hidden nodes in the fully connected layer of each transformer block. (default: :obj:`64`)
         num_classes (int): The number of classes to predict. (default: :obj:`2`)
     '''
+
     def __init__(self,
                  chunk_size: int = 128,
                  grid_size: Tuple[int, int] = (9, 9),

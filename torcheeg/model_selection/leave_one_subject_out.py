@@ -1,7 +1,7 @@
 import os
 import re
-from urllib.parse import quote, unquote
 from typing import Iterator, List, Tuple, Union
+from urllib.parse import quote, unquote
 
 import pandas as pd
 
@@ -9,6 +9,7 @@ from torcheeg.datasets.module.base_dataset import BaseDataset
 
 from .base_model_selection import BaseModelSelection
 from .utils import create_subset, read_indices, validate_groups, write_indices
+
 
 class LeaveOneSubjectOut(BaseModelSelection):
     r'''
@@ -20,7 +21,7 @@ class LeaveOneSubjectOut(BaseModelSelection):
         :align: center
 
     |
-    
+
     .. code-block:: python
 
         from torcheeg.model_selection import LeaveOneSubjectOut
@@ -61,7 +62,8 @@ class LeaveOneSubjectOut(BaseModelSelection):
         subjects = list(pd.unique(info['subject_id']))
         validate_groups(subjects)
         if len(subjects) < 2:
-            raise ValueError('LeaveOneSubjectOut requires at least two subjects.')
+            raise ValueError(
+                'LeaveOneSubjectOut requires at least two subjects.')
         for test_subject in subjects:
             train_subjects = subjects.copy()
             train_subjects.remove(test_subject)

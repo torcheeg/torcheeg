@@ -1,4 +1,4 @@
-from .wgan_gp import WGANGPTrainer, CWGANGPTrainer
 from .beta_vae import BetaVAETrainer, CBetaVAETrainer
-from .ddpm import DDPMTrainer, CDDPMTrainer
-from .glow import GlowTrainer, CGlowTrainer
+from .ddpm import CDDPMTrainer, DDPMTrainer
+from .glow import CGlowTrainer, GlowTrainer
+from .wgan_gp import CWGANGPTrainer, WGANGPTrainer

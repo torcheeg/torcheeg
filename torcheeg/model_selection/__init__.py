@@ -12,9 +12,12 @@ from .split import train_test_split
 from .split_cross_subject import train_test_split_cross_subject
 from .split_cross_trial import train_test_split_cross_trial
 from .split_groupby_trial import train_test_split_groupby_trial
-from .split_per_subject_cross_trial import train_test_split_per_subject_cross_trial
-from .split_per_subject_groupby_trial import train_test_split_per_subject_groupby_trial
-from .split_per_subject_groupby_trial_class import TrainTestSplitPerSubjectGroupbyTrial
+from .split_per_subject_cross_trial import \
+    train_test_split_per_subject_cross_trial
+from .split_per_subject_groupby_trial import \
+    train_test_split_per_subject_groupby_trial
+from .split_per_subject_groupby_trial_class import \
+    TrainTestSplitPerSubjectGroupbyTrial
 from .subcategory import Subcategory
 from .train_val_test_split_cross_subject import TrainValTestSplitCrossSubject
 from .train_val_test_split_cross_trial import TrainValTestSplitCrossTrial

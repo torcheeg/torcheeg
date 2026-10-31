@@ -3,11 +3,13 @@ import unittest
 
 import numpy as np
 
-from torcheeg.datasets import (
-    AMIGOSDataset, BCI2022Dataset, DEAPDataset, DREAMERDataset, FACEDDataset,
-    FACEDFeatureDataset, MAHNOBDataset, MPEDFeatureDataset, SEEDDataset,
-    SEEDFeatureDataset, SEEDIVDataset, SEEDIVFeatureDataset, SEEDVDataset,
-    SEEDVFeatureDataset)
+from torcheeg.datasets import (AMIGOSDataset, BCI2022Dataset, DEAPDataset,
+                               DREAMERDataset, FACEDDataset,
+                               FACEDFeatureDataset, MAHNOBDataset,
+                               MPEDFeatureDataset, SEEDDataset,
+                               SEEDFeatureDataset, SEEDIVDataset,
+                               SEEDIVFeatureDataset, SEEDVDataset,
+                               SEEDVFeatureDataset)
 
 
 class TestEmotionRecognitionDataset(unittest.TestCase):
@@ -66,7 +68,8 @@ class TestEmotionRecognitionDataset(unittest.TestCase):
                     self.assertEqual(info[name], expected)
                     self.assertIsInstance(info[name], int)
                 self.assertEqual(info['emotion'], emotion)
-                self.assertEqual(info['clip_id'], os.path.basename(record) + '_0')
+                self.assertEqual(
+                    info['clip_id'], os.path.basename(record) + '_0')
                 self.assertEqual(item['eeg'].shape, (62, 800))
 
     def test_seed_v_feature_dataset(self):

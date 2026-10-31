@@ -9,7 +9,8 @@ from .test_utils import _make_dataset
 
 class TestTrainValTestSplitCrossTrial(unittest.TestCase):
     _splitter_class = TrainValTestSplitCrossTrial
-    _parameters = {'train_trials': [0, 1, 2], 'val_trials': [3], 'test_trials': [4]}
+    _parameters = {'train_trials': [0, 1, 2],
+                   'val_trials': [3], 'test_trials': [4]}
     _fold_count = 1
     _group_column = 'trial_id'
     _metadata_column = 'trial_id'
@@ -55,7 +56,8 @@ class TestTrainValTestSplitCrossTrial(unittest.TestCase):
 
     def test_unknown_partition_ids_are_rejected(self):
         with self.assertRaisesRegex(ValueError, 'Unknown'):
-            list(self._make_splitter(train_trials=[0, 1, 99]).split(_make_dataset()))
+            list(self._make_splitter(train_trials=[
+                 0, 1, 99]).split(_make_dataset()))
 
     def test_unassigned_ids_can_be_intentionally_excluded(self):
         train, val, test = next(

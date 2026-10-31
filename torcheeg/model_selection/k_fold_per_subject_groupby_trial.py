@@ -1,7 +1,7 @@
 import os
 import re
+from typing import Dict, Iterator, List, Tuple, Union
 from urllib.parse import quote, unquote
-from typing import Iterator, Dict, List, Tuple, Union
 
 import pandas as pd
 from sklearn import model_selection
@@ -10,6 +10,7 @@ from torcheeg.datasets.module.base_dataset import BaseDataset
 
 from .base_model_selection import BaseModelSelection
 from .utils import create_subset, read_indices, validate_groups, write_indices
+
 
 class KFoldPerSubjectGroupbyTrial(BaseModelSelection):
     r'''
@@ -46,7 +47,7 @@ class KFoldPerSubjectGroupbyTrial(BaseModelSelection):
             train_loader = DataLoader(train_dataset)
             test_loader = DataLoader(test_dataset)
             ...
-    
+
     :obj:`KFoldPerSubjectGroupbyTrial` allows the user to specify the index of the subject of interest, when the user need to report the performance on each subject.
 
     .. code-block:: python
@@ -123,7 +124,8 @@ class KFoldPerSubjectGroupbyTrial(BaseModelSelection):
             for i in subject_train_infos.keys():
                 subject_train_info = pd.concat(subject_train_infos[i],
                                                ignore_index=False)
-                subject_test_info = pd.concat(subject_test_infos[i], ignore_index=False)
+                subject_test_info = pd.concat(
+                    subject_test_infos[i], ignore_index=False)
                 write_indices(
                     os.path.join(
                         split_path,

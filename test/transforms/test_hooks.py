@@ -3,8 +3,8 @@ import unittest
 import numpy as np
 import torch
 
-from torcheeg.transforms import (after_hook_normalize, after_hook_running_norm,
-                                 after_hook_linear_dynamical_system,
+from torcheeg.transforms import (after_hook_linear_dynamical_system,
+                                 after_hook_normalize, after_hook_running_norm,
                                  before_hook_normalize)
 
 

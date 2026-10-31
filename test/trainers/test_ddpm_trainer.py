@@ -89,8 +89,9 @@ class TestDDPMTrainer(unittest.TestCase):
         # Prepare minimal datasets and dataloaders for testing
         self.train_dataset = DummyDataset(length=10)  # Reduced dataset size
         self.val_dataset = DummyDataset(length=10)
-        
-        self.train_loader = DataLoader(self.train_dataset, batch_size=4)  # Smaller batch size
+
+        self.train_loader = DataLoader(
+            self.train_dataset, batch_size=4)  # Smaller batch size
         self.val_loader = DataLoader(self.val_dataset, batch_size=4)
 
     def test_ddpm_trainer_basic(self):
@@ -104,10 +105,10 @@ class TestDDPMTrainer(unittest.TestCase):
             metrics=['fid', 'is'],
             accelerator='cpu'
         )
-        
+
         # Only test single training step
         trainer.training_step(next(iter(self.train_loader)), batch_idx=0)
-        
+
         # Only test single validation step
         trainer.validation_step(next(iter(self.val_loader)), batch_idx=0)
 
@@ -122,10 +123,10 @@ class TestDDPMTrainer(unittest.TestCase):
             metrics=['fid', 'is'],
             accelerator='cpu'
         )
-        
+
         # Only test single training step
         trainer.training_step(next(iter(self.train_loader)), batch_idx=0)
-        
+
         # Only test single validation step
         trainer.validation_step(next(iter(self.val_loader)), batch_idx=0)
 
