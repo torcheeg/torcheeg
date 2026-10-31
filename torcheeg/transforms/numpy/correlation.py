@@ -142,43 +142,18 @@ class PhaseLockingValue(CorrelationTransform):
         Returns:
             Dict[str, np.ndarray]: Pairwise PLV matrices under the ``eeg`` key,
             and under ``baseline`` when baseline transformation is enabled.
-
-        Raises:
-            ValueError: If transformed input is empty, complex, nonfinite, or
-                has a zero-amplitude analytic sample.
         '''
         return super().__call__(*args, eeg=eeg, baseline=baseline, **kwargs)
 
-    def apply(self, eeg: np.ndarray, **kwargs) -> np.ndarray:
-        eeg = np.asarray(eeg)
-        if eeg.ndim not in (2, 3) or any(size == 0 for size in eeg.shape):
-            raise ValueError(
-                'PhaseLockingValue requires nonempty [electrodes, time points] '
-                'or [bands, electrodes, time points] input.')
-        self._validate_signal(eeg)
-        return super().apply(eeg, **kwargs)
-
-    @staticmethod
-    def _validate_signal(signal: np.ndarray):
-        if (not np.issubdtype(signal.dtype, np.number)
-                or np.iscomplexobj(signal) or not np.isfinite(signal).all()):
-            raise ValueError('PhaseLockingValue requires finite real signals.')
-
     def opt(self, x: np.ndarray, y: np.ndarray) -> float:
-        phases = []
-        for signal in (np.asarray(x), np.asarray(y)):
-            if signal.ndim != 1 or signal.size == 0:
-                raise ValueError('PhaseLockingValue requires nonempty 1D signals.')
-            self._validate_signal(signal)
-            analytic = hilbert(signal)
-            if (not np.isfinite(analytic).all()
-                    or np.any(np.abs(analytic) == 0)):
+        x_hill = hilbert(x)
+        y_hill = hilbert(y)
+        for analytic in (x_hill, y_hill):
+            if not np.isfinite(analytic).all() or np.any(np.abs(analytic) == 0):
                 raise ValueError(
                     'PhaseLockingValue requires finite analytic signals with '
                     'nonzero amplitude at every sample.')
-            phases.append(np.angle(analytic).astype(np.float64))
-        if phases[0].shape != phases[1].shape:
-            raise ValueError('PhaseLockingValue requires signals of equal length.')
-        phase_vectors = np.exp(1j * (phases[0] - phases[1]))
-        value = np.abs(np.mean(phase_vectors))
+        phase_difference = (np.angle(x_hill).astype(np.float64) -
+                            np.angle(y_hill).astype(np.float64))
+        value = np.abs(np.mean(np.exp(1j * phase_difference)))
         return float(np.clip(value, 0.0, 1.0))
