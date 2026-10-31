@@ -96,8 +96,8 @@ Sleep-EDF Fpz-Cz at 100 Hz, explicit 0.3--40 Hz whole-record filtering and
 256 give 29 frames; dropping DC leaves 128 positive bins. Compute the
 one-sided microvolt-squared/Hz PSD and log it with a ``1e-12`` floor.
 
-Choose fixed, nonoverlapping contiguous 20-epoch contexts without stage-based
-selection. Hold out the final subject including all nights. Fit per-bin/channel
+Choose nonoverlapping contiguous 20-epoch contexts evenly across valid fixed-
+stride candidates throughout each recording, without stage-based selection. Hold out the final subject including all nights. Fit per-bin/channel
 statistics only on training subjects. W/N1/N2/N3/REM map to 0/1/2/3/4. The
 checkpoint includes complete model/optimizer/RNG, training statistics, physical
 identities, hashes and held-out predictions, with atomic no-overwrite export.

@@ -10,8 +10,9 @@ Fpz-Cz in volts, filters each complete record at 0.3--40 Hz and resamples to
 Drop DC to retain 128 positive-frequency bins, log the power spectral density.
 Each epoch has 29 frames. There is no learned spectral condenser.
 
-Take up to four nonoverlapping 20-epoch contexts per physical recording, at
-fixed 60-epoch candidate strides. Reject any context crossing an unscored gap.
+Take up to four evenly spaced, nonoverlapping 20-epoch contexts across each
+physical recording, from fixed 60-epoch candidate strides. Reject any context
+crossing an unscored gap.
 No stage-based window selection or padding is used. Hold out the last sorted
 subject, including all of that subject's nights. Fit per-frequency/channel
 mean and population standard deviation using training subjects only. Map
@@ -85,12 +86,19 @@ def select_contexts(dataset, max_contexts=4, context_stride=60):
     for (subject, record), group in info.groupby(
         ['subject_id', 'record_id'], sort=True
     ):
-        count = 0
+        candidates = []
         for first in range(0, len(group) - 19, context_stride):
             rows = group.iloc[first : first + 20]
             starts = rows.start_at.to_numpy(dtype=float)
             if not np.allclose(np.diff(starts), 30, rtol=0, atol=1e-6):
                 continue
+            candidates.append(rows)
+        positions = np.linspace(
+            0, len(candidates) - 1, min(max_contexts, len(candidates)), dtype=int
+        )
+        for position in positions:
+            rows = candidates[position]
+            starts = rows.start_at.to_numpy(dtype=float)
             sequence = []
             for _, row in rows.iterrows():
                 eeg = dataset.read_eeg(str(row['_record_id']), str(row['clip_id']))
@@ -101,9 +109,6 @@ def select_contexts(dataset, max_contexts=4, context_stride=60):
             identities.append(
                 dict(subject=str(subject), record=str(record), onsets=starts.tolist())
             )
-            count += 1
-            if count == max_contexts:
-                break
     if not features:
         raise ValueError('No complete contiguous 20-epoch context found.')
     return torch.stack(features), torch.stack(labels), identities
@@ -247,6 +252,9 @@ def main():
         log_floor=1e-12,
         labels=STAGES,
         normalization='training subjects only, population mean/std per frequency/channel',
+        context_selection='evenly spaced valid fixed-stride candidates across each record; label independent',
+        train_stage_counts=torch.bincount(train_labels.flatten(), minlength=5).tolist(),
+        test_stage_counts=torch.bincount(test_labels.flatten(), minlength=5).tolist(),
         context_stride=args.context_stride,
         max_contexts_per_record=args.max_contexts,
         train_context_ids=[identities[i] for i in train_indices],

@@ -99,6 +99,23 @@ class TestSleepEDFSleepTransformer(unittest.TestCase):
         with self.assertRaises(ValueError):
             workflow.select_contexts(fixture, 1, 19)
 
+    def test_time_sampling_covers_entire_record_without_stage_selection(self):
+        fixture = _ScoredEpochs()
+        first = fixture.info[fixture.info.subject_id == 'SC400'].copy()
+        rows = []
+        for i in range(200):
+            row = first.iloc[0].to_dict()
+            row.update(
+                start_at=float(i * 30), end_at=float((i + 1) * 30), clip_id=str(i)
+            )
+            rows.append(row)
+        fixture.info = pd.DataFrame(rows)
+        _, _, identities = workflow.select_contexts(fixture, 2, 60)
+        self.assertEqual([row['onsets'][0] for row in identities], [0.0, 5400.0])
+        fixture.info['label'] = 'Sleep stage R'
+        _, _, changed = workflow.select_contexts(fixture, 2, 60)
+        self.assertEqual(identities, changed)
+
     def test_training_statistics_exclude_held_out_subject(self):
         train = torch.randn(3, 20, 29, 128, 1)
         held_out = torch.full((1, 20, 29, 128, 1), 1e5)
