@@ -97,3 +97,4 @@ the same library workflow as a reusable assistant skill.
    eegwavenet
    mscformer
    tmsanet
+   adfcnn

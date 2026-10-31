@@ -1,0 +1,45 @@
+name: ADFCNN complete author network
+
+on:
+  pull_request:
+    paths:
+      - 'torcheeg/models/cnn/adfcnn.py'
+      - 'torcheeg/models/cnn/__init__.py'
+      - 'test/models/test_adfcnn*.py'
+      - 'test/examples/test_bciciv2a_adfcnn.py'
+      - 'examples/examples_bciciv2a_adfcnn.py'
+      - 'docs/source/user_guide/adfcnn.rst'
+      - '.github/workflows/adfcnn-native.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  adfcnn:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      OMP_NUM_THREADS: '2'
+      MPLBACKEND: Agg
+      TORCHEEG_ADFCNN_SOURCE: external/model
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11'
+      - name: Obtain and hash the complete separate author file
+        run: |
+          mkdir -p external/model
+          curl --fail --location --retry 3 https://raw.githubusercontent.com/UM-Tao/ADFCNN-MI/b4796ca3a93075e8da9dac5860ea6346f79d5a09/ADFCNN/model/ADFCNN.py --output external/model/ADFCNN.py
+          curl --fail --location --retry 3 https://raw.githubusercontent.com/UM-Tao/ADFCNN-MI/b4796ca3a93075e8da9dac5860ea6346f79d5a09/ADFCNN/model/layers.py --output external/model/layers.py
+          echo '85b9d40dd7d994539456ff94d87f75ba7f08f789503d4006ec128ca76e611c31  external/model/ADFCNN.py' | sha256sum --check
+          echo '7db116eaa6046ba56d73f6aeafbda07b220c71b8afd5ba105469b97310b211a4  external/model/layers.py' | sha256sum --check
+      - name: Install matching CPU dependencies
+        run: |
+          python -m pip install torch==2.6.0 torchvision==0.21.0 --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install torch-scatter==2.1.2 torch-sparse==0.6.18 --only-binary=:all: --find-links https://data.pyg.org/whl/torch-2.6.0+cpu.html
+          python -m pip install -e '.[model,dataset]'
+      - name: Compare the full original network and independent workflow
+        run: |
+          python -m unittest test.models.test_adfcnn test.models.test_adfcnn_native test.examples.test_bciciv2a_adfcnn

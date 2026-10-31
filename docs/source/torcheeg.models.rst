@@ -25,6 +25,7 @@ Convolutional Neural Networks
    IFNet
    IFNetV2
    EEGWaveNet
+   ADFCNN
    FBMSNet
    MTCNN
    STNet
