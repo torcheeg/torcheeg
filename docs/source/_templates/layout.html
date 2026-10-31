@@ -1,0 +1,7 @@
+{# Use the theme's PyData layout with TorchEEG metadata and theme assets. #}
+{% extends "pydata_sphinx_theme/layout.html" %}
+
+{% block extrahead %}
+{{ super() }}
+<meta name="description" content="TorchEEG documentation: EEG datasets, preprocessing, evaluation, models, and training with PyTorch.">
+{% endblock %}

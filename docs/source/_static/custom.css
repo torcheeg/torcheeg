@@ -1,15 +1,13 @@
-/* 
-`width:auto` was rendering 0px wide for .svg files
-https://stackoverflow.com/questions/59215996/how-to-add-a-logo-to-my-readthedocs-logo-rendering-at-0px-wide
-*/
-.wy-side-nav-search .wy-dropdown > a img.logo, .wy-side-nav-search > a img.logo {
+:root {
+    --header-height: 0px;
+    --header-height-desktop: 0px;
+}
+
+.navbar-brand.logo img {
     width: 145px;
+    max-height: 40px;
 }
 
-.sphx-glr-thumbcontainer {
-    width: 100% !important;
-}
-
-article.pytorch-article .sphx-glr-download-link-note.admonition.note, article.pytorch-article .reference.download.internal, article.pytorch-article .sphx-glr-signature {
-    display: block !important;
+.bd-header {
+    top: 0;
 }

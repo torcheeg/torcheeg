@@ -1,75 +1,170 @@
-Installation
-====================================
+Install TorchEEG
+================
 
-TorchEEG depends on PyTorch, please complete the installation of PyTorch (>=1.8.1)
-according to the system, CUDA version and other information:
+TorchEEG is a Python 3 library for EEG analysis with PyTorch.
+Use Python 3.10 for the installation steps on this page.
 
-.. code:: shell
+The package is available on `PyPI <https://pypi.org/project/torcheeg/>`_
+and `Anaconda <https://anaconda.org/tczhangzhi/torcheeg>`_.
+The source code is available on `GitHub
+<https://github.com/torcheeg/torcheeg>`_.
 
-   # Conda
-   # please refer to https://pytorch.org/get-started/locally/
-   # e.g. CPU version
-   conda install pytorch==1.11.0 torchvision torchaudio cpuonly -c pytorch
-   # e.g. GPU version
-   conda install pytorch==1.11.0 torchvision torchaudio cudatoolkit=11.3 -c pytorch
+Choose pip for a release, conda for a managed environment, or source code
+for development.
 
-   # Pip
-   # please refer to https://pytorch.org/get-started/previous-versions/
-   # e.g. CPU version
-   pip install torch==1.11.0+cpu torchvision==0.12.0+cpu torchaudio==0.11.0 --extra-index-url https://download.pytorch.org/whl/cpu
-   # e.g. GPU version
-   pip install torch==1.11.0+cu113 torchvision==0.12.0+cu113 torchaudio==0.11.0 --extra-index-url https://download.pytorch.org/whl/cu113
+Install PyTorch
+---------------
 
-Anaconda
-~~~~~~~~
+Install PyTorch before you install TorchEEG.
+Use the `PyTorch installation guide <https://pytorch.org/get-started/locally/>`_
+to select your operating system and compute platform.
+Run its installation command in your Python environment.
 
-TorchEEG supports installing with conda! You can
-simply install TorchEEG using Anaconda, just run the following command:
+For an NVIDIA GPU:
 
-.. code:: shell
+1. Install an NVIDIA driver that supports your selected PyTorch CUDA build.
+2. Select the CUDA build in the PyTorch installation guide.
+3. Run the installation command from the guide.
+
+Install with pip
+----------------
+
+Install TorchEEG with pip:
+
+.. code-block:: shell
+
+   python -m pip install torcheeg
+
+Add the ``moabb`` plugin to load public EEG datasets through
+`MOABB <https://moabb.neurotechx.com/>`_:
+
+.. code-block:: shell
+
+   python -m pip install "torcheeg[moabb]"
+
+Add the ``pyg`` plugin to use graph transforms and graph neural networks.
+First, follow the `PyTorch Geometric installation guide
+<https://pytorch-geometric.readthedocs.io/en/latest/install/installation.html>`_
+to install extension wheels for your PyTorch version and compute platform.
+Then install the plugin:
+
+.. code-block:: shell
+
+   python -m pip install "torcheeg[pyg]"
+
+Combine plugin names to install both:
+
+.. code-block:: shell
+
+   python -m pip install "torcheeg[pyg,moabb]"
+
+Install all plugins and test tools:
+
+.. code-block:: shell
+
+   python -m pip install "torcheeg[all]"
+
+Install with conda
+------------------
+
+Create and activate a Python environment:
+
+.. code-block:: shell
+
+   conda create -n torcheeg python=3.10 pip
+   conda activate torcheeg
+
+Install PyTorch in this environment with the command from its installation
+guide. Then install TorchEEG:
+
+.. code-block:: shell
 
    conda install -c tczhangzhi -c conda-forge torcheeg
 
-Pip
-~~~
+Use pip in the active conda environment to add plugins:
 
-TorchEEG allows pip-based installation, please use the following
-command:
+.. code-block:: shell
 
-.. code:: shell
+   python -m pip install "torcheeg[moabb]"
 
-   pip install torcheeg
+For graph support, install the matching PyG extension wheels as described
+above. Then run:
 
-Nightly
-~~~~~~~
+.. code-block:: shell
 
-In case you want to experiment with the latest TorchEEG features which
-are not fully released yet, please run the following command to install
-from the main branch on github:
+   python -m pip install "torcheeg[pyg]"
 
-.. code:: shell
+Install from source
+-------------------
 
-   pip install git+https://github.com/tczhangzhi/torcheeg.git
+Install the development version directly from GitHub:
 
-Plugin
-~~~~~~
+.. code-block:: shell
 
-TorchEEG provides plugins related to graph algorithms for converting EEG
-in datasets into graph structures and analyzing them using graph neural
-networks. This part of the implementation relies on PyG.
+   python -m pip install "git+https://github.com/torcheeg/torcheeg.git@main"
 
-If you do not use graph-related algorithms, you can skip this part of
-the installation.
+To edit the code, clone the repository and open its directory:
 
-.. code:: shell
+.. code-block:: shell
 
-   # Conda
-   # please refer to https://pytorch-geometric.readthedocs.io/en/latest/notes/installation.html
-   conda install pyg -c pyg
+   git clone https://github.com/torcheeg/torcheeg.git
+   cd torcheeg
 
-   # Pip
-   # please refer to https://pytorch-geometric.readthedocs.io/en/latest/notes/installation.html
-   # e.g. CPU version
-   pip install torch-scatter torch-sparse torch-cluster torch-spline-conv torch-geometric -f https://data.pyg.org/whl/torch-1.11.0+cpu.html
-   # e.g. GPU version
-   pip install torch-scatter torch-sparse torch-cluster torch-spline-conv torch-geometric -f https://data.pyg.org/whl/torch-1.11.0+cu113.html
+Install the local source in editable mode:
+
+.. code-block:: shell
+
+   python -m pip install -e .
+
+Python then uses the source files in this directory.
+Your code changes take effect when you start a new Python process.
+
+Use these plugin names with pip or a source installation:
+
+* ``pyg``: PyG graph transforms and graph neural networks.
+* ``moabb``: MOABB datasets.
+* ``transforms``: signal resampling with soxr.
+* ``trainer``: optional metrics for generative trainers.
+* ``test``: development test tools.
+
+For MOABB support:
+
+.. code-block:: shell
+
+   python -m pip install -e ".[moabb]"
+
+For graph support, install the matching PyG extension wheels. Then run:
+
+.. code-block:: shell
+
+   python -m pip install -e ".[pyg]"
+
+Install all plugins and test tools:
+
+.. code-block:: shell
+
+   python -m pip install -e ".[all]"
+
+Install the documentation dependencies to build the documentation:
+
+.. code-block:: shell
+
+   python -m pip install -r docs/requirements.txt
+
+Check the installation
+----------------------
+
+Run this command to display the installed versions:
+
+.. code-block:: shell
+
+   python -c "import torch, torcheeg; print(torch.__version__, torcheeg.__version__)"
+
+Check the dependency requirements:
+
+.. code-block:: shell
+
+   python -m pip check
+
+Continue with the :doc:`user_guide/index` or :doc:`tutorials/index`.
+See the :doc:`contributing` for development and testing instructions.
