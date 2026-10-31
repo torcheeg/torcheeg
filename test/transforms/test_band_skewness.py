@@ -8,8 +8,12 @@ from scipy.stats import skew
 
 from torcheeg.transforms import BandSkewness
 
-
-BANDS = {'theta': (4, 8), 'alpha': (8, 14), 'beta': (14, 31), 'gamma': (31, 45)}
+BANDS = {
+    'theta': (4, 8),
+    'alpha': (8, 14),
+    'beta': (14, 31),
+    'gamma': (31, 45),
+}
 
 
 def reference_features(eeg):
@@ -65,7 +69,8 @@ class TestBandSkewness(unittest.TestCase):
 
     def test_zero_energy_retains_undefined_population_skewness(self):
         with np.errstate(invalid='ignore', divide='ignore'):
-            actual = BandSkewness(band_dict=BANDS)(eeg=np.zeros((2, 128)))['eeg']
+            actual = BandSkewness(band_dict=BANDS)(
+                eeg=np.zeros((2, 128)))['eeg']
         self.assertEqual(actual.shape, (2, 4))
         self.assertTrue(np.isnan(actual).all())
 
