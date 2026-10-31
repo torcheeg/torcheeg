@@ -28,11 +28,12 @@ class TestEmotionRecognitionDataset(unittest.TestCase):
         from unittest.mock import patch
 
         from torcheeg.datasets import BaseDataset
-        from torcheeg.datasets.utils import get_locations
+        from torcheeg.datasets.utils import get_locations, get_positions
 
         self.assertEqual(len(SEEDDataset.channels), 62)
         self.assertEqual(SEEDDataset.channels[:3], ['FP1', 'FPZ', 'FP2'])
-        self.assertEqual(set(SEEDDataset.positions), set(SEEDDataset.channels))
+        self.assertEqual(set(get_positions(SEEDDataset.channels)),
+                         set(SEEDDataset.channels))
         transform = transforms.ToGrid(get_locations(
             SEEDDataset.channels, SEEDDataset.grid))
         with patch.object(BaseDataset, '__init__', return_value=None):

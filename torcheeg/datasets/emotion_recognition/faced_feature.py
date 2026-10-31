@@ -6,7 +6,6 @@ import numpy as np
 
 from ...utils import get_random_dir_path
 from ..base_dataset import BaseDataset
-from ..utils import get_positions
 from .faced import _EMOTION_DICT, _VALENCE_DICT
 
 
@@ -135,8 +134,6 @@ class FACEDFeatureDataset(BaseDataset):
         'OZ': ['PO3', 'PO4', 'O2', 'O1'],
         'O2': ['PO4', 'OZ']
     }
-
-    positions = get_positions(channels)
 
     def _rename_pkl_files(self, root_path):
         for dirpath, dirnames, filenames in os.walk(root_path):

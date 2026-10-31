@@ -6,7 +6,6 @@ import numpy as np
 
 from ...utils import get_random_dir_path
 from ..base_dataset import BaseDataset
-from ..utils import get_positions
 
 _FIRST_BATCH_CHANNEL = [
     'FP1', 'FP2', 'FZ', 'F3', 'F4', 'F7', 'F8', 'FC1', 'FC2', 'FC5', 'FC6',
@@ -241,8 +240,6 @@ class BCI2022Dataset(BaseDataset):
         'OZ': ['PO3', 'PO4', 'O2', 'O1'],
         'O2': ['PO4', 'OZ']
     }
-
-    positions = get_positions(channels)
 
     def __init__(self,
                  root_path: str = './2022EmotionPublic/TrainSet/',

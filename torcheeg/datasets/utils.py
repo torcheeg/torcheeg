@@ -111,7 +111,7 @@ def compute_fingerprint(dataset_class, configuration, records, io_path):
         for name in ('set_records', 'read_record', 'process_record')
     ]
     metadata = {}
-    for name in ('channels', 'grid', 'positions', 'adjacency'):
+    for name in ('channels', 'grid', 'adjacency'):
         try:
             metadata[name] = getattr(dataset_class, name)
         except NotImplementedError:

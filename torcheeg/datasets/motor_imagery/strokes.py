@@ -9,7 +9,7 @@ from scipy.io import loadmat
 
 from ...utils import get_random_dir_path
 from ..base_dataset import BaseDataset
-from ..utils import get_grid_adjacency, get_positions
+from ..utils import get_grid_adjacency
 
 
 class StrokePatientsMIDataset(BaseDataset):
@@ -78,8 +78,6 @@ class StrokePatientsMIDataset(BaseDataset):
             ['-',    'O1',  'Oz',   'O2',    '-']]
 
     adjacency = get_grid_adjacency(grid)
-
-    positions = get_positions(channels)
 
     def __init__(
         self,
@@ -346,8 +344,6 @@ class StrokePatientsMIProcessedDataset(StrokePatientsMIDataset):
             ['-',    'O1',  'Oz',   'O2',    '-']]
 
     adjacency = get_grid_adjacency(grid)
-
-    positions = get_positions(channels)
 
     def __init__(self,
                  root_path='./StrokePatientsMIDataset',

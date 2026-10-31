@@ -6,7 +6,6 @@ import scipy.io as scio
 
 from ...utils import get_random_dir_path
 from ..base_dataset import BaseDataset
-from ..utils import get_positions
 
 
 class DREAMERDataset(BaseDataset):
@@ -140,8 +139,6 @@ class DREAMERDataset(BaseDataset):
         'O1': ['O2'],
         'O2': ['O1']
     }
-
-    positions = get_positions(channels)
 
     def __init__(self,
                  mat_path: str = './DREAMER.mat',

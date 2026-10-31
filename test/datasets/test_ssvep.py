@@ -2,7 +2,7 @@ import unittest
 
 from torcheeg import transforms
 from torcheeg.datasets import SanDiegoSSVEPDataset, TSUBenckmarkDataset
-from torcheeg.datasets.utils import get_locations
+from torcheeg.datasets.utils import get_locations, get_positions
 
 
 class TestSSVEPDataset(unittest.TestCase):
@@ -10,7 +10,7 @@ class TestSSVEPDataset(unittest.TestCase):
         channels = TSUBenckmarkDataset.channels
         self.assertEqual([channels[i] for i in (32, 42, 59, 63)],
                          ['M1', 'M2', 'CB1', 'CB2'])
-        self.assertEqual(set(TSUBenckmarkDataset.positions), set(channels))
+        self.assertEqual(set(get_positions(channels)), set(channels))
 
     def test_tsu_benchmark_dataset(self):
         kwargs = {

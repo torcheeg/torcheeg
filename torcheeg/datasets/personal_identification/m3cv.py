@@ -7,7 +7,6 @@ import scipy.io as scio
 
 from ...utils import get_random_dir_path
 from ..base_dataset import BaseDataset
-from ..utils import get_positions
 
 
 class M3CVDataset(BaseDataset):
@@ -207,8 +206,6 @@ class M3CVDataset(BaseDataset):
         'OZ': ['PO3', 'O1', 'POZ', 'PO4', 'O2'],
         'O2': ['POZ', 'OZ', 'PO4']
     }
-
-    positions = get_positions(channels)
 
     def __init__(self,
                  root_path: str = './aistudio',

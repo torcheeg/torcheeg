@@ -7,7 +7,7 @@ import scipy.io as scio
 
 from ...utils import get_random_dir_path
 from ..base_dataset import BaseDataset
-from ..utils import get_grid_adjacency, get_positions
+from ..utils import get_grid_adjacency
 
 _log = logging.getLogger('torcheeg')
 
@@ -84,24 +84,6 @@ class BCICIV2aDataset(BaseDataset):
             ['-',  '-',  '-',  '16', '-',  '-',  '-']]
 
     adjacency = get_grid_adjacency(grid)
-
-    positions = get_positions(channels, {'0': 'FC3',
-                                         '1': 'FC1',
-                                         '2': 'FCZ',
-                                         '3': 'FC2',
-                                         '4': 'FC4',
-                                         '5': 'C5',
-                                         '6': 'C1',
-                                         '7': 'C2',
-                                         '8': 'C6',
-                                         '9': 'CP3',
-                                         '10': 'CP1',
-                                         '11': 'CPZ',
-                                         '12': 'CP2',
-                                         '13': 'CP4',
-                                         '14': 'P1',
-                                         '15': 'P2',
-                                         '16': 'POZ'})
 
     def __init__(self,
                  root_path: str = './BCICIV_2a_mat',

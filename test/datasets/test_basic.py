@@ -389,7 +389,7 @@ class TestLazyDatasetCopy(unittest.TestCase):
 
 class TestDatasetMetadata(unittest.TestCase):
     def test_missing_metadata_raises_on_class_access(self):
-        for name in ('channels', 'grid', 'positions', 'adjacency'):
+        for name in ('channels', 'grid', 'adjacency'):
             with self.subTest(attribute=name):
                 with self.assertRaisesRegex(
                         NotImplementedError,
@@ -482,8 +482,6 @@ class TestDatasetMetadata(unittest.TestCase):
             with self.subTest(dataset=cls.__name__):
                 self.assertEqual(inspect.signature(
                     cls.__init__).parameters['channels'].default, cls.channels)
-                with self.assertRaises(NotImplementedError):
-                    cls.positions
 
     def test_grid_adjacency_ignores_empty_cells_and_includes_diagonals(self):
         from torcheeg.datasets.utils import get_grid_adjacency

@@ -6,7 +6,6 @@ import pandas as pd
 
 from ...utils import get_random_dir_path
 from ..base_dataset import BaseDataset
-from ..utils import get_positions
 
 
 class AVEDProcessedDataset(BaseDataset):
@@ -151,8 +150,6 @@ class AVEDProcessedDataset(BaseDataset):
                  'T6': ['TP8'],
                  'TP7': ['T3', 'T5'],
                  'TP8': ['T4', 'T6']}
-
-    positions = get_positions(channels)
 
     def __init__(self,
                  root_path: str = './eeg_preproc',

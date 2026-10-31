@@ -6,7 +6,6 @@ from scipy.io import loadmat
 
 from ...utils import get_random_dir_path
 from ..base_dataset import BaseDataset
-from ..utils import get_positions
 
 
 class KULProcessedDataset(BaseDataset):
@@ -220,8 +219,6 @@ class KULProcessedDataset(BaseDataset):
                  'T8': ['FC6', 'FT8', 'C6', 'CP6', 'TP8'],
                  'TP7': ['T7', 'C5', 'CP5', 'P7', 'P5'],
                  'TP8': ['C6', 'T8', 'CP6', 'P6', 'P8']}
-
-    positions = get_positions(channels)
 
     def __init__(self,
                  root_path: str = './preprocessed_data',

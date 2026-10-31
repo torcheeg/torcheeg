@@ -7,7 +7,6 @@ import scipy.io as scio
 
 from ...utils import get_random_dir_path
 from ..base_dataset import BaseDataset
-from ..utils import get_positions
 
 
 class TSUBenckmarkDataset(BaseDataset):
@@ -193,8 +192,6 @@ class TSUBenckmarkDataset(BaseDataset):
         'CB1': ['O1', 'OZ'],
         'CB2': ['O2', 'OZ']
     }
-
-    positions = get_positions(channels)
 
     def __init__(self,
                  root_path: str = './TSUBenchmark',

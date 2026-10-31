@@ -34,7 +34,6 @@ class BaseDataset(Dataset):
 
     channels = _RequiredMetadata()
     grid = _RequiredMetadata()
-    positions = _RequiredMetadata()
     adjacency = _RequiredMetadata()
 
     def __init__(self,

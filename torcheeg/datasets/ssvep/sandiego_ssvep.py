@@ -7,7 +7,6 @@ from scipy.io import loadmat
 
 from ...utils import get_random_dir_path
 from ..base_dataset import BaseDataset
-from ..utils import get_positions
 
 
 class SanDiegoSSVEPDataset(BaseDataset):
@@ -81,8 +80,6 @@ class SanDiegoSSVEPDataset(BaseDataset):
 
     frequencies = [9.25, 11.25, 13.25, 9.75,
                    11.75, 13.75, 10.25, 12.25, 14.25, 10.75, 12.75, 14.75]
-
-    positions = get_positions(channels)
 
     def __init__(self,
                  root_path='./archive',

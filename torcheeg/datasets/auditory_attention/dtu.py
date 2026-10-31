@@ -7,7 +7,6 @@ from scipy.io import loadmat
 
 from ...utils import get_random_dir_path
 from ..base_dataset import BaseDataset
-from ..utils import get_positions
 
 
 def _apply_notch_filter(eeg_data: np.ndarray, fs: float, notch_freq: float = 50.0) -> np.ndarray:
@@ -324,8 +323,6 @@ class DTUDataset(BaseDataset):
                  'TP8': ['C6', 'T8', 'CP6', 'P6', 'P8']}
 
     mastoid_channels = ['EXG1', 'EXG2']
-
-    positions = get_positions(channels)
 
     def __init__(self,
                  root_path: str = './EEG',

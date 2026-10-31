@@ -6,7 +6,6 @@ import numpy as np
 
 from ...utils import get_random_dir_path
 from ..base_dataset import BaseDataset
-from ..utils import get_positions
 
 _VALENCE_DICT = {
     1: -1,  # negative
@@ -212,8 +211,6 @@ class FACEDDataset(BaseDataset):
         'OZ': ['PO3', 'PO4', 'O2', 'O1'],
         'O2': ['PO4', 'OZ']
     }
-
-    positions = get_positions(channels)
 
     def __init__(self,
                  root_path: str = './Processed_data',

@@ -9,7 +9,6 @@ import xmltodict
 
 from ...utils import get_random_dir_path
 from ..base_dataset import BaseDataset
-from ..utils import get_positions
 
 
 class MAHNOBDataset(BaseDataset):
@@ -175,8 +174,6 @@ class MAHNOBDataset(BaseDataset):
         'OZ': ['PO3', 'PO4', 'O2', 'O1'],
         'O2': ['PO4', 'OZ']
     }
-
-    positions = get_positions(channels)
 
     def __init__(self,
                  root_path: str = './Sessions',

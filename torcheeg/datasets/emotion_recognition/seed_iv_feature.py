@@ -7,7 +7,6 @@ import scipy.io as scio
 
 from ...utils import get_random_dir_path
 from ..base_dataset import BaseDataset
-from ..utils import get_positions
 
 
 class SEEDIVFeatureDataset(BaseDataset):
@@ -171,8 +170,6 @@ class SEEDIVFeatureDataset(BaseDataset):
         'O2': ['PO4', 'OZ', 'CB2'],
         'CB2': ['PO6', 'O2', 'PO8']
     }
-
-    positions = get_positions(channels)
 
     def __init__(self,
                  root_path: str = './eeg_feature_smooth',
