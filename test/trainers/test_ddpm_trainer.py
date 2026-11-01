@@ -131,5 +131,35 @@ class TestDDPMTrainer(unittest.TestCase):
         trainer.validation_step(next(iter(self.val_loader)), batch_idx=0)
 
 
+class _ZeroDenoiser(nn.Module):
+    def forward(self, x, t, y=None):
+        return torch.zeros_like(x)
+
+
+class TestDDPMRegressions(unittest.TestCase):
+    def test_velocity_parameterization_supports_conditional_and_unconditional_sampling(self):
+        x = torch.full((2, 1, 2, 3), 0.3)
+        t = torch.tensor([0, 1])
+        labels = torch.tensor([0, 1])
+        for trainer_class in (DDPMTrainer, CDDPMTrainer):
+            with self.subTest(trainer=trainer_class.__name__):
+                trainer = trainer_class(_ZeroDenoiser(), timesteps=2,
+                                        use_ema=False, parameterization='v')
+                args = (x, t, labels) if trainer_class is CDDPMTrainer else (x, t)
+                mean, _, _ = trainer.p_mean_variance(
+                    *args, clip_denoised=False)
+                expected_start = trainer.sqrt_alphas_cumprod[t].reshape(
+                    2, 1, 1, 1) * x
+                expected_mean = trainer.q_posterior(expected_start, x, t)[0]
+                torch.testing.assert_close(mean, expected_mean)
+                self.assertTrue(torch.isfinite(trainer.p_sample(*args)).all())
+
+    def test_unknown_loss_reports_its_value(self):
+        trainer = DDPMTrainer(_ZeroDenoiser(), timesteps=2, use_ema=False,
+                              loss_type='unknown')
+        with self.assertRaisesRegex(ValueError, 'unknown'):
+            trainer.get_loss(torch.ones(2), torch.zeros(2))
+
+
 if __name__ == '__main__':
     unittest.main()
