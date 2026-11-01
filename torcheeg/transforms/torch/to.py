@@ -27,5 +27,5 @@ class ToTensor(EEGTransform):
     def __init__(self):
         super(ToTensor, self).__init__()
 
-    def apply(self, eeg: np.ndarray, **kwargs) -> torch.Tensor:
+    def __call__(self, eeg: np.ndarray, **kwargs) -> torch.Tensor:
         return torch.from_numpy(eeg).float()

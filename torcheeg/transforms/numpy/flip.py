@@ -71,7 +71,7 @@ class HorizontalFlip(EEGTransform):
         self.swap_pair = get_swap_pair(location_dict)
         self.channel_dim = channel_dim
 
-    def apply(self, eeg: any, **kwargs) -> any:
+    def __call__(self, eeg: any, **kwargs) -> any:
         eeg = horizontal_flip(eeg, self.channel_dim, self.swap_pair)
         return eeg
 

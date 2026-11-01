@@ -29,7 +29,7 @@ class BandTransform(EEGTransform):
         self.order = order
         self.band_dict = band_dict
 
-    def apply(self, eeg: np.ndarray, **kwargs) -> np.ndarray:
+    def __call__(self, eeg: np.ndarray, **kwargs) -> np.ndarray:
         band_list = []
         for low, high in self.band_dict.values():
             c_list = []
@@ -596,7 +596,7 @@ class BandBinPower(EEGTransform):
         self.order = order
         self.band_dict = band_dict
 
-    def apply(self, eeg: np.ndarray, **kwargs) -> np.ndarray:
+    def __call__(self, eeg: np.ndarray, **kwargs) -> np.ndarray:
         band_a_b_list = []
         for band_a_b in self.band_dict.values():
             band_a_b_list += band_a_b
@@ -649,7 +649,7 @@ class BandSpectralEntropy(EEGTransform):
         self.order = order
         self.band_dict = band_dict
 
-    def apply(self, eeg: np.ndarray, **kwargs) -> np.ndarray:
+    def __call__(self, eeg: np.ndarray, **kwargs) -> np.ndarray:
         band_a_b_list = []
         for band_a_b in self.band_dict.values():
             band_a_b_list += band_a_b

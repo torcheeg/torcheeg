@@ -14,7 +14,7 @@ class RandomEEGTransform(EEGTransform):
         super(RandomEEGTransform, self).__init__()
         self.p = p
 
-    def apply(self, eeg: torch.Tensor, **kwargs) -> torch.Tensor:
+    def __call__(self, eeg: torch.Tensor, **kwargs) -> torch.Tensor:
         if self.p < torch.rand(1):
             return eeg
         return self.random_apply(eeg, **kwargs)

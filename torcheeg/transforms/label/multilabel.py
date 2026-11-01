@@ -32,7 +32,7 @@ class Multilabel(LabelTransform):
         self.transforms = transforms
         self.type_fn = type_fn
 
-    def apply(self, y: Dict, **kwargs) -> List:
+    def __call__(self, y: Dict, **kwargs) -> List:
         results = []
         for transform in self.transforms:
             transformed = transform(y)

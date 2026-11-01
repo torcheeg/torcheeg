@@ -5,14 +5,14 @@ from torcheeg.transforms.base_transform import (BaseTransform, EEGTransform,
 
 
 class TestBaseTransform(unittest.TestCase):
-    def test_required_apply(self):
+    def test_call_requires_subclass_implementation(self):
         for cls in (BaseTransform, EEGTransform, LabelTransform):
-            with self.assertRaisesRegex(NotImplementedError, 'Method apply is not implemented in class ' + cls.__name__):
+            with self.assertRaisesRegex(NotImplementedError, 'Method __call__ is not implemented in class ' + cls.__name__):
                 cls()(1)
 
-    def test_apply_and_repr(self):
+    def test_call_and_repr(self):
         class Add(BaseTransform):
-            def apply(self, value):
+            def __call__(self, value):
                 return value + 1
 
             @property

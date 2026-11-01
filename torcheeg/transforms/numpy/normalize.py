@@ -38,7 +38,7 @@ class MeanStdNormalize(EEGTransform):
         self.std = std
         self.axis = axis
 
-    def apply(self, eeg: np.ndarray, **kwargs):
+    def __call__(self, eeg: np.ndarray, **kwargs):
         if (self.mean is None) or (self.std is None):
             if self.axis is None:
                 mean = eeg.mean()
@@ -112,7 +112,7 @@ class MinMaxNormalize(EEGTransform):
         self.max = max
         self.axis = axis
 
-    def apply(self, eeg: np.ndarray, **kwargs) -> np.ndarray:
+    def __call__(self, eeg: np.ndarray, **kwargs) -> np.ndarray:
         if (self.min is None) or (self.max is None):
             # if not given min/max
             if self.axis is None:

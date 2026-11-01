@@ -37,7 +37,7 @@ class Binary(LabelTransform):
         super(Binary, self).__init__()
         self.threshold = threshold
 
-    def apply(self, y: Union[int, float, List], **kwargs) -> Union[int, List]:
+    def __call__(self, y: Union[int, float, List], **kwargs) -> Union[int, List]:
         if isinstance(y, list):
             return [self._binarize(l) for l in y]
         return self._binarize(y)
@@ -84,7 +84,7 @@ class BinaryOneVSRest(LabelTransform):
         super(BinaryOneVSRest, self).__init__()
         self.positive = positive
 
-    def apply(self, y: Union[int, float, List], **kwargs) -> Union[int, List]:
+    def __call__(self, y: Union[int, float, List], **kwargs) -> Union[int, List]:
         if not (isinstance(y, (int, float, list))):
             raise TypeError(
                 f'The transform Binary only accepts label list or item (int or float) as input, but obtain {type(y)} as input.'
@@ -119,7 +119,7 @@ class BinariesToCategory(LabelTransform):
     .. automethod:: __call__
     """
 
-    def apply(self, y: List, **kwargs) -> int:
+    def __call__(self, y: List, **kwargs) -> int:
         r'''
         Args:
             y (list): list of binary labels.

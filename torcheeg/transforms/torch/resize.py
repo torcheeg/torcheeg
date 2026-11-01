@@ -31,7 +31,7 @@ class Resize(EEGTransform):
         self.size = size
         self.interpolation = interpolation
 
-    def apply(self, eeg: torch.Tensor, **kwargs) -> torch.Tensor:
+    def __call__(self, eeg: torch.Tensor, **kwargs) -> torch.Tensor:
         if not (eeg.dim() == 3):
             raise ValueError(
                 f'The Resize only allows to input a 3-d tensor, but the input has dimension {eeg.dim()}'

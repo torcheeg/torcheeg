@@ -20,5 +20,5 @@ class Flatten(EEGTransform):
     .. automethod:: __call__
     """
 
-    def apply(self, eeg: np.ndarray, **kwargs) -> np.ndarray:
+    def __call__(self, eeg: np.ndarray, **kwargs) -> np.ndarray:
         return eeg.reshape(-1)

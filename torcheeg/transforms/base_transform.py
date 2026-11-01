@@ -2,11 +2,8 @@ class BaseTransform:
     """Transform one value into another value."""
 
     def __call__(self, x):
-        return self.apply(x)
-
-    def apply(self, x):
         raise NotImplementedError(
-            "Method apply is not implemented in class " + self.__class__.__name__)
+            "Method __call__ is not implemented in class " + self.__class__.__name__)
 
     @property
     def repr_body(self):

@@ -12,7 +12,7 @@ class Concatenate(EEGTransform):
         self.transforms = tuple(transforms)
         self.axis = axis
 
-    def apply(self, eeg):
+    def __call__(self, eeg):
         outputs = [transform(deepcopy(eeg)) for transform in self.transforms]
         if not all(isinstance(value, np.ndarray) for value in outputs):
             raise TypeError('Concatenate transforms must return numpy arrays.')
@@ -34,7 +34,7 @@ class MapChunk(EEGTransform):
         self.chunk_size = chunk_size
         self.overlap = overlap
 
-    def apply(self, eeg):
+    def __call__(self, eeg):
         outputs = [self.transform(eeg[:, start:start + self.chunk_size].copy())
                    for start in range(0, eeg.shape[1] - self.chunk_size + 1,
                                       self.chunk_size - self.overlap)]

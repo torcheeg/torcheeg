@@ -12,7 +12,7 @@ class Contrastive(EEGTransform):
         self.transform = transform
         self.num_views = num_views
 
-    def apply(self, eeg):
+    def __call__(self, eeg):
         return [self.transform(deepcopy(eeg)) for _ in range(self.num_views)]
 
     @property

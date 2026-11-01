@@ -27,7 +27,7 @@ class BandTransform(EEGTransform):
         self.order = order
         self.band_dict = band_dict
 
-    def apply(self, eeg: np.ndarray, **kwargs) -> np.ndarray:
+    def __call__(self, eeg: np.ndarray, **kwargs) -> np.ndarray:
         band_list = []
         for low, high in self.band_dict.values():
             c_list = []
@@ -81,7 +81,7 @@ class BandSignal(BandTransform):
     def opt(self, eeg: np.ndarray, **kwargs) -> np.ndarray:
         return eeg
 
-    def apply(self, eeg: np.ndarray, **kwargs) -> np.ndarray:
+    def __call__(self, eeg: np.ndarray, **kwargs) -> np.ndarray:
         band_list = []
         for low, high in self.band_dict.values():
             c_list = []
@@ -161,7 +161,7 @@ class BandDifferentialEntropyV1(EEGTransform):
         self.num_window = num_window
         self.band_dict = band_dict
 
-    def apply(self, eeg: np.ndarray, **kwargs) -> np.ndarray:
+    def __call__(self, eeg: np.ndarray, **kwargs) -> np.ndarray:
         _, chunk_size = eeg.shape
         point_per_window = int(chunk_size // self.num_window)
 
@@ -232,7 +232,7 @@ class BandPowerSpectralDensity(EEGTransform):
         self.num_window = num_window
         self.band_dict = band_dict
 
-    def apply(self, eeg: np.ndarray, **kwargs) -> np.ndarray:
+    def __call__(self, eeg: np.ndarray, **kwargs) -> np.ndarray:
         _, chunk_size = eeg.shape
         point_per_window = int(chunk_size // self.num_window)
 

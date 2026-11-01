@@ -71,7 +71,7 @@ class ToG(EEGTransform):
             adj[adj == 0] = 1e-06
         self.adj = adj.to_sparse()
 
-    def apply(self, eeg: Union[np.ndarray, torch.Tensor], **kwargs) -> 'pyg.data.Data':
+    def __call__(self, eeg: Union[np.ndarray, torch.Tensor], **kwargs) -> 'pyg.data.Data':
         data = pyg.data.Data(edge_index=self.adj._indices())
         if isinstance(eeg, np.ndarray):
             data.x = torch.from_numpy(eeg).float()
@@ -213,7 +213,7 @@ class ToDynamicG(EEGTransform):
                (np.sqrt(np.inner(x_hill, np.conj(x_hill)) * np.inner(y_hill, np.conj(y_hill)))))
         return np.angle(pdt)
 
-    def apply(self, eeg: Union[np.ndarray, torch.Tensor], **kwargs) -> 'pyg.data.Data':
+    def __call__(self, eeg: Union[np.ndarray, torch.Tensor], **kwargs) -> 'pyg.data.Data':
         adj = self.adj(eeg)
         data = pyg.data.Data(edge_index=adj._indices())
         if isinstance(eeg, np.ndarray):

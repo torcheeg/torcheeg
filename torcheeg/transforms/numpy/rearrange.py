@@ -38,7 +38,7 @@ class RearrangeElectrode(EEGTransform):
                 f'Invalid missing method {missing}, should be one of [random, zero, mean].')
         self.missing = missing
 
-    def apply(self, eeg: np.ndarray, **kwargs) -> np.ndarray:
+    def __call__(self, eeg: np.ndarray, **kwargs) -> np.ndarray:
         r'''
         Args:
             eeg (np.ndarray): The input EEG signals in shape of [number of electrodes, number of data points].

@@ -7,7 +7,7 @@ class Lambda(BaseTransform):
     def __init__(self, lambd):
         self.lambd = lambd
 
-    def apply(self, x):
+    def __call__(self, x):
         return self.lambd(x)
 
     @property

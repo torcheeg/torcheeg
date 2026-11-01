@@ -33,7 +33,7 @@ class Downsample(EEGTransform):
         self.num_points = num_points
         self.axis = axis
 
-    def apply(self, eeg: np.ndarray, **kwargs):
+    def __call__(self, eeg: np.ndarray, **kwargs):
         times_tamps = np.linspace(0,
                                   eeg.shape[self.axis] - 1,
                                   self.num_points,
@@ -114,10 +114,10 @@ class SetSamplingRate(EEGTransform):
         self.scale = scale
         self.res_type = res_type
 
-    def apply(self,
-              eeg: np.ndarray,
-              **kwargs
-              ) -> np.ndarray:
+    def __call__(self,
+                 eeg: np.ndarray,
+                 **kwargs
+                 ) -> np.ndarray:
         samplerate = LazyLoader(
             'samplerate', install_hint='Install with `pip install samplerate`.')
         resampy = LazyLoader(
