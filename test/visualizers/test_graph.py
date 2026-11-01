@@ -25,7 +25,8 @@ class TestGraph(unittest.TestCase):
         img = plot_graph(mock_g, get_locations(
             DEAPDataset.channels, DEAPDataset.grid))
 
-        self.assertFalse(np.all(img == 0))
+        self.assertEqual(img.ndim, 3)
+        self.assertGreater(np.ptp(img[..., :3]), 0)
 
 
 if __name__ == '__main__':

@@ -82,8 +82,6 @@ class TestMNERawDataset(unittest.TestCase):
         # Label should be 2 (last trial_id in the sequence 0,1,2,0,1,2)
         self.assertEqual(last_item[1], 2)
 
-        # print(f'Saved EEG file {file_path}')
-
 
 if __name__ == '__main__':
     unittest.main()

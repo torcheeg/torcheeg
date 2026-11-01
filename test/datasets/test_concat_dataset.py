@@ -35,9 +35,10 @@ class TestConcatDataset(unittest.TestCase):
         dataset_b = _FakeDataset(5, 5, 5)
 
         concat_dataset = ConcatDataset(dataset_a, dataset_b)
-        self.assertTrue(len(concat_dataset) == 5 * 5 * 5 * 2)
-
-        # print(f'Saved EEG file {file_path}')
+        self.assertEqual(len(concat_dataset), 5 * 5 * 5 * 2)
+        self.assertEqual(concat_dataset[0], dataset_a[0])
+        self.assertEqual(concat_dataset[len(dataset_a)], dataset_b[0])
+        self.assertEqual(concat_dataset[-1], dataset_b[-1])
 
 
 if __name__ == '__main__':

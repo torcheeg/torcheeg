@@ -22,13 +22,15 @@ class TestTensor(unittest.TestCase):
         mock_eeg = torch.randn(128, 9, 9)
         img = plot_3d_tensor(mock_eeg)
 
-        self.assertFalse(np.all(img == 0))
+        self.assertEqual(img.ndim, 3)
+        self.assertGreater(np.ptp(img[..., :3]), 0)
 
     def test_plot_2d_tensor(self):
         mock_eeg = torch.randn(9, 9)
         img = plot_2d_tensor(mock_eeg)
 
-        self.assertFalse(np.all(img == 0))
+        self.assertEqual(img.ndim, 3)
+        self.assertGreater(np.ptp(img[..., :3]), 0)
 
 
 if __name__ == '__main__':

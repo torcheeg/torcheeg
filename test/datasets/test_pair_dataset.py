@@ -35,9 +35,12 @@ class TestPairDataset(unittest.TestCase):
         dataset_b = _FakeDataset(5, 5, 5)
 
         pair_dataset = PairDataset([dataset_a, dataset_b], join_key='clip_id')
-        self.assertTrue(len(pair_dataset) == 5 * 5 * 5)
-
-        # print(f'Saved EEG file {file_path}')
+        self.assertEqual(len(pair_dataset), 5 * 5 * 5)
+        for index in (0, len(pair_dataset) - 1):
+            signal_a, label_a = dataset_a[index]
+            signal_b, label_b = dataset_b[index]
+            self.assertEqual(
+                pair_dataset[index], (signal_a, signal_b, label_a, label_b))
 
 
 if __name__ == '__main__':

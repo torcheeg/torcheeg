@@ -22,6 +22,8 @@ class TestRearrangeTransforms(unittest.TestCase):
         self.assertEqual(src_eeg[1, :].tolist(), tgt_eeg[0, :].tolist())
         self.assertEqual(src_eeg[2, :].tolist(), tgt_eeg[1, :].tolist())
 
+        np.testing.assert_allclose(tgt_eeg[3], src_eeg.mean(axis=0))
+
 
 if __name__ == '__main__':
     unittest.main()

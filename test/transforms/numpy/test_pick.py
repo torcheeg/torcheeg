@@ -19,11 +19,13 @@ class TestPickTransforms(unittest.TestCase):
         transformed_eeg = OrderElectrode(
             source_electrodes=source_electrodes, target_electrodes=target_electrodes)(eeg=eeg)
         self.assertEqual(transformed_eeg['eeg'].shape, (3, 3000))
+        np.testing.assert_array_equal(transformed_eeg['eeg'], eeg[:3])
 
     def test_pick_electrode(self):
         eeg = np.random.randn(32, 128)
         transformed_eeg = PickElectrode([1, 2])(eeg=eeg)
         self.assertEqual(transformed_eeg['eeg'].shape, (2, 128))
+        np.testing.assert_array_equal(transformed_eeg['eeg'], eeg[[1, 2]])
 
         pick = [
             'FP1', 'AF3', 'F3', 'F7', 'FC5', 'FC1', 'C3', 'T7', 'CP5', 'CP1',
@@ -36,6 +38,7 @@ class TestPickTransforms(unittest.TestCase):
         transformed_eeg = PickElectrode(
             PickElectrode.to_index_list(pick, DEAPDataset.channels))(eeg=eeg)
         self.assertEqual(transformed_eeg['eeg'].shape, (28, 128))
+        np.testing.assert_array_equal(transformed_eeg['eeg'], eeg[pick_list])
 
 
 if __name__ == '__main__':

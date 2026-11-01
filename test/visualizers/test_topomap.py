@@ -24,7 +24,8 @@ class TestTopomap(unittest.TestCase):
         img = plot_raw_topomap(
             mock_eeg, channel_list=DEAPDataset.channels, sampling_rate=128)
         # not all zero (numpy array)
-        self.assertFalse(np.all(img == 0))
+        self.assertEqual(img.ndim, 3)
+        self.assertGreater(np.ptp(img[..., :3]), 0)
 
     def test_plot_feature_topomap(self):
         mock_eeg = torch.randn(32, 4)
@@ -32,12 +33,14 @@ class TestTopomap(unittest.TestCase):
                                    channel_list=DEAPDataset.channels,
                                    feature_list=["theta", "alpha", "beta", "gamma"])
 
-        self.assertFalse(np.all(img == 0))
+        self.assertEqual(img.ndim, 3)
+        self.assertGreater(np.ptp(img[..., :3]), 0)
         img = plot_feature_topomap(mock_eeg,
                                    channel_list=DEAPDataset.channels,
                                    feature_list=["theta", "alpha", "beta", "gamma"], fig_shape=(2, 2))
 
-        self.assertFalse(np.all(img == 0))
+        self.assertEqual(img.ndim, 3)
+        self.assertGreater(np.ptp(img[..., :3]), 0)
 
 
 if __name__ == '__main__':

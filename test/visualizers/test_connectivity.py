@@ -30,7 +30,8 @@ class TestConnectivity(unittest.TestCase):
                                     num_connectivity=60,
                                     linewidth=1.5)
 
-        self.assertFalse(np.all(img == 0))
+        self.assertEqual(img.ndim, 3)
+        self.assertGreater(np.ptp(img[..., :3]), 0)
 
 
 if __name__ == '__main__':

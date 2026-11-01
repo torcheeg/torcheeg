@@ -39,7 +39,6 @@ class TestFolderDataset(unittest.TestCase):
             file_name = f'sub{i+1}.fif'
             file_path = os.path.join(folder_path, file_name)
             raw.save(file_path)
-            # print(f'Saved EEG file {file_path}')
 
     def test_folder_dataset(self):
         # Generate dummy EEG files and save them to folders

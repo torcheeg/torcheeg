@@ -1,6 +1,7 @@
 import unittest
 
 import numpy as np
+import torch
 
 from torcheeg.transforms import (BaselineCorrection, BaselineRemoval, Compose,
                                  RandomMask, RandomNoise, Resize, ToTensor)
@@ -8,6 +9,8 @@ from torcheeg.transforms import (BaselineCorrection, BaselineRemoval, Compose,
 
 class TestBaselineTransforms(unittest.TestCase):
     def setUp(self):
+        self.addCleanup(torch.set_rng_state, torch.get_rng_state())
+        torch.manual_seed(0)
         self.addCleanup(np.random.set_state, np.random.get_state())
         np.random.seed(0)
 

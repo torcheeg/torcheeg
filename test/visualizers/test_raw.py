@@ -24,7 +24,8 @@ class TestRaw(unittest.TestCase):
         img = plot_signal(
             mock_eeg, channel_list=DEAPDataset.channels, sampling_rate=128)
 
-        self.assertFalse(np.all(img == 0))
+        self.assertEqual(img.ndim, 3)
+        self.assertGreater(np.ptp(img[..., :3]), 0)
 
 
 if __name__ == '__main__':
