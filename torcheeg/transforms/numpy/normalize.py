@@ -84,8 +84,7 @@ class MeanStdNormalize(EEGTransform):
             mean = self.mean.reshape(*shape)
             std = self.std.reshape(*shape)
 
-        if np.any(std == 0):
-            std[std == 0] = 1
+        std = np.where(std == 0, 1, std)
 
         return (eeg - mean) / std
 
@@ -192,7 +191,8 @@ class MinMaxNormalize(EEGTransform):
                 min = self.min.reshape(*shape)
                 max = self.max.reshape(*shape)
 
-        return (eeg - min) / (max - min)
+        scale = np.where(max == min, 1, max - min)
+        return (eeg - min) / scale
 
     @property
     def repr_body(self) -> Dict:
