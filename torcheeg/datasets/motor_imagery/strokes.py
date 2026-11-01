@@ -186,19 +186,26 @@ class StrokePatientsMIDataset(CachedDataset):
 
     .. code-block:: python
 
-        from torcheeg.transforms import Select,BandSignal
-        def preprocess_sample_1(sample):
-            sample = dict(sample)
-            sample['eeg'] = BandSignal(sampling_rate=500, band_dict={'frequency_range': [8, 40]})(sample['eeg'])
-            return sample
+        from torcheeg.transforms import Select, BandSignal
 
-        def prepare_training_1(sample):
-            sample = dict(sample)
-            return {'eeg': sample['eeg'], 'labels': Select('label')(sample['info'])}
 
-        dataset = StrokePatientsMIDataset(root_path='./StrokePatientsMIDataset', chunk_size=500, overlap=0, io_path='./stroke_dataset_cache', transform=preprocess_sample_1).with_transform(prepare_training_1)
-        print(dataset[0]['eeg'].shape) #EEG shape(1,30,500)
-        print(dataset[0]['labels'])  # label (int)
+        def transform_fn(sample):
+            eeg_transform = transforms.Compose([
+                BandSignal(sampling_rate=500, band_dict={'frequency_range': [8, 40]}),
+            ])
+            label_transform = transforms.Compose([
+                Select('label'),
+            ])
+            return {
+                "eeg": eeg_transform(sample["eeg"]),
+                "label": label_transform(sample["info"]),
+            }
+
+
+        dataset = StrokePatientsMIDataset(root_path='./StrokePatientsMIDataset', chunk_size=500,
+                                          overlap=0, io_path='./stroke_dataset_cache').with_transform(transform_fn)
+        print(dataset[0]['eeg'].shape)  # EEG shape(1,30,500)
+        print(dataset[0]['label'])  # label (int)
 
     Args:
         root_path (str): Downloaded data files (unzipped) dir.  (default: :obj:`'./StrokePatientsMIDataset'`)
@@ -362,19 +369,26 @@ class StrokePatientsMIProcessedDataset(StrokePatientsMIDataset):
 
     .. code-block:: python
 
-        from torcheeg.transforms import Select,BandSignal
-        def preprocess_sample_1(sample):
-            sample = dict(sample)
-            sample['eeg'] = BandSignal(sampling_rate=500, band_dict={'frequency_range': [8, 40]})(sample['eeg'])
-            return sample
+        from torcheeg.transforms import Select, BandSignal
 
-        def prepare_training_1(sample):
-            sample = dict(sample)
-            return {'eeg': sample['eeg'], 'labels': Select('label')(sample['info'])}
 
-        dataset = StrokePatientsMIProcessedDataset(root_path='your unzipped root path', chunk_size=500, overlap=0, io_path='./stroke_dataset_cache', transform=preprocess_sample_1).with_transform(prepare_training_1)
-        print(dataset[0]['eeg'].shape) #EEG shape(1,30,500)
-        print(dataset[0]['labels'])  # label (int)
+        def transform_fn(sample):
+            eeg_transform = transforms.Compose([
+                BandSignal(sampling_rate=500, band_dict={'frequency_range': [8, 40]}),
+            ])
+            label_transform = transforms.Compose([
+                Select('label'),
+            ])
+            return {
+                "eeg": eeg_transform(sample["eeg"]),
+                "label": label_transform(sample["info"]),
+            }
+
+
+        dataset = StrokePatientsMIProcessedDataset(
+            root_path='your unzipped root path', chunk_size=500, overlap=0, io_path='./stroke_dataset_cache').with_transform(transform_fn)
+        print(dataset[0]['eeg'].shape)  # EEG shape(1,30,500)
+        print(dataset[0]['label'])  # label (int)
 
     Args:
         root_path (str): Downloaded data files (unzipped) dir.  (default: :obj:`'./StrokePatientsMIDataset'`)

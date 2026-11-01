@@ -23,29 +23,37 @@ class GIN(nn.Module):
 
         from torcheeg.datasets import DEAPDataset
         from torcheeg import transforms
-        from torcheeg.transforms.pyg import ToG
+        from torcheeg.transforms.graph import ToG
         from torcheeg.datasets import SEEDDataset
         from torcheeg.datasets.utils import get_positions, get_standard_adjacency
         from torcheeg.models import GIN
         from torch_geometric.data import DataLoader
 
-        def preprocess_sample_1(sample):
-            sample = dict(sample)
-            sample['eeg'] = transforms.BandDifferentialEntropy()(sample['eeg'])
-            return sample
 
-        def prepare_training_1(sample):
-            sample = dict(sample)
-            sample['eeg'] = ToG(get_standard_adjacency(SEEDDataset.channels, get_positions(SEEDDataset.channels)))(sample['eeg'])
-            return {'eeg': sample['eeg'], 'labels': transforms.Compose([transforms.Select('valence'), transforms.Binary(5.0)])(sample['info'])}
+        def transform_fn(sample):
+            eeg_transform = transforms.Compose([
+                transforms.BandDifferentialEntropy(),
+                ToG(get_standard_adjacency(SEEDDataset.channels,
+                    get_positions(SEEDDataset.channels))),
+            ])
+            label_transform = transforms.Compose([
+                transforms.Select('valence'),
+                transforms.Binary(5.0),
+            ])
+            return {
+                "eeg": eeg_transform(sample["eeg"]),
+                "label": label_transform(sample["info"]),
+            }
 
-        dataset = DEAPDataset(root_path='./data_preprocessed_python', transform=preprocess_sample_1).with_transform(prepare_training_1)
+
+        dataset = DEAPDataset(
+            root_path='./data_preprocessed_python').with_transform(transform_fn)
 
         model = GIN(in_channels=4, hid_channels=64, num_classes=2)
 
         batch = next(iter(DataLoader(dataset, batch_size=64)))
 
-        x, y = batch['eeg'], batch['labels']
+        x, y = batch['eeg'], batch['label']
         model(x)
 
     Args:

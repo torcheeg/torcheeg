@@ -249,21 +249,26 @@ class SEEDFeatureDataset(CachedDataset):
         from torcheeg.datasets import SEEDDataset
         from torcheeg.datasets.utils import get_locations
 
-        def preprocess_sample_1(sample):
-            sample = dict(sample)
-            sample['eeg'] = transforms.ToGrid(get_locations(SEEDDataset.channels, SEEDDataset.grid))(sample['eeg'])
-            return sample
 
-        def prepare_training_1(sample):
-            sample = dict(sample)
-            sample['eeg'] = transforms.ToTensor()(sample['eeg'])
-            return {'eeg': sample['eeg'], 'labels': transforms.Compose([transforms.Select('emotion'), transforms.Lambda(lambda x: x + 1)])(sample['info'])}
+        def transform_fn(sample):
+            eeg_transform = transforms.Compose([
+                transforms.ToGrid(get_locations(
+                    SEEDDataset.channels, SEEDDataset.grid)),
+                transforms.ToTensor(),
+            ])
+            label_transform = transforms.Compose([
+                transforms.Select('emotion'),
+                transforms.Lambda(lambda x: x + 1),
+            ])
+            return {
+                "eeg": eeg_transform(sample["eeg"]),
+                "label": label_transform(sample["info"]),
+            }
 
-        dataset = SEEDFeatureDataset(root_path='./ExtractedFeatures', feature=['de_movingAve'], transform=preprocess_sample_1).with_transform(prepare_training_1)
+
+        dataset = SEEDFeatureDataset(root_path='./ExtractedFeatures',
+                                     feature=['de_movingAve']).with_transform(transform_fn)
         print(dataset[0])
-        # EEG signal (torch.Tensor[5, 9, 9]),
-        # coresponding baseline signal (torch.Tensor[5, 9, 9]),
-        # label (int)
 
     An example dataset for GNN-based methods:
 
@@ -273,18 +278,26 @@ class SEEDFeatureDataset(CachedDataset):
         from torcheeg import transforms
         from torcheeg.datasets import SEEDDataset
         from torcheeg.datasets.utils import get_adjacency
-        from torcheeg.transforms.pyg import ToG
+        from torcheeg.transforms.graph import ToG
 
-        def prepare_training_1(sample):
-            sample = dict(sample)
-            sample['eeg'] = ToG(get_adjacency(SEEDDataset.channels, SEEDDataset.adjacency))(sample['eeg'])
-            return {'eeg': sample['eeg'], 'labels': transforms.Compose([transforms.Select('emotion'), transforms.Lambda(lambda x: x + 1)])(sample['info'])}
 
-        dataset = SEEDFeatureDataset(root_path='./Preprocessed_EEG', features=['de_movingAve']).with_transform(prepare_training_1)
+        def transform_fn(sample):
+            eeg_transform = transforms.Compose([
+                ToG(get_adjacency(SEEDDataset.channels, SEEDDataset.adjacency)),
+            ])
+            label_transform = transforms.Compose([
+                transforms.Select('emotion'),
+                transforms.Lambda(lambda x: x + 1),
+            ])
+            return {
+                "eeg": eeg_transform(sample["eeg"]),
+                "label": label_transform(sample["info"]),
+            }
+
+
+        dataset = SEEDFeatureDataset(root_path='./Preprocessed_EEG',
+                                     features=['de_movingAve']).with_transform(transform_fn)
         print(dataset[0])
-        # EEG signal (torch_geometric.data.Data),
-        # coresponding baseline signal (torch_geometric.data.Data),
-        # label (int)
 
     Args:
         root_path (str): Downloaded data files in matlab (unzipped ExtractedFeatures.zip) formats (default: :obj:`'./ExtractedFeatures'`)

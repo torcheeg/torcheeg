@@ -62,13 +62,9 @@ seed_everything(42)
 # For this example, we utilize the DEAP dataset, as supported by TorchEEG.
 # We configure an EEG sample to be 1 second long, encompassing 128 data
 # points. A 3-second-long baseline signal is segmented into three parts
-# and averaged to establish the baseline signal for the trial. During
-# offline preprocessing, we divide each electrode’s EEG signal into 4
-# sub-bands and compute the differential entropy on each sub-band as a
-# feature, which is then subjected to debaselining and grid mapping. The
-# preprocessed EEG signals are then stored in the local IO. In the case of
-# online processing, all EEG signals are transformed into Tensors for
-# input into the neural networks.
+# and averaged to establish the baseline signal for the trial. transform_fn
+# computes band features, removes the baseline, maps electrodes to a grid,
+# and converts the result to a tensor each time a sample is read.
 #
 
 from torcheeg import transforms
@@ -76,26 +72,27 @@ from torcheeg.datasets import DEAPDataset
 from torcheeg.datasets.utils import get_locations
 
 
-def preprocess_sample_1(sample):
-    sample = dict(sample)
-    sample['eeg'] = transforms.BandDifferentialEntropy()(sample['eeg'])
-    sample['baseline'] = transforms.BandDifferentialEntropy()(
-        sample['baseline'])
-    sample['eeg'] = transforms.BaselineRemoval(
-        baseline=sample['baseline'])(sample['eeg'])
-    sample['eeg'] = transforms.ToGrid(get_locations(
-        DEAPDataset.channels, DEAPDataset.grid))(sample['eeg'])
-    return sample
+def transform_fn(sample):
+    eeg_transform = transforms.Compose([
+        transforms.BandDifferentialEntropy(),
+        transforms.BaselineRemoval(
+            baseline=transforms.BandDifferentialEntropy()(sample['baseline'])),
+        transforms.ToGrid(get_locations(
+            DEAPDataset.channels, DEAPDataset.grid)),
+        transforms.ToTensor(),
+    ])
+    label_transform = transforms.Compose([
+        transforms.Select('valence'),
+        transforms.Binary(5.0),
+    ])
+    return {
+        "eeg": eeg_transform(sample["eeg"]),
+        "label": label_transform(sample["info"]),
+    }
 
 
-def prepare_training_1(sample):
-    sample = dict(sample)
-    sample['eeg'] = transforms.ToTensor()(sample['eeg'])
-    return {'eeg': sample['eeg'], 'labels': transforms.Compose([transforms.Select('valence'), transforms.Binary(5.0)])(sample['info'])}
-
-
-dataset = DEAPDataset(io_path=f'./examples_vanilla_torch/deap', root_path='./tmp_in/data_preprocessed_python',
-                      num_worker=8, transform=preprocess_sample_1).with_transform(prepare_training_1)
+dataset = DEAPDataset(io_path=f'./examples_vanilla_torch/deap',
+                      root_path='./tmp_in/data_preprocessed_python', num_worker=8).with_transform(transform_fn)
 
 
 ######################################################################
@@ -135,7 +132,7 @@ def train(dataloader, model, loss_fn, optimizer):
     model.train()
     for batch_idx, batch in enumerate(dataloader):
         X = batch['eeg'].to(device)
-        y = batch['labels'].to(device)
+        y = batch['label'].to(device)
 
         # Compute prediction error
         pred = model(X)
@@ -162,7 +159,7 @@ def valid(dataloader, model, loss_fn):
     with torch.no_grad():
         for batch in dataloader:
             X = batch['eeg'].to(device)
-            y = batch['labels'].to(device)
+            y = batch['label'].to(device)
 
             pred = model(X)
             loss += loss_fn(pred, y).item()

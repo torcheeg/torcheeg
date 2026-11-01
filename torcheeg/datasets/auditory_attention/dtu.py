@@ -524,20 +524,24 @@ class DTUDataset(CachedDataset):
         from torcheeg.datasets import DTUDataset
         from torcheeg import transforms
 
-        def preprocess_sample_1(sample):
-            sample = dict(sample)
-            sample['eeg'] = transforms.To2d()(sample['eeg'])
-            return sample
 
-        def prepare_training_1(sample):
-            sample = dict(sample)
-            sample['eeg'] = transforms.ToTensor()(sample['eeg'])
-            return {'eeg': sample['eeg'], 'labels': transforms.Compose([transforms.Select('attend_mf'), transforms.Lambda(lambd=lambda x: x - 1)])(sample['info'])}
+        def transform_fn(sample):
+            eeg_transform = transforms.Compose([
+                transforms.To2d(),
+                transforms.ToTensor(),
+            ])
+            label_transform = transforms.Compose([
+                transforms.Select('attend_mf'),
+                transforms.Lambda(lambd=lambda x: x - 1),
+            ])
+            return {
+                "eeg": eeg_transform(sample["eeg"]),
+                "label": label_transform(sample["info"]),
+            }
 
-        dataset = DTUDataset(root_path='./EEG', transform=preprocess_sample_1).with_transform(prepare_training_1)
+
+        dataset = DTUDataset(root_path='./EEG').with_transform(transform_fn)
         print(dataset[0])
-        # EEG signal (torch.Tensor[1, 64, 64]),
-        # label (int)
 
     An example dataset with custom preprocessing parameters:
 
@@ -546,20 +550,25 @@ class DTUDataset(CachedDataset):
         from torcheeg.datasets import DTUDataset
         from torcheeg import transforms
 
-        def preprocess_sample_1(sample):
-            sample = dict(sample)
-            sample['eeg'] = transforms.To2d()(sample['eeg'])
-            return sample
 
-        def prepare_training_1(sample):
-            sample = dict(sample)
-            sample['eeg'] = transforms.ToTensor()(sample['eeg'])
-            return {'eeg': sample['eeg'], 'labels': transforms.Compose([transforms.Select('attend_mf'), transforms.Lambda(lambd=lambda x: x - 1)])(sample['info'])}
+        def transform_fn(sample):
+            eeg_transform = transforms.Compose([
+                transforms.To2d(),
+                transforms.ToTensor(),
+            ])
+            label_transform = transforms.Compose([
+                transforms.Select('attend_mf'),
+                transforms.Lambda(lambd=lambda x: x - 1),
+            ])
+            return {
+                "eeg": eeg_transform(sample["eeg"]),
+                "label": label_transform(sample["info"]),
+            }
 
-        dataset = DTUDataset(root_path='./EEG', chunk_size=64, overlap=0, sampling_rate=64, num_channel=64, eog_removal=True, transform=preprocess_sample_1).with_transform(prepare_training_1)
+
+        dataset = DTUDataset(root_path='./EEG', chunk_size=64, overlap=0, sampling_rate=64,
+                             num_channel=64, eog_removal=True).with_transform(transform_fn)
         print(dataset[0])
-        # EEG signal (torch.Tensor[1, 64, 64]),
-        # label (int)
 
     Args:
         root_path (str): Path to the raw data files in MATLAB format. (default: :obj:`'./EEG'`)

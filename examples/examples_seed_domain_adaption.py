@@ -12,9 +12,8 @@ In this tutorial, you'll learn how to utilize TorchEEG's Associative Domain Adap
 #
 # We leverage the SEED dataset, supported by TorchEEG, where each EEG sample lasts 1 second and consists of 200 data points.
 #
-# In offline preprocessing, each electrode's EEG signal is segmented into 4 sub-bands. We then calculate the differential entropy for each sub-band as a feature. The signals are debaselined, mapped onto a grid, and finally saved locally.
-#
-# For online processing, we convert all EEG signals into Tensors for neural network input.
+# The dataset provides extracted band features. transform_fn maps them to a
+# grid and converts them to tensors when a sample is read.
 #
 
 import numpy as np
@@ -25,21 +24,24 @@ from torcheeg.datasets import SEEDDataset, SEEDFeatureDataset
 from torcheeg.datasets.utils import get_locations
 
 
-def preprocess_sample_1(sample):
-    sample = dict(sample)
-    sample['eeg'] = transforms.ToGrid(get_locations(
-        SEEDDataset.channels, SEEDDataset.grid))(sample['eeg'])
-    return sample
+def transform_fn(sample):
+    eeg_transform = transforms.Compose([
+        transforms.ToGrid(get_locations(
+            SEEDDataset.channels, SEEDDataset.grid)),
+        transforms.ToTensor(),
+    ])
+    label_transform = transforms.Compose([
+        transforms.Select('emotion'),
+        transforms.Lambda(lambda x: x + 1),
+    ])
+    return {
+        "eeg": eeg_transform(sample["eeg"]),
+        "label": label_transform(sample["info"]),
+    }
 
 
-def prepare_training_1(sample):
-    sample = dict(sample)
-    sample['eeg'] = transforms.ToTensor()(sample['eeg'])
-    return {'eeg': sample['eeg'], 'labels': transforms.Compose([transforms.Select('emotion'), transforms.Lambda(lambda x: x + 1)])(sample['info'])}
-
-
-dataset = SEEDFeatureDataset(io_path=f'./examples_seed_domain_adaption/seed', root_path='./ExtractedFeatures',
-                             feature=['de_LDS'], num_worker=4, transform=preprocess_sample_1).with_transform(prepare_training_1)
+dataset = SEEDFeatureDataset(io_path=f'./examples_seed_domain_adaption/seed',
+                             root_path='./ExtractedFeatures', feature=['de_LDS'], num_worker=4).with_transform(transform_fn)
 
 ######################################################################
 # Step 2: Define the Model

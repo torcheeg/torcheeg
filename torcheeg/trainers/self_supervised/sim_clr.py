@@ -47,21 +47,25 @@ class SimCLRTrainer(pl.LightningModule):
         from torcheeg import transforms
         from torcheeg.datasets.utils import get_locations
 
-        def preprocess_sample_1(sample):
-            sample = dict(sample)
-            sample['eeg'] = transforms.BandDifferentialEntropy(sampling_rate=128)(sample['eeg'])
-            sample['baseline'] = transforms.BandDifferentialEntropy(sampling_rate=128)(sample['baseline'])
-            sample['eeg'] = transforms.BaselineRemoval(baseline=sample['baseline'])(sample['eeg'])
-            sample['eeg'] = transforms.ToGrid(get_locations(DEAPDataset.channels, DEAPDataset.grid))(sample['eeg'])
-            return sample
 
-        def prepare_training_1(sample):
-            sample = dict(sample)
-            sample['eeg'] = transforms.ToTensor()(sample['eeg'])
-            sample['eeg'] = transforms.Contrastive(transforms.Compose([transforms.RandomMask(p=0.5), transforms.RandomNoise(p=0.5)]), num_views=2)(sample['eeg'])
-            return sample
+        def transform_fn(sample):
+            eeg_transform = transforms.Compose([
+                transforms.BandDifferentialEntropy(sampling_rate=128),
+                transforms.BaselineRemoval(baseline=transforms.BandDifferentialEntropy(
+                    sampling_rate=128)(sample['baseline'])),
+                transforms.ToGrid(get_locations(
+                    DEAPDataset.channels, DEAPDataset.grid)),
+                transforms.ToTensor(),
+                transforms.Contrastive(transforms.Compose(
+                    [transforms.RandomMask(p=0.5), transforms.RandomNoise(p=0.5)]), num_views=2),
+            ])
+            return {
+                "eeg": eeg_transform(sample["eeg"]),
+            }
 
-        contras_dataset = DEAPDataset(io_path=f'./io/deap', root_path='./data_preprocessed_python', chunk_size=128, baseline_chunk_size=128, num_baseline=3, transform=preprocess_sample_1).with_transform(prepare_training_1)
+
+        contras_dataset = DEAPDataset(io_path=f'./io/deap', root_path='./data_preprocessed_python',
+                                      chunk_size=128, baseline_chunk_size=128, num_baseline=3).with_transform(transform_fn)
 
         trainer.fit(train_loader, val_loader)
 

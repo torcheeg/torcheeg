@@ -77,17 +77,27 @@ class MNERawDataset(CachedDataset):
 
         # Load each of the files
         raw_list = [mne.io.read_raw_edf(path, preload=True, stim_channel='auto')
-                 for path in physionet_paths]
+                    for path in physionet_paths]
 
         info_list = [{"trial_id": event_code, "subject_id": subject_id}
-                        for event_code in event_codes]
+                     for event_code in event_codes]
 
-        def prepare_training_1(sample):
-            sample = dict(sample)
-            sample['eeg'] = transforms.ToTensor()(sample['eeg'])
-            return {'eeg': sample['eeg'], 'labels': transforms.Select('trial_id')(sample['info'])}
 
-        dataset = MNERawDataset(raw_list=raw_list, info_list=info_list, chunk_size=500, overlap=0).with_transform(prepare_training_1)
+        def transform_fn(sample):
+            eeg_transform = transforms.Compose([
+                transforms.ToTensor(),
+            ])
+            label_transform = transforms.Compose([
+                transforms.Select('trial_id'),
+            ])
+            return {
+                "eeg": eeg_transform(sample["eeg"]),
+                "label": label_transform(sample["info"]),
+            }
+
+
+        dataset = MNERawDataset(raw_list=raw_list, info_list=info_list,
+                                chunk_size=500, overlap=0).with_transform(transform_fn)
 
     Args:
         raw_list (List): A list of MNE Raw objects containing the EEG data.

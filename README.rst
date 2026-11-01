@@ -258,30 +258,34 @@ e.g. ``./tmp_in/data_preprocessed_python``.
 
    from torcheeg.datasets.utils import get_locations
 
-   def preprocess_sample(sample):
-       features = transforms.BandDifferentialEntropy()
-       eeg = features(sample['eeg'])
-       baseline = features(sample['baseline'])
-       eeg = transforms.BaselineRemoval(baseline)(eeg)
-       grid = transforms.ToGrid(get_locations(DEAPDataset.channels, DEAPDataset.grid))
-       return {**sample, 'eeg': grid(eeg)}
-
-   def prepare_training(sample):
-       return {'eeg': transforms.ToTensor()(sample['eeg']),
-               'labels': int(sample['info']['valence'] > 5)}
+   def transform_fn(sample):
+       eeg_transform = transforms.Compose([
+           transforms.BandDifferentialEntropy(),
+           transforms.BaselineRemoval(
+               baseline=transforms.BandDifferentialEntropy()(sample["baseline"]),
+           ),
+           transforms.ToGrid(get_locations(DEAPDataset.channels, DEAPDataset.grid)),
+           transforms.ToTensor(),
+       ])
+       label_transform = transforms.Compose([
+           transforms.Select("valence"),
+           transforms.Binary(5.0),
+       ])
+       return {
+           "eeg": eeg_transform(sample["eeg"]),
+           "label": label_transform(sample["info"]),
+       }
 
    dataset = DEAPDataset(
        io_path='./tmp_out/examples_pipeline/deap',
        root_path='./tmp_in/data_preprocessed_python',
-       transform=preprocess_sample,
        num_worker=4,
-   ).with_transform(prepare_training)
+   ).with_transform(transform_fn)
 
-``transform`` preprocesses each sample before it is stored in the cache.
-``with_transform`` creates a view that applies a function each time a sample
-is read. Chained calls append transformations in order, and are equivalent to
-passing ``transforms.Compose([f, g])``. Samples and training batches are
-dictionaries; functions choose the EEG, baseline and metadata fields they need.
+``with_transform`` applies the function each time a sample is read, leaving
+stored samples unchanged. ``eeg_transform`` and ``label_transform`` describe
+the EEG and label operations independently. The returned fields are ``eeg``
+and ``label``, which PyTorch DataLoader also preserves when batching samples.
 
 Next, we need to divide the dataset into a training set and a test set.
 In the field of EEG analysis, commonly used data partitioning methods

@@ -40,7 +40,7 @@ class TestLMDBDataset(unittest.TestCase):
                     loader = DataLoader(selected, batch_size=2, num_workers=1,
                                         multiprocessing_context=method)
                     batches = list(loader)
-                    self.assertEqual(batches[0]['labels'].tolist(), [2, 0])
+                    self.assertEqual(batches[0]['label'].tolist(), [2, 0])
                     np.testing.assert_array_equal(
                         batches[0]['eeg'][0], np.full((2, 4), 2))
             self.assertEqual(dataset[1]['info']['label'], 1)

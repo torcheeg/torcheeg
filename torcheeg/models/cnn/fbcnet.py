@@ -104,17 +104,24 @@ class FBCNet(nn.Module):
         from torcheeg.models import FBCNet
         from torch.utils.data import DataLoader
 
-        def preprocess_sample_1(sample):
-            sample = dict(sample)
-            sample['eeg'] = transforms.BandSignal()(sample['eeg'])
-            return sample
 
-        def prepare_training_1(sample):
-            sample = dict(sample)
-            sample['eeg'] = transforms.ToTensor()(sample['eeg'])
-            return {'eeg': sample['eeg'], 'labels': transforms.Compose([transforms.Select('valence'), transforms.Binary(5.0)])(sample['info'])}
+        def transform_fn(sample):
+            eeg_transform = transforms.Compose([
+                transforms.BandSignal(),
+                transforms.ToTensor(),
+            ])
+            label_transform = transforms.Compose([
+                transforms.Select('valence'),
+                transforms.Binary(5.0),
+            ])
+            return {
+                "eeg": eeg_transform(sample["eeg"]),
+                "label": label_transform(sample["info"]),
+            }
 
-        dataset = DEAPDataset(root_path='./data_preprocessed_python', chunk_size=512, num_baseline=1, baseline_chunk_size=512, transform=preprocess_sample_1).with_transform(prepare_training_1)
+
+        dataset = DEAPDataset(root_path='./data_preprocessed_python', chunk_size=512,
+                              num_baseline=1, baseline_chunk_size=512).with_transform(transform_fn)
 
         model = FBCNet(num_classes=2,
                        num_electrodes=32,
@@ -124,7 +131,7 @@ class FBCNet(nn.Module):
 
         batch = next(iter(DataLoader(dataset, batch_size=64)))
 
-        x, y = batch['eeg'], batch['labels']
+        x, y = batch['eeg'], batch['label']
         model(x)
 
     Args:

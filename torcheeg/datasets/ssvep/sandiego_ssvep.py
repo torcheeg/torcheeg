@@ -130,19 +130,26 @@ class SanDiegoSSVEPDataset(CachedDataset):
 
     .. code-block:: python
 
-        from torcheeg.transforms import Select,BandSignal
-        def preprocess_sample_1(sample):
-            sample = dict(sample)
-            sample['eeg'] = BandSignal(sampling_rate=256, band_dict={'frequency_range': [8, 16]})(sample['eeg'])
-            return sample
+        from torcheeg.transforms import Select, BandSignal
 
-        def prepare_training_1(sample):
-            sample = dict(sample)
-            return {'eeg': sample['eeg'], 'labels': Select('label')(sample['info'])}
 
-        dataset = SanDiegoSSVEPDataset(root_path='./archive', chunk_size=512, io_path='./tmp_out/sandiego', transform=preprocess_sample_1).with_transform(prepare_training_1)
-        print(dataset[0]['eeg'].shape) #EEG shape(1,8,512)
-        print(dataset[0]['labels'])  # label (int)
+        def transform_fn(sample):
+            eeg_transform = transforms.Compose([
+                BandSignal(sampling_rate=256, band_dict={'frequency_range': [8, 16]}),
+            ])
+            label_transform = transforms.Compose([
+                Select('label'),
+            ])
+            return {
+                "eeg": eeg_transform(sample["eeg"]),
+                "label": label_transform(sample["info"]),
+            }
+
+
+        dataset = SanDiegoSSVEPDataset(root_path='./archive', chunk_size=512,
+                                       io_path='./tmp_out/sandiego').with_transform(transform_fn)
+        print(dataset[0]['eeg'].shape)  # EEG shape(1,8,512)
+        print(dataset[0]['label'])  # label (int)
 
     Args:
         root_path (str): Downloaded data files (unzipped) dir.  (default: :obj:`'./archive'`)

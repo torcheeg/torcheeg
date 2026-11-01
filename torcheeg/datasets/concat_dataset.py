@@ -15,29 +15,67 @@ class ConcatDataset(BaseDataset):
 
     .. code-block:: python
 
-        def prepare_training_1(sample):
-            sample = dict(sample)
-            sample['eeg'] = transforms.MeanStdNormalize()(sample['eeg'])
-            sample['eeg'] = OrderElectrode(source_electrodes=['F3-M2', 'C3-M2', 'O1-M2', 'F4-M1', 'C4-M1', 'O2-M1'], target_electrodes=['F3-M2', 'F4-M1', 'C3-M2', 'C4-M1', 'O1-M2', 'O2-M1'])(sample['eeg'])
-            return {'eeg': sample['eeg'], 'labels': transforms.Compose([transforms.Select('label'), transforms.Mapping({'Sleep stage W': 0, 'Sleep stage N1': 1, 'Sleep stage N2': 2, 'Sleep stage N3': 3, 'Sleep stage R': 4, 'Lights off@@EEG F4-A1': 0})])(sample['info'])}
+        def transform_fn(sample):
+            eeg_transform = transforms.Compose([
+                transforms.MeanStdNormalize(),
+                OrderElectrode(source_electrodes=['F3-M2', 'C3-M2', 'O1-M2', 'F4-M1', 'C4-M1', 'O2-M1'],
+                               target_electrodes=['F3-M2', 'F4-M1', 'C3-M2', 'C4-M1', 'O1-M2', 'O2-M1']),
+            ])
+            label_transform = transforms.Compose([
+                transforms.Select('label'),
+                transforms.Mapping({'Sleep stage W': 0, 'Sleep stage N1': 1, 'Sleep stage N2': 2,
+                                   'Sleep stage N3': 3, 'Sleep stage R': 4, 'Lights off@@EEG F4-A1': 0}),
+            ])
+            return {
+                "eeg": eeg_transform(sample["eeg"]),
+                "label": label_transform(sample["info"]),
+            }
 
-        isruc_dataset = ISRUCDataset(root_path='./ISRUC-SLEEP', sfreq=100, channels=['F3-M2', 'C3-M2', 'O1-M2', 'F4-M1', 'C4-M1', 'O2-M1']).with_transform(prepare_training_1)
 
-        def prepare_training_2(sample):
-            sample = dict(sample)
-            sample['eeg'] = transforms.MeanStdNormalize()(sample['eeg'])
-            sample['eeg'] = OrderElectrode(source_electrodes=['EEG F4-M1', 'EEG C4-M1', 'EEG O2-M1', 'EEG C3-M2'], target_electrodes=['F3', 'EEG F4-M1', 'EEG C3-M2', 'EEG C4-M1', 'O1', 'EEG O2-M1'])(sample['eeg'])
-            return {'eeg': sample['eeg'], 'labels': transforms.Compose([transforms.Select('label'), transforms.Mapping({'Sleep stage W': 0, 'Sleep stage N1': 1, 'Sleep stage N2': 2, 'Sleep stage N3': 3, 'Sleep stage R': 4, 'Lights off@@EEG F4-A1': 0})])(sample['info'])}
+        isruc_dataset = ISRUCDataset(root_path='./ISRUC-SLEEP', sfreq=100, channels=[
+                                     'F3-M2', 'C3-M2', 'O1-M2', 'F4-M1', 'C4-M1', 'O2-M1']).with_transform(transform_fn)
 
-        hmc_dataset = HMCDataset(root_path='./HMC/recordings', sfreq=100, channels=['EEG F4-M1', 'EEG C4-M1', 'EEG O2-M1', 'EEG C3-M2']).with_transform(prepare_training_2)
 
-        def prepare_training_3(sample):
-            sample = dict(sample)
-            sample['eeg'] = transforms.MeanStdNormalize()(sample['eeg'])
-            sample['eeg'] = OrderElectrode(source_electrodes=['F3-M2', 'F4-M1', 'C3-M2', 'C4-M1', 'O1-M2', 'O2-M1'], target_electrodes=['F3-M2', 'F4-M1', 'C3-M2', 'C4-M1', 'O1-M2', 'O2-M1'])(sample['eeg'])
-            return {'eeg': sample['eeg'], 'labels': transforms.Compose([transforms.Select('label'), transforms.Mapping({'Sleep stage W': 0, 'Sleep stage N1': 1, 'Sleep stage N2': 2, 'Sleep stage N3': 3, 'Sleep stage R': 4, 'Lights off@@EEG F4-A1': 0})])(sample['info'])}
+        def transform_fn(sample):
+            eeg_transform = transforms.Compose([
+                transforms.MeanStdNormalize(),
+                OrderElectrode(source_electrodes=['EEG F4-M1', 'EEG C4-M1', 'EEG O2-M1', 'EEG C3-M2'],
+                               target_electrodes=['F3', 'EEG F4-M1', 'EEG C3-M2', 'EEG C4-M1', 'O1', 'EEG O2-M1']),
+            ])
+            label_transform = transforms.Compose([
+                transforms.Select('label'),
+                transforms.Mapping({'Sleep stage W': 0, 'Sleep stage N1': 1, 'Sleep stage N2': 2,
+                                   'Sleep stage N3': 3, 'Sleep stage R': 4, 'Lights off@@EEG F4-A1': 0}),
+            ])
+            return {
+                "eeg": eeg_transform(sample["eeg"]),
+                "label": label_transform(sample["info"]),
+            }
 
-        p2018_dataset = P2018Dataset(root_path='./P2018/training/', sfreq=100, channels=['F3-M2', 'F4-M1', 'C3-M2', 'C4-M1', 'O1-M2', 'O2-M1']).with_transform(prepare_training_3)
+
+        hmc_dataset = HMCDataset(root_path='./HMC/recordings', sfreq=100, channels=[
+                                 'EEG F4-M1', 'EEG C4-M1', 'EEG O2-M1', 'EEG C3-M2']).with_transform(transform_fn)
+
+
+        def transform_fn(sample):
+            eeg_transform = transforms.Compose([
+                transforms.MeanStdNormalize(),
+                OrderElectrode(source_electrodes=['F3-M2', 'F4-M1', 'C3-M2', 'C4-M1', 'O1-M2', 'O2-M1'],
+                               target_electrodes=['F3-M2', 'F4-M1', 'C3-M2', 'C4-M1', 'O1-M2', 'O2-M1']),
+            ])
+            label_transform = transforms.Compose([
+                transforms.Select('label'),
+                transforms.Mapping({'Sleep stage W': 0, 'Sleep stage N1': 1, 'Sleep stage N2': 2,
+                                   'Sleep stage N3': 3, 'Sleep stage R': 4, 'Lights off@@EEG F4-A1': 0}),
+            ])
+            return {
+                "eeg": eeg_transform(sample["eeg"]),
+                "label": label_transform(sample["info"]),
+            }
+
+
+        p2018_dataset = P2018Dataset(root_path='./P2018/training/', sfreq=100, channels=[
+                                     'F3-M2', 'F4-M1', 'C3-M2', 'C4-M1', 'O1-M2', 'O2-M1']).with_transform(transform_fn)
 
         sleep_dataset = ConcatDataset(
             isruc_dataset, ConcatDataset(hmc_dataset, p2018_dataset))

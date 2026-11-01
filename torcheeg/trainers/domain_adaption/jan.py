@@ -143,7 +143,7 @@ class JANTrainer(_MMDLikeTrainer):
     def training_step(self, batch: dict,
                       batch_idx: int) -> torch.Tensor:
         source, target = batch
-        x_source, y_source = source['eeg'], source['labels']
+        x_source, y_source = source['eeg'], source['label']
         x_target = target['eeg']
 
         x_source_feat = self.extractor(x_source)

@@ -162,7 +162,7 @@ class MixedConv2d(nn.ModuleDict):
 
 
 class FBMSNet(nn.Module):
-    r'''
+    r"""
         FBMSNet, a novel multiscale temporal convolutional neural network for MI decoding tasks, employs Mixed Conv to extract multiscale temporal features which  enhance the intra-class compactness and improve the inter-class separability with the joint supervision of the center loss andcenter loss.
 
         - Paper: FBMSNet: A Filter-Bank Multi-Scale Convolutional Neural Network for EEG-Based Motor Imagery Decoding
@@ -189,22 +189,33 @@ class FBMSNet(nn.Module):
                 'sub band8': [32, 36],
                 'sub band9': [36, 40]
             }
-            def preprocess_sample(sample):
-                transform = transforms.BandSignal(band_dict=freq_range_per_band, sampling_rate=250)
-                return {**sample, 'eeg': transform(sample['eeg'])}
 
-            def prepare_training(sample):
-                return {'eeg': transforms.ToTensor()(sample['eeg']),
-                        'labels': sample['info']['label'] - 1}
 
-            dataset = BCICIV2aDataset(root_path='./BCICIV_2a_mat', chunk_size=512,
-                                     transform=preprocess_sample).with_transform(prepare_training)
+            def transform_fn(sample):
+                eeg_transform = transforms.Compose([
+                    transforms.BandSignal(
+                        band_dict=freq_range_per_band, sampling_rate=250),
+                    transforms.ToTensor(),
+                ])
+                label_transform = transforms.Compose([
+                    transforms.Select('label'),
+                    transforms.Lambda(lambda label: label - 1),
+                ])
+                return {
+                    'eeg': eeg_transform(sample['eeg']),
+                    'label': label_transform(sample['info']),
+                }
 
-            model = FBMSNet(num_classes=4, num_electrodes=22, chunk_size=512, in_channels=9)
+
+            dataset = BCICIV2aDataset(root_path='./BCICIV_2a_mat',
+                                      chunk_size=512).with_transform(transform_fn)
+
+            model = FBMSNet(num_classes=4, num_electrodes=22,
+                            chunk_size=512, in_channels=9)
 
             batch = next(iter(DataLoader(dataset, batch_size=64)))
 
-            x, y = batch['eeg'], batch['labels']
+            x, y = batch['eeg'], batch['label']
             model(x)
 
         Args:
@@ -216,7 +227,7 @@ class FBMSNet(nn.Module):
             temporal (str): The temporal layer used, with options including VarLayer, StdLayer, LogVarLayer, MeanLayer, and MaxLayer, used to compute statistics using different techniques in the temporal dimension. (default: :obj:`LogVarLayer`)
             num_feature (int): The number of Mixed Conv output channels which can stand for various kinds of feature. (default: :obj:`36`)
             dilatability (int): The expansion multiple of the channels after the input bands pass through spatial convolutional blocks. (default: :obj:`8`
-    '''
+    """
 
     def __init__(self,
                  in_channels: int,

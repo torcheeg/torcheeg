@@ -298,20 +298,25 @@ class DTUProcessedDataset(CachedDataset):
         from torcheeg.datasets import DTUProcessedDataset
         from torcheeg import transforms
 
-        def preprocess_sample_1(sample):
-            sample = dict(sample)
-            sample['eeg'] = transforms.To2d()(sample['eeg'])
-            return sample
 
-        def prepare_training_1(sample):
-            sample = dict(sample)
-            sample['eeg'] = transforms.ToTensor()(sample['eeg'])
-            return {'eeg': sample['eeg'], 'labels': transforms.Compose([transforms.Select('attended_speaker'), transforms.Lambda(lambd=lambda x: x - 1)])(sample['info'])}
+        def transform_fn(sample):
+            eeg_transform = transforms.Compose([
+                transforms.To2d(),
+                transforms.ToTensor(),
+            ])
+            label_transform = transforms.Compose([
+                transforms.Select('attended_speaker'),
+                transforms.Lambda(lambd=lambda x: x - 1),
+            ])
+            return {
+                "eeg": eeg_transform(sample["eeg"]),
+                "label": label_transform(sample["info"]),
+            }
 
-        dataset = DTUProcessedDataset(root_path='./DATA_preproc', transform=preprocess_sample_1).with_transform(prepare_training_1)
+
+        dataset = DTUProcessedDataset(
+            root_path='./DATA_preproc').with_transform(transform_fn)
         print(dataset[0])
-        # EEG signal (torch.Tensor[1, 64, 64]),
-        # label (int)
 
     Args:
         root_path (str): Path to the downloaded data files in MATLAB format (unzipped DATA_preproc.zip). (default: :obj:`'./DATA_preproc'`)

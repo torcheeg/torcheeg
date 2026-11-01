@@ -19,7 +19,7 @@ class _DummyRegressionDataset(Dataset):
         return self.length
 
     def __getitem__(self, i) -> int:
-        return {'eeg': torch.randn(120), 'labels': random.random()}
+        return {'eeg': torch.randn(120), 'label': random.random()}
 
 
 class _DummyModel(nn.Module):

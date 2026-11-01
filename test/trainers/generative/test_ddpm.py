@@ -23,7 +23,7 @@ class _DummyDataset(Dataset):
         return self.length
 
     def __getitem__(self, i) -> int:
-        return {'eeg': torch.randn(4, 9, 9), 'labels': random.randint(0, 1)}
+        return {'eeg': torch.randn(4, 9, 9), 'label': random.randint(0, 1)}
 
 
 class _Extractor(nn.Module):
@@ -243,7 +243,7 @@ class TestDiffusionMath(unittest.TestCase):
                         self.assertEqual(result.shape, x.shape)
                         self.assertTrue(torch.isfinite(result).all())
                         trainer.p_sample(*args, repeat_noise=True)
-                        batch = {'eeg': x, 'labels': labels}
+                        batch = {'eeg': x, 'label': labels}
                         self.assertEqual(trainer.predict_step(
                             batch, 0).shape, x.shape)
 

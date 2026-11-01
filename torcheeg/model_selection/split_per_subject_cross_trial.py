@@ -34,15 +34,28 @@ def train_test_split_per_subject_cross_trial(
         from torcheeg import transforms
         from torch.utils.data import DataLoader
 
-        def prepare_training_1(sample):
-            sample = dict(sample)
-            sample['eeg'] = transforms.ToTensor()(sample['eeg'])
-            sample['eeg'] = transforms.To2d()(sample['eeg'])
-            return {'eeg': sample['eeg'], 'labels': transforms.Compose([transforms.Select(['valence', 'arousal']), transforms.Binary(5.0), transforms.BinariesToCategory()])(sample['info'])}
 
-        dataset = DEAPDataset(root_path='./data_preprocessed_python').with_transform(prepare_training_1)
+        def transform_fn(sample):
+            eeg_transform = transforms.Compose([
+                transforms.ToTensor(),
+                transforms.To2d(),
+            ])
+            label_transform = transforms.Compose([
+                transforms.Select(['valence', 'arousal']),
+                transforms.Binary(5.0),
+                transforms.BinariesToCategory(),
+            ])
+            return {
+                "eeg": eeg_transform(sample["eeg"]),
+                "label": label_transform(sample["info"]),
+            }
 
-        train_dataset, test_dataset = train_test_split_per_subject_cross_trial(dataset=dataset)
+
+        dataset = DEAPDataset(
+            root_path='./data_preprocessed_python').with_transform(transform_fn)
+
+        train_dataset, test_dataset = train_test_split_per_subject_cross_trial(
+            dataset=dataset)
 
         train_loader = DataLoader(train_dataset)
         test_loader = DataLoader(test_dataset)

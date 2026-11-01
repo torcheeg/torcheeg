@@ -7,7 +7,6 @@ transform; Compose applies functions in order.
 """
 
 import numpy as np
-import torch
 
 from torcheeg import transforms
 from torcheeg.datasets import MemoryDataset
@@ -24,29 +23,28 @@ print(features.shape)
 baseline = np.zeros_like(eeg)
 corrected = transforms.BaselineRemoval(baseline=baseline)(eeg)
 
-# Apply the same array transform to multiple fields when needed.
+# Prepare a complete training sample in one function.
 
 
-def preprocess_sample(sample):
-    feature = transforms.BandDifferentialEntropy()
-    eeg = feature(sample['eeg'])
-    baseline = feature(sample['baseline'])
-    return {**sample, 'eeg': transforms.BaselineRemoval(baseline)(eeg),
-            'baseline': baseline}
-
-
-def prepare_training(sample):
-    return {'eeg': transforms.ToTensor()(sample['eeg']),
-            'labels': torch.tensor(sample['info']['label'])}
+def transform_fn(sample):
+    eeg_transform = transforms.Compose([
+        transforms.BandDifferentialEntropy(),
+        transforms.BaselineRemoval(
+            baseline=transforms.BandDifferentialEntropy()(sample["baseline"]),
+        ),
+        transforms.ToTensor(),
+    ])
+    label_transform = transforms.Compose([
+        transforms.Select("label"),
+    ])
+    return {
+        "eeg": eeg_transform(sample["eeg"]),
+        "label": label_transform(sample["info"]),
+    }
 
 
 dataset = MemoryDataset()
 dataset.append({'eeg': eeg, 'baseline': eeg * 0.5, 'info': {'label': 1}})
-training = dataset.with_transform(
-    preprocess_sample).with_transform(prepare_training)
-equivalent = dataset.with_transform(transforms.Compose([
-    preprocess_sample,
-    prepare_training,
-]))
-torch.testing.assert_close(training[0]['eeg'], equivalent[0]['eeg'])
+training = dataset.with_transform(transform_fn)
 print(training[0]['eeg'].shape)
+print(training[0]['label'])

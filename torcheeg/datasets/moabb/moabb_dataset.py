@@ -130,17 +130,24 @@ class MOABBDataset(CachedDataset):
         dataset = BNCI2014001()
         dataset.subject_list = [1, 2, 3]
         paradigm = LeftRightImagery()
-        def preprocess_sample_1(sample):
-            sample = dict(sample)
-            sample['eeg'] = transforms.BandDifferentialEntropy()(sample['eeg'])
-            return sample
 
-        def prepare_training_1(sample):
-            sample = dict(sample)
-            sample['eeg'] = transforms.ToTensor()(sample['eeg'])
-            return {'eeg': sample['eeg'], 'labels': transforms.Compose([transforms.Select('label')])(sample['info'])}
 
-        dataset = moabb_dataset.MOABBDataset(dataset=dataset, paradigm=paradigm, io_path='./io/moabb', transform=preprocess_sample_1).with_transform(prepare_training_1)
+        def transform_fn(sample):
+            eeg_transform = transforms.Compose([
+                transforms.BandDifferentialEntropy(),
+                transforms.ToTensor(),
+            ])
+            label_transform = transforms.Compose([
+                transforms.Select('label'),
+            ])
+            return {
+                "eeg": eeg_transform(sample["eeg"]),
+                "label": label_transform(sample["info"]),
+            }
+
+
+        dataset = moabb_dataset.MOABBDataset(
+            dataset=dataset, paradigm=paradigm, io_path='./io/moabb').with_transform(transform_fn)
 
     Args:
         dataset (MOABBDataset): an instance of :obj:`BaseDataset` defined by moabb.

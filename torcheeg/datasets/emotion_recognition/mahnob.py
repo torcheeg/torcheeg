@@ -270,22 +270,26 @@ class MAHNOBDataset(CachedDataset):
         from torcheeg import transforms
         from torcheeg.datasets.utils import get_locations
 
-        def preprocess_sample_1(sample):
-            sample = dict(sample)
-            sample['eeg'] = transforms.BandDifferentialEntropy()(sample['eeg'])
-            sample['eeg'] = transforms.ToGrid(get_locations(MAHNOBDataset.channels, MAHNOBDataset.grid))(sample['eeg'])
-            return sample
 
-        def prepare_training_1(sample):
-            sample = dict(sample)
-            sample['eeg'] = transforms.ToTensor()(sample['eeg'])
-            return {'eeg': sample['eeg'], 'labels': transforms.Compose([transforms.Select('feltVlnc'), transforms.Binary(5.0)])(sample['info'])}
+        def transform_fn(sample):
+            eeg_transform = transforms.Compose([
+                transforms.BandDifferentialEntropy(),
+                transforms.ToGrid(get_locations(
+                    MAHNOBDataset.channels, MAHNOBDataset.grid)),
+                transforms.ToTensor(),
+            ])
+            label_transform = transforms.Compose([
+                transforms.Select('feltVlnc'),
+                transforms.Binary(5.0),
+            ])
+            return {
+                "eeg": eeg_transform(sample["eeg"]),
+                "label": label_transform(sample["info"]),
+            }
 
-        dataset = MAHNOBDataset(root_path='./Sessions', transform=preprocess_sample_1).with_transform(prepare_training_1)
+
+        dataset = MAHNOBDataset(root_path='./Sessions').with_transform(transform_fn)
         print(dataset[0])
-        # EEG signal (torch.Tensor[4, 9, 9]),
-        # coresponding baseline signal (torch.Tensor[4, 9, 9]),
-        # label (int)
 
     Another example dataset for CNN-based methods:
 
@@ -294,17 +298,25 @@ class MAHNOBDataset(CachedDataset):
         from torcheeg.datasets import MAHNOBDataset
         from torcheeg import transforms
 
-        def prepare_training_1(sample):
-            sample = dict(sample)
-            sample['eeg'] = transforms.To2d()(sample['eeg'])
-            sample['eeg'] = transforms.ToTensor()(sample['eeg'])
-            return {'eeg': sample['eeg'], 'labels': transforms.Compose([transforms.Select(['feltVlnc', 'feltArsl']), transforms.Binary(5.0), transforms.BinariesToCategory()])(sample['info'])}
 
-        dataset = MAHNOBDataset(root_path='./Sessions').with_transform(prepare_training_1)
+        def transform_fn(sample):
+            eeg_transform = transforms.Compose([
+                transforms.To2d(),
+                transforms.ToTensor(),
+            ])
+            label_transform = transforms.Compose([
+                transforms.Select(['feltVlnc', 'feltArsl']),
+                transforms.Binary(5.0),
+                transforms.BinariesToCategory(),
+            ])
+            return {
+                "eeg": eeg_transform(sample["eeg"]),
+                "label": label_transform(sample["info"]),
+            }
+
+
+        dataset = MAHNOBDataset(root_path='./Sessions').with_transform(transform_fn)
         print(dataset[0])
-        # EEG signal (torch.Tensor[1, 32, 128]),
-        # coresponding baseline signal (torch.Tensor[1, 32, 128]),
-        # label (int)
 
     An example dataset for GNN-based methods:
 
@@ -313,18 +325,25 @@ class MAHNOBDataset(CachedDataset):
         from torcheeg.datasets import MAHNOBDataset
         from torcheeg import transforms
         from torcheeg.datasets.utils import get_adjacency
-        from torcheeg.transforms.pyg import ToG
+        from torcheeg.transforms.graph import ToG
 
-        def prepare_training_1(sample):
-            sample = dict(sample)
-            sample['eeg'] = ToG(get_adjacency(MAHNOBDataset.channels, MAHNOBDataset.adjacency))(sample['eeg'])
-            return {'eeg': sample['eeg'], 'labels': transforms.Compose([transforms.Select('feltArsl'), transforms.Binary(5.0)])(sample['info'])}
 
-        dataset = MAHNOBDataset(root_path='./Sessions').with_transform(prepare_training_1)
+        def transform_fn(sample):
+            eeg_transform = transforms.Compose([
+                ToG(get_adjacency(MAHNOBDataset.channels, MAHNOBDataset.adjacency)),
+            ])
+            label_transform = transforms.Compose([
+                transforms.Select('feltArsl'),
+                transforms.Binary(5.0),
+            ])
+            return {
+                "eeg": eeg_transform(sample["eeg"]),
+                "label": label_transform(sample["info"]),
+            }
+
+
+        dataset = MAHNOBDataset(root_path='./Sessions').with_transform(transform_fn)
         print(dataset[0])
-        # EEG signal (torch_geometric.data.Data),
-        # coresponding baseline signal (torch_geometric.data.Data),
-        # label (int)
 
     Args:
         root_path (str): Downloaded data files in bdf and xml (unzipped Sessions.zip) formats (default: :obj:`'./Sessions'`)

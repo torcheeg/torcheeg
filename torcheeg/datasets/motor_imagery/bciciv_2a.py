@@ -174,16 +174,25 @@ class BCICIV2aDataset(CachedDataset):
         from torcheeg.datasets import BCICIV2aDataset
         from torcheeg import transforms
 
-        def prepare_training_1(sample):
-            sample = dict(sample)
-            sample['eeg'] = transforms.To2d()(sample['eeg'])
-            sample['eeg'] = transforms.ToTensor()(sample['eeg'])
-            return {'eeg': sample['eeg'], 'labels': transforms.Compose([transforms.Select('label'), transforms.Lambda(lambda x: x - 1)])(sample['info'])}
 
-        dataset = BCICIV2aDataset(root_path='./BCICIV_2a_mat').with_transform(prepare_training_1)
+        def transform_fn(sample):
+            eeg_transform = transforms.Compose([
+                transforms.To2d(),
+                transforms.ToTensor(),
+            ])
+            label_transform = transforms.Compose([
+                transforms.Select('label'),
+                transforms.Lambda(lambda x: x - 1),
+            ])
+            return {
+                "eeg": eeg_transform(sample["eeg"]),
+                "label": label_transform(sample["info"]),
+            }
+
+
+        dataset = BCICIV2aDataset(
+            root_path='./BCICIV_2a_mat').with_transform(transform_fn)
         print(dataset[0])
-        # EEG signal (torch.Tensor[1, 22, 1750])
-        # label (int)
 
     Args:
         root_path (str): Downloaded data files in matlab (unzipped BCICIV_2a_mat.zip) formats (default: :obj:`'./BCICIV_2a_mat'`)

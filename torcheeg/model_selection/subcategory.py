@@ -26,13 +26,24 @@ class Subcategory(BaseModelSelection):
         from torch.utils.data import DataLoader
 
         cv = Subcategory()
-        def prepare_training_1(sample):
-            sample = dict(sample)
-            sample['eeg'] = transforms.To2d()(sample['eeg'])
-            sample['eeg'] = transforms.ToTensor()(sample['eeg'])
-            return {'eeg': sample['eeg'], 'labels': transforms.Compose([transforms.Select('subject_id'), transforms.StringToInt()])(sample['info'])}
 
-        dataset = M3CVDataset(root_path='./aistudio').with_transform(prepare_training_1)
+
+        def transform_fn(sample):
+            eeg_transform = transforms.Compose([
+                transforms.To2d(),
+                transforms.ToTensor(),
+            ])
+            label_transform = transforms.Compose([
+                transforms.Select('subject_id'),
+                transforms.StringToInt(),
+            ])
+            return {
+                "eeg": eeg_transform(sample["eeg"]),
+                "label": label_transform(sample["info"]),
+            }
+
+
+        dataset = M3CVDataset(root_path='./aistudio').with_transform(transform_fn)
         for subdataset in cv.split(dataset):
             loader = DataLoader(subdataset)
             ...
@@ -42,15 +53,27 @@ class Subcategory(BaseModelSelection):
     .. code-block:: python
 
         cv = Subcategory()
-        def prepare_training_1(sample):
-            sample = dict(sample)
-            sample['eeg'] = transforms.To2d()(sample['eeg'])
-            sample['eeg'] = transforms.ToTensor()(sample['eeg'])
-            return {'eeg': sample['eeg'], 'labels': transforms.Compose([transforms.Select('subject_id'), transforms.StringToInt()])(sample['info'])}
 
-        dataset = M3CVDataset(root_path='./aistudio').with_transform(prepare_training_1)
+
+        def transform_fn(sample):
+            eeg_transform = transforms.Compose([
+                transforms.To2d(),
+                transforms.ToTensor(),
+            ])
+            label_transform = transforms.Compose([
+                transforms.Select('subject_id'),
+                transforms.StringToInt(),
+            ])
+            return {
+                "eeg": eeg_transform(sample["eeg"]),
+                "label": label_transform(sample["info"]),
+            }
+
+
+        dataset = M3CVDataset(root_path='./aistudio').with_transform(transform_fn)
         for i, subdataset in enumerate(cv.split(dataset)):
-            train_dataset, test_dataset = train_test_split(dataset=subdataset, split_path=f'./split{i}')
+            train_dataset, test_dataset = train_test_split(
+                dataset=subdataset, split_path=f'./split{i}')
 
             train_loader = DataLoader(train_dataset)
             test_loader = DataLoader(test_dataset)
@@ -61,22 +84,46 @@ class Subcategory(BaseModelSelection):
     .. code-block:: python
 
         train_cv = Subcategory()
-        def prepare_training_1(sample):
-            sample = dict(sample)
-            sample['eeg'] = transforms.To2d()(sample['eeg'])
-            sample['eeg'] = transforms.ToTensor()(sample['eeg'])
-            return {'eeg': sample['eeg'], 'labels': transforms.Compose([transforms.Select('subject_id'), transforms.StringToInt()])(sample['info'])}
 
-        train_dataset = M3CVDataset(root_path='./aistudio').with_transform(prepare_training_1)
+
+        def transform_fn(sample):
+            eeg_transform = transforms.Compose([
+                transforms.To2d(),
+                transforms.ToTensor(),
+            ])
+            label_transform = transforms.Compose([
+                transforms.Select('subject_id'),
+                transforms.StringToInt(),
+            ])
+            return {
+                "eeg": eeg_transform(sample["eeg"]),
+                "label": label_transform(sample["info"]),
+            }
+
+
+        train_dataset = M3CVDataset(
+            root_path='./aistudio').with_transform(transform_fn)
 
         val_cv = Subcategory()
-        def prepare_training_2(sample):
-            sample = dict(sample)
-            sample['eeg'] = transforms.To2d()(sample['eeg'])
-            sample['eeg'] = transforms.ToTensor()(sample['eeg'])
-            return {'eeg': sample['eeg'], 'labels': transforms.Compose([transforms.Select('subject_id'), transforms.StringToInt()])(sample['info'])}
 
-        val_dataset = M3CVDataset(root_path='./aistudio', subset='Calibration', num_channel=65).with_transform(prepare_training_2)
+
+        def transform_fn(sample):
+            eeg_transform = transforms.Compose([
+                transforms.To2d(),
+                transforms.ToTensor(),
+            ])
+            label_transform = transforms.Compose([
+                transforms.Select('subject_id'),
+                transforms.StringToInt(),
+            ])
+            return {
+                "eeg": eeg_transform(sample["eeg"]),
+                "label": label_transform(sample["info"]),
+            }
+
+
+        val_dataset = M3CVDataset(root_path='./aistudio', subset='Calibration',
+                                  num_channel=65).with_transform(transform_fn)
 
         for train_dataset, val_dataset in zip(train_cv.split(train_dataset), val_cv.split(val_dataset)):
             train_loader = DataLoader(train_dataset)

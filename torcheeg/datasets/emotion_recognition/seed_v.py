@@ -233,22 +233,26 @@ class SEEDVDataset(CachedDataset):
         from torcheeg import transforms
         from torcheeg.datasets.utils import get_locations
 
-        def preprocess_sample_1(sample):
-            sample = dict(sample)
-            sample['eeg'] = transforms.BandDifferentialEntropy()(sample['eeg'])
-            sample['eeg'] = transforms.ToGrid(get_locations(SEEDVDataset.channels, SEEDVDataset.grid))(sample['eeg'])
-            return sample
 
-        def prepare_training_1(sample):
-            sample = dict(sample)
-            sample['eeg'] = transforms.ToTensor()(sample['eeg'])
-            return {'eeg': sample['eeg'], 'labels': transforms.Compose([transforms.Select('emotion'), transforms.Lambda(lambda x: x + 1)])(sample['info'])}
+        def transform_fn(sample):
+            eeg_transform = transforms.Compose([
+                transforms.BandDifferentialEntropy(),
+                transforms.ToGrid(get_locations(
+                    SEEDVDataset.channels, SEEDVDataset.grid)),
+                transforms.ToTensor(),
+            ])
+            label_transform = transforms.Compose([
+                transforms.Select('emotion'),
+                transforms.Lambda(lambda x: x + 1),
+            ])
+            return {
+                "eeg": eeg_transform(sample["eeg"]),
+                "label": label_transform(sample["info"]),
+            }
 
-        dataset = SEEDVDataset(root_path='./EEG_raw', transform=preprocess_sample_1).with_transform(prepare_training_1)
+
+        dataset = SEEDVDataset(root_path='./EEG_raw').with_transform(transform_fn)
         print(dataset[0])
-        # EEG signal (torch.Tensor[4, 9, 9]),
-        # coresponding baseline signal (torch.Tensor[4, 9, 9]),
-        # label (int)
 
     Another example dataset for CNN-based methods:
 
@@ -257,17 +261,23 @@ class SEEDVDataset(CachedDataset):
         from torcheeg.datasets import SEEDVDataset
         from torcheeg import transforms
 
-        def prepare_training_1(sample):
-            sample = dict(sample)
-            sample['eeg'] = transforms.ToTensor()(sample['eeg'])
-            sample['eeg'] = transforms.To2d()(sample['eeg'])
-            return {'eeg': sample['eeg'], 'labels': transforms.Select('emotion')(sample['info'])}
 
-        dataset = SEEDVDataset(root_path='./EEG_raw').with_transform(prepare_training_1)
+        def transform_fn(sample):
+            eeg_transform = transforms.Compose([
+                transforms.ToTensor(),
+                transforms.To2d(),
+            ])
+            label_transform = transforms.Compose([
+                transforms.Select('emotion'),
+            ])
+            return {
+                "eeg": eeg_transform(sample["eeg"]),
+                "label": label_transform(sample["info"]),
+            }
+
+
+        dataset = SEEDVDataset(root_path='./EEG_raw').with_transform(transform_fn)
         print(dataset[0])
-        # EEG signal (torch.Tensor[62, 200]),
-        # coresponding baseline signal (torch.Tensor[62, 200]),
-        # label (int)
 
     An example dataset for GNN-based methods:
 
@@ -276,18 +286,24 @@ class SEEDVDataset(CachedDataset):
         from torcheeg.datasets import SEEDVDataset
         from torcheeg import transforms
         from torcheeg.datasets.utils import get_adjacency
-        from torcheeg.transforms.pyg import ToG
+        from torcheeg.transforms.graph import ToG
 
-        def prepare_training_1(sample):
-            sample = dict(sample)
-            sample['eeg'] = ToG(get_adjacency(SEEDVDataset.channels, SEEDVDataset.adjacency))(sample['eeg'])
-            return {'eeg': sample['eeg'], 'labels': transforms.Select('emotion')(sample['info'])}
 
-        dataset = SEEDVDataset(root_path='./EEG_raw').with_transform(prepare_training_1)
+        def transform_fn(sample):
+            eeg_transform = transforms.Compose([
+                ToG(get_adjacency(SEEDVDataset.channels, SEEDVDataset.adjacency)),
+            ])
+            label_transform = transforms.Compose([
+                transforms.Select('emotion'),
+            ])
+            return {
+                "eeg": eeg_transform(sample["eeg"]),
+                "label": label_transform(sample["info"]),
+            }
+
+
+        dataset = SEEDVDataset(root_path='./EEG_raw').with_transform(transform_fn)
         print(dataset[0])
-        # EEG signal (torch_geometric.data.Data),
-        # coresponding baseline signal (torch_geometric.data.Data),
-        # label (int)
 
     Args:
         root_path (str): Downloaded data files in matlab (unzipped EEG_raw.zip) formats (default: :obj:`'./EEG_raw'`)

@@ -25,7 +25,7 @@ class ToG(EEGTransform):
 
     .. code-block:: python
 
-        from torcheeg.transforms.pyg import ToG
+        from torcheeg.transforms.graph import ToG
         from torcheeg.datasets import DEAPDataset
         from torcheeg.datasets.utils import get_adjacency
 
@@ -106,7 +106,7 @@ class ToDynamicG(EEGTransform):
 
     .. code-block:: python
 
-        from torcheeg.transforms.pyg import ToDynamicG
+        from torcheeg.transforms.graph import ToDynamicG
 
         t = ToDynamicG(edge_func='gaussian_distance', sigma=1.0, top_k=10, complete_graph=False)
         t(np.random.randn(32, 128))

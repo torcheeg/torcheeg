@@ -11,12 +11,11 @@ In this tutorial, we'll demonstrate how you can leverage TorchEEG to train a Con
 # ----------------------------------------------
 #
 # To begin with, we employ the SEED dataset provided by TorchEEG. Each EEG sample in this dataset lasts for 1 second and contains 200 data points.
-# In terms of offline preprocessing, we perform the following tasks:
+# transform_fn performs these operations when a sample is read:
 # - Divide each electrode's EEG signal into 4 frequency sub-bands
 # - Compute the differential entropy of each sub-band to serve as a feature
-# - Remove the baseline from the signal
 # - Map the preprocessed signals onto a 2D grid
-# For online processing, we convert the EEG signals into PyTorch Tensors, ensuring they are compatible with neural network inputs.
+# Finally, convert the EEG signals into PyTorch tensors.
 #
 
 from torcheeg import transforms
@@ -24,23 +23,25 @@ from torcheeg.datasets import SEEDDataset
 from torcheeg.datasets.utils import get_locations
 
 
-def preprocess_sample_1(sample):
-    sample = dict(sample)
-    sample['eeg'] = transforms.BandDifferentialEntropy(
-        sampling_rate=200)(sample['eeg'])
-    sample['eeg'] = transforms.ToGrid(get_locations(
-        SEEDDataset.channels, SEEDDataset.grid))(sample['eeg'])
-    return sample
-
-
-def prepare_training_1(sample):
-    sample = dict(sample)
-    sample['eeg'] = transforms.ToTensor()(sample['eeg'])
-    return {'eeg': sample['eeg'], 'labels': transforms.Compose([transforms.Select('emotion'), transforms.Lambda(lambda x: x + 1)])(sample['info'])}
+def transform_fn(sample):
+    eeg_transform = transforms.Compose([
+        transforms.BandDifferentialEntropy(sampling_rate=200),
+        transforms.ToGrid(get_locations(
+            SEEDDataset.channels, SEEDDataset.grid)),
+        transforms.ToTensor(),
+    ])
+    label_transform = transforms.Compose([
+        transforms.Select('emotion'),
+        transforms.Lambda(lambda x: x + 1),
+    ])
+    return {
+        "eeg": eeg_transform(sample["eeg"]),
+        "label": label_transform(sample["info"]),
+    }
 
 
 dataset = SEEDDataset(io_path=f'./examples_seed_ccnn/seed', root_path='./Preprocessed_EEG',
-                      chunk_size=200, num_worker=4, transform=preprocess_sample_1).with_transform(prepare_training_1)
+                      chunk_size=200, num_worker=4).with_transform(transform_fn)
 
 ######################################################################
 # Step 2: Divide the Training and Test Samples in the Dataset

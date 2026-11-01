@@ -122,18 +122,26 @@ class ViT(nn.Module):
         from torch.utils.data import DataLoader
         from torcheeg.datasets.utils import get_locations
 
-        def preprocess_sample_1(sample):
-            sample = dict(sample)
-            sample['eeg'] = transforms.MinMaxNormalize(axis=-1)(sample['eeg'])
-            sample['eeg'] = transforms.ToGrid(get_locations(DEAPDataset.channels, DEAPDataset.grid))(sample['eeg'])
-            return sample
 
-        def prepare_training_1(sample):
-            sample = dict(sample)
-            sample['eeg'] = transforms.ToTensor()(sample['eeg'])
-            return {'eeg': sample['eeg'], 'labels': transforms.Compose([transforms.Select('valence'), transforms.Binary(5.0)])(sample['info'])}
+        def transform_fn(sample):
+            eeg_transform = transforms.Compose([
+                transforms.MinMaxNormalize(axis=-1),
+                transforms.ToGrid(get_locations(
+                    DEAPDataset.channels, DEAPDataset.grid)),
+                transforms.ToTensor(),
+            ])
+            label_transform = transforms.Compose([
+                transforms.Select('valence'),
+                transforms.Binary(5.0),
+            ])
+            return {
+                "eeg": eeg_transform(sample["eeg"]),
+                "label": label_transform(sample["info"]),
+            }
 
-        dataset = DEAPDataset(root_path='./data_preprocessed_python', transform=preprocess_sample_1).with_transform(prepare_training_1)
+
+        dataset = DEAPDataset(
+            root_path='./data_preprocessed_python').with_transform(transform_fn)
 
         model = ViT(chunk_size=128,
                     grid_size=(9, 9),
@@ -142,25 +150,33 @@ class ViT(nn.Module):
 
         batch = next(iter(DataLoader(dataset, batch_size=64)))
 
-        x, y = batch['eeg'], batch['labels']
+        x, y = batch['eeg'], batch['label']
         model(x)
 
     It can also be used for the analysis of features such as DE, PSD, etc:
 
     .. code-block:: python
 
-        def preprocess_sample_1(sample):
-            sample = dict(sample)
-            sample['eeg'] = transforms.BandDifferentialEntropy(sampling_rate=128)(sample['eeg'])
-            sample['eeg'] = transforms.ToGrid(get_locations(DEAPDataset.channels, DEAPDataset.grid))(sample['eeg'])
-            return sample
 
-        def prepare_training_1(sample):
-            sample = dict(sample)
-            sample['eeg'] = transforms.ToTensor()(sample['eeg'])
-            return {'eeg': sample['eeg'], 'labels': transforms.Compose([transforms.Select('valence'), transforms.Binary(5.0)])(sample['info'])}
+        def transform_fn(sample):
+            eeg_transform = transforms.Compose([
+                transforms.BandDifferentialEntropy(sampling_rate=128),
+                transforms.ToGrid(get_locations(
+                    DEAPDataset.channels, DEAPDataset.grid)),
+                transforms.ToTensor(),
+            ])
+            label_transform = transforms.Compose([
+                transforms.Select('valence'),
+                transforms.Binary(5.0),
+            ])
+            return {
+                "eeg": eeg_transform(sample["eeg"]),
+                "label": label_transform(sample["info"]),
+            }
 
-        dataset = DEAPDataset(io_path=f'./deap', root_path='./data_preprocessed_python', transform=preprocess_sample_1).with_transform(prepare_training_1)
+
+        dataset = DEAPDataset(
+            io_path=f'./deap', root_path='./data_preprocessed_python').with_transform(transform_fn)
         model = ViT(chunk_size=4,
                     grid_size=(9, 9),
                     t_patch_size=1,

@@ -192,7 +192,7 @@ class CenterLossTrainer(ClassifierTrainer):
             self.test_metrics.reset()
 
     def training_step(self, batch, batch_idx) -> None:
-        x, y = batch['eeg'], batch['labels']
+        x, y = batch['eeg'], batch['label']
         center_optimizer, model_optimizer = self.optimizers(True)
 
         # zero_grad
@@ -251,7 +251,7 @@ class CenterLossTrainer(ClassifierTrainer):
 
     def validation_step(self, batch: dict,
                         batch_idx: int) -> torch.Tensor:
-        x, y = batch['eeg'], batch['labels']
+        x, y = batch['eeg'], batch['label']
         # calculate feat y_pred
         feat = self.extractor(x)
         y_hat = self.classifier(feat)
@@ -301,7 +301,7 @@ class CenterLossTrainer(ClassifierTrainer):
 
     def test_step(self, batch: dict,
                   batch_idx: int) -> torch.Tensor:
-        x, y = batch['eeg'], batch['labels']
+        x, y = batch['eeg'], batch['label']
         # centerloss
         feat = self.extractor(x)
         centerloss = self.center_loss(y, feat)

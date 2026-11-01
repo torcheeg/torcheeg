@@ -97,6 +97,7 @@ class CSVFolderDataset(CachedDataset):
         from torcheeg.datasets import CSVFolderDataset
         from torcheeg import transforms
 
+
         def default_read_fn(file_path, **kwargs):
             # Load EEG file
             raw = mne.io.read_raw(file_path)
@@ -105,12 +106,22 @@ class CSVFolderDataset(CachedDataset):
             # Return EEG data
             return epochs
 
-        def prepare_training_1(sample):
-            sample = dict(sample)
-            sample['eeg'] = transforms.ToTensor()(sample['eeg'])
-            return {'eeg': sample['eeg'], 'labels': transforms.Select('label')(sample['info'])}
 
-        dataset = CSVFolderDataset(csv_path='./data.csv', read_fn=default_read_fn, num_worker=4).with_transform(prepare_training_1)
+        def transform_fn(sample):
+            eeg_transform = transforms.Compose([
+                transforms.ToTensor(),
+            ])
+            label_transform = transforms.Compose([
+                transforms.Select('label'),
+            ])
+            return {
+                "eeg": eeg_transform(sample["eeg"]),
+                "label": label_transform(sample["info"]),
+            }
+
+
+        dataset = CSVFolderDataset(
+            csv_path='./data.csv', read_fn=default_read_fn, num_worker=4).with_transform(transform_fn)
 
     Args:
         csv_path (str): The path to the CSV file.

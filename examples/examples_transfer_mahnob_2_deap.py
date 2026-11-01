@@ -15,12 +15,8 @@ In this tutorial, we demonstrate how to use TorchEEG to implement transfer learn
 # seconds long, which we divide into three sections and then average to
 # obtain the trial’s baseline signal.
 #
-# During offline preprocessing, we divide each electrode’s EEG signal into
-# 4 sub-bands, calculate the differential entropy for each sub-band as a
-# feature, perform debaselining, and map onto a grid. Finally, the
-# preprocessed EEG signals are saved locally. For online processing, we
-# convert all EEG signals into Tensors, making them suitable for neural
-# network input.
+# Each sample is transformed when read: calculate band features, remove the
+# baseline, map electrodes to a grid, and convert the result to a tensor.
 #
 #
 
@@ -29,27 +25,27 @@ from torcheeg.datasets import MAHNOBDataset
 from torcheeg.datasets.utils import get_locations
 
 
-def preprocess_sample_1(sample):
-    sample = dict(sample)
-    sample['eeg'] = transforms.BandDifferentialEntropy(
-        sampling_rate=128)(sample['eeg'])
-    sample['baseline'] = transforms.BandDifferentialEntropy(
-        sampling_rate=128)(sample['baseline'])
-    sample['eeg'] = transforms.BaselineRemoval(
-        baseline=sample['baseline'])(sample['eeg'])
-    sample['eeg'] = transforms.ToGrid(get_locations(
-        MAHNOBDataset.channels, MAHNOBDataset.grid))(sample['eeg'])
-    return sample
+def transform_fn(sample):
+    eeg_transform = transforms.Compose([
+        transforms.BandDifferentialEntropy(sampling_rate=128),
+        transforms.BaselineRemoval(baseline=transforms.BandDifferentialEntropy(
+            sampling_rate=128)(sample['baseline'])),
+        transforms.ToGrid(get_locations(
+            MAHNOBDataset.channels, MAHNOBDataset.grid)),
+        transforms.ToTensor(),
+    ])
+    label_transform = transforms.Compose([
+        transforms.Select('feltVlnc'),
+        transforms.Binary(5.0),
+    ])
+    return {
+        "eeg": eeg_transform(sample["eeg"]),
+        "label": label_transform(sample["info"]),
+    }
 
 
-def prepare_training_1(sample):
-    sample = dict(sample)
-    sample['eeg'] = transforms.ToTensor()(sample['eeg'])
-    return {'eeg': sample['eeg'], 'labels': transforms.Compose([transforms.Select('feltVlnc'), transforms.Binary(5.0)])(sample['info'])}
-
-
-dataset = MAHNOBDataset(io_path='./examples_transfer_mahnob_2_deap/mahnob', root_path='./Sessions', chunk_size=128,
-                        baseline_chunk_size=128, num_baseline=30, num_worker=4, transform=preprocess_sample_1).with_transform(prepare_training_1)
+dataset = MAHNOBDataset(io_path='./examples_transfer_mahnob_2_deap/mahnob', root_path='./Sessions',
+                        chunk_size=128, baseline_chunk_size=128, num_baseline=30, num_worker=4).with_transform(transform_fn)
 
 ######################################################################
 # Step 2: Divide the Training and Test samples in the Dataset
@@ -123,40 +119,35 @@ state_dict = model.state_dict()
 # seconds long, which we divide into three sections and then average to
 # obtain the trial’s baseline signal.
 #
-# During offline preprocessing, we divide each electrode’s EEG signal into
-# 4 sub-bands, calculate the differential entropy for each sub-band as a
-# feature, perform debaselining, and map onto a grid. Finally, the
-# preprocessed EEG signals are saved locally. For online processing, we
-# convert all EEG signals into Tensors, making them suitable for neural
-# network input.
+# Each sample is transformed when read: calculate band features, remove the
+# baseline, map electrodes to a grid, and convert the result to a tensor.
 #
 
 from torcheeg.datasets import DEAPDataset
 from torcheeg.datasets.utils import get_locations
 
 
-def preprocess_sample_2(sample):
-    sample = dict(sample)
-    sample['eeg'] = transforms.BandDifferentialEntropy()(sample['eeg'])
-    sample['baseline'] = transforms.BandDifferentialEntropy()(
-        sample['baseline'])
-    sample['eeg'] = transforms.ToGrid(get_locations(
-        DEAPDataset.channels, DEAPDataset.grid))(sample['eeg'])
-    sample['baseline'] = transforms.ToGrid(get_locations(
-        DEAPDataset.channels, DEAPDataset.grid))(sample['baseline'])
-    return sample
+def transform_fn(sample):
+    eeg_transform = transforms.Compose([
+        transforms.BandDifferentialEntropy(),
+        transforms.BaselineRemoval(
+            baseline=transforms.BandDifferentialEntropy()(sample['baseline'])),
+        transforms.ToGrid(get_locations(
+            DEAPDataset.channels, DEAPDataset.grid)),
+        transforms.ToTensor(),
+    ])
+    label_transform = transforms.Compose([
+        transforms.Select('valence'),
+        transforms.Binary(5.0),
+    ])
+    return {
+        "eeg": eeg_transform(sample["eeg"]),
+        "label": label_transform(sample["info"]),
+    }
 
 
-def prepare_training_2(sample):
-    sample = dict(sample)
-    sample['eeg'] = transforms.BaselineRemoval(
-        baseline=sample['baseline'])(sample['eeg'])
-    sample['eeg'] = transforms.ToTensor()(sample['eeg'])
-    return {'eeg': sample['eeg'], 'labels': transforms.Compose([transforms.Select('valence'), transforms.Binary(5.0)])(sample['info'])}
-
-
-dataset = DEAPDataset(io_path=f'./examples_transfer_mahnob_2_deap/deap', root_path='./data_preprocessed_python',
-                      num_worker=8, transform=preprocess_sample_2).with_transform(prepare_training_2)
+dataset = DEAPDataset(io_path=f'./examples_transfer_mahnob_2_deap/deap',
+                      root_path='./data_preprocessed_python', num_worker=8).with_transform(transform_fn)
 
 ######################################################################
 # Step 5: Split the Dataset into Training and Test Sets

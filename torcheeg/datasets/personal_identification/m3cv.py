@@ -230,22 +230,26 @@ class M3CVDataset(CachedDataset):
         from torcheeg.datasets import M3CVDataset
         from torcheeg import transforms
 
-        def preprocess_sample_1(sample):
-            sample = dict(sample)
-            sample['eeg'] = transforms.BandDifferentialEntropy()(sample['eeg'])
-            sample['eeg'] = transforms.ToGrid(get_locations(M3CVDataset.channels, M3CVDataset.grid))(sample['eeg'])
-            return sample
 
-        def prepare_training_1(sample):
-            sample = dict(sample)
-            sample['eeg'] = transforms.ToTensor()(sample['eeg'])
-            return {'eeg': sample['eeg'], 'labels': transforms.Compose([transforms.Select('SubjectID'), transforms.StringToNumber()])(sample['info'])}
+        def transform_fn(sample):
+            eeg_transform = transforms.Compose([
+                transforms.BandDifferentialEntropy(),
+                transforms.ToGrid(get_locations(
+                    M3CVDataset.channels, M3CVDataset.grid)),
+                transforms.ToTensor(),
+            ])
+            label_transform = transforms.Compose([
+                transforms.Select('SubjectID'),
+                transforms.StringToNumber(),
+            ])
+            return {
+                "eeg": eeg_transform(sample["eeg"]),
+                "label": label_transform(sample["info"]),
+            }
 
-        dataset = M3CVDataset(root_path='./aistudio', transform=preprocess_sample_1).with_transform(prepare_training_1)
+
+        dataset = M3CVDataset(root_path='./aistudio').with_transform(transform_fn)
         print(dataset[0])
-        # EEG signal (torch.Tensor[1000, 9, 9]),
-        # coresponding baseline signal (torch.Tensor[1000, 9, 9]),
-        # label (int)
 
     Another example dataset for CNN-based methods:
 
@@ -254,17 +258,25 @@ class M3CVDataset(CachedDataset):
         from torcheeg.datasets import M3CVDataset
         from torcheeg import transforms
 
-        def prepare_training_1(sample):
-            sample = dict(sample)
-            sample['eeg'] = transforms.To2d()(sample['eeg'])
-            sample['eeg'] = transforms.ToTensor()(sample['eeg'])
-            return {'eeg': sample['eeg'], 'labels': transforms.Compose([transforms.Select('SubjectID'), transforms.StringToNumber()])(sample['info'])}
 
-        dataset = M3CVDataset(io_path=f'./m3cv', root_path='./aistudio').with_transform(prepare_training_1)
+        def transform_fn(sample):
+            eeg_transform = transforms.Compose([
+                transforms.To2d(),
+                transforms.ToTensor(),
+            ])
+            label_transform = transforms.Compose([
+                transforms.Select('SubjectID'),
+                transforms.StringToNumber(),
+            ])
+            return {
+                "eeg": eeg_transform(sample["eeg"]),
+                "label": label_transform(sample["info"]),
+            }
+
+
+        dataset = M3CVDataset(
+            io_path=f'./m3cv', root_path='./aistudio').with_transform(transform_fn)
         print(dataset[0])
-        # EEG signal (torch.Tensor[1, 65, 1000]),
-        # coresponding baseline signal (torch.Tensor[1, 65, 1000]),
-        # label (int)
 
     An example dataset for GNN-based methods:
 
@@ -273,18 +285,26 @@ class M3CVDataset(CachedDataset):
         from torcheeg.datasets import M3CVDataset
         from torcheeg import transforms
         from torcheeg.datasets.utils import get_adjacency
-        from torcheeg.transforms.pyg import ToG
+        from torcheeg.transforms.graph import ToG
 
-        def prepare_training_1(sample):
-            sample = dict(sample)
-            sample['eeg'] = ToG(get_adjacency(M3CVDataset.channels, M3CVDataset.adjacency))(sample['eeg'])
-            return {'eeg': sample['eeg'], 'labels': transforms.Compose([transforms.Select('SubjectID'), transforms.StringToNumber()])(sample['info'])}
 
-        dataset = M3CVDataset(io_path=f'./m3cv', root_path='./aistudio').with_transform(prepare_training_1)
+        def transform_fn(sample):
+            eeg_transform = transforms.Compose([
+                ToG(get_adjacency(M3CVDataset.channels, M3CVDataset.adjacency)),
+            ])
+            label_transform = transforms.Compose([
+                transforms.Select('SubjectID'),
+                transforms.StringToNumber(),
+            ])
+            return {
+                "eeg": eeg_transform(sample["eeg"]),
+                "label": label_transform(sample["info"]),
+            }
+
+
+        dataset = M3CVDataset(
+            io_path=f'./m3cv', root_path='./aistudio').with_transform(transform_fn)
         print(dataset[0])
-        # EEG signal (torch_geometric.data.Data),
-        # coresponding baseline signal (torch_geometric.data.Data),
-        # label (int)
 
     Args:
         root_path (str): Downloaded data files in pickled python/numpy (unzipped aistudio.zip) formats (default: :obj:`'./aistudio'`)

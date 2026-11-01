@@ -117,7 +117,7 @@ class LDAMLossTrainer(ClassifierTrainer):
         if isinstance(class_frequency, DataLoader):
             _class_frequency = [0] * self.num_classes
             for batch in class_frequency:
-                batch_y = batch['labels']
+                batch_y = batch['label']
                 # assert every item in batch_y is less than self.num_classes
                 if not (torch.all(batch_y < self.num_classes)):
                     raise ValueError(
@@ -166,7 +166,7 @@ class LDAMLossTrainer(ClassifierTrainer):
 
     def training_step(self, batch: dict,
                       batch_idx: int) -> torch.Tensor:
-        x, y = batch['eeg'], batch['labels']
+        x, y = batch['eeg'], batch['label']
         y_hat = self(x)
         loss = self.ldam_fn(y_hat, y)
 
@@ -190,7 +190,7 @@ class LDAMLossTrainer(ClassifierTrainer):
 
     def validation_step(self, batch: dict,
                         batch_idx: int) -> torch.Tensor:
-        x, y = batch['eeg'], batch['labels']
+        x, y = batch['eeg'], batch['label']
         y_hat = self(x)
         loss = self.ldam_fn(y_hat, y)
 
@@ -200,7 +200,7 @@ class LDAMLossTrainer(ClassifierTrainer):
 
     def test_step(self, batch: dict,
                   batch_idx: int) -> torch.Tensor:
-        x, y = batch['eeg'], batch['labels']
+        x, y = batch['eeg'], batch['label']
         y_hat = self(x)
         loss = self.ldam_fn(y_hat, y)
 

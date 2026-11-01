@@ -103,23 +103,32 @@ class DGCNN(nn.Module):
         from torcheeg.datasets import SEEDDataset
         from torcheeg import transforms
 
-        def preprocess_sample_1(sample):
-            sample = dict(sample)
-            sample['eeg'] = transforms.BandDifferentialEntropy(band_dict={'delta': [1, 4], 'theta': [4, 8], 'alpha': [8, 14], 'beta': [14, 31], 'gamma': [31, 49]})(sample['eeg'])
-            return sample
 
-        def prepare_training_1(sample):
-            sample = dict(sample)
-            sample['eeg'] = transforms.ToTensor()(sample['eeg'])
-            return {'eeg': sample['eeg'], 'labels': transforms.Compose([transforms.Select('emotion'), transforms.Lambda(lambda x: x + 1)])(sample['info'])}
+        def transform_fn(sample):
+            eeg_transform = transforms.Compose([
+                transforms.BandDifferentialEntropy(band_dict={'delta': [1, 4], 'theta': [
+                                                   4, 8], 'alpha': [8, 14], 'beta': [14, 31], 'gamma': [31, 49]}),
+                transforms.ToTensor(),
+            ])
+            label_transform = transforms.Compose([
+                transforms.Select('emotion'),
+                transforms.Lambda(lambda x: x + 1),
+            ])
+            return {
+                "eeg": eeg_transform(sample["eeg"]),
+                "label": label_transform(sample["info"]),
+            }
 
-        dataset = SEEDDataset(root_path='./Preprocessed_EEG', transform=preprocess_sample_1).with_transform(prepare_training_1)
 
-        model = DGCNN(in_channels=5, num_electrodes=62, hid_channels=32, num_layers=2, num_classes=2)
+        dataset = SEEDDataset(
+            root_path='./Preprocessed_EEG').with_transform(transform_fn)
+
+        model = DGCNN(in_channels=5, num_electrodes=62,
+                      hid_channels=32, num_layers=2, num_classes=2)
 
         batch = next(iter(DataLoader(dataset, batch_size=64)))
 
-        x, y = batch['eeg'], batch['labels']
+        x, y = batch['eeg'], batch['label']
         model(x)
 
     Args:

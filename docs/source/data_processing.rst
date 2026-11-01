@@ -65,62 +65,57 @@ when constructing the array transform.
 
 .. code-block:: python
 
-    import torch
     from torcheeg import transforms
+    from torcheeg.datasets import DEAPDataset
+    from torcheeg.datasets.utils import get_locations
 
-    def preprocess_sample(sample):
-        remove = transforms.BaselineRemoval(baseline=sample['baseline'])
-        return {**sample, 'eeg': remove(sample['eeg'])}
-
-    def prepare_training(sample):
+    def transform_fn(sample):
+        eeg_transform = transforms.Compose([
+            transforms.BandDifferentialEntropy(),
+            transforms.BaselineRemoval(
+                baseline=transforms.BandDifferentialEntropy()(sample["baseline"]),
+            ),
+            transforms.ToGrid(get_locations(DEAPDataset.channels, DEAPDataset.grid)),
+            transforms.ToTensor(),
+        ])
+        label_transform = transforms.Compose([
+            transforms.Select("valence"),
+            transforms.Binary(5.0),
+        ])
         return {
-            'eeg': transforms.ToTensor()(sample['eeg']),
-            'labels': torch.tensor(int(sample['info']['valence'] > 5)),
+            "eeg": eeg_transform(sample["eeg"]),
+            "label": label_transform(sample["info"]),
         }
 
-    train = dataset.with_transform(preprocess_sample).with_transform(prepare_training)
-    equivalent = dataset.with_transform(transforms.Compose([
-        preprocess_sample,
-        prepare_training,
-    ]))
+    train = dataset.with_transform(transform_fn)
 
-Both forms execute the functions in order each time a sample is read. The source
-dataset and stored signals remain unchanged. Compose flattens nested pipelines.
-The training view can be passed to a PyTorch DataLoader; TorchEEG trainers consume
-batches with ``eeg`` and ``labels`` fields.
+EEG and label transforms each form a Compose pipeline. The function returns
+``eeg`` and ``label`` fields for training. DataLoader preserves these names in
+batches. Each read performs the transformations; stored signals remain unchanged.
 
-Store transformed samples
--------------------------
-
-A transform that produces storage samples retains ``eeg``, ``info`` and an
-optional ``baseline``. It can be materialized into a new dataset:
-
-.. code-block:: python
-
-    from torcheeg.datasets import MemoryDataset
-
-    processed = MemoryDataset()
-    processed.extend(subject.with_transform(preprocess_sample))
+Additional sample functions can be appended with
+``dataset.with_transform(f).with_transform(g)`` or
+``dataset.with_transform(Compose([f, g]))``. Both execute in the same order.
 
 Dataset shortcuts
 -----------------
 
-Dataset-specific constructors compose their Data class, runner and cache. Their
-``transform`` runs once during preprocessing; use ``with_transform`` for work
-performed on each read.
+Dataset-specific constructors compose their Data class, runner and cache.
+Use the same sample function when reading from a shortcut:
 
 .. code-block:: python
-
-    from torcheeg.datasets import DEAPDataset
 
     dataset = DEAPDataset(
         root_path='./data_preprocessed_python',
         chunk_size=128,
-        transform=preprocess_sample,
-        io_path='./cache/deap-preprocessed',
+        io_path='./cache/deap',
         num_worker=4,
-    )
-    train = dataset.with_transform(prepare_training)
+    ).with_transform(transform_fn)
+
+The constructor's ``transform`` argument is for persistent preprocessing and
+must return storage fields: ``eeg``, ``info`` and optionally ``baseline``.
+The training function above returns ``label`` instead of ``info`` and therefore
+belongs in ``with_transform``. ``append`` and ``extend`` accept storage samples.
 
 Shortcuts validate their source cache using a manifest and publish completed
 builds from a temporary directory. Explicit ``append`` and ``extend`` are

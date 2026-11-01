@@ -122,18 +122,25 @@ class ArjunViT(nn.Module):
         from torcheeg.models import ArjunViT
         from torch.utils.data import DataLoader
 
-        def preprocess_sample_1(sample):
-            sample = dict(sample)
-            sample['eeg'] = transforms.MeanStdNormalize()(sample['eeg'])
-            sample['eeg'] = transforms.To2d()(sample['eeg'])
-            return sample
 
-        def prepare_training_1(sample):
-            sample = dict(sample)
-            sample['eeg'] = transforms.ToTensor()(sample['eeg'])
-            return {'eeg': sample['eeg'], 'labels': transforms.Compose([transforms.Select('valence'), transforms.Binary(5.0)])(sample['info'])}
+        def transform_fn(sample):
+            eeg_transform = transforms.Compose([
+                transforms.MeanStdNormalize(),
+                transforms.To2d(),
+                transforms.ToTensor(),
+            ])
+            label_transform = transforms.Compose([
+                transforms.Select('valence'),
+                transforms.Binary(5.0),
+            ])
+            return {
+                "eeg": eeg_transform(sample["eeg"]),
+                "label": label_transform(sample["info"]),
+            }
 
-        dataset = DEAPDataset(root_path='./data_preprocessed_python', transform=preprocess_sample_1).with_transform(prepare_training_1)
+
+        dataset = DEAPDataset(
+            root_path='./data_preprocessed_python').with_transform(transform_fn)
 
         model = ArjunViT(chunk_size=128,
                          t_patch_size=50,
@@ -142,7 +149,7 @@ class ArjunViT(nn.Module):
 
         batch = next(iter(DataLoader(dataset, batch_size=64)))
 
-        x, y = batch['eeg'], batch['labels']
+        x, y = batch['eeg'], batch['label']
         model(x)
 
     Args:

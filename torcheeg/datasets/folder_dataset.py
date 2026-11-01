@@ -142,12 +142,24 @@ class FolderDataset(CachedDataset):
             raw.save(file_path)
 
         label_map = {'folder1': 0, 'folder2': 1}
-        def prepare_training_1(sample):
-            sample = dict(sample)
-            sample['eeg'] = transforms.ToTensor()(sample['eeg'])
-            return {'eeg': sample['eeg'], 'labels': transforms.Compose([transforms.Select('label'), transforms.Lambda(lambda x: label_map[x])])(sample['info'])}
 
-        dataset = FolderDataset(root_path='./root_folder', structure='subject_in_label', num_channel=14, num_worker=4).with_transform(prepare_training_1)
+
+        def transform_fn(sample):
+            eeg_transform = transforms.Compose([
+                transforms.ToTensor(),
+            ])
+            label_transform = transforms.Compose([
+                transforms.Select('label'),
+                transforms.Lambda(lambda x: label_map[x]),
+            ])
+            return {
+                "eeg": eeg_transform(sample["eeg"]),
+                "label": label_transform(sample["info"]),
+            }
+
+
+        dataset = FolderDataset(root_path='./root_folder', structure='subject_in_label',
+                                num_channel=14, num_worker=4).with_transform(transform_fn)
 
     Args:
         root_path (str): The path to the root folder. (default: :obj:`'./folder'`)

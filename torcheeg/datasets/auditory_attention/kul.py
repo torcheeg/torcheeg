@@ -387,20 +387,24 @@ class KULDataset(CachedDataset):
         from torcheeg.datasets import KULDataset
         from torcheeg import transforms
 
-        def preprocess_sample_1(sample):
-            sample = dict(sample)
-            sample['eeg'] = transforms.To2d()(sample['eeg'])
-            return sample
 
-        def prepare_training_1(sample):
-            sample = dict(sample)
-            sample['eeg'] = transforms.ToTensor()(sample['eeg'])
-            return {'eeg': sample['eeg'], 'labels': transforms.Compose([transforms.Select('attended_ear'), transforms.Lambda(lambd=lambda x: 1 if x == 'L' else 0)])(sample['info'])}
+        def transform_fn(sample):
+            eeg_transform = transforms.Compose([
+                transforms.To2d(),
+                transforms.ToTensor(),
+            ])
+            label_transform = transforms.Compose([
+                transforms.Select('attended_ear'),
+                transforms.Lambda(lambd=lambda x: 1 if x == 'L' else 0),
+            ])
+            return {
+                "eeg": eeg_transform(sample["eeg"]),
+                "label": label_transform(sample["info"]),
+            }
 
-        dataset = KULDataset(root_path='./4004271', transform=preprocess_sample_1).with_transform(prepare_training_1)
+
+        dataset = KULDataset(root_path='./4004271').with_transform(transform_fn)
         print(dataset[0])
-        # EEG signal (torch.Tensor[1, 64, 64]),
-        # label (int)
 
     An example dataset with custom preprocessing parameters:
 
@@ -409,20 +413,25 @@ class KULDataset(CachedDataset):
         from torcheeg.datasets import KULDataset
         from torcheeg import transforms
 
-        def preprocess_sample_1(sample):
-            sample = dict(sample)
-            sample['eeg'] = transforms.To2d()(sample['eeg'])
-            return sample
 
-        def prepare_training_1(sample):
-            sample = dict(sample)
-            sample['eeg'] = transforms.ToTensor()(sample['eeg'])
-            return {'eeg': sample['eeg'], 'labels': transforms.Compose([transforms.Select('attended_ear'), transforms.Lambda(lambd=lambda x: 1 if x == 'L' else 0)])(sample['info'])}
+        def transform_fn(sample):
+            eeg_transform = transforms.Compose([
+                transforms.To2d(),
+                transforms.ToTensor(),
+            ])
+            label_transform = transforms.Compose([
+                transforms.Select('attended_ear'),
+                transforms.Lambda(lambd=lambda x: 1 if x == 'L' else 0),
+            ])
+            return {
+                "eeg": eeg_transform(sample["eeg"]),
+                "label": label_transform(sample["info"]),
+            }
 
-        dataset = KULDataset(root_path='./4004271', chunk_size=64, overlap=64, lowpass=10, highpass=0.5, sampling_rate=64, rereference='mean', transform=preprocess_sample_1).with_transform(prepare_training_1)
+
+        dataset = KULDataset(root_path='./4004271', chunk_size=64, overlap=64, lowpass=10,
+                             highpass=0.5, sampling_rate=64, rereference='mean').with_transform(transform_fn)
         print(dataset[0])
-        # EEG signal (torch.Tensor[1, 64, 64]),
-        # label (int)
 
     Args:
         root_path (str): Path to the raw data files in MATLAB format. (default: :obj:`'./4004271'`)

@@ -120,7 +120,7 @@ class RegressorTrainer(pl.LightningModule):
 
     def training_step(self, batch: dict,
                       batch_idx: int) -> torch.Tensor:
-        x, y = batch['eeg'], batch['labels']
+        x, y = batch['eeg'], batch['label']
         y = y.float()
         y_hat = self(x)
         loss = self.mae_fn(y_hat[:, 0], y)
@@ -168,7 +168,7 @@ class RegressorTrainer(pl.LightningModule):
 
     def validation_step(self, batch: dict,
                         batch_idx: int) -> torch.Tensor:
-        x, y = batch['eeg'], batch['labels']
+        x, y = batch['eeg'], batch['label']
         y = y.float()
         y_hat = self(x)
         loss = self.mae_fn(y_hat[:, 0], y)
@@ -205,7 +205,7 @@ class RegressorTrainer(pl.LightningModule):
 
     def test_step(self, batch: dict,
                   batch_idx: int) -> torch.Tensor:
-        x, y = batch['eeg'], batch['labels']
+        x, y = batch['eeg'], batch['label']
         y = y.float()
         y_hat = self(x)
         loss = self.mae_fn(y_hat[:, 0], y)
@@ -251,7 +251,7 @@ class RegressorTrainer(pl.LightningModule):
                      batch: dict,
                      batch_idx: int,
                      dataloader_idx: int = 0):
-        x, y = batch['eeg'], batch['labels']
+        x, y = batch['eeg'], batch['label']
         y = y.float()
         y_hat = self(x)
         return y_hat

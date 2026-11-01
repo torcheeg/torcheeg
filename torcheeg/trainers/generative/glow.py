@@ -387,12 +387,12 @@ class CGlowTrainer(GlowTrainer):
                      batch: dict,
                      batch_idx: int,
                      dataloader_idx: int = 0) -> torch.Tensor:
-        x, y = batch['eeg'], batch['labels']
+        x, y = batch['eeg'], batch['label']
         return self(y, self.temperature)
 
     def training_step(self, batch: dict,
                       batch_idx: int) -> torch.Tensor:
-        x, y = batch['eeg'], batch['labels']
+        x, y = batch['eeg'], batch['label']
 
         kld_loss, y_logits = self.model.log_probs(x, y)
         kld_loss = kld_loss.mean()
@@ -442,7 +442,7 @@ class CGlowTrainer(GlowTrainer):
     @torch.enable_grad()
     def validation_step(self, batch: dict,
                         batch_idx: int) -> torch.Tensor:
-        x, y = batch['eeg'], batch['labels']
+        x, y = batch['eeg'], batch['label']
 
         kld_loss, y_logits = self.model.log_probs(x, y)
         kld_loss = kld_loss.mean()
@@ -482,7 +482,7 @@ class CGlowTrainer(GlowTrainer):
     @torch.enable_grad()
     def test_step(self, batch: dict,
                   batch_idx: int) -> torch.Tensor:
-        x, y = batch['eeg'], batch['labels']
+        x, y = batch['eeg'], batch['label']
 
         kld_loss, y_logits = self.model.log_probs(x, y)
         kld_loss = kld_loss.mean()

@@ -31,13 +31,26 @@ class KFoldPerSubjectCrossTrial(BaseModelSelection):
         from torch.utils.data import DataLoader
 
         cv = KFoldPerSubjectCrossTrial(n_splits=5, shuffle=True)
-        def prepare_training_1(sample):
-            sample = dict(sample)
-            sample['eeg'] = transforms.ToTensor()(sample['eeg'])
-            sample['eeg'] = transforms.To2d()(sample['eeg'])
-            return {'eeg': sample['eeg'], 'labels': transforms.Compose([transforms.Select(['valence', 'arousal']), transforms.Binary(5.0), transforms.BinariesToCategory()])(sample['info'])}
 
-        dataset = DEAPDataset(root_path='./data_preprocessed_python').with_transform(prepare_training_1)
+
+        def transform_fn(sample):
+            eeg_transform = transforms.Compose([
+                transforms.ToTensor(),
+                transforms.To2d(),
+            ])
+            label_transform = transforms.Compose([
+                transforms.Select(['valence', 'arousal']),
+                transforms.Binary(5.0),
+                transforms.BinariesToCategory(),
+            ])
+            return {
+                "eeg": eeg_transform(sample["eeg"]),
+                "label": label_transform(sample["info"]),
+            }
+
+
+        dataset = DEAPDataset(
+            root_path='./data_preprocessed_python').with_transform(transform_fn)
 
         for train_dataset, test_dataset in cv.split(dataset):
             # The total number of experiments is the number subjects multiplied by K
@@ -55,13 +68,26 @@ class KFoldPerSubjectCrossTrial(BaseModelSelection):
         from torch.utils.data import DataLoader
 
         cv = KFoldPerSubjectCrossTrial(n_splits=5, shuffle=True)
-        def prepare_training_1(sample):
-            sample = dict(sample)
-            sample['eeg'] = transforms.To2d()(sample['eeg'])
-            sample['eeg'] = transforms.ToTensor()(sample['eeg'])
-            return {'eeg': sample['eeg'], 'labels': transforms.Compose([transforms.Select(['valence', 'arousal']), transforms.Binary(5.0), transforms.BinariesToCategory()])(sample['info'])}
 
-        dataset = DEAPDataset(root_path='./data_preprocessed_python').with_transform(prepare_training_1)
+
+        def transform_fn(sample):
+            eeg_transform = transforms.Compose([
+                transforms.To2d(),
+                transforms.ToTensor(),
+            ])
+            label_transform = transforms.Compose([
+                transforms.Select(['valence', 'arousal']),
+                transforms.Binary(5.0),
+                transforms.BinariesToCategory(),
+            ])
+            return {
+                "eeg": eeg_transform(sample["eeg"]),
+                "label": label_transform(sample["info"]),
+            }
+
+
+        dataset = DEAPDataset(
+            root_path='./data_preprocessed_python').with_transform(transform_fn)
 
         for train_dataset, test_dataset in cv.split(dataset, subject=1):
             # k-fold cross-validation for subject 1

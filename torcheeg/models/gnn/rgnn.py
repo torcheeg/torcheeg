@@ -66,22 +66,29 @@ class RGNN(torch.nn.Module):
 
         from torcheeg.datasets import SEEDDataset
         from torcheeg.models import RGNN
-        from torcheeg.transforms.pyg import ToG
+        from torcheeg.transforms.graph import ToG
         from torcheeg.datasets.utils import get_positions, get_standard_adjacency
         from torch_geometric.data import DataLoader
 
 
-        def preprocess_sample_1(sample):
-            sample = dict(sample)
-            sample['eeg'] = transforms.BandDifferentialEntropy()(sample['eeg'])
-            return sample
+        def transform_fn(sample):
+            eeg_transform = transforms.Compose([
+                transforms.BandDifferentialEntropy(),
+                ToG(get_standard_adjacency(SEEDDataset.channels,
+                    get_positions(SEEDDataset.channels))),
+            ])
+            label_transform = transforms.Compose([
+                transforms.Select('emotion'),
+                transforms.Lambda(lambda x: int(x) + 1),
+            ])
+            return {
+                "eeg": eeg_transform(sample["eeg"]),
+                "label": label_transform(sample["info"]),
+            }
 
-        def prepare_training_1(sample):
-            sample = dict(sample)
-            sample['eeg'] = ToG(get_standard_adjacency(SEEDDataset.channels, get_positions(SEEDDataset.channels)))(sample['eeg'])
-            return {'eeg': sample['eeg'], 'labels': transforms.Compose([transforms.Select('emotion'), transforms.Lambda(lambda x: int(x) + 1)])(sample['info'])}
 
-        dataset = SEEDDataset(root_path='./Preprocessed_EEG', num_worker=8, transform=preprocess_sample_1).with_transform(prepare_training_1)
+        dataset = SEEDDataset(root_path='./Preprocessed_EEG',
+                              num_worker=8).with_transform(transform_fn)
 
         model = RGNN(adj=torch.Tensor(get_standard_adjacency(SEEDDataset.channels, get_positions(SEEDDataset.channels))),
                      in_channels=5,
@@ -94,7 +101,7 @@ class RGNN(torch.nn.Module):
 
         batch = next(iter(DataLoader(dataset, batch_size=64)))
 
-        x, y = batch['eeg'], batch['labels']
+        x, y = batch['eeg'], batch['label']
         model(x)
 
     Args:

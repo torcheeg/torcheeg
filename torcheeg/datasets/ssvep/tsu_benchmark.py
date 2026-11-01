@@ -242,38 +242,48 @@ class TSUBenckmarkDataset(CachedDataset):
         from torcheeg import transforms
         from torcheeg.datasets.utils import get_locations
 
-        def preprocess_sample_1(sample):
-            sample = dict(sample)
-            sample['eeg'] = transforms.BandDifferentialEntropy()(sample['eeg'])
-            sample['eeg'] = transforms.ToGrid(get_locations(TSUBenckmarkDataset.channels, TSUBenckmarkDataset.grid))(sample['eeg'])
-            return sample
 
-        def prepare_training_1(sample):
-            sample = dict(sample)
-            sample['eeg'] = transforms.ToTensor()(sample['eeg'])
-            return {'eeg': sample['eeg'], 'labels': transforms.Select(['trial_id'])(sample['info'])}
+        def transform_fn(sample):
+            eeg_transform = transforms.Compose([
+                transforms.BandDifferentialEntropy(),
+                transforms.ToGrid(get_locations(
+                    TSUBenckmarkDataset.channels, TSUBenckmarkDataset.grid)),
+                transforms.ToTensor(),
+            ])
+            label_transform = transforms.Compose([
+                transforms.Select(['trial_id']),
+            ])
+            return {
+                "eeg": eeg_transform(sample["eeg"]),
+                "label": label_transform(sample["info"]),
+            }
 
-        dataset = TSUBenckmarkDataset(root_path='./TSUBenchmark', transform=preprocess_sample_1).with_transform(prepare_training_1)
+
+        dataset = TSUBenckmarkDataset(
+            root_path='./TSUBenchmark').with_transform(transform_fn)
         print(dataset[0])
-        # EEG signal (torch.Tensor[250, 10, 11]),
-        # coresponding baseline signal (torch.Tensor[250, 10, 11]),
-        # label (int)
 
     Another example dataset for CNN-based methods:
 
     .. code-block:: python
 
-        def prepare_training_1(sample):
-            sample = dict(sample)
-            sample['eeg'] = transforms.ToTensor()(sample['eeg'])
-            sample['eeg'] = transforms.To2d()(sample['eeg'])
-            return {'eeg': sample['eeg'], 'labels': transforms.Select(['trial_id'])(sample['info'])}
+        def transform_fn(sample):
+            eeg_transform = transforms.Compose([
+                transforms.ToTensor(),
+                transforms.To2d(),
+            ])
+            label_transform = transforms.Compose([
+                transforms.Select(['trial_id']),
+            ])
+            return {
+                "eeg": eeg_transform(sample["eeg"]),
+                "label": label_transform(sample["info"]),
+            }
 
-        dataset = TSUBenckmarkDataset(root_path='./TSUBenchmark').with_transform(prepare_training_1)
+
+        dataset = TSUBenckmarkDataset(
+            root_path='./TSUBenchmark').with_transform(transform_fn)
         print(dataset[0])
-        # EEG signal (torch.Tensor[64, 250]),
-        # coresponding baseline signal (torch.Tensor[64, 250]),
-        # label (int)
 
     An example dataset for GNN-based methods:
 
@@ -282,16 +292,24 @@ class TSUBenckmarkDataset(CachedDataset):
         from torcheeg.datasets import TSUBenckmarkDataset
         from torcheeg.datasets.utils import get_adjacency
 
-        def prepare_training_1(sample):
-            sample = dict(sample)
-            sample['eeg'] = ToG(get_adjacency(TSUBenckmarkDataset.channels, TSUBenckmarkDataset.adjacency))(sample['eeg'])
-            return {'eeg': sample['eeg'], 'labels': transforms.Select(['trial_id'])(sample['info'])}
 
-        dataset = TSUBenckmarkDataset(root_path='./TSUBenchmark').with_transform(prepare_training_1)
+        def transform_fn(sample):
+            eeg_transform = transforms.Compose([
+                ToG(get_adjacency(TSUBenckmarkDataset.channels,
+                    TSUBenckmarkDataset.adjacency)),
+            ])
+            label_transform = transforms.Compose([
+                transforms.Select(['trial_id']),
+            ])
+            return {
+                "eeg": eeg_transform(sample["eeg"]),
+                "label": label_transform(sample["info"]),
+            }
+
+
+        dataset = TSUBenckmarkDataset(
+            root_path='./TSUBenchmark').with_transform(transform_fn)
         print(dataset[0])
-        # EEG signal (torch_geometric.data.Data),
-        # coresponding baseline signal (torch_geometric.data.Data),
-        # label (int)
 
     Args:
         root_path (str): Downloaded data files in matlab (unzipped TSUBenchmark.zip) formats (default: :obj:`'./TSUBenchmark'`)

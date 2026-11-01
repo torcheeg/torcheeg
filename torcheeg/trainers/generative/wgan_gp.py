@@ -434,7 +434,7 @@ class CWGANGPTrainer(WGANGPTrainer):
 
     def training_step(self, batch: dict,
                       batch_idx: int) -> torch.Tensor:
-        x, y = batch['eeg'], batch['labels']
+        x, y = batch['eeg'], batch['label']
         generator_optimizer, discriminator_optimizer = self.optimizers()
 
         latent = torch.normal(mean=0,
@@ -483,7 +483,7 @@ class CWGANGPTrainer(WGANGPTrainer):
     @torch.enable_grad()
     def validation_step(self, batch: dict,
                         batch_idx: int) -> torch.Tensor:
-        x, y = batch['eeg'], batch['labels']
+        x, y = batch['eeg'], batch['label']
 
         latent = torch.normal(mean=0,
                               std=1,
@@ -507,7 +507,7 @@ class CWGANGPTrainer(WGANGPTrainer):
     @torch.enable_grad()
     def test_step(self, batch: dict,
                   batch_idx: int) -> torch.Tensor:
-        x, y = batch['eeg'], batch['labels']
+        x, y = batch['eeg'], batch['label']
 
         latent = torch.normal(mean=0,
                               std=1,
@@ -542,7 +542,7 @@ class CWGANGPTrainer(WGANGPTrainer):
                      batch: dict,
                      batch_idx: int,
                      dataloader_idx: int = 0):
-        x, y = batch['eeg'], batch['labels']
+        x, y = batch['eeg'], batch['label']
         latent = torch.normal(mean=0,
                               std=1,
                               size=(x.shape[0], self.latent_channels))

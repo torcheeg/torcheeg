@@ -208,22 +208,27 @@ class AMIGOSDataset(CachedDataset):
 
         from torcheeg.datasets.utils import get_locations
 
-        def preprocess_sample_1(sample):
-            sample = dict(sample)
-            sample['eeg'] = transforms.BandDifferentialEntropy()(sample['eeg'])
-            sample['eeg'] = transforms.ToGrid(get_locations(AMIGOSDataset.channels, AMIGOSDataset.grid))(sample['eeg'])
-            return sample
 
-        def prepare_training_1(sample):
-            sample = dict(sample)
-            sample['eeg'] = transforms.ToTensor()(sample['eeg'])
-            return {'eeg': sample['eeg'], 'labels': transforms.Compose([transforms.Select('valence'), transforms.Binary(5.0)])(sample['info'])}
+        def transform_fn(sample):
+            eeg_transform = transforms.Compose([
+                transforms.BandDifferentialEntropy(),
+                transforms.ToGrid(get_locations(
+                    AMIGOSDataset.channels, AMIGOSDataset.grid)),
+                transforms.ToTensor(),
+            ])
+            label_transform = transforms.Compose([
+                transforms.Select('valence'),
+                transforms.Binary(5.0),
+            ])
+            return {
+                "eeg": eeg_transform(sample["eeg"]),
+                "label": label_transform(sample["info"]),
+            }
 
-        dataset = AMIGOSDataset(root_path='./data_preprocessed', transform=preprocess_sample_1).with_transform(prepare_training_1)
+
+        dataset = AMIGOSDataset(
+            root_path='./data_preprocessed').with_transform(transform_fn)
         print(dataset[0])
-        # EEG signal (torch.Tensor[4, 9, 9]),
-        # coresponding baseline signal (torch.Tensor[4, 9, 9]),
-        # label (int)
 
     Another example dataset for CNN-based methods:
 
@@ -232,17 +237,25 @@ class AMIGOSDataset(CachedDataset):
         from torcheeg.datasets import AMIGOSDataset
         from torcheeg import transforms
 
-        def prepare_training_1(sample):
-            sample = dict(sample)
-            sample['eeg'] = transforms.To2d()(sample['eeg'])
-            sample['eeg'] = transforms.ToTensor()(sample['eeg'])
-            return {'eeg': sample['eeg'], 'labels': transforms.Compose([transforms.Select('valence'), transforms.Binary(5.0)])(sample['info'])}
 
-        dataset = AMIGOSDataset(root_path='./data_preprocessed').with_transform(prepare_training_1)
+        def transform_fn(sample):
+            eeg_transform = transforms.Compose([
+                transforms.To2d(),
+                transforms.ToTensor(),
+            ])
+            label_transform = transforms.Compose([
+                transforms.Select('valence'),
+                transforms.Binary(5.0),
+            ])
+            return {
+                "eeg": eeg_transform(sample["eeg"]),
+                "label": label_transform(sample["info"]),
+            }
+
+
+        dataset = AMIGOSDataset(
+            root_path='./data_preprocessed').with_transform(transform_fn)
         print(dataset[0])
-        # EEG signal (torch.Tensor[14, 128]),
-        # coresponding baseline signal (torch.Tensor[14, 128]),
-        # label (int)
 
     An example dataset for GNN-based methods:
 
@@ -250,20 +263,28 @@ class AMIGOSDataset(CachedDataset):
 
         from torcheeg.datasets import AMIGOSDataset
         from torcheeg import transforms
-        from torcheeg.transforms.pyg import ToG
+        from torcheeg.transforms.graph import ToG
 
         from torcheeg.datasets.utils import get_adjacency
 
-        def prepare_training_1(sample):
-            sample = dict(sample)
-            sample['eeg'] = ToG(get_adjacency(AMIGOSDataset.channels, AMIGOSDataset.adjacency))(sample['eeg'])
-            return {'eeg': sample['eeg'], 'labels': transforms.Compose([transforms.Select('valence'), transforms.Binary(5.0)])(sample['info'])}
 
-        dataset = AMIGOSDataset(root_path='./data_preprocessed').with_transform(prepare_training_1)
+        def transform_fn(sample):
+            eeg_transform = transforms.Compose([
+                ToG(get_adjacency(AMIGOSDataset.channels, AMIGOSDataset.adjacency)),
+            ])
+            label_transform = transforms.Compose([
+                transforms.Select('valence'),
+                transforms.Binary(5.0),
+            ])
+            return {
+                "eeg": eeg_transform(sample["eeg"]),
+                "label": label_transform(sample["info"]),
+            }
+
+
+        dataset = AMIGOSDataset(
+            root_path='./data_preprocessed').with_transform(transform_fn)
         print(dataset[0])
-        # EEG signal (torch_geometric.data.Data),
-        # coresponding baseline signal (torch_geometric.data.Data),
-        # label (int)
 
     Args:
         root_path (str): Downloaded data files in matlab (unzipped data_preprocessed.zip) formats (default: :obj:`'./data_preprocessed'`)

@@ -20,7 +20,7 @@ class _DummyDataset(Dataset):
         return self.length
 
     def __getitem__(self, i) -> int:
-        return {'eeg': torch.randn(4, 9, 9), 'labels': random.randint(0, 1)}
+        return {'eeg': torch.randn(4, 9, 9), 'label': random.randint(0, 1)}
 
 
 class _Extractor(nn.Module):

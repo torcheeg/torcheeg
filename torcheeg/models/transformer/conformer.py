@@ -174,18 +174,25 @@ class Conformer(nn.Module):
         from torcheeg import transforms
         from torch.utils.data import DataLoader
 
-        def preprocess_sample_1(sample):
-            sample = dict(sample)
-            sample['eeg'] = transforms.MinMaxNormalize(axis=-1)(sample['eeg'])
-            sample['eeg'] = transforms.To2d()(sample['eeg'])
-            return sample
 
-        def prepare_training_1(sample):
-            sample = dict(sample)
-            sample['eeg'] = transforms.ToTensor()(sample['eeg'])
-            return {'eeg': sample['eeg'], 'labels': transforms.Compose([transforms.Select('emotion'), transforms.Lambda(lambda x: x + 1)])(sample['info'])}
+        def transform_fn(sample):
+            eeg_transform = transforms.Compose([
+                transforms.MinMaxNormalize(axis=-1),
+                transforms.To2d(),
+                transforms.ToTensor(),
+            ])
+            label_transform = transforms.Compose([
+                transforms.Select('emotion'),
+                transforms.Lambda(lambda x: x + 1),
+            ])
+            return {
+                "eeg": eeg_transform(sample["eeg"]),
+                "label": label_transform(sample["info"]),
+            }
 
-        dataset = SEEDDataset(root_path='./Preprocessed_EEG', transform=preprocess_sample_1).with_transform(prepare_training_1)
+
+        dataset = SEEDDataset(
+            root_path='./Preprocessed_EEG').with_transform(transform_fn)
 
         model = Conformer(num_electrodes=62,
                           sampling_rate=200,
@@ -199,7 +206,7 @@ class Conformer(nn.Module):
 
         batch = next(iter(DataLoader(dataset, batch_size=64)))
 
-        x, y = batch['eeg'], batch['labels']
+        x, y = batch['eeg'], batch['label']
         model(x)
 
     Args:

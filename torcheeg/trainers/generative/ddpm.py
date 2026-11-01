@@ -874,7 +874,7 @@ class CDDPMTrainer(DDPMTrainer):
     def training_step(self, batch: dict,
                       batch_idx: int) -> torch.Tensor:
 
-        x, y = batch['eeg'], batch['labels']
+        x, y = batch['eeg'], batch['label']
 
         t = torch.randint(0,
                           self.num_timesteps, (x.shape[0], ),
@@ -899,7 +899,7 @@ class CDDPMTrainer(DDPMTrainer):
     @torch.no_grad()
     def validation_step(self, batch: dict,
                         batch_idx: int) -> torch.Tensor:
-        x, y = batch['eeg'], batch['labels']
+        x, y = batch['eeg'], batch['label']
 
         t = torch.randint(0,
                           self.num_timesteps, (x.shape[0], ),
@@ -914,7 +914,7 @@ class CDDPMTrainer(DDPMTrainer):
     def test_step(self, batch: dict,
                   batch_idx: int) -> torch.Tensor:
 
-        x, y = batch['eeg'], batch['labels']
+        x, y = batch['eeg'], batch['label']
         t = torch.randint(0,
                           self.num_timesteps, (x.shape[0], ),
                           device=self.device).long()
@@ -989,6 +989,6 @@ class CDDPMTrainer(DDPMTrainer):
                      batch: dict,
                      batch_idx: int,
                      dataloader_idx: int = 0) -> torch.Tensor:
-        x, y = batch['eeg'], batch['labels']
+        x, y = batch['eeg'], batch['label']
         noise = torch.randn_like(x)
         return self(noise, y)

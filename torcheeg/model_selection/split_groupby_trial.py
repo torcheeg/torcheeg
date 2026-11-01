@@ -36,13 +36,25 @@ def train_test_split_groupby_trial(
         from torcheeg import transforms
         from torch.utils.data import DataLoader
 
-        def prepare_training_1(sample):
-            sample = dict(sample)
-            sample['eeg'] = transforms.To2d()(sample['eeg'])
-            sample['eeg'] = transforms.ToTensor()(sample['eeg'])
-            return {'eeg': sample['eeg'], 'labels': transforms.Compose([transforms.Select(['valence', 'arousal']), transforms.Binary(5.0), transforms.BinariesToCategory()])(sample['info'])}
 
-        dataset = DEAPDataset(root_path='./data_preprocessed_python').with_transform(prepare_training_1)
+        def transform_fn(sample):
+            eeg_transform = transforms.Compose([
+                transforms.To2d(),
+                transforms.ToTensor(),
+            ])
+            label_transform = transforms.Compose([
+                transforms.Select(['valence', 'arousal']),
+                transforms.Binary(5.0),
+                transforms.BinariesToCategory(),
+            ])
+            return {
+                "eeg": eeg_transform(sample["eeg"]),
+                "label": label_transform(sample["info"]),
+            }
+
+
+        dataset = DEAPDataset(
+            root_path='./data_preprocessed_python').with_transform(transform_fn)
 
         train_dataset, test_dataset = train_test_split_groupby_trial(dataset=dataset)
 

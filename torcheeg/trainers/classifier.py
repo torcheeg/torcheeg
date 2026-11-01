@@ -156,7 +156,7 @@ class ClassifierTrainer(pl.LightningModule):
 
     def training_step(self, batch: dict,
                       batch_idx: int) -> torch.Tensor:
-        x, y = batch['eeg'], batch['labels']
+        x, y = batch['eeg'], batch['label']
         y_hat = self(x)
         loss = self.ce_fn(y_hat, y)
 
@@ -209,7 +209,7 @@ class ClassifierTrainer(pl.LightningModule):
 
     def validation_step(self, batch: dict,
                         batch_idx: int) -> torch.Tensor:
-        x, y = batch['eeg'], batch['labels']
+        x, y = batch['eeg'], batch['label']
         y_hat = self(x)
         loss = self.ce_fn(y_hat, y)
 
@@ -246,7 +246,7 @@ class ClassifierTrainer(pl.LightningModule):
 
     def test_step(self, batch: dict,
                   batch_idx: int) -> torch.Tensor:
-        x, y = batch['eeg'], batch['labels']
+        x, y = batch['eeg'], batch['label']
         y_hat = self(x)
         loss = self.ce_fn(y_hat, y)
 
@@ -293,7 +293,7 @@ class ClassifierTrainer(pl.LightningModule):
                      batch: dict,
                      batch_idx: int,
                      dataloader_idx: int = 0):
-        x, y = batch['eeg'], batch['labels']
+        x, y = batch['eeg'], batch['label']
         y_hat = self(x)
         # print(y_hat)
         return y_hat

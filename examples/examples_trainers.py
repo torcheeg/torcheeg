@@ -35,28 +35,27 @@ from torcheeg.models import CCNN
 from torcheeg.trainers import ClassifierTrainer
 
 
-def preprocess_sample_1(sample):
-    sample = dict(sample)
-    sample['eeg'] = transforms.BandDifferentialEntropy()(sample['eeg'])
-    sample['baseline'] = transforms.BandDifferentialEntropy()(
-        sample['baseline'])
-    sample['eeg'] = transforms.ToGrid(get_locations(
-        DEAPDataset.channels, DEAPDataset.grid))(sample['eeg'])
-    sample['baseline'] = transforms.ToGrid(get_locations(
-        DEAPDataset.channels, DEAPDataset.grid))(sample['baseline'])
-    return sample
+def transform_fn(sample):
+    eeg_transform = transforms.Compose([
+        transforms.BandDifferentialEntropy(),
+        transforms.BaselineRemoval(
+            baseline=transforms.BandDifferentialEntropy()(sample['baseline'])),
+        transforms.ToGrid(get_locations(
+            DEAPDataset.channels, DEAPDataset.grid)),
+        transforms.ToTensor(),
+    ])
+    label_transform = transforms.Compose([
+        transforms.Select('valence'),
+        transforms.Binary(5.0),
+    ])
+    return {
+        "eeg": eeg_transform(sample["eeg"]),
+        "label": label_transform(sample["info"]),
+    }
 
 
-def prepare_training_1(sample):
-    sample = dict(sample)
-    sample['eeg'] = transforms.BaselineRemoval(
-        baseline=sample['baseline'])(sample['eeg'])
-    sample['eeg'] = transforms.ToTensor()(sample['eeg'])
-    return {'eeg': sample['eeg'], 'labels': transforms.Compose([transforms.Select('valence'), transforms.Binary(5.0)])(sample['info'])}
-
-
-dataset = DEAPDataset(io_path=f'./examples_trainers_1/deap', root_path='./data_preprocessed_python',
-                      num_worker=8, transform=preprocess_sample_1).with_transform(prepare_training_1)
+dataset = DEAPDataset(io_path=f'./examples_trainers_1/deap',
+                      root_path='./data_preprocessed_python', num_worker=8).with_transform(transform_fn)
 
 k_fold = KFoldGroupbyTrial(n_splits=10,
                            split_path='./examples_trainers_1/split',
@@ -170,28 +169,27 @@ from torcheeg.models import CCNN
 from torcheeg.trainers import CORALTrainer
 
 
-def preprocess_sample_2(sample):
-    sample = dict(sample)
-    sample['eeg'] = transforms.BandDifferentialEntropy()(sample['eeg'])
-    sample['baseline'] = transforms.BandDifferentialEntropy()(
-        sample['baseline'])
-    sample['eeg'] = transforms.ToGrid(get_locations(
-        DEAPDataset.channels, DEAPDataset.grid))(sample['eeg'])
-    sample['baseline'] = transforms.ToGrid(get_locations(
-        DEAPDataset.channels, DEAPDataset.grid))(sample['baseline'])
-    return sample
+def transform_fn(sample):
+    eeg_transform = transforms.Compose([
+        transforms.BandDifferentialEntropy(),
+        transforms.BaselineRemoval(
+            baseline=transforms.BandDifferentialEntropy()(sample['baseline'])),
+        transforms.ToGrid(get_locations(
+            DEAPDataset.channels, DEAPDataset.grid)),
+        transforms.ToTensor(),
+    ])
+    label_transform = transforms.Compose([
+        transforms.Select('valence'),
+        transforms.Binary(5.0),
+    ])
+    return {
+        "eeg": eeg_transform(sample["eeg"]),
+        "label": label_transform(sample["info"]),
+    }
 
 
-def prepare_training_2(sample):
-    sample = dict(sample)
-    sample['eeg'] = transforms.BaselineRemoval(
-        baseline=sample['baseline'])(sample['eeg'])
-    sample['eeg'] = transforms.ToTensor()(sample['eeg'])
-    return {'eeg': sample['eeg'], 'labels': transforms.Compose([transforms.Select('valence'), transforms.Binary(5.0)])(sample['info'])}
-
-
-dataset = DEAPDataset(io_path=f'./examples_trainers_2/deap', root_path='./data_preprocessed_python',
-                      num_worker=8, transform=preprocess_sample_2).with_transform(prepare_training_2)
+dataset = DEAPDataset(io_path=f'./examples_trainers_2/deap',
+                      root_path='./data_preprocessed_python', num_worker=8).with_transform(transform_fn)
 
 k_fold = LeaveOneSubjectOut(split_path='./examples_trainers_2/split')
 

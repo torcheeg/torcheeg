@@ -23,27 +23,40 @@ class MTCNN(nn.Module):
         from torch.utils.data import DataLoader
 
         DEAPDataset.grid = [['-', '-', 'AF3', 'FP1', '-', 'FP2', 'AF4', '-', '-'],
-                              ['F7', '-', 'F3', '-', 'FZ', '-', 'F4', '-', 'F8'],
-                              ['-', 'FC5', '-', 'FC1', '-', 'FC2', '-', 'FC6', '-'],
-                              ['T7', '-', 'C3', '-', 'CZ', '-', 'C4', '-', 'T8'],
-                              ['-', 'CP5', '-', 'CP1', '-', 'CP2', '-', 'CP6', '-'],
-                              ['P7', '-', 'P3', '-', 'PZ', '-', 'P4', '-', 'P8'],
-                              ['-', '-', '-', 'PO3', '-', 'PO4', '-', '-', '-'],
-                              ['-', '-', '-', 'O1', 'OZ', 'O2', '-', '-', '-']]
+                            ['F7', '-', 'F3', '-', 'FZ', '-', 'F4', '-', 'F8'],
+                            ['-', 'FC5', '-', 'FC1', '-', 'FC2', '-', 'FC6', '-'],
+                            ['T7', '-', 'C3', '-', 'CZ', '-', 'C4', '-', 'T8'],
+                            ['-', 'CP5', '-', 'CP1', '-', 'CP2', '-', 'CP6', '-'],
+                            ['P7', '-', 'P3', '-', 'PZ', '-', 'P4', '-', 'P8'],
+                            ['-', '-', '-', 'PO3', '-', 'PO4', '-', '-', '-'],
+                            ['-', '-', '-', 'O1', 'OZ', 'O2', '-', '-', '-']]
 
-        def prepare_training_1(sample):
-            sample = dict(sample)
-            sample['eeg'] = transforms.Concatenate([transforms.BandDifferentialEntropy(), transforms.BandPowerSpectralDensity()])(sample['eeg'])
-            sample['eeg'] = transforms.ToGrid(get_locations(DEAPDataset.channels, DEAPDataset.grid))(sample['eeg'])
-            return {'eeg': sample['eeg'], 'labels': transforms.Compose([transforms.Select('valence'), transforms.Binary(5.0)])(sample['info'])}
 
-        dataset = DEAPDataset(root_path='./data_preprocessed_python').with_transform(prepare_training_1)
+        def transform_fn(sample):
+            eeg_transform = transforms.Compose([
+                transforms.Concatenate(
+                    [transforms.BandDifferentialEntropy(), transforms.BandPowerSpectralDensity()]),
+                transforms.ToGrid(get_locations(
+                    DEAPDataset.channels, DEAPDataset.grid)),
+            ])
+            label_transform = transforms.Compose([
+                transforms.Select('valence'),
+                transforms.Binary(5.0),
+            ])
+            return {
+                "eeg": eeg_transform(sample["eeg"]),
+                "label": label_transform(sample["info"]),
+            }
+
+
+        dataset = DEAPDataset(
+            root_path='./data_preprocessed_python').with_transform(transform_fn)
 
         model = MTCNN(num_classes=2, in_channels=8, grid_size=(8, 9), dropout=0.2)
 
         batch = next(iter(DataLoader(dataset, batch_size=64)))
 
-        x, y = batch['eeg'], batch['labels']
+        x, y = batch['eeg'], batch['label']
         model(x)
 
     Args:

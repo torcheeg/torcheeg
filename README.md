@@ -123,7 +123,7 @@ We list currently supported datasets, transforms, data splitting, and deep learn
 <details>
 <summary><b>Expand to see more...</b></summary>
 
-* For GNN: [ToG](https://torcheeg.readthedocs.io/en/latest/torcheeg.transforms.pyg.html#transforms-tog)
+* For GNN: [ToG](https://torcheeg.readthedocs.io/en/latest/torcheeg.transforms.graph.html#transforms-tog)
 * For Augmentation: [Resize](https://torcheeg.readthedocs.io/en/latest/torcheeg.transforms.torch.html#transforms-resize), [RandomNoise](https://torcheeg.readthedocs.io/en/latest/torcheeg.transforms.torch.html#transforms-randomnoise), [RandomMask](https://torcheeg.readthedocs.io/en/latest/torcheeg.transforms.torch.html#transforms-randommask)
 * For Label Construction: [Select](https://torcheeg.readthedocs.io/en/latest/torcheeg.transforms.label.html#transforms-select), [Binary](https://torcheeg.readthedocs.io/en/latest/torcheeg.transforms.label.html#transforms-binary), [BinariesToCategory](https://torcheeg.readthedocs.io/en/latest/torcheeg.transforms.label.html#transforms-binariestocategory)
 </details>
@@ -148,28 +148,32 @@ from torcheeg import transforms
 
 from torcheeg.datasets.utils import get_locations
 
-dataset = DEAPDataset(
-    io_path=f'./tmp_out/examples_pipeline/deap',
-    root_path='./tmp_in/data_preprocessed_python',
-    offline_transform=transforms.Compose([
-        transforms.BandDifferentialEntropy(apply_to_baseline=True),
-        transforms.ToGrid(get_locations(DEAPDataset.channels, DEAPDataset.grid), apply_to_baseline=True)
-    ]),
-    online_transform=transforms.Compose(
-        [transforms.BaselineRemoval(),
-         transforms.ToTensor()]),
-    label_transform=transforms.Compose([
-        transforms.Select('valence'),
+def transform_fn(sample):
+    eeg_transform = transforms.Compose([
+        transforms.BandDifferentialEntropy(),
+        transforms.BaselineRemoval(
+            baseline=transforms.BandDifferentialEntropy()(sample["baseline"]),
+        ),
+        transforms.ToGrid(get_locations(DEAPDataset.channels, DEAPDataset.grid)),
+        transforms.ToTensor(),
+    ])
+    label_transform = transforms.Compose([
+        transforms.Select("valence"),
         transforms.Binary(5.0),
-    ]),
-    num_worker=8)
+    ])
+    return {
+        "eeg": eeg_transform(sample["eeg"]),
+        "label": label_transform(sample["info"]),
+    }
+
+dataset = DEAPDataset(
+    io_path='./tmp_out/examples_pipeline/deap',
+    root_path='./tmp_in/data_preprocessed_python',
+    num_worker=4,
+).with_transform(transform_fn)
 ```
 
-The `DEAPDataset` API further contains three parameters: `online_transform`, `offline_transform`, and `label_transform`, which are used to modify samples and labels, respectively.
-
-Here, `offline_transform` will only be called once when the dataset is initialized to preprocess all samples in the dataset, and the processed dataset will be stored in `io_path` to avoid time-consuming repeated transformations in subsequent use. If offline preprocessing is a computationally intensive operation, we also recommend setting multi-CPU parallelism for offline_transform, e.g., set `num_worker` to 4.
-
-`online_transform` is used to transform samples on the fly. Please use `online_transform` if you don't want to wait for the preprocessing of the entire dataset (suitable for scenarios where new `transform` algorithms are designed) or expect data transformation with randomness each time a sample is indexed.
+`with_transform` applies the function each time a sample is read, leaving stored samples unchanged. `eeg_transform` and `label_transform` describe the EEG and label operations independently. The returned fields are `eeg` and `label`, which PyTorch DataLoader also preserves when batching samples.
 
 Next, we need to divide the dataset into a training set and a test set. In the field of EEG analysis, commonly used data partitioning methods include k-fold cross-validation and leave-one-out cross-validation. In this tutorial, we use k-fold cross-validation on the entire dataset (`KFold`) as an example of dataset splitting.
 

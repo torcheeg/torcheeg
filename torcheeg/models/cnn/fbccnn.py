@@ -21,19 +21,31 @@ class FBCCNN(nn.Module):
         from torcheeg.models import FBCCNN
         from torch.utils.data import DataLoader
 
-        def prepare_training_1(sample):
-            sample = dict(sample)
-            sample['eeg'] = transforms.BandPowerSpectralDensity()(sample['eeg'])
-            sample['eeg'] = transforms.ToGrid(get_locations(DEAPDataset.channels, DEAPDataset.grid))(sample['eeg'])
-            return {'eeg': sample['eeg'], 'labels': transforms.Compose([transforms.Select('valence'), transforms.Binary(5.0)])(sample['info'])}
 
-        dataset = DEAPDataset(root_path='./data_preprocessed_python').with_transform(prepare_training_1)
+        def transform_fn(sample):
+            eeg_transform = transforms.Compose([
+                transforms.BandPowerSpectralDensity(),
+                transforms.ToGrid(get_locations(
+                    DEAPDataset.channels, DEAPDataset.grid)),
+            ])
+            label_transform = transforms.Compose([
+                transforms.Select('valence'),
+                transforms.Binary(5.0),
+            ])
+            return {
+                "eeg": eeg_transform(sample["eeg"]),
+                "label": label_transform(sample["info"]),
+            }
+
+
+        dataset = DEAPDataset(
+            root_path='./data_preprocessed_python').with_transform(transform_fn)
 
         model = FBCCNN(num_classes=2, in_channels=4, grid_size=(9, 9))
 
         batch = next(iter(DataLoader(dataset, batch_size=64)))
 
-        x, y = batch['eeg'], batch['labels']
+        x, y = batch['eeg'], batch['label']
         model(x)
 
     Args:

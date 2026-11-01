@@ -222,16 +222,25 @@ class HMCDataset(CachedDataset):
 
     .. code-block:: python
 
-        def prepare_training_1(sample):
-            sample = dict(sample)
-            sample['eeg'] = transforms.MeanStdNormalize()(sample['eeg'])
-            sample['eeg'] = transforms.ToTensor()(sample['eeg'])
-            return {'eeg': sample['eeg'], 'labels': transforms.Compose([transforms.Select('label'), transforms.Mapping({'Sleep stage W': 0, 'Sleep stage N1': 1, 'Sleep stage N2': 2, 'Sleep stage N3': 3, 'Sleep stage R': 4, 'Lights off@@EEG F4-A1': 0})])(sample['info'])}
+        def transform_fn(sample):
+            eeg_transform = transforms.Compose([
+                transforms.MeanStdNormalize(),
+                transforms.ToTensor(),
+            ])
+            label_transform = transforms.Compose([
+                transforms.Select('label'),
+                transforms.Mapping({'Sleep stage W': 0, 'Sleep stage N1': 1, 'Sleep stage N2': 2,
+                                   'Sleep stage N3': 3, 'Sleep stage R': 4, 'Lights off@@EEG F4-A1': 0}),
+            ])
+            return {
+                "eeg": eeg_transform(sample["eeg"]),
+                "label": label_transform(sample["info"]),
+            }
 
-        dataset = HMCDataset(root_path='./HMC/recordings', sfreq=100, channels=['EEG F4-M1', 'EEG C4-M1', 'EEG O2-M1', 'EEG C3-M2']).with_transform(prepare_training_1)
+
+        dataset = HMCDataset(root_path='./HMC/recordings', sfreq=100, channels=[
+                             'EEG F4-M1', 'EEG C4-M1', 'EEG O2-M1', 'EEG C3-M2']).with_transform(transform_fn)
         print(dataset[0])
-        # EEG signal (torch.Tensor[4, 3000]),
-        # label (int)
 
     Args:
         root_path (str): Root path of the HMC dataset containing .edf and .sleepscoring.edf files. (default: :obj:`'./HMC/recordings'`)

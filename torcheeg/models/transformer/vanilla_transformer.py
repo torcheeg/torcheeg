@@ -92,26 +92,37 @@ class VanillaTransformer(nn.Module):
         from torcheeg import transforms
         from torch.utils.data import DataLoader
 
-        def prepare_training_1(sample):
-            sample = dict(sample)
-            sample['eeg'] = transforms.ToTensor()(sample['eeg'])
-            return {'eeg': sample['eeg'], 'labels': transforms.Compose([transforms.Select('valence'), transforms.Binary(5.0)])(sample['info'])}
 
-        dataset = DEAPDataset(root_path='./data_preprocessed_python').with_transform(prepare_training_1)
+        def transform_fn(sample):
+            eeg_transform = transforms.Compose([
+                transforms.ToTensor(),
+            ])
+            label_transform = transforms.Compose([
+                transforms.Select('valence'),
+                transforms.Binary(5.0),
+            ])
+            return {
+                "eeg": eeg_transform(sample["eeg"]),
+                "label": label_transform(sample["info"]),
+            }
+
+
+        dataset = DEAPDataset(
+            root_path='./data_preprocessed_python').with_transform(transform_fn)
 
         model = VanillaTransformer(chunk_size=128,
-                            num_electrodes=32,
-                            t_patch_size=32,
-                            hid_channels=32,
-                            depth=3,
-                            heads=4,
-                            head_channels=64,
-                            mlp_channels=64,
-                            num_classes=2)
+                                   num_electrodes=32,
+                                   t_patch_size=32,
+                                   hid_channels=32,
+                                   depth=3,
+                                   heads=4,
+                                   head_channels=64,
+                                   mlp_channels=64,
+                                   num_classes=2)
 
         batch = next(iter(DataLoader(dataset, batch_size=64)))
 
-        x, y = batch['eeg'], batch['labels']
+        x, y = batch['eeg'], batch['label']
         model(x)
 
     Args:

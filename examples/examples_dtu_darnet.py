@@ -26,14 +26,9 @@ from torcheeg.model_selection import KFoldPerSubjectGroupbyTrial
 from torcheeg.models import DARNet
 from torcheeg.trainers import ClassifierTrainer
 
-
-def prepare_training_1(sample):
-    sample = dict(sample)
-    return {'eeg': sample['eeg'], 'labels': transforms.Compose([transforms.Select('attended_speaker'), transforms.Lambda(lambd=lambda x: x - 1)])(sample['info'])}
-
-
-dataset = DTUProcessedDataset(io_path=f'./.torcheeg/dtu', root_path='./DATA_preproc',
-                              chunk_size=64, overlap=32, num_worker=4).with_transform(prepare_training_1)
+dataset = DTUProcessedDataset(
+    io_path='./.torcheeg/dtu', root_path='./DATA_preproc',
+    chunk_size=64, overlap=32, num_worker=4)
 
 ######################################################################
 # Step 2: Divide the Training and Test samples in the Dataset
@@ -70,21 +65,27 @@ for i, (train_dataset, val_dataset) in enumerate(k_fold.split(dataset)):
     y = []
     for sample in train_dataset:
         X.append(sample['eeg'])
-        y.append(sample['labels'])
+        y.append(sample['info']['attended_speaker'] - 1)
     csp.fit(X, y)
 
-    def csp_transform(eeg: np.ndarray) -> np.ndarray:
-        eeg = np.expand_dims(eeg, axis=0)
-        eeg = csp.transform(eeg)
-        eeg = np.squeeze(eeg, axis=0).astype(np.float32)
-        return eeg
+    def transform_fn(sample):
+        eeg_transform = transforms.Compose([
+            transforms.Lambda(
+                lambda eeg: csp.transform(eeg[None])[0].astype(np.float32)),
+            transforms.ToTensor(),
+        ])
+        label_transform = transforms.Compose([
+            transforms.Select('attended_speaker'),
+            transforms.Lambda(lambda label: label - 1),
+        ])
+        return {
+            'eeg': eeg_transform(sample['eeg']),
+            'label': label_transform(sample['info']),
+        }
 
-    def prepare_csp(sample):
-        return {**sample, 'eeg': transforms.ToTensor()(csp_transform(sample['eeg']))}
-
-    train_loader = DataLoader(train_dataset.with_transform(prepare_csp),
+    train_loader = DataLoader(train_dataset.with_transform(transform_fn),
                               batch_size=64, shuffle=True)
-    val_loader = DataLoader(val_dataset.with_transform(prepare_csp),
+    val_loader = DataLoader(val_dataset.with_transform(transform_fn),
                             batch_size=64, shuffle=False)
 
     model = DARNet(num_electrodes=64,

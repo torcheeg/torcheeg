@@ -11,12 +11,11 @@ In this tutorial, we'll showcase how you can use TorchEEG to train a Tsception m
 # ----------------------------------------------
 #
 # First off, we'll use the DREAMER dataset provided by TorchEEG. Each EEG sample in this dataset spans 1 second and contains 128 data points. For each trial, the baseline signal lasts 61 seconds.
-# During offline preprocessing, we perform several steps:
+# transform_fn performs these operations when a sample is read:
 # - Divide each electrode's EEG signal into 4 frequency sub-bands
 # - Compute the differential entropy of each sub-band as a feature
 # - Eliminate the baseline from the signal
-# - Map the preprocessed signals onto a 2D grid
-# For online processing, we convert the EEG signals into PyTorch Tensors to make them compatible with neural network inputs.
+# Finally, convert the EEG signals into PyTorch tensors.
 # Let's see how to accomplish these steps in code.
 #
 
@@ -24,23 +23,25 @@ from torcheeg import transforms
 from torcheeg.datasets import DREAMERDataset
 
 
-def preprocess_sample_1(sample):
-    sample = dict(sample)
-    sample['eeg'] = transforms.BaselineRemoval(
-        baseline=sample['baseline'])(sample['eeg'])
-    sample['eeg'] = transforms.MeanStdNormalize()(sample['eeg'])
-    sample['eeg'] = transforms.To2d()(sample['eeg'])
-    return sample
+def transform_fn(sample):
+    eeg_transform = transforms.Compose([
+        transforms.BaselineRemoval(baseline=sample['baseline']),
+        transforms.MeanStdNormalize(),
+        transforms.To2d(),
+        transforms.ToTensor(),
+    ])
+    label_transform = transforms.Compose([
+        transforms.Select('valence'),
+        transforms.Binary(3.0),
+    ])
+    return {
+        "eeg": eeg_transform(sample["eeg"]),
+        "label": label_transform(sample["info"]),
+    }
 
 
-def prepare_training_1(sample):
-    sample = dict(sample)
-    sample['eeg'] = transforms.ToTensor()(sample['eeg'])
-    return {'eeg': sample['eeg'], 'labels': transforms.Compose([transforms.Select('valence'), transforms.Binary(3.0)])(sample['info'])}
-
-
-dataset = DREAMERDataset(io_path='./examples_dreamer_tsception/dreamer', mat_path='./DREAMER.mat', chunk_size=128,
-                         baseline_chunk_size=128, num_baseline=61, num_worker=4, transform=preprocess_sample_1).with_transform(prepare_training_1)
+dataset = DREAMERDataset(io_path='./examples_dreamer_tsception/dreamer', mat_path='./DREAMER.mat',
+                         chunk_size=128, baseline_chunk_size=128, num_baseline=61, num_worker=4).with_transform(transform_fn)
 
 ######################################################################
 # Step 2: Divide the Training and Test Samples in the Dataset

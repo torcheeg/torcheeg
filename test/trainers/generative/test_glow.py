@@ -19,7 +19,7 @@ class _DummyDataset(Dataset):
 
     def __getitem__(self, i) -> int:
         labels = random.randint(0, 1)
-        return {'eeg': torch.ones(4, 32, 32) * labels * 0.8 + torch.randn(4, 32, 32) * 0.2, 'labels': labels}
+        return {'eeg': torch.ones(4, 32, 32) * labels * 0.8 + torch.randn(4, 32, 32) * 0.2, 'label': labels}
 
 
 class TestGlowTrainer(unittest.TestCase):

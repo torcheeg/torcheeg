@@ -42,22 +42,25 @@ from torcheeg import transforms
 from torcheeg.datasets import DEAPDataset
 
 
-def preprocess_sample_1(sample):
-    sample = dict(sample)
-    sample['eeg'] = transforms.PickElectrode(transforms.PickElectrode.to_index_list(['FP1', 'AF3', 'F3', 'F7', 'FC5', 'FC1', 'C3', 'T7', 'CP5', 'CP1', 'P3',
-                                             'P7', 'PO3', 'O1', 'FP2', 'AF4', 'F4', 'F8', 'FC6', 'FC2', 'C4', 'T8', 'CP6', 'CP2', 'P4', 'P8', 'PO4', 'O2'], DEAPDataset.channels))(sample['eeg'])
-    sample['eeg'] = transforms.To2d()(sample['eeg'])
-    return sample
+def transform_fn(sample):
+    eeg_transform = transforms.Compose([
+        transforms.PickElectrode(transforms.PickElectrode.to_index_list(['FP1', 'AF3', 'F3', 'F7', 'FC5', 'FC1', 'C3', 'T7', 'CP5', 'CP1', 'P3',
+                                 'P7', 'PO3', 'O1', 'FP2', 'AF4', 'F4', 'F8', 'FC6', 'FC2', 'C4', 'T8', 'CP6', 'CP2', 'P4', 'P8', 'PO4', 'O2'], DEAPDataset.channels)),
+        transforms.To2d(),
+        transforms.ToTensor(),
+    ])
+    label_transform = transforms.Compose([
+        transforms.Select('valence'),
+        transforms.Binary(5.0),
+    ])
+    return {
+        "eeg": eeg_transform(sample["eeg"]),
+        "label": label_transform(sample["info"]),
+    }
 
 
-def prepare_training_1(sample):
-    sample = dict(sample)
-    sample['eeg'] = transforms.ToTensor()(sample['eeg'])
-    return {'eeg': sample['eeg'], 'labels': transforms.Compose([transforms.Select('valence'), transforms.Binary(5.0)])(sample['info'])}
-
-
-dataset = DEAPDataset(io_path=f'./deap', root_path='./data_preprocessed_python', chunk_size=512, num_baseline=1,
-                      baseline_chunk_size=512, transform=preprocess_sample_1).with_transform(prepare_training_1)
+dataset = DEAPDataset(io_path=f'./deap', root_path='./data_preprocessed_python',
+                      chunk_size=512, num_baseline=1, baseline_chunk_size=512).with_transform(transform_fn)
 
 model = TSCeption(num_classes=2,
                   num_electrodes=28,
@@ -129,15 +132,23 @@ from torcheeg.datasets import BCICIV2aDataset
 from torcheeg.models import ATCNet
 
 
-def prepare_training_2(sample):
-    sample = dict(sample)
-    sample['eeg'] = transforms.To2d()(sample['eeg'])
-    sample['eeg'] = transforms.ToTensor()(sample['eeg'])
-    return {'eeg': sample['eeg'], 'labels': transforms.Compose([transforms.Select('label'), transforms.Lambda(lambda x: x - 1)])(sample['info'])}
+def transform_fn(sample):
+    eeg_transform = transforms.Compose([
+        transforms.To2d(),
+        transforms.ToTensor(),
+    ])
+    label_transform = transforms.Compose([
+        transforms.Select('label'),
+        transforms.Lambda(lambda x: x - 1),
+    ])
+    return {
+        "eeg": eeg_transform(sample["eeg"]),
+        "label": label_transform(sample["info"]),
+    }
 
 
 dataset = BCICIV2aDataset(
-    io_path=f'./bciciv_2a', root_path='./BCICIV_2a_mat').with_transform(prepare_training_2)
+    io_path=f'./bciciv_2a', root_path='./BCICIV_2a_mat').with_transform(transform_fn)
 model = ATCNet(num_classes=4,
                num_windows=3,
                num_electrodes=22,

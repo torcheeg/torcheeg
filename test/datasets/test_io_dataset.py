@@ -22,7 +22,7 @@ def double(sample):
 
 
 def prepare_training(sample):
-    return {'eeg': sample['eeg'], 'labels': sample['info']['label']}
+    return {'eeg': sample['eeg'], 'label': sample['info']['label']}
 
 
 class TestIODataset(unittest.TestCase):
@@ -147,9 +147,9 @@ class TestIODataset(unittest.TestCase):
     def test_training_batch_is_dictionary(self):
         dataset = self.make_dataset().with_transform(prepare_training)
         batch = next(iter(DataLoader(dataset, batch_size=2, num_workers=0)))
-        self.assertEqual(set(batch), {'eeg', 'labels'})
+        self.assertEqual(set(batch), {'eeg', 'label'})
         self.assertEqual(tuple(batch['eeg'].shape), (2, 2, 4))
-        self.assertEqual(batch['labels'].tolist(), [0, 1])
+        self.assertEqual(batch['label'].tolist(), [0, 1])
 
     def test_spawned_loader_and_cpu_training(self):
         import torch
@@ -157,18 +157,18 @@ class TestIODataset(unittest.TestCase):
         loader = DataLoader(dataset, batch_size=2,
                             num_workers=1, multiprocessing_context='spawn')
         batches = list(loader)
-        self.assertEqual([batch['labels'].tolist()
+        self.assertEqual([batch['label'].tolist()
                          for batch in batches], [[0, 1], [2]])
         model = torch.nn.Sequential(torch.nn.Flatten(), torch.nn.Linear(8, 3))
         loss = torch.nn.functional.cross_entropy(
-            model(batches[0]['eeg']), batches[0]['labels'])
+            model(batches[0]['eeg']), batches[0]['label'])
         loss.backward()
         self.assertTrue(torch.isfinite(loss))
         self.assertIsNotNone(model[1].weight.grad)
 
     def test_invalid_sample_and_transform_contracts(self):
         dataset = self.make_dataset()
-        for sample in (None, {'eeg': None, 'info': {}}, {'eeg': np.zeros(1), 'info': []}, {'eeg': np.zeros(1), 'info': {'clip_id': 'external'}}, {'eeg': np.zeros(1), 'info': {}, 'labels': 1}):
+        for sample in (None, {'eeg': None, 'info': {}}, {'eeg': np.zeros(1), 'info': []}, {'eeg': np.zeros(1), 'info': {'clip_id': 'external'}}, {'eeg': np.zeros(1), 'info': {}, 'label': 1}):
             with self.subTest(sample=sample), self.assertRaises((TypeError, ValueError)):
                 dataset.append(sample)
         with self.assertRaises(TypeError):

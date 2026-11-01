@@ -226,12 +226,23 @@ class AVEDProcessedDataset(CachedDataset):
         from torcheeg.datasets import AVEDProcessedDataset
         from torcheeg import transforms
 
-        def prepare_training_1(sample):
-            sample = dict(sample)
-            sample['eeg'] = transforms.ToTensor()(sample['eeg'])
-            return {'eeg': sample['eeg'], 'labels': transforms.Compose([transforms.Select('attended_speaker'), transforms.Lambda(lambda x: int(x) - 1)])(sample['info'])}
 
-        dataset = AVEDProcessedDataset(root_path='./eeg_preproc', chunk_size=128, overlap=0, num_channel=32).with_transform(prepare_training_1)
+        def transform_fn(sample):
+            eeg_transform = transforms.Compose([
+                transforms.ToTensor(),
+            ])
+            label_transform = transforms.Compose([
+                transforms.Select('attended_speaker'),
+                transforms.Lambda(lambda x: int(x) - 1),
+            ])
+            return {
+                "eeg": eeg_transform(sample["eeg"]),
+                "label": label_transform(sample["info"]),
+            }
+
+
+        dataset = AVEDProcessedDataset(root_path='./eeg_preproc', chunk_size=128,
+                                       overlap=0, num_channel=32).with_transform(transform_fn)
         print(dataset[0])
 
     Args:
