@@ -11,6 +11,10 @@ from torcheeg.transforms import (RandomChannelShuffle, RandomFlip,
 
 class TestRandomTransforms(unittest.TestCase):
 
+    def setUp(self):
+        self.addCleanup(torch.set_rng_state, torch.get_rng_state())
+        torch.manual_seed(0)
+
     def test_random_noise(self):
         eeg = torch.randn(32, 128)
         transformed_eeg = RandomNoise(p=1.0)(eeg=eeg)
@@ -106,6 +110,35 @@ class TestRandomTransforms(unittest.TestCase):
         eeg = torch.randn(32, 9, 9)
         transformed_eeg = RandomMaskGrid()(eeg=eeg)
         self.assertEqual(transformed_eeg['eeg'].shape, (32, 9, 9))
+
+    def test_zero_probability_preserves_signal_baseline_and_label(self):
+        eeg = torch.arange(24, dtype=torch.float32).reshape(3, 8)
+        baseline = eeg + 2
+        for transform in (RandomNoise(p=0.), RandomMask(p=0.),
+                          RandomFlip(p=0.), RandomSignFlip(p=0.),
+                          RandomShift(p=0.), RandomChannelShuffle(p=0.),
+                          RandomFrequencyShift(p=0.)):
+            with self.subTest(transform=type(transform).__name__):
+                result = transform(eeg=eeg, baseline=baseline, y='rest')
+                torch.testing.assert_close(result['eeg'], eeg)
+                torch.testing.assert_close(result['baseline'], baseline)
+                self.assertEqual(result['y'], 'rest')
+
+    def test_deterministic_flip_rules_and_input_immutability(self):
+        eeg = torch.arange(24, dtype=torch.float32).reshape(3, 8)
+        original = eeg.clone()
+        baseline = eeg + 2
+        for transform, expected in (
+                (RandomFlip(dim=-1, p=1., apply_to_baseline=True), eeg.flip(-1)),
+                (RandomSignFlip(p=1., apply_to_baseline=True), -eeg)):
+            with self.subTest(transform=type(transform).__name__):
+                result = transform(eeg=eeg, baseline=baseline)
+                torch.testing.assert_close(result['eeg'], expected)
+                baseline_expected = baseline.flip(-1) if isinstance(
+                    transform, RandomFlip) else -baseline
+                torch.testing.assert_close(
+                    result['baseline'], baseline_expected)
+        torch.testing.assert_close(eeg, original)
 
 
 if __name__ == '__main__':

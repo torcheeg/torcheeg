@@ -10,6 +10,10 @@ from torcheeg.transforms import (BandBinPower, BandDifferentialEntropy,
 
 class TestConcatenateTransforms(unittest.TestCase):
 
+    def setUp(self):
+        self.addCleanup(np.random.set_state, np.random.get_state())
+        np.random.seed(0)
+
     def test_concat(self):
         eeg = np.random.randn(32, 128)
         transformed_eeg = Concatenate(

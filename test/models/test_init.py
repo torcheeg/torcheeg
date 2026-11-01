@@ -7,7 +7,7 @@ from pathlib import Path
 
 
 class TestOptionalModelDependencies(unittest.TestCase):
-    def run_without(self, modules, body):
+    def _run_without(self, modules, body):
         root = Path(__file__).resolve().parents[2]
         script = '''
 import importlib.abc
@@ -36,7 +36,7 @@ sys.meta_path.insert(0, BlockOptionalDependencies())
         for modules in [('torch_scatter',), ('torch_geometric',), ('torch_sparse',),
                         ('torch_scatter', 'torch_geometric', 'torch_sparse')]:
             with self.subTest(modules=modules):
-                self.run_without(modules, '''
+                self._run_without(modules, '''
                     from torcheeg.models import CCNN, GRU, VanillaTransformer
                     cases = [
                         (CCNN(in_channels=4, grid_size=(9, 9), num_classes=2), (2, 4, 9, 9)),
@@ -55,7 +55,7 @@ sys.meta_path.insert(0, BlockOptionalDependencies())
                 ''')
 
     def test_graph_entry_points_share_loader_without_importing_pyg(self):
-        self.run_without(('torch_geometric',), """
+        self._run_without(('torch_geometric',), """
             from torcheeg.models.gnn import gin, rgnn
             from torcheeg.transforms.graph import to
             from torcheeg.visualizers import graph

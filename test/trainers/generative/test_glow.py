@@ -9,7 +9,7 @@ from torcheeg.models import BCGlow, BGlow
 from torcheeg.trainers import CGlowTrainer, GlowTrainer
 
 
-class DummyDataset(Dataset):
+class _DummyDataset(Dataset):
     def __init__(self, length: int = 101):
         self.length = length
 
@@ -23,22 +23,36 @@ class DummyDataset(Dataset):
 
 
 class TestGlowTrainer(unittest.TestCase):
-    def test_glow_trainer(self):
-        train_dataset = DummyDataset()
+    def setUp(self):
+        self.addCleanup(torch.set_rng_state, torch.get_rng_state())
+        torch.manual_seed(0)
+        self.addCleanup(random.setstate, random.getstate())
+        random.seed(0)
+
+    def test_glow_fit_runs_optimization_and_reports_finite_metrics(self):
+        train_dataset = _DummyDataset()
         train_loader = DataLoader(train_dataset, batch_size=4)
 
         model = BGlow(in_channels=4)
         trainer = GlowTrainer(model, accelerator='cpu')
         trainer.fit(train_loader, train_loader, max_epochs=1, max_steps=1)
+        self.assertGreater(trainer.trainer.global_step, 0)
+        self.assertTrue(trainer.trainer.logged_metrics)
+        self.assertTrue(all(torch.isfinite(torch.as_tensor(value)).all()
+                            for value in trainer.trainer.logged_metrics.values()))
         trainer.test_step(next(iter(train_loader)), batch_idx=0)
 
-    def test_cglow_trainer(self):
-        train_dataset = DummyDataset()
+    def test_cglow_fit_runs_optimization_and_reports_finite_metrics(self):
+        train_dataset = _DummyDataset()
         train_loader = DataLoader(train_dataset, batch_size=4)
 
         model = BCGlow(in_channels=4)
         trainer = CGlowTrainer(model, accelerator='cpu')
         trainer.fit(train_loader, train_loader, max_epochs=1, max_steps=1)
+        self.assertGreater(trainer.trainer.global_step, 0)
+        self.assertTrue(trainer.trainer.logged_metrics)
+        self.assertTrue(all(torch.isfinite(torch.as_tensor(value)).all()
+                            for value in trainer.trainer.logged_metrics.values()))
         trainer.test_step(next(iter(train_loader)), batch_idx=0)
 
 

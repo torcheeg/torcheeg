@@ -12,7 +12,7 @@ from torcheeg.models import GIN
 
 
 class TestOptionalModelDependencies(unittest.TestCase):
-    def run_without(self, modules, body):
+    def _run_without(self, modules, body):
         root = Path(__file__).resolve().parents[3]
         script = '''
 import importlib.abc
@@ -38,7 +38,7 @@ sys.meta_path.insert(0, BlockOptionalDependencies())
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
     def test_gin_reports_missing_pyg_when_constructed(self):
-        self.run_without(('torch_geometric',), '''
+        self._run_without(('torch_geometric',), '''
             from torcheeg.models import GIN
             for build in (GIN,):
                 try:
@@ -50,9 +50,13 @@ sys.meta_path.insert(0, BlockOptionalDependencies())
         ''')
 
 
-class TestGin(unittest.TestCase):
+class TestGIN(unittest.TestCase):
 
-    def test_gin(self):
+    def setUp(self):
+        self.addCleanup(torch.set_rng_state, torch.get_rng_state())
+        torch.manual_seed(0)
+
+    def test_forward_returns_expected_shape(self):
         adj = torch.rand(62, 62)
         adj = (adj > 0.5).float()
         adj[adj == 0] = 1e-6  # to construct complete graph
@@ -65,6 +69,9 @@ class TestGin(unittest.TestCase):
 
         model = GIN(in_channels=4, hid_channels=64, num_classes=2)
         pred = model(data)
+        for output in pred if isinstance(pred, (tuple, list)) else (pred,):
+            self.assertEqual(output.device.type, 'cpu')
+            self.assertTrue(torch.isfinite(output).all())
 
         self.assertEqual(tuple(pred.shape), (2, 2))
 

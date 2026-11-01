@@ -10,6 +10,12 @@ from torcheeg.transforms import ToDynamicG, ToG
 
 
 class TestPyGTransforms(unittest.TestCase):
+    def setUp(self):
+        self.addCleanup(torch.set_rng_state, torch.get_rng_state())
+        torch.manual_seed(0)
+        self.addCleanup(np.random.set_state, np.random.get_state())
+        np.random.seed(0)
+
     def test_to_g(self):
         eeg = np.random.randn(32, 128)
         transformed_eeg = ToG(get_adjacency(

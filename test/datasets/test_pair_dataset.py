@@ -5,7 +5,7 @@ import pandas as pd
 from torcheeg.datasets import BaseDataset, PairDataset
 
 
-class FakeDataset(BaseDataset):
+class _FakeDataset(BaseDataset):
     def __init__(self, num_subjects, num_trials, num_clips):
         data = []
         for subject_id in range(num_subjects):
@@ -31,11 +31,11 @@ class FakeDataset(BaseDataset):
 
 class TestPairDataset(unittest.TestCase):
     def test_pair_dataset(self):
-        dataset_a = FakeDataset(5, 5, 5)
-        dataset_b = FakeDataset(5, 5, 5)
+        dataset_a = _FakeDataset(5, 5, 5)
+        dataset_b = _FakeDataset(5, 5, 5)
 
         pair_dataset = PairDataset([dataset_a, dataset_b], join_key='clip_id')
-        assert len(pair_dataset) == 5 * 5 * 5
+        self.assertTrue(len(pair_dataset) == 5 * 5 * 5)
 
         # print(f'Saved EEG file {file_path}')
 

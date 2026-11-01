@@ -1,5 +1,6 @@
 import unittest
 
+import matplotlib.pyplot as plt
 import numpy as np
 import torch
 
@@ -8,6 +9,15 @@ from torcheeg.visualizers import plot_signal
 
 
 class TestRaw(unittest.TestCase):
+
+    def setUp(self):
+        self.addCleanup(torch.set_rng_state, torch.get_rng_state())
+        torch.manual_seed(0)
+        self.addCleanup(np.random.set_state, np.random.get_state())
+        np.random.seed(0)
+
+    def tearDown(self):
+        plt.close('all')
 
     def test_plot_signal(self):
         mock_eeg = torch.randn(32, 128)

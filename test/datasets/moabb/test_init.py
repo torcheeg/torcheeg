@@ -7,7 +7,7 @@ from pathlib import Path
 
 
 class TestOptionalModelDependencies(unittest.TestCase):
-    def run_without(self, modules, body):
+    def _run_without(self, modules, body):
         root = Path(__file__).resolve().parents[3]
         script = '''
 import importlib.abc
@@ -33,7 +33,7 @@ sys.meta_path.insert(0, BlockOptionalDependencies())
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
     def test_moabb_reports_its_own_install_hint(self):
-        self.run_without(('moabb',), """
+        self._run_without(('moabb',), """
             try:
                 import torcheeg.datasets.moabb
             except ImportError as error:

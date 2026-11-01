@@ -7,7 +7,11 @@ from torcheeg.datasets import ISRUCDataset
 from torcheeg.datasets.sleep_stage_detection import isruc
 
 
-class TestIsruc(unittest.TestCase):
+class TestISRUCDataset(unittest.TestCase):
+
+    def setUp(self):
+        self.addCleanup(np.random.set_state, np.random.get_state())
+        np.random.seed(0)
 
     def test_isruc_dataset(self):
         kwargs = {
@@ -30,6 +34,24 @@ class TestIsruc(unittest.TestCase):
         expected = np.stack([data[names.index(name)] if name in names
                              else np.zeros(8) for name in cls.channels])
         np.testing.assert_array_equal(selected.get_data(), expected)
+
+
+class TestFakeRecordMetadata(unittest.TestCase):
+    def setUp(self):
+        self.addCleanup(np.random.set_state, np.random.get_state())
+        np.random.seed(0)
+
+    def test_fake_samples_have_consistent_keys_and_metadata(self):
+        for dataset_class in (ISRUCDataset,):
+            with self.subTest(dataset=dataset_class.__name__):
+                kwargs = {'record': 'fake_record'}
+                kwargs.update(dataset_class.fake_record(**kwargs))
+                sample = next(item for item in dataset_class.process_record(**kwargs)
+                              if 'info' in item)
+                self.assertIsInstance(sample['key'], str)
+                self.assertEqual(sample['info']['clip_id'], sample['key'])
+                self.assertGreater(sample['eeg'].size, 0)
+                self.assertTrue(np.isfinite(sample['eeg']).all())
 
 
 if __name__ == '__main__':

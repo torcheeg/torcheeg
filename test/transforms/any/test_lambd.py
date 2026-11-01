@@ -8,6 +8,12 @@ from torcheeg.transforms import Lambda
 
 class TestLambdTransforms(unittest.TestCase):
 
+    def setUp(self):
+        self.addCleanup(torch.set_rng_state, torch.get_rng_state())
+        torch.manual_seed(0)
+        self.addCleanup(np.random.set_state, np.random.get_state())
+        np.random.seed(0)
+
     def test_lambda(self):
         # label
         transform = Lambda(lambd=lambda x: x + 1)

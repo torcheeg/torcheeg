@@ -9,7 +9,7 @@ from torch.utils.data.dataloader import DataLoader
 from torcheeg.trainers import ADATrainer
 
 
-class DummyDataset(Dataset):
+class _DummyDataset(Dataset):
 
     def __init__(self, length: int = 101):
         self.length = length
@@ -21,7 +21,7 @@ class DummyDataset(Dataset):
         return torch.randn(120), random.randint(0, 1)
 
 
-class DummyModel(nn.Module):
+class _DummyModel(nn.Module):
 
     def __init__(self, in_channels=120, out_channels=2):
         super().__init__()
@@ -33,24 +33,34 @@ class DummyModel(nn.Module):
         return self.fc(x)
 
 
-class TestAda(unittest.TestCase):
+class TestADATrainer(unittest.TestCase):
 
-    def test_ada_trainer(self):
-        source_dataset = DummyDataset()
-        target_dataset = DummyDataset()
-        val_dataset = DummyDataset()
-        test_dataset = DummyDataset()
+    def setUp(self):
+        self.addCleanup(torch.set_rng_state, torch.get_rng_state())
+        torch.manual_seed(0)
+        self.addCleanup(random.setstate, random.getstate())
+        random.seed(0)
+
+    def test_ada_fit_runs_optimization_and_reports_finite_metrics(self):
+        source_dataset = _DummyDataset()
+        target_dataset = _DummyDataset()
+        val_dataset = _DummyDataset()
+        test_dataset = _DummyDataset()
 
         source_loader = DataLoader(source_dataset, batch_size=2)
         target_loader = DataLoader(target_dataset, batch_size=2)
         val_loader = DataLoader(val_dataset, batch_size=2)
         test_loader = DataLoader(test_dataset, batch_size=2)
 
-        extractor = DummyModel(120, 10)
-        classifier = DummyModel(10, 2)
+        extractor = _DummyModel(120, 10)
+        classifier = _DummyModel(10, 2)
 
         trainer = ADATrainer(extractor, classifier, num_classes=2)
         trainer.fit(source_loader, target_loader, val_loader, max_epochs=1)
+        self.assertGreater(trainer.trainer.global_step, 0)
+        self.assertTrue(trainer.trainer.logged_metrics)
+        self.assertTrue(all(torch.isfinite(torch.as_tensor(value)).all()
+                            for value in trainer.trainer.logged_metrics.values()))
         trainer.test(test_loader)
 
 

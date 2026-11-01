@@ -1,10 +1,16 @@
 import unittest
 
+import numpy as np
+
 from torcheeg.datasets import TSUBenckmarkDataset
 from torcheeg.datasets.utils import get_positions
 
 
 class TestTsuBenchmark(unittest.TestCase):
+    def setUp(self):
+        self.addCleanup(np.random.set_state, np.random.get_state())
+        np.random.seed(0)
+
     def test_tsu_montage_matches_official_channel_labels(self):
         channels = TSUBenckmarkDataset.channels
         self.assertEqual([channels[i] for i in (32, 42, 59, 63)],
@@ -19,6 +25,24 @@ class TestTsuBenchmark(unittest.TestCase):
         item = next(TSUBenckmarkDataset.process_record(**kwargs))
 
         self.assertEqual(item['eeg'].shape, (64, 250))
+
+
+class TestFakeRecordMetadata(unittest.TestCase):
+    def setUp(self):
+        self.addCleanup(np.random.set_state, np.random.get_state())
+        np.random.seed(0)
+
+    def test_fake_samples_have_consistent_keys_and_metadata(self):
+        for dataset_class in (TSUBenckmarkDataset,):
+            with self.subTest(dataset=dataset_class.__name__):
+                kwargs = {'record': 'fake_record'}
+                kwargs.update(dataset_class.fake_record(**kwargs))
+                sample = next(item for item in dataset_class.process_record(**kwargs)
+                              if 'info' in item)
+                self.assertIsInstance(sample['key'], str)
+                self.assertEqual(sample['info']['clip_id'], sample['key'])
+                self.assertGreater(sample['eeg'].size, 0)
+                self.assertTrue(np.isfinite(sample['eeg']).all())
 
 
 if __name__ == '__main__':

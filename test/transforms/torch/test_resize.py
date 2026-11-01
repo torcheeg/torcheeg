@@ -15,6 +15,10 @@ class TestInputValidation(unittest.TestCase):
 
 class TestResizeTransforms(unittest.TestCase):
 
+    def setUp(self):
+        self.addCleanup(torch.set_rng_state, torch.get_rng_state())
+        torch.manual_seed(0)
+
     def test_resize(self):
         eeg = torch.randn(128, 9, 9)
         transformed_eeg = Resize(size=(64, 64))(eeg=eeg)

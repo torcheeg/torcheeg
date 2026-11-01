@@ -9,15 +9,17 @@ from torcheeg import transforms
 from torcheeg.datasets import MNERawDataset
 
 
-class TestMneRawDataset(unittest.TestCase):
+class TestMNERawDataset(unittest.TestCase):
     def setUp(self):
+        self.addCleanup(np.random.set_state, np.random.get_state())
+        np.random.seed(0)
         self._directory = tempfile.TemporaryDirectory()
         self.addCleanup(self._directory.cleanup)
         self._input_path = os.path.join(self._directory.name, 'data')
         self._output_path = os.path.join(self._directory.name, 'output')
         os.makedirs(self._output_path)
 
-    def generate_dummy_raw(self, num_files):
+    def _generate_raw(self, num_files):
         # Define EEG specifications
         sfreq = 128  # Sampling rate
         n_channels = 14  # Number of channels
@@ -48,7 +50,7 @@ class TestMneRawDataset(unittest.TestCase):
 
     def test_mne_raw_dataset(self):
         # Generate dummy raw objects
-        raw_list, info_list = self.generate_dummy_raw(6)
+        raw_list, info_list = self._generate_raw(6)
 
         # Create dataset
         io_path = os.path.join(self._output_path, 'eeg_raw')

@@ -494,6 +494,10 @@ class TestLMDBEnvironment(unittest.TestCase):
 
 class TestEEGSignalIO(unittest.TestCase):
     def setUp(self):
+        self.addCleanup(torch.set_rng_state, torch.get_rng_state())
+        torch.manual_seed(0)
+        self.addCleanup(np.random.set_state, np.random.get_state())
+        np.random.seed(0)
         self._directory = tempfile.TemporaryDirectory()
         self.addCleanup(self._directory.cleanup)
         self._io_path = self._directory.name
@@ -522,10 +526,12 @@ class TestEEGSignalIO(unittest.TestCase):
                 io_io_path, io_mode), io_mode=io_mode)
 
             eeg = np.random.randn(32, 128)
-            io.write_eeg(eeg, key='0')
+            self.assertEqual(io.write_eeg(eeg, key='0'), '0')
+            np.testing.assert_array_equal(io.read_eeg('0'), eeg)
 
             eeg = np.random.randn(32, 128)
-            io.write_eeg(eeg, key='1')
+            self.assertEqual(io.write_eeg(eeg, key='1'), '1')
+            np.testing.assert_array_equal(io.read_eeg('1'), eeg)
 
     def test_len(self):
         io_io_path = os.path.join(self._io_path, 'signals')

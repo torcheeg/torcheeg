@@ -52,7 +52,7 @@ class TestLazyLoader(unittest.TestCase):
 
 
 class TestUtilsImports(unittest.TestCase):
-    def run_fresh(self, body):
+    def _run_fresh(self, body):
         root = Path(__file__).resolve().parents[1]
         result = subprocess.run(
             [sys.executable, '-c', textwrap.dedent(body)], cwd=root,
@@ -61,7 +61,7 @@ class TestUtilsImports(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
     def test_shared_utilities_do_not_load_visualizers(self):
-        self.run_fresh('''
+        self._run_fresh('''
             import importlib.abc
             import sys
             import torcheeg

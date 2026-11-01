@@ -8,6 +8,10 @@ from torcheeg.transforms import OrderElectrode, PickElectrode
 
 class TestPickTransforms(unittest.TestCase):
 
+    def setUp(self):
+        self.addCleanup(np.random.set_state, np.random.get_state())
+        np.random.seed(0)
+
     def test_order_electrode(self):
         eeg = np.random.rand(6, 3000)
         source_electrodes = ['F3', 'F4', 'C3', 'C4', 'O1', 'O2']

@@ -7,6 +7,10 @@ from torcheeg.transforms import (BaselineCorrection, BaselineRemoval, Compose,
 
 
 class TestBaselineTransforms(unittest.TestCase):
+    def setUp(self):
+        self.addCleanup(np.random.set_state, np.random.get_state())
+        np.random.seed(0)
+
     def test_to_baseline_removal(self):
         transform = Compose([
             ToTensor(apply_to_baseline=True),

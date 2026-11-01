@@ -1,11 +1,19 @@
 import unittest
 
+import matplotlib.pyplot as plt
 import numpy as np
 
 from torcheeg.transforms import CWTSpectrum, DWTDecomposition
 
 
 class TestSpectrumTransforms(unittest.TestCase):
+
+    def setUp(self):
+        self.addCleanup(np.random.set_state, np.random.get_state())
+        np.random.seed(0)
+
+    def tearDown(self):
+        plt.close('all')
 
     def test_dwt_decomposition(self):
         eeg = np.random.randn(32, 1000)

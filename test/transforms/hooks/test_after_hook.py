@@ -9,6 +9,12 @@ from torcheeg.transforms import (after_hook_linear_dynamical_system,
 
 class TestAfterHookTransforms(unittest.TestCase):
 
+    def setUp(self):
+        self.addCleanup(torch.set_rng_state, torch.get_rng_state())
+        torch.manual_seed(0)
+        self.addCleanup(np.random.set_state, np.random.get_state())
+        np.random.seed(0)
+
     def test_after_hook(self):
         fake_data_np = [np.random.rand(32, 128) for _ in range(32)]
         fake_data_torch = [torch.rand(32, 128) for _ in range(32)]

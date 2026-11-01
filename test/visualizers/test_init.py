@@ -7,7 +7,7 @@ from pathlib import Path
 
 
 class TestVisualizerImports(unittest.TestCase):
-    def run_fresh(self, body):
+    def _run_fresh(self, body):
         root = Path(__file__).resolve().parents[2]
         result = subprocess.run(
             [sys.executable, '-c', textwrap.dedent(body)], cwd=root,
@@ -16,7 +16,7 @@ class TestVisualizerImports(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
     def test_tensor_import_does_not_load_other_visualizers(self):
-        self.run_fresh('''
+        self._run_fresh('''
             import importlib.abc
             import sys
             import torcheeg
@@ -36,7 +36,7 @@ class TestVisualizerImports(unittest.TestCase):
         ''')
 
     def test_public_exports(self):
-        self.run_fresh('''
+        self._run_fresh('''
             import torcheeg.visualizers as visualizers
             from torcheeg.visualizers import raw, topomap, tensor, connectivity, graph
             expected = {

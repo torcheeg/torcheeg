@@ -17,7 +17,7 @@ BANDS = {
 }
 
 
-def reference_features(eeg):
+def _reference_features(eeg):
     features = []
     for low, high in BANDS.values():
         b, a = butter(5, [low / 64, high / 64], btype='band')
@@ -28,6 +28,10 @@ def reference_features(eeg):
 
 
 class TestBandSkewness(unittest.TestCase):
+    def setUp(self):
+        self.addCleanup(np.random.set_state, np.random.get_state())
+        np.random.seed(0)
+
     def test_filtered_values_against_independent_centered_moments(self):
         rng = np.random.default_rng(322)
         transform = BandSkewness(band_dict=BANDS)
@@ -45,7 +49,7 @@ class TestBandSkewness(unittest.TestCase):
                         before = eeg.copy()
                         actual = transform(eeg=eeg)['eeg']
                         np.testing.assert_allclose(
-                            actual, reference_features(eeg), rtol=1e-10, atol=1e-12
+                            actual, _reference_features(eeg), rtol=1e-10, atol=1e-12
                         )
                         np.testing.assert_array_equal(eeg, before)
 
@@ -60,10 +64,10 @@ class TestBandSkewness(unittest.TestCase):
             eeg=eeg, baseline=baseline
         )
         np.testing.assert_allclose(
-            actual['eeg'], reference_features(eeg), rtol=1e-10, atol=1e-12
+            actual['eeg'], _reference_features(eeg), rtol=1e-10, atol=1e-12
         )
         np.testing.assert_allclose(
-            actual['baseline'], reference_features(baseline), rtol=1e-10, atol=1e-12
+            actual['baseline'], _reference_features(baseline), rtol=1e-10, atol=1e-12
         )
         np.testing.assert_array_equal(eeg, before_eeg)
         np.testing.assert_array_equal(baseline, before_baseline)
@@ -77,6 +81,10 @@ class TestBandSkewness(unittest.TestCase):
 
 
 class TestBandTransforms(unittest.TestCase):
+
+    def setUp(self):
+        self.addCleanup(np.random.set_state, np.random.get_state())
+        np.random.seed(0)
 
     def test_band_signal(self):
         eeg = np.random.randn(32, 128)

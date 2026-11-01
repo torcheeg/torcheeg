@@ -20,6 +20,12 @@ from torcheeg.model_selection import (KFoldCrossSubject, Subcategory,
 
 
 class TestBaseDataset(unittest.TestCase):
+    def setUp(self):
+        self.addCleanup(torch.set_rng_state, torch.get_rng_state())
+        torch.manual_seed(0)
+        self.addCleanup(np.random.set_state, np.random.get_state())
+        np.random.seed(0)
+
     def test_missing_record_hooks_identify_the_subclass(self):
         class IncompleteDataset(BaseDataset):
             pass
@@ -84,6 +90,12 @@ def _increment_memory_samples(data):
 
 
 class TestMemoryDataset(unittest.TestCase):
+    def setUp(self):
+        self.addCleanup(torch.set_rng_state, torch.get_rng_state())
+        torch.manual_seed(0)
+        self.addCleanup(np.random.set_state, np.random.get_state())
+        np.random.seed(0)
+
     def _assert_samples(self, dataset, increment=0):
         self.assertEqual(len(dataset), 4)
         self.assertFalse(dataset.is_lazy())
@@ -183,6 +195,10 @@ class TestLazyDatasetCopy(unittest.TestCase):
     _modes = ('pickle', 'lmdb')
 
     def setUp(self):
+        self.addCleanup(torch.set_rng_state, torch.get_rng_state())
+        torch.manual_seed(0)
+        self.addCleanup(np.random.set_state, np.random.get_state())
+        np.random.seed(0)
         self._directory = tempfile.TemporaryDirectory()
         self.addCleanup(self._directory.cleanup)
         self._counter = 0
@@ -312,6 +328,12 @@ class TestLazyDatasetCopy(unittest.TestCase):
 
 
 class TestDatasetMetadata(unittest.TestCase):
+    def setUp(self):
+        self.addCleanup(torch.set_rng_state, torch.get_rng_state())
+        torch.manual_seed(0)
+        self.addCleanup(np.random.set_state, np.random.get_state())
+        np.random.seed(0)
+
     def test_missing_metadata_raises_on_class_access(self):
         for name in ('channels', 'grid', 'adjacency'):
             with self.subTest(attribute=name):
@@ -376,6 +398,10 @@ def _fail_postprocessing(samples):
 class TestDatasetCache(unittest.TestCase):
 
     def setUp(self):
+        self.addCleanup(torch.set_rng_state, torch.get_rng_state())
+        torch.manual_seed(0)
+        self.addCleanup(np.random.set_state, np.random.get_state())
+        np.random.seed(0)
         self._directory = tempfile.TemporaryDirectory()
         self.addCleanup(self._directory.cleanup)
         self._root = Path(self._directory.name)

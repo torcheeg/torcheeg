@@ -9,7 +9,7 @@ from torch.utils.data.dataloader import DataLoader
 from torcheeg.trainers import RegressorTrainer
 
 
-class DummyRegressionDataset(Dataset):
+class _DummyRegressionDataset(Dataset):
 
     def __init__(self, length: int = 105):
         self.length = length
@@ -21,7 +21,7 @@ class DummyRegressionDataset(Dataset):
         return torch.randn(120), random.random()
 
 
-class DummyModel(nn.Module):
+class _DummyModel(nn.Module):
 
     def __init__(self, in_channels=120, out_channels=2):
         super().__init__()
@@ -33,29 +33,39 @@ class DummyModel(nn.Module):
         return self.fc(x)
 
 
-class TestRegressor(unittest.TestCase):
+class TestRegressorTrainer(unittest.TestCase):
+
+    def setUp(self):
+        self.addCleanup(torch.set_rng_state, torch.get_rng_state())
+        torch.manual_seed(0)
+        self.addCleanup(random.setstate, random.getstate())
+        random.seed(0)
 
     def test_regressor_trainer_basic(self):
         """Test basic functionality of RegressorTrainer"""
         # Prepare minimal datasets and dataloaders for testing
-        train_dataset = DummyRegressionDataset()
-        val_dataset = DummyRegressionDataset()
+        train_dataset = _DummyRegressionDataset()
+        val_dataset = _DummyRegressionDataset()
 
         train_loader = DataLoader(train_dataset, batch_size=5)
         val_loader = DataLoader(val_dataset, batch_size=5)
 
-        model = DummyModel(out_channels=1)  # Single output for regression
+        model = _DummyModel(out_channels=1)  # Single output for regression
         trainer = RegressorTrainer(model)
 
         # Only test single training step instead of full epoch
-        trainer.training_step(next(iter(train_loader)), batch_idx=0)
+        loss = trainer.training_step(next(iter(train_loader)), batch_idx=0)
+        self.assertEqual(loss.ndim, 0)
+        self.assertEqual(loss.device.type, 'cpu')
+        self.assertTrue(torch.isfinite(loss))
+        self.assertTrue(loss.requires_grad)
 
         # Only test single validation step instead of full epoch
         trainer.validation_step(next(iter(val_loader)), batch_idx=0)
 
     def test_regressor_trainer_metrics(self):
         """Test metrics configuration of RegressorTrainer"""
-        model = DummyModel(out_channels=1)
+        model = _DummyModel(out_channels=1)
 
         # Test if all supported metrics can be initialized properly
         trainer = RegressorTrainer(
@@ -63,9 +73,11 @@ class TestRegressor(unittest.TestCase):
             metrics=['mae', 'mse', 'rmse', 'r2score']
         )
 
+        self.assertEqual(trainer.accelerator, 'cpu')
+
         # Test if unsupported metrics raise ValueError
         with self.assertRaises(ValueError):
-            trainer = RegressorTrainer(model, metrics=['unexpected'])
+            RegressorTrainer(model, metrics=['unexpected'])
 
 
 if __name__ == '__main__':

@@ -13,7 +13,7 @@ from torcheeg.models import RGNN
 
 
 class TestOptionalModelDependencies(unittest.TestCase):
-    def run_without(self, modules, body):
+    def _run_without(self, modules, body):
         root = Path(__file__).resolve().parents[3]
         script = '''
 import importlib.abc
@@ -39,7 +39,7 @@ sys.meta_path.insert(0, BlockOptionalDependencies())
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
     def test_rgnn_reports_missing_scatter_when_constructed(self):
-        self.run_without(('torch_scatter',), '''
+        self._run_without(('torch_scatter',), '''
             from torcheeg.models import RGNN
             try:
                 RGNN(torch.eye(3), num_electrodes=3)
@@ -51,9 +51,13 @@ sys.meta_path.insert(0, BlockOptionalDependencies())
         ''')
 
 
-class TestRgnn(unittest.TestCase):
+class TestRGNN(unittest.TestCase):
 
-    def test_rgnn(self):
+    def setUp(self):
+        self.addCleanup(torch.set_rng_state, torch.get_rng_state())
+        torch.manual_seed(0)
+
+    def test_forward_returns_expected_shape(self):
         adj = torch.rand(62, 62)
         adj = (adj > 0.5).float()
         adj[adj == 0] = 1e-6  # to construct complete graph
@@ -73,11 +77,18 @@ class TestRgnn(unittest.TestCase):
                      dropout=0.7,
                      learn_edge_weights=True)
         pred = model(data)
+        for output in pred if isinstance(pred, (tuple, list)) else (pred,):
+            self.assertEqual(output.device.type, 'cpu')
+            self.assertTrue(torch.isfinite(output).all())
 
         self.assertEqual(tuple(pred.shape), (2, 2))
 
 
 class TestRGNNNormalization(unittest.TestCase):
+    def setUp(self):
+        self.addCleanup(torch.set_rng_state, torch.get_rng_state())
+        torch.manual_seed(0)
+
     def test_signed_graph_outputs_and_gradients_match_dense_reference(self):
         torch.manual_seed(42)
         adj = torch.tensor([[1., -.4, .2], [-.4, .5, -.7], [.2, -.7, 1.2]])

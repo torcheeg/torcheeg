@@ -11,6 +11,10 @@ from torcheeg.transforms import (BandDifferentialEntropy, Binary, Compose,
 
 class TestComposeTransforms(unittest.TestCase):
 
+    def setUp(self):
+        self.addCleanup(np.random.set_state, np.random.get_state())
+        np.random.seed(0)
+
     def test_compose(self):
         # torch
         transform = Compose([

@@ -11,13 +11,15 @@ from torcheeg.datasets import FolderDataset
 
 class TestFolderDataset(unittest.TestCase):
     def setUp(self):
+        self.addCleanup(np.random.set_state, np.random.get_state())
+        np.random.seed(0)
         self._directory = tempfile.TemporaryDirectory()
         self.addCleanup(self._directory.cleanup)
         self._input_path = os.path.join(self._directory.name, 'data')
         self._output_path = os.path.join(self._directory.name, 'output')
         os.makedirs(self._output_path)
 
-    def generate_dummy_eeg_files(self, num_files, folder_path):
+    def _generate_eeg_files(self, num_files, folder_path):
         # Define EEG file specifications
         sfreq = 128  # Sampling rate
         n_channels = 14  # Number of channels
@@ -45,10 +47,10 @@ class TestFolderDataset(unittest.TestCase):
         folder2 = os.path.join(self._input_path, 'folder2')
         if not os.path.exists(folder1):
             os.makedirs(folder1)
-            self.generate_dummy_eeg_files(2, folder1)
+            self._generate_eeg_files(2, folder1)
         if not os.path.exists(folder2):
             os.makedirs(folder2)
-            self.generate_dummy_eeg_files(2, folder2)
+            self._generate_eeg_files(2, folder2)
 
         # Define input and output paths for folder_constructor
         io_path = os.path.join(self._output_path, 'eeg_folder')

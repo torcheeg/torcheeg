@@ -5,9 +5,13 @@ import torch
 from torcheeg.models import EEGNet
 
 
-class TestEegnet(unittest.TestCase):
+class TestEEGNet(unittest.TestCase):
 
-    def test_eegnet(self):
+    def setUp(self):
+        self.addCleanup(torch.set_rng_state, torch.get_rng_state())
+        torch.manual_seed(0)
+
+    def test_forward_returns_expected_shape(self):
         eeg = torch.randn(1, 1, 32, 128)
         model = EEGNet(chunk_size=128,
                        num_electrodes=32,
@@ -19,6 +23,9 @@ class TestEegnet(unittest.TestCase):
                        F2=16,
                        num_classes=2)
         pred = model(eeg)
+        for output in pred if isinstance(pred, (tuple, list)) else (pred,):
+            self.assertEqual(output.device.type, 'cpu')
+            self.assertTrue(torch.isfinite(output).all())
         self.assertEqual(tuple(pred.shape), (1, 2))
 
     def test_eegnet_same_padding(self):
@@ -72,6 +79,20 @@ class TestEegnet(unittest.TestCase):
             reference.load_state_dict(conv.state_dict())
             eeg = torch.randn(2, conv.in_channels, 32, 128)
             torch.testing.assert_close(conv(eeg), reference(eeg))
+
+    def test_backward_produces_finite_parameter_and_input_gradients(self):
+        model = EEGNet(chunk_size=128, num_electrodes=8, num_classes=2)
+        eeg = torch.randn(2, 1, 8, 128, requires_grad=True)
+        model(eeg).square().mean().backward()
+        self.assertIsNotNone(eeg.grad)
+        self.assertTrue(torch.isfinite(eeg.grad).all())
+        gradients = [parameter.grad for parameter in model.parameters()
+                     if parameter.requires_grad]
+        self.assertTrue(all(gradient is not None for gradient in gradients))
+        self.assertTrue(all(torch.isfinite(gradient).all()
+                        for gradient in gradients))
+        self.assertTrue(any(gradient.abs().sum() >
+                        0 for gradient in gradients))
 
 
 if __name__ == '__main__':

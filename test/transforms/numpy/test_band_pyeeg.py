@@ -12,6 +12,10 @@ from torcheeg.transforms import (BandApproximateEntropy, BandBinPower,
 
 class TestBandPyeegTransforms(unittest.TestCase):
 
+    def setUp(self):
+        self.addCleanup(np.random.set_state, np.random.get_state())
+        np.random.seed(0)
+
     def test_ap_entropy(self):
         eeg = np.random.randn(32, 128)
         transformed_eeg = BandApproximateEntropy()(eeg=eeg)

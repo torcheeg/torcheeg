@@ -5,9 +5,13 @@ import torch
 from torcheeg.models import EEGfuseNet, EFDiscriminator
 
 
-class TestEegfusenet(unittest.TestCase):
+class TestEEGfuseNet(unittest.TestCase):
 
-    def test_eegfusenet(self):
+    def setUp(self):
+        self.addCleanup(torch.set_rng_state, torch.get_rng_state())
+        torch.manual_seed(0)
+
+    def test_forward_returns_expected_shape(self):
 
         g_model = EEGfuseNet(num_electrodes=20, hid_channels_gru=16,
                              num_layers_gru=1, hid_channels_cnn=1, chunk_size=128)

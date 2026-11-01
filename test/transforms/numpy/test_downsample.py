@@ -11,7 +11,7 @@ from torcheeg.transforms import Downsample, SetSamplingRate
 
 
 class TestOptionalModelDependencies(unittest.TestCase):
-    def run_without(self, modules, body):
+    def _run_without(self, modules, body):
         root = Path(__file__).resolve().parents[3]
         script = '''
 import importlib.abc
@@ -37,7 +37,7 @@ sys.meta_path.insert(0, BlockOptionalDependencies())
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
     def test_resampling_without_optional_backends(self):
-        self.run_without(('samplerate', 'resampy', 'soxr'), """
+        self._run_without(('samplerate', 'resampy', 'soxr'), """
             import numpy as np
             from torcheeg.transforms.numpy import downsample
             from torcheeg.utils import LazyLoader
@@ -59,6 +59,10 @@ sys.meta_path.insert(0, BlockOptionalDependencies())
 
 
 class TestDownsampleTransforms(unittest.TestCase):
+
+    def setUp(self):
+        self.addCleanup(np.random.set_state, np.random.get_state())
+        np.random.seed(0)
 
     def test_downsample(self):
         eeg = np.random.randn(32, 128)

@@ -30,6 +30,10 @@ class TestMetaInfoIO(unittest.TestCase):
         io.write_info({'subject_id': 0, 'clip_id': 1,
                       'baseline_id': 0, 'valence': 0, 'arousal': 0})
 
+        self.assertEqual(len(io), 2)
+        self.assertEqual(io.read_info(0)['clip_id'], 0)
+        self.assertEqual(io.read_info(1)['clip_id'], 1)
+
     def test_len(self):
         io_io_path = os.path.join(self._io_path, 'signals')
         io = MetaInfoIO(io_path=io_io_path)

@@ -5,7 +5,7 @@ import pandas as pd
 from torcheeg.datasets import BaseDataset, ConcatDataset
 
 
-class FakeDataset(BaseDataset):
+class _FakeDataset(BaseDataset):
     def __init__(self, num_subjects, num_trials, num_clips):
         data = []
         for subject_id in range(num_subjects):
@@ -31,11 +31,11 @@ class FakeDataset(BaseDataset):
 
 class TestConcatDataset(unittest.TestCase):
     def test_concat_dataset(self):
-        dataset_a = FakeDataset(5, 5, 5)
-        dataset_b = FakeDataset(5, 5, 5)
+        dataset_a = _FakeDataset(5, 5, 5)
+        dataset_b = _FakeDataset(5, 5, 5)
 
         concat_dataset = ConcatDataset(dataset_a, dataset_b)
-        assert len(concat_dataset) == 5 * 5 * 5 * 2
+        self.assertTrue(len(concat_dataset) == 5 * 5 * 5 * 2)
 
         # print(f'Saved EEG file {file_path}')
 

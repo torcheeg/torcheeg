@@ -9,7 +9,7 @@ from torch.utils.data.dataloader import DataLoader
 from torcheeg.trainers import ClassifierTrainer
 
 
-class DummyClassificationDataset(Dataset):
+class _DummyClassificationDataset(Dataset):
 
     def __init__(self, length: int = 105):
         self.length = length
@@ -21,7 +21,7 @@ class DummyClassificationDataset(Dataset):
         return torch.randn(120), random.choice([0, 1])
 
 
-class DummyModel(nn.Module):
+class _DummyModel(nn.Module):
 
     def __init__(self, in_channels=120, out_channels=2):
         super().__init__()
@@ -33,28 +33,38 @@ class DummyModel(nn.Module):
         return self.fc(x)
 
 
-class TestClassifier(unittest.TestCase):
+class TestClassifierTrainer(unittest.TestCase):
+    def setUp(self):
+        self.addCleanup(torch.set_rng_state, torch.get_rng_state())
+        torch.manual_seed(0)
+        self.addCleanup(random.setstate, random.getstate())
+        random.seed(0)
+
     def test_classifier_trainer_basic(self):
         """Test basic functionality of ClassifierTrainer"""
         # Prepare minimal datasets and dataloaders for testing
-        train_dataset = DummyClassificationDataset()
-        val_dataset = DummyClassificationDataset()
+        train_dataset = _DummyClassificationDataset()
+        val_dataset = _DummyClassificationDataset()
 
         train_loader = DataLoader(train_dataset, batch_size=5)
         val_loader = DataLoader(val_dataset, batch_size=5)
 
-        model = DummyModel()
+        model = _DummyModel()
         trainer = ClassifierTrainer(model, num_classes=2)
 
         # Only test single training step instead of full epoch
-        trainer.training_step(next(iter(train_loader)), batch_idx=0)
+        loss = trainer.training_step(next(iter(train_loader)), batch_idx=0)
+        self.assertEqual(loss.ndim, 0)
+        self.assertEqual(loss.device.type, 'cpu')
+        self.assertTrue(torch.isfinite(loss))
+        self.assertTrue(loss.requires_grad)
 
         # Only test single validation step instead of full epoch
         trainer.validation_step(next(iter(val_loader)), batch_idx=0)
 
     def test_classifier_trainer_metrics(self):
         """Test metrics configuration of ClassifierTrainer"""
-        model = DummyModel()
+        model = _DummyModel()
 
         # Test if all supported metrics can be initialized properly
         trainer = ClassifierTrainer(
@@ -64,9 +74,11 @@ class TestClassifier(unittest.TestCase):
                      'f1score', 'matthews', 'auroc', 'kappa']
         )
 
+        self.assertEqual(trainer.accelerator, 'cpu')
+
         # Test if unsupported metrics raise ValueError
         with self.assertRaises(ValueError):
-            trainer = ClassifierTrainer(
+            ClassifierTrainer(
                 model, num_classes=2, metrics=['unexpected'])
 
 

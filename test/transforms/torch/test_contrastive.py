@@ -6,6 +6,10 @@ from torcheeg.transforms import Contrastive, RandomNoise
 
 
 class TestContrastiveTransforms(unittest.TestCase):
+    def setUp(self):
+        self.addCleanup(torch.set_rng_state, torch.get_rng_state())
+        torch.manual_seed(0)
+
     def test_contrastive(self):
         eeg = torch.randn(32, 128)
         transformed_eeg = Contrastive(RandomNoise(p=1.0), num_views=2)(eeg=eeg)

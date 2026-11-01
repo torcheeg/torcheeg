@@ -10,7 +10,7 @@ from torcheeg.models import BCUNet, BUNet
 from torcheeg.trainers import CDDPMTrainer, DDPMTrainer
 
 
-class DummyDataset(Dataset):
+class _DummyDataset(Dataset):
 
     def __init__(self, length: int = 101):
         self.length = length
@@ -22,7 +22,7 @@ class DummyDataset(Dataset):
         return torch.randn(4, 9, 9), random.randint(0, 1)
 
 
-class Extractor(nn.Module):
+class _Extractor(nn.Module):
 
     def __init__(self, in_channels=4):
         super().__init__()
@@ -50,7 +50,7 @@ class Extractor(nn.Module):
         return x
 
 
-class Classifier(nn.Module):
+class _Classifier(nn.Module):
 
     def __init__(self, in_channels=4, num_classes=2):
         super().__init__()
@@ -85,10 +85,14 @@ class Classifier(nn.Module):
 
 class TestDDPMTrainer(unittest.TestCase):
     def setUp(self):
+        self.addCleanup(torch.set_rng_state, torch.get_rng_state())
+        torch.manual_seed(0)
+        self.addCleanup(random.setstate, random.getstate())
+        random.seed(0)
         """Set up common test data"""
         # Prepare minimal datasets and dataloaders for testing
-        self.train_dataset = DummyDataset(length=10)  # Reduced dataset size
-        self.val_dataset = DummyDataset(length=10)
+        self.train_dataset = _DummyDataset(length=10)  # Reduced dataset size
+        self.val_dataset = _DummyDataset(length=10)
 
         self.train_loader = DataLoader(
             self.train_dataset, batch_size=4)  # Smaller batch size
@@ -99,15 +103,20 @@ class TestDDPMTrainer(unittest.TestCase):
         model = BUNet(in_channels=4)
         trainer = DDPMTrainer(
             model,
-            metric_extractor=Extractor(),
-            metric_classifier=Classifier(),
+            metric_extractor=_Extractor(),
+            metric_classifier=_Classifier(),
             metric_num_features=9 * 9 * 64,
             metrics=['fid', 'is'],
             accelerator='cpu'
         )
 
         # Only test single training step
-        trainer.training_step(next(iter(self.train_loader)), batch_idx=0)
+        loss = trainer.training_step(
+            next(iter(self.train_loader)), batch_idx=0)
+        self.assertEqual(loss.ndim, 0)
+        self.assertEqual(loss.device.type, 'cpu')
+        self.assertTrue(torch.isfinite(loss))
+        self.assertTrue(loss.requires_grad)
 
         # Only test single validation step
         trainer.validation_step(next(iter(self.val_loader)), batch_idx=0)
@@ -117,15 +126,20 @@ class TestDDPMTrainer(unittest.TestCase):
         model = BCUNet(in_channels=4)
         trainer = CDDPMTrainer(
             model,
-            metric_extractor=Extractor(),
-            metric_classifier=Classifier(),
+            metric_extractor=_Extractor(),
+            metric_classifier=_Classifier(),
             metric_num_features=9 * 9 * 64,
             metrics=['fid', 'is'],
             accelerator='cpu'
         )
 
         # Only test single training step
-        trainer.training_step(next(iter(self.train_loader)), batch_idx=0)
+        loss = trainer.training_step(
+            next(iter(self.train_loader)), batch_idx=0)
+        self.assertEqual(loss.ndim, 0)
+        self.assertEqual(loss.device.type, 'cpu')
+        self.assertTrue(torch.isfinite(loss))
+        self.assertTrue(loss.requires_grad)
 
         # Only test single validation step
         trainer.validation_step(next(iter(self.val_loader)), batch_idx=0)

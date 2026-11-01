@@ -142,6 +142,10 @@ class TestGrid(unittest.TestCase):
 
 class TestToTransforms(unittest.TestCase):
 
+    def setUp(self):
+        self.addCleanup(np.random.set_state, np.random.get_state())
+        np.random.seed(0)
+
     def test_to_2d(self):
         eeg = np.random.randn(32, 128)
         transformed_eeg = To2d()(eeg=eeg)
