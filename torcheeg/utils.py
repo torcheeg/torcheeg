@@ -7,7 +7,6 @@ import random
 import shutil
 import ssl
 import string
-import sys
 import tempfile
 import time
 import urllib
@@ -74,11 +73,11 @@ def download_url(url: str,
 
     if os.path.exists(path):  # pragma: no cover
         if verbose:
-            _log.info(f'Using existing file {filename}', file=sys.stderr)
+            _log.info(f'Using existing file {filename}')
         return path
 
     if verbose:
-        _log.info(f'Downloading {url}', file=sys.stderr)
+        _log.info(f'Downloading {url}')
 
     os.makedirs(os.path.expanduser(os.path.normpath(folder)))
 
@@ -100,7 +99,7 @@ def seed_everything(seed):
     import torch
 
     random.seed(seed)
-    os.environ['PYHTONHASHSEED'] = str(seed)
+    os.environ['PYTHONHASHSEED'] = str(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
     torch.cuda.manual_seed(seed)
