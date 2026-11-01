@@ -472,6 +472,21 @@ class TestNumpyTransforms(unittest.TestCase):
         np.testing.assert_allclose(result, np.ones((1, 2, 2)),
                                    rtol=0.0, atol=1e-12)
 
+    def test_normalization_of_constant_signals_is_finite(self):
+        for transform_class in (MeanStdNormalize, MinMaxNormalize):
+            for axis in (None, 0, 1):
+                for dtype in (np.float32, np.float64, np.int64):
+                    with self.subTest(transform=transform_class.__name__, axis=axis, dtype=dtype):
+                        eeg = np.full((2, 3), 7, dtype=dtype)
+                        result = transform_class(axis=axis)(eeg=eeg)['eeg']
+                        np.testing.assert_array_equal(result, np.zeros((2, 3)))
+                        np.testing.assert_array_equal(eeg, np.full((2, 3), 7))
+        eeg = np.array([[2., 2., 2.], [1., 3., 5.]])
+        for transform_class in (MeanStdNormalize, MinMaxNormalize):
+            result = transform_class(axis=1)(eeg=eeg)['eeg']
+            self.assertTrue(np.isfinite(result).all())
+            np.testing.assert_array_equal(result[0], np.zeros(3))
+
 
 if __name__ == '__main__':
     unittest.main()
