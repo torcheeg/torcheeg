@@ -91,6 +91,8 @@ class TestUtilsImports(unittest.TestCase):
 
 class TestUtilityFunctions(unittest.TestCase):
     def setUp(self):
+        self.addCleanup(random.setstate, random.getstate())
+        random.seed(0)
         logger = logging.getLogger('torcheeg')
         self.addCleanup(logger.setLevel, logger.level)
         logger.setLevel(logging.INFO)

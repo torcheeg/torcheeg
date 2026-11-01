@@ -56,7 +56,7 @@ class TestFakeRecordMetadata(unittest.TestCase):
         self.addCleanup(directory.cleanup)
         root = Path(directory.name)
         names = [name for name in StrokePatientsMIDataset.channels if name != 'CPz']
-        pd.DataFrame({'participant_id': [
+        pd.DataFrame({'Participant_ID': [
                      'sub-01'], 'age': [30]}).to_csv(root / 'participants.tsv', sep='\t', index=False)
         pd.DataFrame({'name': names}).to_csv(
             root / 'task-motor-imagery_electrodes.tsv', sep='\t', index=False)
