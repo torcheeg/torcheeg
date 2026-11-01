@@ -475,6 +475,8 @@ class DDPMTrainer(pl.LightningModule):
             x_recon = self.predict_start_from_noise(x, t=t, noise=model_out)
         elif self.parameterization == "x0":
             x_recon = model_out
+        elif self.parameterization == "v":
+            x_recon = self.predict_start_from_z_and_v(x, t, model_out)
         if clip_denoised:
             x_recon.clamp_(-1., 1.)
 
@@ -529,7 +531,7 @@ class DDPMTrainer(pl.LightningModule):
                                                     pred,
                                                     reduction='none')
         else:
-            raise ValueError(f"Unknown loss_type {loss_type!r}.")
+            raise ValueError(f"Unknown loss_type {self.loss_type!r}.")
 
         return loss
 
@@ -942,6 +944,8 @@ class CDDPMTrainer(DDPMTrainer):
             x_recon = self.predict_start_from_noise(x, t=t, noise=model_out)
         elif self.parameterization == "x0":
             x_recon = model_out
+        elif self.parameterization == "v":
+            x_recon = self.predict_start_from_z_and_v(x, t, model_out)
         if clip_denoised:
             x_recon.clamp_(-1., 1.)
 
