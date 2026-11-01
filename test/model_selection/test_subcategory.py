@@ -9,6 +9,25 @@ from .test_utils import _make_dataset
 
 class TestSubcategory(unittest.TestCase):
 
+    def setUp(self):
+        self._directory = tempfile.TemporaryDirectory()
+        self.addCleanup(self._directory.cleanup)
+        self._split_path = os.path.join(self._directory.name, 'split')
+
+    def test_subcategory(self):
+        dataset = _make_dataset()
+
+        split_path = self._split_path
+        cv = Subcategory(split_path=split_path, criteria='subject_id')
+
+        split_num = 0
+        for _ in cv.split(dataset):
+            split_num += 1
+        self.assertEqual(split_num, 5)
+
+
+class TestSubcategoryMetadata(unittest.TestCase):
+
     def test_string_numeric_and_mixed_categories_preserve_values(self):
         for categories in ([0, 1, 2, 3, 4], ['001', '002', '003', '004', '005'],
                            ['group/a', 'group%b', 'rest', 'task',

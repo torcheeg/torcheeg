@@ -26,24 +26,6 @@ class TestTrainValTestSplitGroupbyFolder(unittest.TestCase):
             split_path=self._split_path if split_path is None else split_path,
             **parameters)
 
-    def _assert_partition(self, dataset, folds):
-        self.assertEqual(len(folds), self._fold_count)
-        for fold in folds:
-            self.assertEqual(len(fold), 3)
-            clips = [set(subset.info['clip_id']) for subset in fold]
-            self.assertEqual(set.union(*clips), set(dataset.info['clip_id']))
-            for first, second in ((0, 1), (0, 2), (1, 2)):
-                self.assertFalse(clips[first] & clips[second])
-                if self._group_column is not None:
-                    self.assertFalse(
-                        set(fold[first].info[self._group_column])
-                        & set(fold[second].info[self._group_column]))
-            for subset in fold:
-                self.assertGreater(len(subset), 0)
-                for index in range(len(subset)):
-                    signal, info = subset[index]
-                    self.assertEqual(signal[0], int(info['clip_id']))
-
     def test_train_val_test_split_groupby_folder(self):
         dataset = _make_dataset()
         train, val, test = next(self._make_splitter().split(dataset))

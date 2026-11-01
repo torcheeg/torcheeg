@@ -58,3 +58,6 @@ tmp_out/
 dev/
 .torcheeg/
 lightning_logs/
+# Coverage reports
+htmlcov/
+coverage.json

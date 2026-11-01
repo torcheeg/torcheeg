@@ -3,7 +3,6 @@ import os
 import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import patch
 
 import numpy as np
 import pandas as pd
@@ -53,6 +52,8 @@ class TestTrainTestSplitPerSubjectGroupbyTrial(unittest.TestCase):
                 process.join(timeout=10)
 
     def setUp(self):
+        self.addCleanup(np.random.set_state, np.random.get_state())
+        np.random.seed(0)
         self._directory = tempfile.TemporaryDirectory()
         self.addCleanup(self._directory.cleanup)
         self._split_path = os.path.join(self._directory.name, 'split')
