@@ -46,6 +46,38 @@ class FakeDataset(BaseDataset):
         return len(self.info)
 
 
+class _MemoryDataset(BaseDataset):
+    @staticmethod
+    def set_records(num_records=2, **kwargs):
+        return list(range(num_records))
+
+    @staticmethod
+    def read_record(record, **kwargs):
+        return {}
+
+    @staticmethod
+    def process_record(record, reserved=False, fail_record=None, **kwargs):
+        if record == fail_record:
+            raise RuntimeError('record failure')
+        baseline_id = f'09{record:02}'
+        yield {'key': baseline_id,
+               'eeg': np.full((2, 4), -record - 1, dtype=np.float32)}
+        info = {'subject_id': f'{record + 1:03}', 'session_id': '000',
+                'trial_id': '000', 'baseline_id': baseline_id, 'tag': 'NA'}
+        if reserved:
+            info['_record_id'] = 'forbidden'
+        for index in range(2):
+            key = f'{record:02}{index:02}'
+            info['clip_id'] = key
+            yield {'key': key,
+                   'eeg': np.full((2, 4), record * 10 + index, dtype=np.float32),
+                   'info': info}
+
+
+def _increment_memory_samples(data):
+    return data + 1
+
+
 class TestBaseDataset(unittest.TestCase):
     def test_missing_record_hooks_identify_the_subclass(self):
         class IncompleteDataset(BaseDataset):
@@ -253,6 +285,102 @@ class TestFolderDataset(unittest.TestCase):
         self.assertEqual(first_item[0].shape, (14, 128))
         last_item = dataset[-1]
         self.assertEqual(last_item[0].shape, (14, 128))
+
+
+class TestMemoryDataset(unittest.TestCase):
+    def _assert_samples(self, dataset, increment=0):
+        self.assertEqual(len(dataset), 4)
+        self.assertFalse(dataset.is_lazy())
+        self.assertEqual(dataset.eeg_signal_paths, {})
+        for index in range(4):
+            record, window = divmod(index, 2)
+            signal, info = dataset[index]
+            self.assertEqual(info['clip_id'], f'{record:02}{window:02}')
+            self.assertEqual(info['subject_id'], f'{record + 1:03}')
+            self.assertEqual(info['session_id'], '000')
+            self.assertEqual(info['trial_id'], '000')
+            self.assertEqual(info['baseline_id'], f'09{record:02}')
+            self.assertEqual(info['tag'], 'NA')
+            np.testing.assert_array_equal(signal, np.full((2, 4),
+                                          record * 10 + window + increment))
+            np.testing.assert_array_equal(dataset.read_eeg(
+                info['_record_id'], info['baseline_id']),
+                np.full((2, 4), -record - 1))
+
+    def test_string_ids_survive_sequential_and_parallel_preprocessing(self):
+        for workers in (0, 2):
+            with self.subTest(workers=workers):
+                dataset = _MemoryDataset(io_mode='memory', num_worker=workers,
+                                         lazy_threshold=0, verbose=False)
+                self._assert_samples(dataset)
+
+    def test_memory_storage_does_not_use_disk_metadata_or_reuse_a_cache(self):
+        from unittest.mock import patch
+
+        with tempfile.TemporaryDirectory() as directory:
+            path = os.path.join(directory, 'existing-file')
+            with open(path, 'wb') as file:
+                file.write(b'preserve')
+            with patch('torcheeg.datasets.base_dataset.MetaInfoIO',
+                       side_effect=AssertionError('memory mode must not use CSV')):
+                first = _MemoryDataset(
+                    io_mode='memory', io_path=path, verbose=False)
+                second = _MemoryDataset(
+                    io_mode='memory', io_path=path, verbose=False)
+            self._assert_samples(first)
+            self._assert_samples(second)
+            first.write_eeg('_record_0', '0000', np.full((2, 4), 99))
+            np.testing.assert_array_equal(second[0][0], np.zeros((2, 4)))
+            with open(path, 'rb') as file:
+                self.assertEqual(file.read(), b'preserve')
+            self.assertEqual(os.listdir(directory), ['existing-file'])
+            with self.assertRaisesRegex(RuntimeError, 'record failure'):
+                _MemoryDataset(io_mode='memory', io_path=path,
+                               fail_record=1, verbose=False)
+            with open(path, 'rb') as file:
+                self.assertEqual(file.read(), b'preserve')
+
+    def test_after_hooks_use_preserved_string_ids(self):
+        dataset = _MemoryDataset(io_mode='memory', verbose=False,
+                                 after_trial=_increment_memory_samples,
+                                 after_session=_increment_memory_samples,
+                                 after_subject=_increment_memory_samples)
+        self._assert_samples(dataset, increment=3)
+
+    def test_copied_and_partitioned_views_preserve_string_ids(self):
+        dataset = _MemoryDataset(io_mode='memory', verbose=False)
+        duplicate = copy(dataset)
+        duplicate.info.loc[0, 'tag'] = 'changed'
+        self.assertEqual(dataset.info.loc[0, 'tag'], 'NA')
+        np.testing.assert_array_equal(duplicate[0][0], dataset[0][0])
+        with tempfile.TemporaryDirectory() as directory:
+            subsets = list(Subcategory(criteria='subject_id',
+                                       split_path=os.path.join(directory, 'split')).split(dataset))
+        self.assertEqual(len(subsets), 2)
+        for subject, subset in zip(('001', '002'), subsets):
+            self.assertEqual(set(subset.info['subject_id']), {subject})
+            self.assertEqual(len(subset), 2)
+            for index in range(2):
+                signal, info = subset[index]
+                self.assertEqual(info['subject_id'], subject)
+                self.assertEqual(signal.shape, (2, 4))
+
+    def test_spawned_loader_reads_samples_by_original_string_ids(self):
+        dataset = _MemoryDataset(io_mode='memory', verbose=False)
+        batches = list(DataLoader(dataset, batch_size=2, num_workers=2,
+                                  multiprocessing_context='spawn', timeout=30))
+        expected = np.stack([np.full((2, 4), record * 10 + index, dtype=np.float32)
+                             for record in range(2) for index in range(2)])
+        torch.testing.assert_close(torch.cat([batch[0] for batch in batches]),
+                                   torch.from_numpy(expected))
+        self.assertEqual([key for _, info in batches for key in info['clip_id']],
+                         ['0000', '0001', '0100', '0101'])
+
+    def test_memory_initialization_retains_reserved_column_and_empty_record_checks(self):
+        with self.assertRaisesRegex(ValueError, 'reserved'):
+            _MemoryDataset(io_mode='memory', reserved=True, verbose=False)
+        with self.assertRaisesRegex(ValueError, 'No records'):
+            _MemoryDataset(io_mode='memory', num_records=0, verbose=False)
 
 
 class TestLazyDatasetCopy(unittest.TestCase):
