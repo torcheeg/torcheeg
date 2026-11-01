@@ -1,6 +1,5 @@
 import logging
 import os
-import tempfile
 from copy import copy
 from typing import Any, Callable, Dict, Union
 
@@ -70,10 +69,7 @@ class BaseDataset(Dataset):
                              after_subject=after_subject)
         records = list(self.set_records(**kwargs))
         if self.io_mode == 'memory':
-            # Memory storage is rebuilt for each instance and has no disk manifest.
-            with tempfile.TemporaryDirectory(prefix='torcheeg-memory-') as path:
-                self._build_cache(path, records, kwargs)
-            self.io_path = io_path
+            self._build_cache(None, records, kwargs)
         else:
             fingerprint = compute_fingerprint(type(self), configuration, records,
                                               io_path)
@@ -118,14 +114,25 @@ class BaseDataset(Dataset):
                                               total=len(records),
                                               disable=not self.verbose,
                                               desc='[PROCESS]'))
-            self.init_io(io_path=path, io_size=self.io_size,
-                         io_mode=self.io_mode)
             if self.io_mode == 'memory':
-                self.eeg_io_router = {
-                    item['record']: item['eeg_io']
-                    for item in results
-                }
+                if not results:
+                    raise ValueError(
+                        'No records were processed for the memory dataset.')
+                self.eeg_io_router = {}
                 self.eeg_signal_paths = {}
+                info_frames = []
+                for item in results:
+                    info = item['info']
+                    if '_record_id' in info.columns:
+                        raise ValueError(
+                            "column '_record_id' is a forbidden reserved word.")
+                    info['_record_id'] = item['record']
+                    info_frames.append(info)
+                    self.eeg_io_router[item['record']] = item['eeg_io']
+                self.info = pd.concat(info_frames, ignore_index=True)
+            else:
+                self.init_io(io_path=path, io_size=self.io_size,
+                             io_mode=self.io_mode)
             if any(hook is not None for hook in (self.after_trial, self.after_session,
                                                  self.after_subject)):
                 self.update_record(after_trial=self.after_trial,
@@ -343,12 +350,15 @@ class BaseDataset(Dataset):
                       verbose: bool = True,
                       **kwargs):
         _record_id = str(record_id)
-        meta_info_io_path = os.path.join(io_path, f'_record_{_record_id}',
-                                         'info.csv')
-        eeg_signal_io_path = os.path.join(io_path, f'_record_{_record_id}',
-                                          'eeg')
-
-        info_io = MetaInfoIO(meta_info_io_path)
+        if io_mode == 'memory':
+            info_rows = []
+            eeg_signal_io_path = None
+        else:
+            meta_info_io_path = os.path.join(io_path, f'_record_{_record_id}',
+                                             'info.csv')
+            eeg_signal_io_path = os.path.join(io_path, f'_record_{_record_id}',
+                                              'eeg')
+            info_io = MetaInfoIO(meta_info_io_path)
         eeg_io = EEGSignalIO(eeg_signal_io_path,
                              io_size=io_size,
                              io_mode=io_mode)
@@ -368,11 +378,15 @@ class BaseDataset(Dataset):
                 if item and 'eeg' in item and 'key' in item:
                     eeg_io.write_eeg(item['eeg'], item['key'])
                 if item and 'info' in item:
-                    info_io.write_info(item['info'])
+                    if io_mode == 'memory':
+                        info_rows.append(item['info'].copy())
+                    else:
+                        info_io.write_info(item['info'])
 
             result = {'record': f'_record_{_record_id}'}
             if io_mode == 'memory':
                 result['eeg_io'] = eeg_io
+                result['info'] = pd.DataFrame(info_rows)
             return result
         finally:
             if pbar is not None:
