@@ -1,0 +1,12 @@
+[run]
+branch = True
+source = torcheeg
+parallel = True
+concurrency = multiprocessing,thread
+patch = subprocess,_exit
+sigterm = True
+
+[report]
+show_missing = True
+precision = 2
+fail_under = 80

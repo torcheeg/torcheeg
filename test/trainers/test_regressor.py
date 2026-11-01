@@ -79,6 +79,24 @@ class TestRegressorTrainer(unittest.TestCase):
         with self.assertRaises(ValueError):
             RegressorTrainer(model, metrics=['unexpected'])
 
+    def test_cpu_fit_test_and_predict_preserve_batch_shapes_and_metrics(self):
+        x = torch.arange(48, dtype=torch.float32).reshape(8, 6) / 48
+        y = x.mean(dim=1)
+        loader = DataLoader(torch.utils.data.TensorDataset(x, y), batch_size=4)
+        trainer = RegressorTrainer(nn.Linear(6, 1), metrics=[
+                                   'mae', 'mse', 'rmse', 'r2score'])
+        options = dict(logger=False, enable_checkpointing=False, enable_progress_bar=False,
+                       enable_model_summary=False)
+        trainer.fit(loader, loader, max_epochs=1, max_steps=1,
+                    num_sanity_val_steps=0, **options)
+        self.assertEqual(trainer.trainer.global_step, 1)
+        results = trainer.test(loader, **options)
+        self.assertTrue(all(torch.isfinite(torch.tensor(value))
+                        for value in results[0].values()))
+        predictions = trainer.predict(loader, **options)
+        self.assertEqual(torch.cat(predictions).shape, (8, 1))
+        self.assertTrue(torch.isfinite(torch.cat(predictions)).all())
+
 
 if __name__ == '__main__':
     unittest.main()
