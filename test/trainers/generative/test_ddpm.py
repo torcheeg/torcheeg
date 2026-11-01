@@ -326,6 +326,10 @@ class TestDiffusionMath(unittest.TestCase):
 
 
 class TestLitEma(unittest.TestCase):
+    def setUp(self):
+        self.addCleanup(torch.set_rng_state, torch.get_rng_state())
+        torch.manual_seed(0)
+
     def test_exponential_update_and_store_restore_match_scalar_reference(self):
         model = nn.Linear(1, 1)
         model.weight.data.fill_(1)
