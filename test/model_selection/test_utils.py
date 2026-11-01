@@ -367,3 +367,7 @@ class TestModelSelectionUtils(unittest.TestCase):
         dataset.info.iloc[[0, 1]] = dataset.info.iloc[[1, 0]].to_numpy()
         with self.assertRaisesRegex(ValueError, 'changed'):
             list(splitter.split(dataset))
+
+
+if __name__ == '__main__':
+    unittest.main()

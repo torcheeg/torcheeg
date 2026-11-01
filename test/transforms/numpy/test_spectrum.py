@@ -1,0 +1,25 @@
+import unittest
+
+import numpy as np
+
+from torcheeg.transforms import CWTSpectrum, DWTDecomposition
+
+
+class TestSpectrumTransforms(unittest.TestCase):
+
+    def test_dwt_decomposition(self):
+        eeg = np.random.randn(32, 1000)
+        transformed_eeg = DWTDecomposition()(eeg=eeg)
+        self.assertEqual(transformed_eeg['eeg'].shape, (2, 32, 500))
+
+    def test_cwt_spectrum(self):
+        eeg = np.random.randn(32, 1000)
+        transformed_eeg = CWTSpectrum()(eeg=eeg)
+        self.assertEqual(transformed_eeg['eeg'].shape, (32, 128, 1000))
+
+        transformed_eeg = CWTSpectrum(contourf=True)(eeg=eeg)
+        self.assertEqual(transformed_eeg['eeg'].shape, (32, 480, 640, 4))
+
+
+if __name__ == '__main__':
+    unittest.main()
