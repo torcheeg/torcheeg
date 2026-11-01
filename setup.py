@@ -8,7 +8,7 @@ install_requires = [
     'scipy>=1.7.3', 'scikit-learn>=1.0.2', 'lmdb>=1.3.0', 'einops>=0.4.1',
     'mne>=1.0.3', 'xmltodict>=0.13.0', 'networkx>=2.6.3', 'PyWavelets>=1.3.0',
     'spectrum>=0.8.1', 'torchmetrics>=0.10.0', 'mne_connectivity>=0.4.0',
-    'pytorch-lightning', 'wfdb>=4.1.2', 'filelock>=3.0', 'joblib>=1.1'
+    'pytorch-lightning', 'wfdb>=4.1.2', 'filelock>=3.0', 'joblib>=1.1', 'zarr>=2.16'
 ]
 
 test_requires = [
@@ -52,7 +52,6 @@ setup(
     python_requires='>=3.7',
     extras_require={
         'test': test_requires,
-        'io': ['zarr>=2.16'],
         'model': model_plugin_requires,
         'dataset': dataset_plugin_requires,
         'trainer': trainer_plugin_requires,

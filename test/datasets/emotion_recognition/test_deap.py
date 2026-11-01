@@ -98,13 +98,10 @@ class TestDEAPData(unittest.TestCase):
                 explicit[0]['eeg'], samples[0, :, 4:8] + 1)
 
     def test_default_shortcut_reuses_each_persistent_backend(self):
-        import importlib.util
         import os
         import pickle
         import tempfile
-        modes = ['lmdb', 'pickle', 'numpy']
-        if importlib.util.find_spec('zarr'):
-            modes.append('zarr')
+        modes = ['lmdb', 'pickle', 'numpy', 'zarr']
         with tempfile.TemporaryDirectory() as root:
             source = os.path.join(root, 'source')
             os.mkdir(source)

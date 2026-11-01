@@ -2,11 +2,10 @@ import os
 from urllib.parse import quote, unquote
 
 import numpy as np
+import zarr
 
-from ...utils import LazyLoader, get_random_dir_path
+from ...utils import get_random_dir_path
 from .base import BaseEEGIO
-
-_zarr = LazyLoader('zarr', install_hint='Install with `pip install zarr`.')
 
 
 class ZarrEEGIO(BaseEEGIO):
@@ -18,7 +17,7 @@ class ZarrEEGIO(BaseEEGIO):
         self._group('a')
 
     def _group(self, mode):
-        return _zarr.open_group(self.io_path, mode=mode)
+        return zarr.open_group(self.io_path, mode=mode)
 
     def write_eeg(self, eeg, key, record=None):
         encoded = self.encode_key(key, record)
