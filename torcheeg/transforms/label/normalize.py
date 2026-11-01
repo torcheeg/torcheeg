@@ -4,7 +4,7 @@ from ..base_transform import LabelTransform
 
 
 class Normalize(LabelTransform):
-    r'''
+    r"""
     Normalize the label using min-max normalization or standardization.
 
     For min-max normalization:
@@ -13,7 +13,7 @@ class Normalize(LabelTransform):
         from torcheeg import transforms
 
         t = transforms.Normalize(min=0.0, max=1.0)
-        t(y=0.5)['y']
+        t(0.5)
         >>> 0.5
 
     For standardization:
@@ -22,7 +22,7 @@ class Normalize(LabelTransform):
         from torcheeg import transforms
 
         t = transforms.Normalize(mean=0.0, std=1.0)
-        t(y=0.5)['y']
+        t(0.5)
         >>> 0.5
 
     Args:
@@ -35,7 +35,7 @@ class Normalize(LabelTransform):
         Either (min, max) or (mean, std) should be provided, but not both.
 
     .. automethod:: __call__
-    '''
+    """
 
     def __init__(self,
                  min: Optional[float] = None,

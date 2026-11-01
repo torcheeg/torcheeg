@@ -1,0 +1,177 @@
+import pickle
+import tempfile
+import unittest
+from copy import copy
+from pathlib import Path
+
+import numpy as np
+from torch.utils.data import DataLoader
+
+from torcheeg.datasets import IODataset
+from torcheeg.io import CSVInfoIO, MemoryEEGIO, MemoryInfoIO, NumpyEEGIO
+from torcheeg.transforms import Compose
+
+
+def add_one(sample):
+    sample['eeg'] += 1
+    return sample
+
+
+def double(sample):
+    return {**sample, 'eeg': sample['eeg'] * 2}
+
+
+def prepare_training(sample):
+    return {'eeg': sample['eeg'], 'labels': sample['info']['label']}
+
+
+class TestIODataset(unittest.TestCase):
+
+    def make_dataset(self):
+        dataset = IODataset(MemoryEEGIO(), MemoryInfoIO())
+        for index in range(3):
+            sample = {'eeg': np.full((2, 4), index, dtype=np.float32), 'info': {
+                'subject_id': f'{index:03}', 'label': index}}
+            if index != 1:
+                sample['baseline'] = np.ones((2, 4), dtype=np.float32)
+            dataset.append(sample)
+        return dataset
+
+    def test_dictionary_roundtrip_and_baseline(self):
+        dataset = self.make_dataset()
+        self.assertEqual(len(dataset), 3)
+        self.assertEqual(dataset[0]['info'], {'subject_id': '000', 'label': 0})
+        self.assertEqual(set(dataset[0]), {'eeg', 'info', 'baseline'})
+        self.assertNotIn('baseline', dataset[1])
+        self.assertEqual([s['info']['label'] for s in dataset], [0, 1, 2])
+        self.assertEqual(dataset[-1]['info']['label'], 2)
+        with self.assertRaises(IndexError):
+            dataset[3]
+
+    def test_selection_order_duplicates_and_empty(self):
+        dataset = self.make_dataset()
+        for indices, expected in ((slice(None, None, -1), [2, 1, 0]), ([2, 0, 2], [2, 0, 2]), ([], []), ([True, False, True], [0, 2])):
+            selected = dataset[indices]
+            self.assertIs(selected.eeg_io, dataset.eeg_io)
+            self.assertEqual([s['info']['label'] for s in selected], expected)
+        mask = dataset.info['subject_id'].eq('001').to_numpy()
+        self.assertEqual(dataset[mask][0]['info']['label'], 1)
+
+    def test_invalid_indices(self):
+        dataset = self.make_dataset()
+        for index, error in ((True, TypeError), ([True], ValueError), ([1.0], TypeError), ([[1]], ValueError), (['0'], TypeError)):
+            with self.subTest(index=index), self.assertRaises(error):
+                dataset[index]
+
+    def test_append_and_read_do_not_alias_signals(self):
+        dataset = IODataset(MemoryEEGIO(), MemoryInfoIO())
+        eeg = np.ones((2, 4))
+        sample = {'eeg': eeg, 'baseline': eeg, 'info': {'subject_id': '001'}}
+        dataset.append(sample)
+        eeg[:] = 9
+        sample['info']['subject_id'] = 'changed'
+        result = dataset[0]
+        result['eeg'][:] = 7
+        result['baseline'][:] = 8
+        result['info']['subject_id'] = 'edited'
+        np.testing.assert_array_equal(dataset[0]['eeg'], np.ones((2, 4)))
+        np.testing.assert_array_equal(dataset[0]['baseline'], np.ones((2, 4)))
+        self.assertEqual(dataset[0]['info']['subject_id'], '001')
+
+    def test_transform_chaining_equals_compose_and_isolated(self):
+        dataset = self.make_dataset()
+        chain = dataset.with_transform(add_one).with_transform(double)
+        composed = dataset.with_transform(
+            Compose([add_one, Compose([double])]))
+        for index in range(3):
+            np.testing.assert_array_equal(
+                chain[index]['eeg'], composed[index]['eeg'])
+            np.testing.assert_array_equal(
+                chain[index]['eeg'], np.full((2, 4), 2 * (index + 1)))
+        np.testing.assert_array_equal(dataset[0]['eeg'], np.zeros((2, 4)))
+        self.assertEqual(len(chain._transforms), 2)
+        self.assertEqual(len(composed._transforms), 2)
+        np.testing.assert_array_equal(chain[[2, 0]][0]['eeg'], chain[2]['eeg'])
+        restored = pickle.loads(pickle.dumps(chain))
+        np.testing.assert_array_equal(restored[0]['eeg'], chain[0]['eeg'])
+
+    def test_views_cannot_append_and_metadata_is_independent(self):
+        dataset = self.make_dataset()
+        for view in (dataset[:1], dataset.with_transform(add_one), copy(dataset)):
+            view.info.loc[0, 'subject_id'] = 'edited'
+            self.assertEqual(dataset.info.loc[0, 'subject_id'], '000')
+            with self.assertRaises(ValueError):
+                view.append(dataset[0])
+
+    def test_extend_streams_and_closes_failed_producer(self):
+        dataset = IODataset(MemoryEEGIO(), MemoryInfoIO())
+        closed = []
+
+        def samples():
+            try:
+                for index in range(3):
+                    self.assertEqual(len(dataset), index)
+                    yield {'eeg': np.array([index]), 'info': {'label': index}}
+                yield {'info': {}}
+            finally:
+                closed.append(True)
+        with self.assertRaises(ValueError):
+            dataset.extend(samples())
+        self.assertEqual(len(dataset), 3)
+        self.assertEqual(closed, [True])
+
+    def test_transformed_samples_can_be_saved(self):
+        source = self.make_dataset()
+        target = IODataset(MemoryEEGIO(), MemoryInfoIO())
+        target.extend(source.with_transform(add_one))
+        target.extend(source[:1])
+        self.assertEqual(len(target), 4)
+        np.testing.assert_array_equal(target[0]['eeg'], np.ones((2, 4)))
+        np.testing.assert_array_equal(target[-1]['eeg'], np.zeros((2, 4)))
+        self.assertEqual(len(set(target.info['_record_id'])), 4)
+
+    def test_persistent_roundtrip_preserves_string_ids(self):
+        with tempfile.TemporaryDirectory() as directory:
+            eeg_path = str(Path(directory) / 'eeg')
+            info_path = str(Path(directory) / 'info.csv')
+            dataset = IODataset(NumpyEEGIO(eeg_path), CSVInfoIO(info_path))
+            dataset.extend(self.make_dataset())
+            dataset.close()
+            reopened = IODataset(NumpyEEGIO(eeg_path), CSVInfoIO(info_path))
+            self.assertEqual(reopened[0]['info']['subject_id'], '000')
+            changed = reopened.with_transform(add_one)[0]
+            np.testing.assert_array_equal(changed['eeg'], np.ones((2, 4)))
+            np.testing.assert_array_equal(reopened[0]['eeg'], np.zeros((2, 4)))
+            reopened.close()
+
+    def test_training_batch_is_dictionary(self):
+        dataset = self.make_dataset().with_transform(prepare_training)
+        batch = next(iter(DataLoader(dataset, batch_size=2, num_workers=0)))
+        self.assertEqual(set(batch), {'eeg', 'labels'})
+        self.assertEqual(tuple(batch['eeg'].shape), (2, 2, 4))
+        self.assertEqual(batch['labels'].tolist(), [0, 1])
+
+    def test_spawned_loader_and_cpu_training(self):
+        import torch
+        dataset = self.make_dataset().with_transform(prepare_training)
+        loader = DataLoader(dataset, batch_size=2,
+                            num_workers=1, multiprocessing_context='spawn')
+        batches = list(loader)
+        self.assertEqual([batch['labels'].tolist()
+                         for batch in batches], [[0, 1], [2]])
+        model = torch.nn.Sequential(torch.nn.Flatten(), torch.nn.Linear(8, 3))
+        loss = torch.nn.functional.cross_entropy(
+            model(batches[0]['eeg']), batches[0]['labels'])
+        loss.backward()
+        self.assertTrue(torch.isfinite(loss))
+        self.assertIsNotNone(model[1].weight.grad)
+
+    def test_invalid_sample_and_transform_contracts(self):
+        dataset = self.make_dataset()
+        for sample in (None, {'eeg': None, 'info': {}}, {'eeg': np.zeros(1), 'info': []}, {'eeg': np.zeros(1), 'info': {'clip_id': 'external'}}, {'eeg': np.zeros(1), 'info': {}, 'labels': 1}):
+            with self.subTest(sample=sample), self.assertRaises((TypeError, ValueError)):
+                dataset.append(sample)
+        with self.assertRaises(TypeError):
+            dataset.with_transform(None)
+        with self.assertRaises(TypeError):
+            dataset.with_transform(lambda sample: sample['eeg'])[0]

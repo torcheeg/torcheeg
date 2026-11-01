@@ -1,7 +1,8 @@
 import os
 import tempfile
 import unittest
-from test.datasets.test_base_dataset import _assert_memory_dataset
+from test.datasets.test_cached_dataset import (_assert_memory_dataset,
+                                               _process_fake)
 from unittest.mock import patch
 
 import mne
@@ -18,12 +19,9 @@ class TestAVEDDataset(unittest.TestCase):
         np.random.seed(0)
 
     def test_aved_dataset(self):
-        kwargs = {
-            'record': 'fake_record',
-        }
-        kwargs.update(AVEDDataset.fake_record(**kwargs))
-        item = next(AVEDDataset.process_record(**kwargs))
-
+        kwargs = {'record': 'fake_record'}
+        kwargs.update(AVEDDataset.data_class.fake_record(**kwargs))
+        item = next(_process_fake(AVEDDataset, **kwargs))
         self.assertEqual(item['eeg'].shape, (32, 128))
 
     def test_aved_reader_selects_named_eeg_channels_before_referencing(self):
@@ -39,11 +37,8 @@ class TestAVEDDataset(unittest.TestCase):
             os.makedirs(folder)
             for trial in range(1, 17):
                 open(os.path.join(folder, f'trial{trial}.set'), 'w').close()
-            with patch.object(mne.io, 'read_raw_eeglab', side_effect=lambda *args, **kwargs: raw.copy()), \
-                    patch.object(aved, '_apply_notch_filter', side_effect=lambda x, *args: x), \
-                    patch.object(aved, '_apply_bandpass_filter', side_effect=lambda x, *args: x), \
-                    patch.object(aved, '_apply_downsample', side_effect=lambda x, *args: x):
-                result = AVEDDataset.read_record(
+            with patch.object(mne.io, 'read_raw_eeglab', side_effect=lambda *args, **kwargs: raw.copy()), patch.object(aved, '_apply_notch_filter', side_effect=lambda x, *args: x), patch.object(aved, '_apply_bandpass_filter', side_effect=lambda x, *args: x), patch.object(aved, '_apply_downsample', side_effect=lambda x, *args: x):
+                result = AVEDDataset.data_class().read_record(
                     record={'condition': 'audio_only', 'subject_id': 1}, root_path=path)
             self.assertEqual(len(result['samples']), 16)
             for sample in result['samples']:
@@ -57,13 +52,13 @@ class TestAVEDDataset(unittest.TestCase):
             folder = os.path.join(path, 'audio_only', 'sub1')
             os.makedirs(folder)
             open(os.path.join(folder, 'trial1.set'), 'w').close()
-            with patch.object(mne.io, 'read_raw_eeglab', return_value=raw), \
-                    self.assertRaisesRegex(ValueError, 'O2'):
-                AVEDDataset.read_record(
+            with patch.object(mne.io, 'read_raw_eeglab', return_value=raw), self.assertRaisesRegex(ValueError, 'O2'):
+                AVEDDataset.data_class().read_record(
                     record={'condition': 'audio_only', 'subject_id': 1}, root_path=path)
 
 
 class TestFakeRecordMetadata(unittest.TestCase):
+
     def setUp(self):
         self.addCleanup(np.random.set_state, np.random.get_state())
         np.random.seed(0)
@@ -72,11 +67,12 @@ class TestFakeRecordMetadata(unittest.TestCase):
         for dataset_class in (AVEDDataset,):
             with self.subTest(dataset=dataset_class.__name__):
                 kwargs = {'record': 'fake_record'}
-                kwargs.update(dataset_class.fake_record(**kwargs))
-                sample = next(item for item in dataset_class.process_record(**kwargs)
-                              if 'info' in item)
-                self.assertIsInstance(sample['key'], str)
-                self.assertEqual(sample['info']['clip_id'], sample['key'])
+                kwargs.update(dataset_class.data_class.fake_record(**kwargs))
+                sample = next((item for item in _process_fake(
+                    dataset_class, **kwargs) if 'info' in item))
+                self.assertIsInstance(sample['info'], dict)
+                self.assertNotIn('key', sample)
+                self.assertNotIn('clip_id', sample['info'])
                 self.assertGreater(sample['eeg'].size, 0)
                 self.assertTrue(np.isfinite(sample['eeg']).all())
 

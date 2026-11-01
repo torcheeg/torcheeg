@@ -22,33 +22,34 @@ In this tutorial, we demonstrate how to use TorchEEG to implement transfer learn
 # convert all EEG signals into Tensors, making them suitable for neural
 # network input.
 #
-# We use the `after_hook_normalize` function to normalize each EEG trial. This helps in reducing the variance between trials, thereby aiding the transfer generalizable knowledge from MAHNOB to DEAP.
 #
 
 from torcheeg import transforms
 from torcheeg.datasets import MAHNOBDataset
 from torcheeg.datasets.utils import get_locations
-from torcheeg.transforms import after_hook_normalize
 
-dataset = MAHNOBDataset(
-    io_path='./examples_transfer_mahnob_2_deap/mahnob',
-    root_path='./Sessions',
-    offline_transform=transforms.Compose([
-        transforms.BandDifferentialEntropy(sampling_rate=128,
-                                           apply_to_baseline=True),
-        transforms.BaselineRemoval(),
-        transforms.ToGrid(get_locations(
-            MAHNOBDataset.channels, MAHNOBDataset.grid))
-    ]),
-    online_transform=transforms.ToTensor(),
-    after_subject=after_hook_normalize,
-    label_transform=transforms.Compose(
-        [transforms.Select('feltVlnc'),
-         transforms.Binary(5.0)]),
-    chunk_size=128,
-    baseline_chunk_size=128,
-    num_baseline=30,
-    num_worker=4)
+
+def preprocess_sample_1(sample):
+    sample = dict(sample)
+    sample['eeg'] = transforms.BandDifferentialEntropy(
+        sampling_rate=128)(sample['eeg'])
+    sample['baseline'] = transforms.BandDifferentialEntropy(
+        sampling_rate=128)(sample['baseline'])
+    sample['eeg'] = transforms.BaselineRemoval(
+        baseline=sample['baseline'])(sample['eeg'])
+    sample['eeg'] = transforms.ToGrid(get_locations(
+        MAHNOBDataset.channels, MAHNOBDataset.grid))(sample['eeg'])
+    return sample
+
+
+def prepare_training_1(sample):
+    sample = dict(sample)
+    sample['eeg'] = transforms.ToTensor()(sample['eeg'])
+    return {'eeg': sample['eeg'], 'labels': transforms.Compose([transforms.Select('feltVlnc'), transforms.Binary(5.0)])(sample['info'])}
+
+
+dataset = MAHNOBDataset(io_path='./examples_transfer_mahnob_2_deap/mahnob', root_path='./Sessions', chunk_size=128,
+                        baseline_chunk_size=128, num_baseline=30, num_worker=4, transform=preprocess_sample_1).with_transform(prepare_training_1)
 
 ######################################################################
 # Step 2: Divide the Training and Test samples in the Dataset
@@ -133,22 +134,29 @@ state_dict = model.state_dict()
 from torcheeg.datasets import DEAPDataset
 from torcheeg.datasets.utils import get_locations
 
-dataset = DEAPDataset(
-    io_path=f'./examples_transfer_mahnob_2_deap/deap',
-    root_path='./data_preprocessed_python',
-    offline_transform=transforms.Compose([
-        transforms.BandDifferentialEntropy(apply_to_baseline=True),
-        transforms.ToGrid(get_locations(DEAPDataset.channels,
-                          DEAPDataset.grid), apply_to_baseline=True)
-    ]),
-    online_transform=transforms.Compose(
-        [transforms.BaselineRemoval(),
-         transforms.ToTensor()]),
-    label_transform=transforms.Compose([
-        transforms.Select('valence'),
-        transforms.Binary(5.0),
-    ]),
-    num_worker=8)
+
+def preprocess_sample_2(sample):
+    sample = dict(sample)
+    sample['eeg'] = transforms.BandDifferentialEntropy()(sample['eeg'])
+    sample['baseline'] = transforms.BandDifferentialEntropy()(
+        sample['baseline'])
+    sample['eeg'] = transforms.ToGrid(get_locations(
+        DEAPDataset.channels, DEAPDataset.grid))(sample['eeg'])
+    sample['baseline'] = transforms.ToGrid(get_locations(
+        DEAPDataset.channels, DEAPDataset.grid))(sample['baseline'])
+    return sample
+
+
+def prepare_training_2(sample):
+    sample = dict(sample)
+    sample['eeg'] = transforms.BaselineRemoval(
+        baseline=sample['baseline'])(sample['eeg'])
+    sample['eeg'] = transforms.ToTensor()(sample['eeg'])
+    return {'eeg': sample['eeg'], 'labels': transforms.Compose([transforms.Select('valence'), transforms.Binary(5.0)])(sample['info'])}
+
+
+dataset = DEAPDataset(io_path=f'./examples_transfer_mahnob_2_deap/deap', root_path='./data_preprocessed_python',
+                      num_worker=8, transform=preprocess_sample_2).with_transform(prepare_training_2)
 
 ######################################################################
 # Step 5: Split the Dataset into Training and Test Sets

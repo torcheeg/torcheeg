@@ -88,7 +88,7 @@ class Chebynet(nn.Module):
 
 
 class DGCNN(nn.Module):
-    r'''
+    r"""
     Dynamical Graph Convolutional Neural Networks (DGCNN). For more details, please refer to the following information.
 
     - Paper: Song T, Zheng W, Song P, et al. EEG emotion recognition using dynamical graph convolutional neural networks[J]. IEEE Transactions on Affective Computing, 2018, 11(3): 532-541.
@@ -103,25 +103,23 @@ class DGCNN(nn.Module):
         from torcheeg.datasets import SEEDDataset
         from torcheeg import transforms
 
-        dataset = SEEDDataset(root_path='./Preprocessed_EEG',
-                              offline_transform=transforms.BandDifferentialEntropy(band_dict={
-                                  "delta": [1, 4],
-                                  "theta": [4, 8],
-                                  "alpha": [8, 14],
-                                  "beta": [14, 31],
-                                  "gamma": [31, 49]
-                              }),
-                              online_transform=transforms.Compose([
-                                  transforms.ToTensor()
-                              ]),
-                              label_transform=transforms.Compose([
-                                  transforms.Select('emotion'),
-                                  transforms.Lambda(lambda x: x + 1)
-                              ]))
+        def preprocess_sample_1(sample):
+            sample = dict(sample)
+            sample['eeg'] = transforms.BandDifferentialEntropy(band_dict={'delta': [1, 4], 'theta': [4, 8], 'alpha': [8, 14], 'beta': [14, 31], 'gamma': [31, 49]})(sample['eeg'])
+            return sample
+
+        def prepare_training_1(sample):
+            sample = dict(sample)
+            sample['eeg'] = transforms.ToTensor()(sample['eeg'])
+            return {'eeg': sample['eeg'], 'labels': transforms.Compose([transforms.Select('emotion'), transforms.Lambda(lambda x: x + 1)])(sample['info'])}
+
+        dataset = SEEDDataset(root_path='./Preprocessed_EEG', transform=preprocess_sample_1).with_transform(prepare_training_1)
 
         model = DGCNN(in_channels=5, num_electrodes=62, hid_channels=32, num_layers=2, num_classes=2)
 
-        x, y = next(iter(DataLoader(dataset, batch_size=64)))
+        batch = next(iter(DataLoader(dataset, batch_size=64)))
+
+        x, y = batch['eeg'], batch['labels']
         model(x)
 
     Args:
@@ -130,7 +128,7 @@ class DGCNN(nn.Module):
         num_layers (int): The number of graph convolutional layers. (default: :obj:`2`)
         hid_channels (int): The number of hidden nodes in the first fully connected layer. (default: :obj:`32`)
         num_classes (int): The number of classes to predict. (default: :obj:`2`)
-    '''
+    """
 
     def __init__(self,
                  in_channels: int = 5,

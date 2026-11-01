@@ -6,7 +6,8 @@ from scipy import signal
 from scipy.io import loadmat
 
 from ...utils import get_random_dir_path
-from ..base_dataset import BaseDataset
+from ..base_data import BaseData
+from ..cached_dataset import CachedDataset
 
 
 def _apply_notch_filter(eeg_data: np.ndarray, fs: float, notch_freq: float = 50.0) -> np.ndarray:
@@ -136,110 +137,8 @@ def _apply_average_reference(eeg_data: np.ndarray) -> np.ndarray:
     return eeg_data - reference
 
 
-class DTUDataset(BaseDataset):
-    r'''
-    This dataset contains EEG recordings from 18 subjects listening to one of two competing speech audio streams. This class generates training samples and test samples according to the given parameters, and caches the generated results in a unified input and output format (IO). The relevant information of the dataset is as follows:
-
-    - Author: Fuglsang et al.
-    - Year: 2017
-    - Download URL: https://zenodo.org/records/1199011
-    - Reference: Fuglsang S A, Dau T, Hjortkjær J. Noise-robust cortical tracking of attended speech in real-world acoustic scenes[J]. NeuroImage, 2017, 156: 435-444.
-    - Stimulus: Continuous speech in trials of ~50 seconds with target speakers positioned from -60° to 60°.
-    - Signals: Electroencephalogram recorded in a double-walled soundproof booth at the Technical University of Denmark (DTU) using a 64-channel Biosemi system (channels 1-64: scalp EEG electrodes, channel 65: right mastoid electrode, channel 66: left mastoid electrode) and digitized at a sampling rate of 512 Hz (downsampled to 64 Hz).
-    - Labels: Attended speaker (attend_mf=1 for male, attend_mf=2 for female).
-
-    In order to use this dataset, the download file :obj:`EEG.zip` is required. After unzipping, the folder should contain the following files:
-
-    .. code-block:: text
-
-        EEG/
-        ├── S1.mat
-        ├── S2.mat
-        ├── S3.mat
-        ├── ...
-        └── S18.mat
-
-    You need to create an :obj:`expinfo.m` file in the folder:
-
-    .. code-block:: matlab
-
-        for ss = 1:18
-            load(['S' num2str(ss) '.mat'])
-            writetable(expinfo,['S' num2str(ss) '.csv'])
-        end
-
-    This extracts experiment information. After running, the folder should contain the following files:
-
-    .. code-block:: text
-
-        EEG/
-        ├── S1.mat
-        ├── S1.csv
-        ├── S2.mat
-        ├── S2.csv
-        ├── ...
-        └── S18.csv
-
-    An example dataset for CNN-based methods:
-
-    .. code-block:: python
-
-        from torcheeg.datasets import DTUDataset
-        from torcheeg import transforms
-
-        dataset = DTUDataset(root_path='./EEG',
-                            offline_transform=transforms.To2d(),
-                            online_transform=transforms.ToTensor(),
-                            label_transform=transforms.Compose([
-                                transforms.Select('attend_mf'),
-                                transforms.Lambda(lambd=lambda x: x - 1)
-                            ]))
-        print(dataset[0])
-        # EEG signal (torch.Tensor[1, 64, 64]),
-        # label (int)
-
-    An example dataset with custom preprocessing parameters:
-
-    .. code-block:: python
-
-        from torcheeg.datasets import DTUDataset
-        from torcheeg import transforms
-
-        dataset = DTUDataset(root_path='./EEG',
-                            chunk_size=64,
-                            overlap=0,
-                            sampling_rate=64,
-                            num_channel=64,
-                            eog_removal=True,
-                            offline_transform=transforms.To2d(),
-                            online_transform=transforms.ToTensor(),
-                            label_transform=transforms.Compose([
-                                transforms.Select('attend_mf'),
-                                transforms.Lambda(lambd=lambda x: x - 1)
-                            ]))
-        print(dataset[0])
-        # EEG signal (torch.Tensor[1, 64, 64]),
-        # label (int)
-
-    Args:
-        root_path (str): Path to the raw data files in MATLAB format. (default: :obj:`'./EEG'`)
-        chunk_size (int): Number of data points included in each EEG chunk as training or test samples. If set to -1, the EEG signal of an entire trial is used as a single chunk. (default: :obj:`64`)
-        overlap (int): The number of overlapping data points between different chunks when dividing EEG data. (default: :obj:`0`)
-        num_channel (int): Number of channels to use. The dataset contains 73 channels total (64 scalp EEG + EOG channels + reference). We use the first 64 channels by default. (default: :obj:`64`)
-        sampling_rate (int): Target sampling rate in Hz for the output EEG signals. (default: :obj:`64`)
-        eog_removal (bool): Whether to apply EOG artifact removal using regression. If True, EOG channels will be used to remove eye movement artifacts from the EEG data. (default: :obj:`True`)
-        online_transform (Callable, optional): The transformation applied to the EEG signals. The input is a :obj:`np.ndarray`, and the output is used as the first value of each element in the dataset. (default: :obj:`None`)
-        offline_transform (Callable, optional): The usage is the same as :obj:`online_transform`, but executed before generating IO intermediate results. (default: :obj:`None`)
-        label_transform (Callable, optional): The transformation applied to the label. The input is an information dictionary, and the output is used as the second value of each element in the dataset. (default: :obj:`None`)
-        before_trial (Callable, optional): A hook function performed on the trial to which the sample belongs. It is executed before the offline transformation and is typically used to implement context-dependent sample transformations, such as moving averages. The input of this hook function is a 2D EEG signal with shape (number of electrodes, number of data points), and the ideal output shape is also (number of electrodes, number of data points).
-        after_trial (Callable, optional): A hook function performed on the trial to which the sample belongs. It is executed after the offline transformation and is typically used to implement context-dependent sample transformations, such as moving averages. The input and output of this hook function should be a sequence of dictionaries representing a sequence of EEG samples. Each dictionary contains two key-value pairs, indexed by :obj:`eeg` (the EEG signal matrix) and :obj:`key` (the index in the database) respectively.
-        after_subject (Callable, optional): A hook function performed on the subject to which the sample belongs. It is executed after the offline transformation and is typically used to implement context-dependent sample transformations, such as moving averages. The input and output of this hook function should be a sequence of dictionaries representing a sequence of EEG samples. Each dictionary contains two key-value pairs, indexed by :obj:`eeg` (the EEG signal matrix) and :obj:`key` (the index in the database) respectively.
-        io_path (str): The path to the generated unified data IO, cached as an intermediate result. If set to None, a random path will be generated. (default: :obj:`None`)
-        io_size (int): Maximum size the database may grow to; used to size the memory mapping. If the database grows larger than ``map_size``, an exception will be raised and the user must close and reopen. (default: :obj:`1048576`)
-        io_mode (str): Storage mode of EEG signals. When io_mode is set to :obj:`lmdb`, TorchEEG provides an efficient database (LMDB) for storing EEG signals. LMDB may not perform well on limited operating systems, where a file system-based EEG signal storage is also provided. When io_mode is set to :obj:`pickle`, pickle-based persistence files are used. When io_mode is set to :obj:`memory`, memory is used. (default: :obj:`lmdb`)
-        num_worker (int): Number of subprocesses to use for data loading. 0 means that the data will be loaded in the main process. (default: :obj:`0`)
-        verbose (bool): Whether to display logs during processing, such as progress bars. (default: :obj:`True`)
-    '''
+class DTUData(BaseData):
+    """Read and preprocess records for :class:`DTUDataset`."""
 
     channels = [
         'FP1', 'AF7', 'AF3', 'F1',  'F3',  'F5',  'F7',  'FT7',
@@ -341,50 +240,33 @@ class DTUDataset(BaseDataset):
                  num_channel: int = 64,
                  sampling_rate: int = 64,
                  eog_removal: bool = True,
-                 online_transform: Union[None, Callable] = None,
-                 offline_transform: Union[None, Callable] = None,
-                 label_transform: Union[None, Callable] = None,
-                 before_trial: Union[None, Callable] = None,
-                 after_trial: Union[Callable, None] = None,
-                 after_subject: Union[Callable, None] = None,
-                 io_path: Union[None, str] = None,
-                 io_size: int = 1048576,
-                 io_mode: str = 'lmdb',
-                 num_worker: int = 0,
-                 verbose: bool = True):
-        if io_path is None:
-            io_path = get_random_dir_path(dir_prefix='datasets')
+                 transform: Union[None, Callable] = None):
 
-        params = {
-            'root_path': root_path,
-            'chunk_size': chunk_size,
-            'overlap': overlap,
-            'num_channel': num_channel,
-            'sampling_rate': sampling_rate,
-            'eog_removal': eog_removal,
-            'online_transform': online_transform,
-            'offline_transform': offline_transform,
-            'label_transform': label_transform,
-            'before_trial': before_trial,
-            'after_trial': after_trial,
-            'after_subject': after_subject,
-            'io_path': io_path,
-            'io_size': io_size,
-            'io_mode': io_mode,
-            'num_worker': num_worker,
-            'verbose': verbose
-        }
-        super().__init__(**params)
-        self.__dict__.update(params)
+        super().__init__(
+            transform=transform,
+            root_path=root_path,
+            chunk_size=chunk_size,
+            overlap=overlap,
+            num_channel=num_channel,
+            sampling_rate=sampling_rate,
+            eog_removal=eog_removal
+        )
 
-    @staticmethod
-    def read_record(record: str,
-                    root_path: str = './EEG',
-                    num_channel: int = 64,
-                    sampling_rate: int = 64,
-                    eog_removal: bool = True,
+    def read_record(self,
+                    record: str,
+                    root_path: str = None,
+                    num_channel: int = None,
+                    sampling_rate: int = None,
+                    eog_removal: bool = None,
                     **kwargs) -> Dict:
-
+        if root_path is None:
+            root_path = self.root_path
+        if num_channel is None:
+            num_channel = self.num_channel
+        if sampling_rate is None:
+            sampling_rate = self.sampling_rate
+        if eog_removal is None:
+            eog_removal = self.eog_removal
         mat_path = os.path.join(root_path, record)
         matstruct_contents = loadmat(
             mat_path, struct_as_record=False, squeeze_me=True)
@@ -534,73 +416,40 @@ class DTUDataset(BaseDataset):
             'ch_names': ch_names
         }
 
-    @staticmethod
-    def process_record(record: str,
-                       samples: list,
-                       trial_info: list,
-                       sampling_rate: int,
-                       ch_names: list,
-                       chunk_size: int = 64,
-                       overlap: int = 0,
-                       num_channel: int = 64,
-                       before_trial: Union[None, Callable] = None,
-                       offline_transform: Union[None, Callable] = None,
-                       **kwargs):
-
+    def process_record(self, record: str, samples: list, trial_info: list, sampling_rate: int = None, ch_names: list = None, chunk_size: int = None, overlap: int = None, num_channel: int = None, **kwargs):
+        if sampling_rate is None:
+            sampling_rate = self.sampling_rate
+        if chunk_size is None:
+            chunk_size = self.chunk_size
+        if overlap is None:
+            overlap = self.overlap
+        if num_channel is None:
+            num_channel = self.num_channel
         subject_id = record.split('.')[0]
-
-        write_pointer = 0
-
         for trial_id in range(len(samples)):
             trial_samples = samples[trial_id].T
-
-            if before_trial:
-                trial_samples = before_trial(trial_samples)
-
-            trial_meta_info = {
-                'subject_id': subject_id,
-                'trial_id': trial_id,
-                'sampling_rate': sampling_rate
-            }
+            trial_meta_info = {'subject_id': subject_id,
+                               'trial_id': trial_id, 'sampling_rate': sampling_rate}
             trial_meta_info.update(trial_info[trial_id])
-
             if chunk_size <= 0:
                 dynamic_chunk_size = trial_samples.shape[1]
             else:
                 dynamic_chunk_size = chunk_size
-
             start_at = 0
             end_at = start_at + dynamic_chunk_size
             step = dynamic_chunk_size - overlap
-
             while end_at <= trial_samples.shape[1]:
                 clip_sample = trial_samples[:, start_at:end_at]
-
                 t_eeg = clip_sample
-
-                if offline_transform is not None:
-                    t = offline_transform(eeg=clip_sample)
-                    t_eeg = t['eeg']
-
-                clip_id = f'{record}_{write_pointer}'
-                write_pointer += 1
-
-                record_info = {
-                    'start_at': start_at,
-                    'end_at': end_at,
-                    'clip_id': clip_id
-                }
+                record_info = {'start_at': start_at, 'end_at': end_at}
                 record_info.update(trial_meta_info)
-
-                yield {'eeg': t_eeg, 'key': clip_id, 'info': record_info}
-
+                yield {'eeg': t_eeg, 'info': record_info}
                 start_at = start_at + step
                 end_at = start_at + dynamic_chunk_size
 
-    def set_records(self,
-                    root_path: str = './EEG',
-                    **kwargs):
-
+    def set_records(self, root_path: str = None, **kwargs):
+        if root_path is None:
+            root_path = self.root_path
         if not (os.path.exists(root_path)):
             raise FileNotFoundError(
                 f'root_path ({root_path}) does not exist. Please download the dataset and set the root_path to the downloaded path.'
@@ -622,41 +471,132 @@ class DTUDataset(BaseDataset):
 
         return sorted(records)
 
-    def __getitem__(self, index: int) -> Tuple:
 
-        info = self.read_info(index)
-        eeg_index = str(info['clip_id'])
-        eeg_record = str(info['_record_id'])
-        eeg = self.read_eeg(eeg_record, eeg_index)
+class DTUDataset(CachedDataset):
 
-        signal = eeg
-        label = info
+    r"""
+    This dataset contains EEG recordings from 18 subjects listening to one of two competing speech audio streams. This class generates training samples and test samples according to the given parameters, and caches the generated results in a unified input and output format (IO). The relevant information of the dataset is as follows:
 
-        if self.online_transform:
-            signal = self.online_transform(eeg=eeg)['eeg']
+    - Author: Fuglsang et al.
+    - Year: 2017
+    - Download URL: https://zenodo.org/records/1199011
+    - Reference: Fuglsang S A, Dau T, Hjortkjær J. Noise-robust cortical tracking of attended speech in real-world acoustic scenes[J]. NeuroImage, 2017, 156: 435-444.
+    - Stimulus: Continuous speech in trials of ~50 seconds with target speakers positioned from -60° to 60°.
+    - Signals: Electroencephalogram recorded in a double-walled soundproof booth at the Technical University of Denmark (DTU) using a 64-channel Biosemi system (channels 1-64: scalp EEG electrodes, channel 65: right mastoid electrode, channel 66: left mastoid electrode) and digitized at a sampling rate of 512 Hz (downsampled to 64 Hz).
+    - Labels: Attended speaker (attend_mf=1 for male, attend_mf=2 for female).
 
-        if self.label_transform:
-            label = self.label_transform(y=info)['y']
+    In order to use this dataset, the download file :obj:`EEG.zip` is required. After unzipping, the folder should contain the following files:
 
-        return signal, label
+    .. code-block:: text
+
+        EEG/
+        ├── S1.mat
+        ├── S2.mat
+        ├── S3.mat
+        ├── ...
+        └── S18.mat
+
+    You need to create an :obj:`expinfo.m` file in the folder:
+
+    .. code-block:: matlab
+
+        for ss = 1:18
+            load(['S' num2str(ss) '.mat'])
+            writetable(expinfo,['S' num2str(ss) '.csv'])
+        end
+
+    This extracts experiment information. After running, the folder should contain the following files:
+
+    .. code-block:: text
+
+        EEG/
+        ├── S1.mat
+        ├── S1.csv
+        ├── S2.mat
+        ├── S2.csv
+        ├── ...
+        └── S18.csv
+
+    An example dataset for CNN-based methods:
+
+    .. code-block:: python
+
+        from torcheeg.datasets import DTUDataset
+        from torcheeg import transforms
+
+        def preprocess_sample_1(sample):
+            sample = dict(sample)
+            sample['eeg'] = transforms.To2d()(sample['eeg'])
+            return sample
+
+        def prepare_training_1(sample):
+            sample = dict(sample)
+            sample['eeg'] = transforms.ToTensor()(sample['eeg'])
+            return {'eeg': sample['eeg'], 'labels': transforms.Compose([transforms.Select('attend_mf'), transforms.Lambda(lambd=lambda x: x - 1)])(sample['info'])}
+
+        dataset = DTUDataset(root_path='./EEG', transform=preprocess_sample_1).with_transform(prepare_training_1)
+        print(dataset[0])
+        # EEG signal (torch.Tensor[1, 64, 64]),
+        # label (int)
+
+    An example dataset with custom preprocessing parameters:
+
+    .. code-block:: python
+
+        from torcheeg.datasets import DTUDataset
+        from torcheeg import transforms
+
+        def preprocess_sample_1(sample):
+            sample = dict(sample)
+            sample['eeg'] = transforms.To2d()(sample['eeg'])
+            return sample
+
+        def prepare_training_1(sample):
+            sample = dict(sample)
+            sample['eeg'] = transforms.ToTensor()(sample['eeg'])
+            return {'eeg': sample['eeg'], 'labels': transforms.Compose([transforms.Select('attend_mf'), transforms.Lambda(lambd=lambda x: x - 1)])(sample['info'])}
+
+        dataset = DTUDataset(root_path='./EEG', chunk_size=64, overlap=0, sampling_rate=64, num_channel=64, eog_removal=True, transform=preprocess_sample_1).with_transform(prepare_training_1)
+        print(dataset[0])
+        # EEG signal (torch.Tensor[1, 64, 64]),
+        # label (int)
+
+    Args:
+        root_path (str): Path to the raw data files in MATLAB format. (default: :obj:`'./EEG'`)
+        chunk_size (int): Number of data points included in each EEG chunk as training or test samples. If set to -1, the EEG signal of an entire trial is used as a single chunk. (default: :obj:`64`)
+        overlap (int): The number of overlapping data points between different chunks when dividing EEG data. (default: :obj:`0`)
+        num_channel (int): Number of channels to use. The dataset contains 73 channels total (64 scalp EEG + EOG channels + reference). We use the first 64 channels by default. (default: :obj:`64`)
+        sampling_rate (int): Target sampling rate in Hz for the output EEG signals. (default: :obj:`64`)
+        eog_removal (bool): Whether to apply EOG artifact removal using regression. If True, EOG channels will be used to remove eye movement artifacts from the EEG data. (default: :obj:`True`)
+
+
+
+        transform (Callable, optional): Sample dictionary transform applied before storage. (default: :obj:`None`)
+        io_path (str): The path to the generated unified data IO, cached as an intermediate result. If set to None, a random path will be generated. (default: :obj:`None`)
+        io_size (int): Maximum size the database may grow to; used to size the memory mapping. If the database grows larger than ``map_size``, an exception will be raised and the user must close and reopen. (default: :obj:`1048576`)
+        io_mode (str): Storage mode of EEG signals. When io_mode is set to :obj:`lmdb`, TorchEEG provides an efficient database (LMDB) for storing EEG signals. LMDB may not perform well on limited operating systems, where a file system-based EEG signal storage is also provided. When io_mode is set to :obj:`pickle`, pickle-based persistence files are used. When io_mode is set to :obj:`memory`, memory is used. (default: :obj:`lmdb`)
+        num_worker (int): Number of subprocesses to use for data loading. 0 means that the data will be loaded in the main process. (default: :obj:`0`)
+        verbose (bool): Whether to display logs during processing, such as progress bars. (default: :obj:`True`)
+    """
+
+    mastoid_channels = DTUData.mastoid_channels
+
+    data_class = DTUData
+
+    channels = DTUData.channels
+
+    grid = DTUData.grid
+
+    adjacency = DTUData.adjacency
+
+    def __init__(self, root_path: str = './EEG', chunk_size: int = 64, overlap: int = 0, num_channel: int = 64, sampling_rate: int = 64, eog_removal: bool = True, transform: Union[None, Callable] = None, io_path: Union[None, str] = None, io_size: int = 1048576, io_mode: str = 'lmdb', num_worker: int = 0, verbose: bool = True):
+        if io_path is None:
+            io_path = get_random_dir_path(dir_prefix='datasets')
+        params = {'root_path': root_path, 'chunk_size': chunk_size, 'overlap': overlap, 'num_channel': num_channel, 'sampling_rate': sampling_rate,
+                  'eog_removal': eog_removal, 'transform': transform, 'io_path': io_path, 'io_size': io_size, 'io_mode': io_mode, 'num_worker': num_worker, 'verbose': verbose}
+        super().__init__(**params)
+        self.__dict__.update(params)
 
     @property
     def repr_body(self) -> Dict:
-        return dict(
-            super().repr_body, **{
-                'root_path': self.root_path,
-                'chunk_size': self.chunk_size,
-                'overlap': self.overlap,
-                'num_channel': self.num_channel,
-                'sampling_rate': self.sampling_rate,
-                'eog_removal': self.eog_removal,
-                'online_transform': self.online_transform,
-                'offline_transform': self.offline_transform,
-                'label_transform': self.label_transform,
-                'before_trial': self.before_trial,
-                'after_trial': self.after_trial,
-                'after_subject': self.after_subject,
-                'num_worker': self.num_worker,
-                'verbose': self.verbose,
-                'io_size': self.io_size
-            })
+        return dict(super().repr_body, **{'root_path': self.root_path, 'chunk_size': self.chunk_size, 'overlap': self.overlap, 'num_channel': self.num_channel, 'sampling_rate': self.sampling_rate, 'eog_removal': self.eog_removal, 'transform': self.transform, 'num_worker': self.num_worker, 'verbose': self.verbose, 'io_size': self.io_size})

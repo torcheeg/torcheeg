@@ -167,9 +167,11 @@ class ADATrainer(_MMDLikeTrainer):
 
         self._assoc_fn = AssociativeLoss(weight_walker, weight_visit)
 
-    def training_step(self, batch: Tuple[torch.Tensor],
+    def training_step(self, batch: dict,
                       batch_idx: int) -> torch.Tensor:
-        (x_source, y_source), (x_target, _) = batch
+        source, target = batch
+        x_source, y_source = source['eeg'], source['labels']
+        x_target = target['eeg']
 
         x_source_feat = self.extractor(x_source)
         y_source_pred = self.classifier(x_source_feat)

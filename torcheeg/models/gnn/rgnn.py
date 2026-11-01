@@ -53,7 +53,7 @@ def _add_remaining_self_loops(edge_index: torch.Tensor,
 
 
 class RGNN(torch.nn.Module):
-    r'''
+    r"""
     Regularized Graph Neural Networks (RGNN). For more details, please refer to the following information.
 
     - Paper: Zhong P, Wang D, Miao C. EEG-based emotion recognition using regularized graph neural networks[J]. IEEE Transactions on Affective Computing, 2020.
@@ -71,14 +71,17 @@ class RGNN(torch.nn.Module):
         from torch_geometric.data import DataLoader
 
 
-        dataset = SEEDDataset(root_path='./Preprocessed_EEG',
-                              offline_transform=transforms.BandDifferentialEntropy(),
-                              online_transform=ToG(get_standard_adjacency(SEEDDataset.channels, get_positions(SEEDDataset.channels))),
-                              label_transform=transforms.Compose([
-                                  transforms.Select('emotion'),
-                                  transforms.Lambda(lambda x: int(x) + 1),
-                              ]),
-                              num_worker=8)
+        def preprocess_sample_1(sample):
+            sample = dict(sample)
+            sample['eeg'] = transforms.BandDifferentialEntropy()(sample['eeg'])
+            return sample
+
+        def prepare_training_1(sample):
+            sample = dict(sample)
+            sample['eeg'] = ToG(get_standard_adjacency(SEEDDataset.channels, get_positions(SEEDDataset.channels)))(sample['eeg'])
+            return {'eeg': sample['eeg'], 'labels': transforms.Compose([transforms.Select('emotion'), transforms.Lambda(lambda x: int(x) + 1)])(sample['info'])}
+
+        dataset = SEEDDataset(root_path='./Preprocessed_EEG', num_worker=8, transform=preprocess_sample_1).with_transform(prepare_training_1)
 
         model = RGNN(adj=torch.Tensor(get_standard_adjacency(SEEDDataset.channels, get_positions(SEEDDataset.channels))),
                      in_channels=5,
@@ -89,7 +92,9 @@ class RGNN(torch.nn.Module):
                      dropout=0.7,
                      learn_edge_weights=True)
 
-        x, y = next(iter(DataLoader(dataset, batch_size=64)))
+        batch = next(iter(DataLoader(dataset, batch_size=64)))
+
+        x, y = batch['eeg'], batch['labels']
         model(x)
 
     Args:
@@ -101,7 +106,7 @@ class RGNN(torch.nn.Module):
         num_classes (int): The number of classes to predict. (default: :obj:`3`)
         dropout (float): Probability of an element to be zeroed in the dropout layers at the output fully-connected layer. (default: :obj:`0.7`)
         learn_edge_weights (bool): Whether to learn a set of parameters to adjust the adjacency matrix. (default: :obj:`True`)
-    '''
+    """
 
     def __init__(self,
                  adj: Union[torch.Tensor, list],

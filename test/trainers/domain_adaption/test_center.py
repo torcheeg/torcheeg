@@ -18,7 +18,7 @@ class _DummyDataset(Dataset):
         return self.length
 
     def __getitem__(self, i) -> int:
-        return torch.randn(120), random.randint(0, 1)
+        return {'eeg': torch.randn(120), 'labels': random.randint(0, 1)}
 
 
 class _DummyModel(nn.Module):
@@ -42,27 +42,21 @@ class TestCenter(unittest.TestCase):
         random.seed(0)
 
     def test_center_loss_fit_runs_optimization_and_reports_finite_metrics(self):
-
         train_dataset = _DummyDataset(length=10)
         val_dataset = _DummyDataset(length=10)
         test_dataset = _DummyDataset(length=10)
-
         train_loader = DataLoader(train_dataset, batch_size=5)
         val_loader = DataLoader(val_dataset, batch_size=5)
         test_loader = DataLoader(test_dataset, batch_size=5)
-
         extractor = _DummyModel(120, 64)
         classifier = _DummyModel(64, 2)
-
-        trainer = CenterLossTrainer(extractor=extractor,
-                                    classifier=classifier,
-                                    feature_dim=64,
-                                    num_classes=2)
+        trainer = CenterLossTrainer(
+            extractor=extractor, classifier=classifier, feature_dim=64, num_classes=2)
         trainer.fit(train_loader, val_loader, max_epochs=2)
         self.assertGreater(trainer.trainer.global_step, 0)
         self.assertTrue(trainer.trainer.logged_metrics)
-        self.assertTrue(all(torch.isfinite(torch.as_tensor(value)).all()
-                            for value in trainer.trainer.logged_metrics.values()))
+        self.assertTrue(all((torch.isfinite(torch.as_tensor(value)).all()
+                        for value in trainer.trainer.logged_metrics.values())))
         trainer.test(test_loader)
 
 

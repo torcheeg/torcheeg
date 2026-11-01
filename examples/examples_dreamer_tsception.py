@@ -23,22 +23,24 @@ In this tutorial, we'll showcase how you can use TorchEEG to train a Tsception m
 from torcheeg import transforms
 from torcheeg.datasets import DREAMERDataset
 
-dataset = DREAMERDataset(io_path='./examples_dreamer_tsception/dreamer',
-                         mat_path='./DREAMER.mat',
-                         offline_transform=transforms.Compose([
-                             transforms.BaselineRemoval(),
-                             transforms.MeanStdNormalize(),
-                             transforms.To2d()
-                         ]),
-                         online_transform=transforms.ToTensor(),
-                         label_transform=transforms.Compose([
-                             transforms.Select('valence'),
-                             transforms.Binary(3.0)
-                         ]),
-                         chunk_size=128,
-                         baseline_chunk_size=128,
-                         num_baseline=61,
-                         num_worker=4)
+
+def preprocess_sample_1(sample):
+    sample = dict(sample)
+    sample['eeg'] = transforms.BaselineRemoval(
+        baseline=sample['baseline'])(sample['eeg'])
+    sample['eeg'] = transforms.MeanStdNormalize()(sample['eeg'])
+    sample['eeg'] = transforms.To2d()(sample['eeg'])
+    return sample
+
+
+def prepare_training_1(sample):
+    sample = dict(sample)
+    sample['eeg'] = transforms.ToTensor()(sample['eeg'])
+    return {'eeg': sample['eeg'], 'labels': transforms.Compose([transforms.Select('valence'), transforms.Binary(3.0)])(sample['info'])}
+
+
+dataset = DREAMERDataset(io_path='./examples_dreamer_tsception/dreamer', mat_path='./DREAMER.mat', chunk_size=128,
+                         baseline_chunk_size=128, num_baseline=61, num_worker=4, transform=preprocess_sample_1).with_transform(prepare_training_1)
 
 ######################################################################
 # Step 2: Divide the Training and Test Samples in the Dataset

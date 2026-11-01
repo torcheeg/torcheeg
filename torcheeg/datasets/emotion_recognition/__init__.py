@@ -1,14 +1,14 @@
-from .amigos import AMIGOSDataset
-from .bci2022 import BCI2022Dataset
-from .deap import DEAPDataset
-from .dreamer import DREAMERDataset
-from .faced import FACEDDataset
-from .faced_feature import FACEDFeatureDataset
-from .mahnob import MAHNOBDataset
-from .mped_feature import MPEDFeatureDataset
-from .seed import SEEDDataset
-from .seed_feature import SEEDFeatureDataset
-from .seed_iv import SEEDIVDataset
-from .seed_iv_feature import SEEDIVFeatureDataset
-from .seed_v import SEEDVDataset
-from .seed_v_feature import SEEDVFeatureDataset
+from .amigos import AMIGOSData, AMIGOSDataset
+from .bci2022 import BCI2022Data, BCI2022Dataset
+from .deap import DEAPData, DEAPDataset
+from .dreamer import DREAMERData, DREAMERDataset
+from .faced import FACEDData, FACEDDataset
+from .faced_feature import FACEDFeatureData, FACEDFeatureDataset
+from .mahnob import MAHNOBData, MAHNOBDataset
+from .mped_feature import MPEDFeatureData, MPEDFeatureDataset
+from .seed import SEEDData, SEEDDataset
+from .seed_feature import SEEDFeatureData, SEEDFeatureDataset
+from .seed_iv import SEEDIVData, SEEDIVDataset
+from .seed_iv_feature import SEEDIVFeatureData, SEEDIVFeatureDataset
+from .seed_v import SEEDVData, SEEDVDataset
+from .seed_v_feature import SEEDVFeatureData, SEEDVFeatureDataset

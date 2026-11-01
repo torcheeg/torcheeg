@@ -74,7 +74,7 @@ class Transformer(nn.Module):
 
 
 class VanillaTransformer(nn.Module):
-    r'''
+    r"""
     A vanilla version of the transformer adapted on EEG analysis. For more details, please refer to the following information. 
 
     It is worth noting that this model is not designed for EEG analysis, but shows good performance and can serve as a good research start.
@@ -92,14 +92,12 @@ class VanillaTransformer(nn.Module):
         from torcheeg import transforms
         from torch.utils.data import DataLoader
 
-        dataset = DEAPDataset(root_path='./data_preprocessed_python',
-                              online_transform=transforms.Compose([
-                                  transforms.ToTensor(),
-                              ]),
-                              label_transform=transforms.Compose([
-                                  transforms.Select('valence'),
-                                  transforms.Binary(5.0),
-                              ]))
+        def prepare_training_1(sample):
+            sample = dict(sample)
+            sample['eeg'] = transforms.ToTensor()(sample['eeg'])
+            return {'eeg': sample['eeg'], 'labels': transforms.Compose([transforms.Select('valence'), transforms.Binary(5.0)])(sample['info'])}
+
+        dataset = DEAPDataset(root_path='./data_preprocessed_python').with_transform(prepare_training_1)
 
         model = VanillaTransformer(chunk_size=128,
                             num_electrodes=32,
@@ -111,7 +109,9 @@ class VanillaTransformer(nn.Module):
                             mlp_channels=64,
                             num_classes=2)
 
-        x, y = next(iter(DataLoader(dataset, batch_size=64)))
+        batch = next(iter(DataLoader(dataset, batch_size=64)))
+
+        x, y = batch['eeg'], batch['labels']
         model(x)
 
     Args:
@@ -124,7 +124,7 @@ class VanillaTransformer(nn.Module):
         head_channels (int): The dimension of each attention head for each attention layer. (default: :obj:`8`)
         mlp_channels (int): The number of hidden nodes in the fully connected layer of each transformer block. (default: :obj:`64`)
         num_classes (int): The number of classes to predict. (default: :obj:`2`)
-    '''
+    """
 
     def __init__(self,
                  num_electrodes: int = 32,

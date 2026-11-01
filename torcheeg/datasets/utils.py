@@ -101,10 +101,14 @@ def _collect_sources(value, excluded):
                 yield absolute
 
 
-def compute_fingerprint(dataset_class, configuration, records, io_path):
+def compute_fingerprint(dataset_class, configuration, records, io_path, excluded_paths=()):
     """Return a fingerprint for source files, processing configuration and record order."""
     excluded = os.path.abspath(io_path)
     sources = sorted(set(_collect_sources((configuration, records), excluded)))
+    exclusions = [os.path.abspath(path) for path in excluded_paths]
+    sources = [path for path in sources if not any(
+        path == excluded or path.startswith(excluded + os.sep)
+        for excluded in exclusions)]
     inputs = [(path, compute_checksum(path)) for path in sources]
     implementations = [
         getattr(dataset_class, name)
@@ -114,7 +118,7 @@ def compute_fingerprint(dataset_class, configuration, records, io_path):
     for name in ('channels', 'grid', 'adjacency'):
         try:
             metadata[name] = getattr(dataset_class, name)
-        except NotImplementedError:
+        except (AttributeError, NotImplementedError):
             continue
     value = (dataset_class.__module__, dataset_class.__qualname__,
              _describe_value(metadata),

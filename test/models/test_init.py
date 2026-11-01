@@ -65,7 +65,7 @@ sys.meta_path.insert(0, BlockOptionalDependencies())
                 assert loader._module is None
             transform = to.ToG(adj=torch.eye(3))
             try:
-                transform(eeg=torch.ones(3, 4))
+                transform(torch.ones(3, 4))
             except ImportError as error:
                 assert 'Could not import optional dependency `torch_geometric`' in str(error), str(error)
             else:

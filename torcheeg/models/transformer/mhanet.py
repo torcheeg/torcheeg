@@ -227,7 +227,7 @@ class SpatiotemporalConvolution(nn.Module):
 
 
 class MHANet(nn.Module):
-    r'''
+    r"""
     The MHANet model is based on the paper "MHANet: Multi-scale Hybrid Attention Network for Auditory Attention Detection". For more details, please refer to the following information.
 
     - Paper: Li L, Fan C, Zhang H, et al. MHANet: Multi-scale Hybrid Attention Network for Auditory Attention Detection[J]. International Joint Conference on Artificial Intelligence, 2025.
@@ -243,16 +243,18 @@ class MHANet(nn.Module):
         from torcheeg import transforms
         from torch.utils.data import DataLoader
 
-        dataset = DTUDataset(root_path='./DATA_preproc',
-                              offline_transform=transforms.Compose([
-                                  transforms.MinMaxNormalize(axis=-1),
-                                  transforms.To2d()
-                              ]),
-                              online_transform=transforms.ToTensor(),
-                              label_transform=transforms.Compose([
-                                  transforms.Select('attended_speaker'),
-                                  transforms.Lambda(lambda x: x - 1)
-                              ]))
+        def preprocess_sample_1(sample):
+            sample = dict(sample)
+            sample['eeg'] = transforms.MinMaxNormalize(axis=-1)(sample['eeg'])
+            sample['eeg'] = transforms.To2d()(sample['eeg'])
+            return sample
+
+        def prepare_training_1(sample):
+            sample = dict(sample)
+            sample['eeg'] = transforms.ToTensor()(sample['eeg'])
+            return {'eeg': sample['eeg'], 'labels': transforms.Compose([transforms.Select('attended_speaker'), transforms.Lambda(lambda x: x - 1)])(sample['info'])}
+
+        dataset = DTUDataset(root_path='./DATA_preproc', transform=preprocess_sample_1).with_transform(prepare_training_1)
 
         model = MHANet(num_electrodes=64,
                        chunk_size=64,
@@ -260,7 +262,9 @@ class MHANet(nn.Module):
                        bias=False,
                        num_classes=2)
 
-        x, y = next(iter(DataLoader(dataset, batch_size=64)))
+        batch = next(iter(DataLoader(dataset, batch_size=64)))
+
+        x, y = batch['eeg'], batch['labels']
         model(x)
 
     Args:
@@ -269,7 +273,7 @@ class MHANet(nn.Module):
         num_heads (int): The number of attention heads. (default: :obj:`16`)
         bias (bool): Whether to use bias in convolution layers. (default: :obj:`False`)
         num_classes (int): The number of classes. (default: :obj:`2`)
-    '''
+    """
 
     def __init__(self,
                  num_electrodes: int = 64,

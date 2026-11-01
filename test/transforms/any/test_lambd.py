@@ -15,16 +15,12 @@ class TestLambdTransforms(unittest.TestCase):
         np.random.seed(0)
 
     def test_lambda(self):
-        # label
         transform = Lambda(lambd=lambda x: x + 1)
-        self.assertEqual(transform(y=1)['y'], 2)
-        # torch
-        transform = Lambda(targets=['eeg'], lambd=lambda x: x + 1)
+        self.assertEqual(transform(1), 2)
+        transform = Lambda(lambd=lambda x: x + 1)
         self.assertEqual(
-            tuple(transform(eeg=torch.randn(32, 128))['eeg'].shape), (32, 128))
-        # numpy
-        self.assertEqual(
-            transform(eeg=np.random.randn(32, 128))['eeg'].shape, (32, 128))
+            tuple(transform(torch.randn(32, 128)).shape), (32, 128))
+        self.assertEqual(transform(np.random.randn(32, 128)).shape, (32, 128))
 
 
 if __name__ == '__main__':

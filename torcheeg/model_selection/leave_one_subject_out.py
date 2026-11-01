@@ -12,7 +12,7 @@ from .utils import create_subset, read_indices, validate_groups, write_indices
 
 
 class LeaveOneSubjectOut(BaseModelSelection):
-    r'''
+    r"""
     A tool class for leave-one-subject-out cross-validations, to divide the training set and the test set, commonly used to study model performance in the case of subject independent experiments. During each fold, experiments require testing on one subject and training on the other subjects.
 
     .. image:: _static/splits/LeaveOneSubjectOut.svg
@@ -30,16 +30,13 @@ class LeaveOneSubjectOut(BaseModelSelection):
         from torch.utils.data import DataLoader
 
         cv = LeaveOneSubjectOut()
-        dataset = DEAPDataset(root_path='./data_preprocessed_python',
-                              online_transform=transforms.Compose([
-                                  transforms.ToTensor(),
-                                  transforms.To2d()
-                              ]),
-                              label_transform=transforms.Compose([
-                                  transforms.Select(['valence', 'arousal']),
-                                  transforms.Binary(5.0),
-                                  transforms.BinariesToCategory()
-                              ]))
+        def prepare_training_1(sample):
+            sample = dict(sample)
+            sample['eeg'] = transforms.ToTensor()(sample['eeg'])
+            sample['eeg'] = transforms.To2d()(sample['eeg'])
+            return {'eeg': sample['eeg'], 'labels': transforms.Compose([transforms.Select(['valence', 'arousal']), transforms.Binary(5.0), transforms.BinariesToCategory()])(sample['info'])}
+
+        dataset = DEAPDataset(root_path='./data_preprocessed_python').with_transform(prepare_training_1)
 
         for train_dataset, test_dataset in cv.split(dataset):
             train_loader = DataLoader(train_dataset)
@@ -49,7 +46,7 @@ class LeaveOneSubjectOut(BaseModelSelection):
     Args:
         split_path (str, optional): Directory for saved splits.
             If None, generate a random path. (default: :obj:`None`)
-    '''
+    """
 
     def __init__(self, split_path: Union[None, str] = None) -> None:
 

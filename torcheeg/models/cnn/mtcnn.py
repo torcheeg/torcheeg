@@ -5,7 +5,7 @@ import torch.nn as nn
 
 
 class MTCNN(nn.Module):
-    r'''
+    r"""
     Multi-Task Convolutional Neural Network (MT-CNN). For more details, please refer to the following information.
 
     - Paper: Rudakov E, Laurent L, Cousin V, et al. Multi-Task CNN model for emotion recognition from EEG Brain maps[C]//2021 4th International Conference on Bio-Engineering for Smart Technologies (BioSMART). IEEE, 2021: 1-4.
@@ -30,24 +30,20 @@ class MTCNN(nn.Module):
                               ['P7', '-', 'P3', '-', 'PZ', '-', 'P4', '-', 'P8'],
                               ['-', '-', '-', 'PO3', '-', 'PO4', '-', '-', '-'],
                               ['-', '-', '-', 'O1', 'OZ', 'O2', '-', '-', '-']]
-        get_locations(DEAPDataset.channels, DEAPDataset.grid) = get_locations(DEAPDataset.channels, DEAPDataset.grid)
 
-        dataset = DEAPDataset(root_path='./data_preprocessed_python',
-                              online_transform=transforms.Compose([
-                                  transforms.Concatenate([
-                                      transforms.BandDifferentialEntropy(),
-                                      transforms.BandPowerSpectralDensity()
-                                  ]),
-                                  transforms.ToGrid(get_locations(DEAPDataset.channels, DEAPDataset.grid))
-                              ]),
-                              label_transform=transforms.Compose([
-                                  transforms.Select('valence'),
-                                  transforms.Binary(5.0),
-                              ]))
+        def prepare_training_1(sample):
+            sample = dict(sample)
+            sample['eeg'] = transforms.Concatenate([transforms.BandDifferentialEntropy(), transforms.BandPowerSpectralDensity()])(sample['eeg'])
+            sample['eeg'] = transforms.ToGrid(get_locations(DEAPDataset.channels, DEAPDataset.grid))(sample['eeg'])
+            return {'eeg': sample['eeg'], 'labels': transforms.Compose([transforms.Select('valence'), transforms.Binary(5.0)])(sample['info'])}
+
+        dataset = DEAPDataset(root_path='./data_preprocessed_python').with_transform(prepare_training_1)
 
         model = MTCNN(num_classes=2, in_channels=8, grid_size=(8, 9), dropout=0.2)
 
-        x, y = next(iter(DataLoader(dataset, batch_size=64)))
+        batch = next(iter(DataLoader(dataset, batch_size=64)))
+
+        x, y = batch['eeg'], batch['labels']
         model(x)
 
     Args:
@@ -55,7 +51,7 @@ class MTCNN(nn.Module):
         grid_size (tuple): Spatial dimensions of grid-like EEG representation. (default: :obj:`(8, 9)`)
         num_classes (int): The number of classes to predict. (default: :obj:`2`)
         dropout (float): Probability of an element to be zeroed in the dropout layers. (default: :obj:`0.2`)
-    '''
+    """
 
     def __init__(self,
                  in_channels: int = 8,

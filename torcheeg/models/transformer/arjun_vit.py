@@ -105,7 +105,7 @@ class Transformer(nn.Module):
 
 
 class ArjunViT(nn.Module):
-    r'''
+    r"""
     Arjun et al. employ a variation of the Transformer, the Vision Transformer to process EEG signals for emotion recognition. For more details, please refer to the following information. 
 
     It is worth noting that this model is not designed for EEG analysis, but shows good performance and can serve as a good research start.
@@ -122,25 +122,27 @@ class ArjunViT(nn.Module):
         from torcheeg.models import ArjunViT
         from torch.utils.data import DataLoader
 
-        dataset = DEAPDataset(root_path='./data_preprocessed_python',
-                              offline_transform=transforms.Compose([
-                                  transforms.MeanStdNormalize(),
-                                  transforms.To2d()
-                              ]),
-                              online_transform=transforms.Compose([
-                                  transforms.ToTensor(),
-                              ]),
-                              label_transform=transforms.Compose([
-                                  transforms.Select('valence'),
-                                  transforms.Binary(5.0),
-                              ]))
+        def preprocess_sample_1(sample):
+            sample = dict(sample)
+            sample['eeg'] = transforms.MeanStdNormalize()(sample['eeg'])
+            sample['eeg'] = transforms.To2d()(sample['eeg'])
+            return sample
+
+        def prepare_training_1(sample):
+            sample = dict(sample)
+            sample['eeg'] = transforms.ToTensor()(sample['eeg'])
+            return {'eeg': sample['eeg'], 'labels': transforms.Compose([transforms.Select('valence'), transforms.Binary(5.0)])(sample['info'])}
+
+        dataset = DEAPDataset(root_path='./data_preprocessed_python', transform=preprocess_sample_1).with_transform(prepare_training_1)
 
         model = ArjunViT(chunk_size=128,
                          t_patch_size=50,
                          num_electrodes=32,
                          num_classes=2)
 
-        x, y = next(iter(DataLoader(dataset, batch_size=64)))
+        batch = next(iter(DataLoader(dataset, batch_size=64)))
+
+        x, y = batch['eeg'], batch['labels']
         model(x)
 
     Args:
@@ -157,7 +159,7 @@ class ArjunViT(nn.Module):
         embed_dropout (float): Probability of an element to be zeroed in the dropout layers of the embedding layers. (default: :obj:`0.0`)
         dropout (float): Probability of an element to be zeroed in the dropout layers of the transformer layers. (default: :obj:`0.0`)
         pool_func (str): The pool function before the classifier, optionally including :obj:`cls` and :obj:`mean`, where :obj:`cls` represents selecting classification-related token and :obj:`mean` represents the average pooling. (default: :obj:`cls`)
-    '''
+    """
 
     def __init__(self,
                  num_electrodes: int = 32,

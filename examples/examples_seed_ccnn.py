@@ -23,21 +23,24 @@ from torcheeg import transforms
 from torcheeg.datasets import SEEDDataset
 from torcheeg.datasets.utils import get_locations
 
-dataset = SEEDDataset(io_path=f'./examples_seed_ccnn/seed',
-                      root_path='./Preprocessed_EEG',
-                      offline_transform=transforms.Compose([
-                          transforms.BandDifferentialEntropy(
-                              sampling_rate=200),
-                          transforms.ToGrid(get_locations(
-                              SEEDDataset.channels, SEEDDataset.grid))
-                      ]),
-                      online_transform=transforms.ToTensor(),
-                      label_transform=transforms.Compose([
-                          transforms.Select('emotion'),
-                          transforms.Lambda(lambda x: x + 1)
-                      ]),
-                      chunk_size=200,
-                      num_worker=4)
+
+def preprocess_sample_1(sample):
+    sample = dict(sample)
+    sample['eeg'] = transforms.BandDifferentialEntropy(
+        sampling_rate=200)(sample['eeg'])
+    sample['eeg'] = transforms.ToGrid(get_locations(
+        SEEDDataset.channels, SEEDDataset.grid))(sample['eeg'])
+    return sample
+
+
+def prepare_training_1(sample):
+    sample = dict(sample)
+    sample['eeg'] = transforms.ToTensor()(sample['eeg'])
+    return {'eeg': sample['eeg'], 'labels': transforms.Compose([transforms.Select('emotion'), transforms.Lambda(lambda x: x + 1)])(sample['info'])}
+
+
+dataset = SEEDDataset(io_path=f'./examples_seed_ccnn/seed', root_path='./Preprocessed_EEG',
+                      chunk_size=200, num_worker=4, transform=preprocess_sample_1).with_transform(prepare_training_1)
 
 ######################################################################
 # Step 2: Divide the Training and Test Samples in the Dataset

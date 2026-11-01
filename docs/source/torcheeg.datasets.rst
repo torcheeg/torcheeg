@@ -72,7 +72,7 @@ Steady-state Visual Evoked Potential Datasets
     TSUBenckmarkDataset
     SanDiegoSSVEPDataset
 
-Sleep Stage Detection Datasets 
+Sleep Stage Detection Datasets
 ---------------------------------------------------------
 
 .. autosummary::
@@ -113,3 +113,52 @@ Customized Datasets
     MNERawDataset
     ConcatDataset
     PairDataset
+
+Data definitions and storage readers
+------------------------------------
+
+.. autosummary::
+   :toctree: generated
+   :nosignatures:
+   :template: datasettemplate.rst
+
+   BaseData
+   BaseDataset
+   CachedDataset
+   IODataset
+   MemoryDataset
+   LMDBDataset
+   MNERawData
+   FolderData
+   CSVFolderData
+   moabb.MOABBData
+   BCI2022Data
+   SEEDIVFeatureData
+   SEEDVData
+   MAHNOBData
+   FACEDData
+   DREAMERData
+   MPEDFeatureData
+   SEEDFeatureData
+   SEEDData
+   SEEDIVData
+   AMIGOSData
+   SEEDVFeatureData
+   DEAPData
+   FACEDFeatureData
+   DTUData
+   AVEDProcessedData
+   AVEDData
+   DTUProcessedData
+   KULProcessedData
+   KULData
+   TSUBenckmarkData
+   SanDiegoSSVEPData
+   M3CVData
+   ISRUCData
+   SleepEDFxData
+   P2018Data
+   HMCData
+   BCICIV2aData
+   StrokePatientsMIData
+   StrokePatientsMIProcessedData

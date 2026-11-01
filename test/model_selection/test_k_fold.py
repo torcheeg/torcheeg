@@ -16,10 +16,8 @@ class TestKFold(unittest.TestCase):
 
     def test_k_fold(self):
         dataset = _make_dataset()
-
         split_path = self._split_path
         k_fold = KFold(split_path=split_path, n_splits=5)
-
         split_num = 0
         train_dataset_len = [100, 100, 100, 100, 100]
         test_dataset_len = [25, 25, 25, 25, 25]

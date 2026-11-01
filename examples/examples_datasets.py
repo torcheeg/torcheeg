@@ -19,22 +19,29 @@ from torcheeg import transforms
 from torcheeg.datasets import DEAPDataset
 from torcheeg.datasets.utils import get_locations
 
-dataset = DEAPDataset(
-    io_path=f'./deap',
-    root_path='./data_preprocessed_python',
-    offline_transform=transforms.Compose([
-        transforms.BandDifferentialEntropy(apply_to_baseline=True),
-        transforms.ToGrid(get_locations(DEAPDataset.channels,
-                          DEAPDataset.grid), apply_to_baseline=True)
-    ]),
-    online_transform=transforms.Compose(
-        [transforms.BaselineRemoval(),
-         transforms.ToTensor()]),
-    label_transform=transforms.Compose([
-        transforms.Select('valence'),
-        transforms.Binary(5.0),
-    ]),
-    num_worker=8)
+
+def preprocess_sample_1(sample):
+    sample = dict(sample)
+    sample['eeg'] = transforms.BandDifferentialEntropy()(sample['eeg'])
+    sample['baseline'] = transforms.BandDifferentialEntropy()(
+        sample['baseline'])
+    sample['eeg'] = transforms.ToGrid(get_locations(
+        DEAPDataset.channels, DEAPDataset.grid))(sample['eeg'])
+    sample['baseline'] = transforms.ToGrid(get_locations(
+        DEAPDataset.channels, DEAPDataset.grid))(sample['baseline'])
+    return sample
+
+
+def prepare_training_1(sample):
+    sample = dict(sample)
+    sample['eeg'] = transforms.BaselineRemoval(
+        baseline=sample['baseline'])(sample['eeg'])
+    sample['eeg'] = transforms.ToTensor()(sample['eeg'])
+    return {'eeg': sample['eeg'], 'labels': transforms.Compose([transforms.Select('valence'), transforms.Binary(5.0)])(sample['info'])}
+
+
+dataset = DEAPDataset(io_path=f'./deap', root_path='./data_preprocessed_python',
+                      num_worker=8, transform=preprocess_sample_1).with_transform(prepare_training_1)
 
 ######################################################################
 #
@@ -45,7 +52,7 @@ print(dataset[0])
 
 ######################################################################
 #
-# This will output a tuple, where the first element is the EEG signal and the second is its label.
+# This training view returns a dictionary with 'eeg' and 'labels' fields.
 #
 
 ######################################################################
@@ -57,7 +64,7 @@ import torch
 
 from torcheeg.visualizers import plot_3d_tensor
 
-img = plot_3d_tensor(torch.tensor(dataset[0][0]))
+img = plot_3d_tensor(torch.tensor(dataset[0]['eeg']))
 
 ######################################################################
 #
@@ -69,7 +76,8 @@ img = plot_3d_tensor(torch.tensor(dataset[0][0]))
 # Important Notes
 # ----------------------------------------------
 #
-# If you make changes to the dataset's configuration, remember to clear the cache or specify a new io_path. Otherwise, only online transformations (online_transform and label_transform) will take effect:
+# Use a new io_path after changing preprocessing. Reading transforms can be
+# appended with dataset.with_transform without rebuilding the stored samples.
 #
 # .. code-block:: bash
 #
@@ -106,14 +114,22 @@ import torcheeg.datasets.moabb as moabb_dataset
 dataset = BNCI2014001()
 dataset.subject_list = [1, 2, 3]
 paradigm = LeftRightImagery()
-dataset = moabb_dataset.MOABBDataset(
-    dataset=dataset,
-    paradigm=paradigm,
-    io_path='./moabb',
-    offline_transform=transforms.Compose([transforms.BandDifferentialEntropy()
-                                          ]),
-    online_transform=transforms.ToTensor(),
-    label_transform=transforms.Compose([transforms.Select('label')]))
+
+
+def preprocess_sample_2(sample):
+    sample = dict(sample)
+    sample['eeg'] = transforms.BandDifferentialEntropy()(sample['eeg'])
+    return sample
+
+
+def prepare_training_2(sample):
+    sample = dict(sample)
+    sample['eeg'] = transforms.ToTensor()(sample['eeg'])
+    return {'eeg': sample['eeg'], 'labels': transforms.Compose([transforms.Select('label')])(sample['info'])}
+
+
+dataset = moabb_dataset.MOABBDataset(dataset=dataset, paradigm=paradigm, io_path='./moabb',
+                                     transform=preprocess_sample_2).with_transform(prepare_training_2)
 
 ######################################################################
 # Custom Datasets
@@ -138,16 +154,16 @@ dataset = moabb_dataset.MOABBDataset(
 from torcheeg.datasets import FolderDataset
 
 label_map = {'label01': 0, 'label02': 1}
-dataset = FolderDataset(io_path='./folder',
-                        root_path='./root_folder',
-                        structure='subject_in_label',
-                        num_channel=14,
-                        online_transform=transforms.ToTensor(),
-                        label_transform=transforms.Compose([
-                            transforms.Select('label'),
-                            transforms.Lambda(lambda x: label_map[x])
-                        ]),
-                        num_worker=4)
+
+
+def prepare_training_3(sample):
+    sample = dict(sample)
+    sample['eeg'] = transforms.ToTensor()(sample['eeg'])
+    return {'eeg': sample['eeg'], 'labels': transforms.Compose([transforms.Select('label'), transforms.Lambda(lambda x: label_map[x])])(sample['info'])}
+
+
+dataset = FolderDataset(io_path='./folder', root_path='./root_folder', structure='subject_in_label',
+                        num_channel=14, num_worker=4).with_transform(prepare_training_3)
 
 ######################################################################
 # Alternatively, you can use a CSV file to specify more detailed
@@ -167,10 +183,15 @@ dataset = FolderDataset(io_path='./folder',
 
 from torcheeg.datasets import CSVFolderDataset
 
+
+def prepare_training_4(sample):
+    sample = dict(sample)
+    sample['eeg'] = transforms.ToTensor()(sample['eeg'])
+    return {'eeg': sample['eeg'], 'labels': transforms.Select('label')(sample['info'])}
+
+
 dataset = CSVFolderDataset(csv_path='./data.csv',
-                           online_transform=transforms.ToTensor(),
-                           label_transform=transforms.Select('label'),
-                           num_worker=4)
+                           num_worker=4).with_transform(prepare_training_4)
 
 ######################################################################
 # By default, TorchEEG uses mne to read recorded EEG signals, but you can
@@ -189,9 +210,11 @@ def default_read_fn(file_path, **kwargs):
     return epochs
 
 
-dataset = CSVFolderDataset(io_path='./csv_folder',
-                           csv_path='./data.csv',
-                           read_fn=default_read_fn,
-                           online_transform=transforms.ToTensor(),
-                           label_transform=transforms.Select('label'),
-                           num_worker=4)
+def prepare_training_5(sample):
+    sample = dict(sample)
+    sample['eeg'] = transforms.ToTensor()(sample['eeg'])
+    return {'eeg': sample['eeg'], 'labels': transforms.Select('label')(sample['info'])}
+
+
+dataset = CSVFolderDataset(io_path='./csv_folder', csv_path='./data.csv',
+                           read_fn=default_read_fn, num_worker=4).with_transform(prepare_training_5)

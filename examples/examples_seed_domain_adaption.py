@@ -14,7 +14,7 @@ In this tutorial, you'll learn how to utilize TorchEEG's Associative Domain Adap
 #
 # In offline preprocessing, each electrode's EEG signal is segmented into 4 sub-bands. We then calculate the differential entropy for each sub-band as a feature. The signals are debaselined, mapped onto a grid, and finally saved locally.
 #
-# For online processing, we convert all EEG signals into Tensors for neural network input. Additionally, we apply after_hook_normalize to reduce trial variance effects on cross-subject emotion recognition.
+# For online processing, we convert all EEG signals into Tensors for neural network input.
 #
 
 import numpy as np
@@ -23,20 +23,23 @@ from pytorch_lightning.callbacks import ModelCheckpoint
 from torcheeg import transforms
 from torcheeg.datasets import SEEDDataset, SEEDFeatureDataset
 from torcheeg.datasets.utils import get_locations
-from torcheeg.transforms import after_hook_normalize
 
-dataset = SEEDFeatureDataset(
-    io_path=f'./examples_seed_domain_adaption/seed',
-    root_path='./ExtractedFeatures',
-    after_session=after_hook_normalize,
-    offline_transform=transforms.Compose(
-        [transforms.ToGrid(get_locations(SEEDDataset.channels, SEEDDataset.grid))]),
-    online_transform=transforms.ToTensor(),  # seed do not have baseline signals
-    label_transform=transforms.Compose(
-        [transforms.Select('emotion'),
-         transforms.Lambda(lambda x: x + 1)]),
-    feature=['de_LDS'],
-    num_worker=4)
+
+def preprocess_sample_1(sample):
+    sample = dict(sample)
+    sample['eeg'] = transforms.ToGrid(get_locations(
+        SEEDDataset.channels, SEEDDataset.grid))(sample['eeg'])
+    return sample
+
+
+def prepare_training_1(sample):
+    sample = dict(sample)
+    sample['eeg'] = transforms.ToTensor()(sample['eeg'])
+    return {'eeg': sample['eeg'], 'labels': transforms.Compose([transforms.Select('emotion'), transforms.Lambda(lambda x: x + 1)])(sample['info'])}
+
+
+dataset = SEEDFeatureDataset(io_path=f'./examples_seed_domain_adaption/seed', root_path='./ExtractedFeatures',
+                             feature=['de_LDS'], num_worker=4, transform=preprocess_sample_1).with_transform(prepare_training_1)
 
 ######################################################################
 # Step 2: Define the Model

@@ -22,22 +22,26 @@ In this tutorial, we'll walk through how to leverage TorchEEG for training a Dyn
 from torcheeg import transforms
 from torcheeg.datasets import AMIGOSDataset
 
-dataset = AMIGOSDataset(io_path=f'./examples_amigos_dgcnn/amigos',
-                        root_path='./data_preprocessed',
-                        offline_transform=transforms.BandDifferentialEntropy(
-                            sampling_rate=128, apply_to_baseline=True),
-                        online_transform=transforms.Compose([
-                            transforms.BaselineRemoval(),
-                            transforms.ToTensor()
-                        ]),
-                        label_transform=transforms.Compose([
-                            transforms.Select('valence'),
-                            transforms.Binary(5.0)
-                        ]),
-                        chunk_size=128,
-                        baseline_chunk_size=128,
-                        num_baseline=5,
-                        num_worker=4)
+
+def preprocess_sample_1(sample):
+    sample = dict(sample)
+    sample['eeg'] = transforms.BandDifferentialEntropy(
+        sampling_rate=128)(sample['eeg'])
+    sample['baseline'] = transforms.BandDifferentialEntropy(
+        sampling_rate=128)(sample['baseline'])
+    return sample
+
+
+def prepare_training_1(sample):
+    sample = dict(sample)
+    sample['eeg'] = transforms.BaselineRemoval(
+        baseline=sample['baseline'])(sample['eeg'])
+    sample['eeg'] = transforms.ToTensor()(sample['eeg'])
+    return {'eeg': sample['eeg'], 'labels': transforms.Compose([transforms.Select('valence'), transforms.Binary(5.0)])(sample['info'])}
+
+
+dataset = AMIGOSDataset(io_path=f'./examples_amigos_dgcnn/amigos', root_path='./data_preprocessed', chunk_size=128,
+                        baseline_chunk_size=128, num_baseline=5, num_worker=4, transform=preprocess_sample_1).with_transform(prepare_training_1)
 
 ######################################################################
 # Step 2: Divide the Training and Test samples in the Dataset

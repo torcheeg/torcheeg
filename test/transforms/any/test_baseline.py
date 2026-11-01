@@ -4,63 +4,29 @@ import numpy as np
 import torch
 
 from torcheeg.transforms import (BaselineCorrection, BaselineRemoval, Compose,
-                                 RandomMask, RandomNoise, Resize, ToTensor)
+                                 ToTensor)
 
 
 class TestBaselineTransforms(unittest.TestCase):
-    def setUp(self):
-        self.addCleanup(torch.set_rng_state, torch.get_rng_state())
-        torch.manual_seed(0)
-        self.addCleanup(np.random.set_state, np.random.get_state())
-        np.random.seed(0)
+    def test_removal_uses_bound_baseline(self):
+        eeg = np.arange(8, dtype=np.float32).reshape(2, 4)
+        baseline = np.ones_like(eeg)
+        transform = Compose([BaselineRemoval(baseline), ToTensor()])
+        torch.testing.assert_close(
+            transform(eeg), torch.from_numpy(eeg - baseline))
+        np.testing.assert_array_equal(baseline, np.ones_like(eeg))
+        np.testing.assert_array_equal(eeg, np.arange(8).reshape(2, 4))
 
-    def test_to_baseline_removal(self):
-        transform = Compose([
-            ToTensor(apply_to_baseline=True),
-            Resize(size=(64, 64), apply_to_baseline=True),
-            RandomNoise(p=0.1),
-            RandomMask(p=0.1),
+    def test_correction_numpy_and_torch(self):
+        baseline = np.arange(6, dtype=np.float32).reshape(2, 3)
+        eeg = np.ones((2, 4), dtype=np.float32)
+        expected = eeg - baseline.mean(axis=-1, keepdims=True)
+        np.testing.assert_allclose(BaselineCorrection(baseline)(eeg), expected)
+        torch.testing.assert_close(BaselineCorrection(torch.from_numpy(baseline))(torch.from_numpy(eeg)),
+                                   torch.from_numpy(expected))
+
+    def test_invalid_shapes_and_missing_baseline(self):
+        with self.assertRaises(ValueError):
+            BaselineRemoval(np.ones(3))(np.ones(4))
+        with self.assertRaises(TypeError):
             BaselineRemoval()
-        ])
-        transformed_eeg = transform(eeg=np.random.randn(128, 9, 9),
-                                    baseline=np.random.randn(128, 9, 9))['eeg']
-        self.assertEqual(tuple(transformed_eeg.shape), (128, 64, 64))
-
-        eeg = np.random.randn(128, 9, 9)
-        transform = BaselineRemoval()
-        transformed_eeg = transform(eeg=eeg, baseline=np.ones(
-            (128, 9, 9)))['eeg']
-        self.assertTrue(np.abs(eeg - (transformed_eeg + 1.0)).sum() < 1e-6)
-
-        transform = BaselineRemoval()
-        transformed_eeg = transform(eeg=eeg)['eeg']
-        self.assertTrue(np.abs(eeg - transformed_eeg).sum() < 1e-6)
-
-    def test_baseline_correction(self):
-        # torch
-        transform = Compose([
-            ToTensor(apply_to_baseline=True),
-            Resize(size=(64, 64), apply_to_baseline=True),
-            RandomNoise(p=0.1),
-            RandomMask(p=0.1),
-            BaselineCorrection()
-        ])
-        transformed_eeg, transformed_baseline = transform(eeg=np.random.randn(128, 9, 9),
-                                                          baseline=np.random.randn(128, 9, 9)).values()
-        self.assertEqual(tuple(transformed_eeg.shape), (128, 64, 64))
-        self.assertEqual(tuple(transformed_baseline.shape), (128, 64, 64))
-
-        # numpy
-        eeg = np.random.randn(128, 9, 9)
-        transform = BaselineCorrection()
-        transformed_eeg = transform(eeg=eeg, baseline=np.ones(
-            (128, 9, 9)))['eeg']
-        self.assertTrue(np.abs(eeg - (transformed_eeg + 1.0)).sum() < 1e-6)
-
-        transform = BaselineCorrection()
-        transformed_eeg = transform(eeg=eeg)['eeg']
-        self.assertTrue(np.abs(eeg - transformed_eeg).sum() < 1e-6)
-
-
-if __name__ == '__main__':
-    unittest.main()

@@ -6,7 +6,7 @@ from ..base_transform import LabelTransform
 
 
 class Binary(LabelTransform):
-    r'''
+    r"""
     Binarize the label according to a certain threshold. Labels larger than the threshold are set to 1, and labels smaller than the threshold are set to 0.
 
     .. code-block:: python
@@ -14,7 +14,7 @@ class Binary(LabelTransform):
         from torcheeg import transforms
 
         t = transforms.Binary(threshold=5.0)
-        t(y=4.5)['y']
+        t(4.5)
         >>> 0
 
     :obj:`Binary` allows simultaneous binarization using the same threshold for multiple labels.
@@ -24,29 +24,18 @@ class Binary(LabelTransform):
         from torcheeg import transforms
 
         t = transforms.Binary(threshold=5.0)
-        t(y=[4.5, 5.5])['y']
+        t([4.5, 5.5])
         >>> [0, 1]
 
     Args:
         threshold (float): Threshold used during binarization.
 
     .. automethod:: __call__
-    '''
+    """
 
     def __init__(self, threshold: float):
         super(Binary, self).__init__()
         self.threshold = threshold
-
-    def __call__(self, *args, y: Union[int, float, List],
-                 **kwargs) -> Union[int, List]:
-        r'''
-        Args:
-            label (int, float, or list): The input label or list of labels.
-
-        Returns:
-            int, float, or list: The output label or list of labels after binarization.
-        '''
-        return super().__call__(*args, y=y, **kwargs)
 
     def apply(self, y: Union[int, float, List], **kwargs) -> Union[int, List]:
         if isinstance(y, list):
@@ -64,7 +53,7 @@ class Binary(LabelTransform):
 
 
 class BinaryOneVSRest(LabelTransform):
-    r'''
+    r"""
     Binarize the label following the fashion of the one-vs-rest strategy. When label is the specified positive category label, the label is set to 1, when the label is any other category label, the label is set to 0.
 
     .. code-block:: python
@@ -72,7 +61,7 @@ class BinaryOneVSRest(LabelTransform):
         from torcheeg import transforms
 
         t = BinaryOneVSRest(positive=1)
-        t(y=2)['y']
+        t(2)
         >>> 0
 
     :obj:`Binary` allows simultaneous binarization using the same threshold for multiple labels.
@@ -82,14 +71,14 @@ class BinaryOneVSRest(LabelTransform):
         from torcheeg import transforms
 
         t = transforms.BinaryOneVSRest(positive=1)
-        t(y=[1, 2])['y']
+        t([1, 2])
         >>> [1, 0]
 
     Args:
         positive (int): The specified positive category label.
 
     .. automethod:: __call__
-    '''
+    """
 
     def __init__(self, positive: int):
         super(BinaryOneVSRest, self).__init__()
@@ -110,7 +99,7 @@ class BinaryOneVSRest(LabelTransform):
 
 
 class BinariesToCategory(LabelTransform):
-    r'''
+    r"""
     Convert multiple binary labels into one multiclass label. Multiclass labels represent permutations of binary labels. Commonly used to combine two binary classification tasks into a single quad classification task.
 
     .. code-block:: python
@@ -118,27 +107,17 @@ class BinariesToCategory(LabelTransform):
         from torcheeg import transforms
 
         t = transforms.BinariesToCategory()
-        t(y=[0, 0])['y']
+        t([0, 0])
         >>> 0
-        t(y=[0, 1])['y']
+        t([0, 1])
         >>> 1
-        t(y=[1, 0])['y']
+        t([1, 0])
         >>> 2
-        t(y=[1, 1])['y']
+        t([1, 1])
         >>> 3
 
     .. automethod:: __call__
-    '''
-
-    def __call__(self, *args, y: List, **kwargs) -> int:
-        r'''
-        Args:
-            y (list): list of binary labels.
-
-        Returns:
-            int: The converted multiclass label.
-        '''
-        return super().__call__(*args, y=y, **kwargs)
+    """
 
     def apply(self, y: List, **kwargs) -> int:
         r'''

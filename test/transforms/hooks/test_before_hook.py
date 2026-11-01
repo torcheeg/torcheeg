@@ -13,8 +13,6 @@ class TestBeforeHookTransforms(unittest.TestCase):
 
     def test_before_hook(self):
         fake_data_np = np.random.rand(32, 128)
-
-        # Test before_hook_normalize
         normalized_data = before_hook_normalize(fake_data_np)
         self.assertEqual(normalized_data.shape, (32, 128))
 

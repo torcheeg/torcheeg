@@ -13,7 +13,7 @@ _log = logging.getLogger('torcheeg')
 
 
 class SimCLRTrainer(pl.LightningModule):
-    r'''
+    r"""
     This class supports the implementation of A Simple Framework for Contrastive Learning of Visual Representations (SimCLR) for self-supervised pre-training.
 
     - Paper: Chen T, Kornblith S, Norouzi M, et al. A simple framework for contrastive learning of visual representations[C]//International conference on machine learning. PMLR, 2020: 1597-1607.
@@ -47,25 +47,21 @@ class SimCLRTrainer(pl.LightningModule):
         from torcheeg import transforms
         from torcheeg.datasets.utils import get_locations
 
-        contras_dataset = DEAPDataset(
-            io_path=f'./io/deap',
-            root_path='./data_preprocessed_python',
-            offline_transform=transforms.Compose([
-                transforms.BandDifferentialEntropy(sampling_rate=128,
-                                                apply_to_baseline=True),
-                transforms.BaselineRemoval(),
-                transforms.ToGrid(get_locations(DEAPDataset.channels, DEAPDataset.grid))
-            ]),
-            online_transform=transforms.Compose([
-                transforms.ToTensor(),
-                transforms.Contrastive(transforms.Compose( # see here
-                    [transforms.RandomMask(p=0.5),
-                    transforms.RandomNoise(p=0.5)]),
-                                    num_views=2)
-            ]),
-            chunk_size=128,
-            baseline_chunk_size=128,
-            num_baseline=3)
+        def preprocess_sample_1(sample):
+            sample = dict(sample)
+            sample['eeg'] = transforms.BandDifferentialEntropy(sampling_rate=128)(sample['eeg'])
+            sample['baseline'] = transforms.BandDifferentialEntropy(sampling_rate=128)(sample['baseline'])
+            sample['eeg'] = transforms.BaselineRemoval(baseline=sample['baseline'])(sample['eeg'])
+            sample['eeg'] = transforms.ToGrid(get_locations(DEAPDataset.channels, DEAPDataset.grid))(sample['eeg'])
+            return sample
+
+        def prepare_training_1(sample):
+            sample = dict(sample)
+            sample['eeg'] = transforms.ToTensor()(sample['eeg'])
+            sample['eeg'] = transforms.Contrastive(transforms.Compose([transforms.RandomMask(p=0.5), transforms.RandomNoise(p=0.5)]), num_views=2)(sample['eeg'])
+            return sample
+
+        contras_dataset = DEAPDataset(io_path=f'./io/deap', root_path='./data_preprocessed_python', chunk_size=128, baseline_chunk_size=128, num_baseline=3, transform=preprocess_sample_1).with_transform(prepare_training_1)
 
         trainer.fit(train_loader, val_loader)
 
@@ -82,7 +78,7 @@ class SimCLRTrainer(pl.LightningModule):
         metrics (List[str]): The metrics to use. Availabel options are: 'acc_top1', 'acc_top5', 'acc_mean_pos'. (default: :obj:`["acc_top1"]`)
 
     .. automethod:: fit
-    '''
+    """
 
     def __init__(self,
                  extractor: nn.Module,
@@ -152,9 +148,9 @@ class SimCLRTrainer(pl.LightningModule):
                              **kwargs)
         return trainer.fit(self, train_loader, val_loader)
 
-    def training_step(self, batch: Tuple[torch.Tensor],
+    def training_step(self, batch: dict,
                       batch_idx: int) -> torch.Tensor:
-        xs, _ = batch
+        xs = batch['eeg']
         xs = torch.cat(xs, dim=0)
 
         feats = self.extractor(xs)
@@ -258,9 +254,9 @@ class SimCLRTrainer(pl.LightningModule):
         if "acc_mean_pos" in self.metrics:
             self.train_acc_mean_pos.reset()
 
-    def validation_step(self, batch: Tuple[torch.Tensor],
+    def validation_step(self, batch: dict,
                         batch_idx: int) -> torch.Tensor:
-        xs, _ = batch
+        xs = batch['eeg']
         xs = torch.cat(xs, dim=0)
 
         feats = self.extractor(xs)

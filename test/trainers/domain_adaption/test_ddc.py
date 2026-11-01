@@ -18,7 +18,7 @@ class _DummyDataset(Dataset):
         return self.length
 
     def __getitem__(self, i) -> int:
-        return torch.randn(120), random.randint(0, 1)
+        return {'eeg': torch.randn(120), 'labels': random.randint(0, 1)}
 
 
 class _DummyModel(nn.Module):
@@ -46,21 +46,18 @@ class TestDDCTrainer(unittest.TestCase):
         target_dataset = _DummyDataset()
         val_dataset = _DummyDataset()
         test_dataset = _DummyDataset()
-
         source_loader = DataLoader(source_dataset, batch_size=2)
         target_loader = DataLoader(target_dataset, batch_size=2)
         val_loader = DataLoader(val_dataset, batch_size=2)
         test_loader = DataLoader(test_dataset, batch_size=2)
-
         extractor = _DummyModel(120, 10)
         classifier = _DummyModel(10, 2)
-
         trainer = DDCTrainer(extractor, classifier, num_classes=2)
         trainer.fit(source_loader, target_loader, val_loader, max_epochs=1)
         self.assertGreater(trainer.trainer.global_step, 0)
         self.assertTrue(trainer.trainer.logged_metrics)
-        self.assertTrue(all(torch.isfinite(torch.as_tensor(value)).all()
-                            for value in trainer.trainer.logged_metrics.values()))
+        self.assertTrue(all((torch.isfinite(torch.as_tensor(value)).all()
+                        for value in trainer.trainer.logged_metrics.values())))
         trainer.test(test_loader)
 
 

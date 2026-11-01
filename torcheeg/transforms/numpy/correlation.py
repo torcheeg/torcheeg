@@ -7,9 +7,8 @@ from ..base_transform import EEGTransform
 
 
 class CorrelationTransform(EEGTransform):
-    def __init__(self, apply_to_baseline: bool = False):
-        super(CorrelationTransform,
-              self).__init__(apply_to_baseline=apply_to_baseline)
+    def __init__(self):
+        super(CorrelationTransform, self).__init__()
 
     def apply(self, eeg: np.ndarray, **kwargs) -> np.ndarray:
         if len(eeg.shape) == 3:
@@ -43,7 +42,7 @@ class CorrelationTransform(EEGTransform):
 
 
 class PearsonCorrelation(CorrelationTransform):
-    r'''
+    r"""
     A transform method to calculate the correlation coefficients between the EEG signals of different electrodes.
 
     .. code-block:: python
@@ -51,34 +50,19 @@ class PearsonCorrelation(CorrelationTransform):
         from torcheeg import transforms
 
         t = transforms.PearsonCorrelation()
-        t(eeg=np.random.randn(32, 128))['eeg'].shape
+        t(np.random.randn(32, 128)).shape
         >>> (1, 32, 32)
 
     Args:
         absolute (bool): Whether to take the absolute value of the correlation coefficient. (default: :obj:`128`)
-        apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (default: :obj:`False`)
+
 
     .. automethod:: __call__
-    '''
+    """
 
-    def __init__(self, absolute: bool = False, apply_to_baseline: bool = False):
-        super(PearsonCorrelation,
-              self).__init__(apply_to_baseline=apply_to_baseline)
+    def __init__(self, absolute: bool = False):
+        super(PearsonCorrelation, self).__init__()
         self.absolute = absolute
-
-    def __call__(self,
-                 *args,
-                 eeg: np.ndarray,
-                 baseline: Union[np.ndarray, None] = None,
-                 **kwargs) -> Dict[str, np.ndarray]:
-        r'''
-        Args:
-            eeg (np.ndarray): The input EEG signals in shape of [number of electrodes, number of data points].
-            baseline (np.ndarray, optional) : The corresponding baseline signal, if apply_to_baseline is set to True and baseline is passed, the baseline signal will be transformed with the same way as the experimental signal.
-        Returns:
-            np.ndarray[number of electrodes, number of electrodes]: The correlation coefficients between EEG signals of different electrodes.
-        '''
-        return super().__call__(*args, eeg=eeg, baseline=baseline, **kwargs)
 
     def opt(self, x: np.ndarray, y: np.ndarray) -> np.ndarray:
         out = np.corrcoef(x, y)[0][1]
@@ -92,7 +76,7 @@ class PearsonCorrelation(CorrelationTransform):
 
 
 class PhaseLockingValue(CorrelationTransform):
-    r'''
+    r"""
     Calculate standard phase-locking values (PLV) between electrodes over the
     time axis of each EEG window.
 
@@ -114,36 +98,17 @@ class PhaseLockingValue(CorrelationTransform):
         import numpy as np
 
         t = transforms.PhaseLockingValue()
-        t(eeg=np.random.randn(32, 128))['eeg'].shape
+        t(np.random.randn(32, 128)).shape
         >>> (1, 32, 32)
 
     Args:
-        apply_to_baseline (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (default: :obj:`False`)
+
 
     .. automethod:: __call__
-    '''
+    """
 
-    def __init__(self, apply_to_baseline: bool = False):
-        super(PhaseLockingValue,
-              self).__init__(apply_to_baseline=apply_to_baseline)
-
-    def __call__(self,
-                 *args,
-                 eeg: np.ndarray,
-                 baseline: Union[np.ndarray, None] = None,
-                 **kwargs) -> Dict[str, np.ndarray]:
-        r'''
-        Args:
-            eeg (np.ndarray): EEG with shape [electrodes, time points] or
-                [bands, electrodes, time points].
-            baseline (np.ndarray, optional): Baseline transformed only when
-                ``apply_to_baseline=True``.
-
-        Returns:
-            Dict[str, np.ndarray]: Pairwise PLV matrices under the ``eeg`` key,
-            and under ``baseline`` when baseline transformation is enabled.
-        '''
-        return super().__call__(*args, eeg=eeg, baseline=baseline, **kwargs)
+    def __init__(self):
+        super(PhaseLockingValue, self).__init__()
 
     def opt(self, x: np.ndarray, y: np.ndarray) -> float:
         x_hill = hilbert(x)

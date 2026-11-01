@@ -8,6 +8,7 @@ from .test_utils import _make_dataset
 
 
 class TestKFoldPerSubject(unittest.TestCase):
+
     def setUp(self):
         directory = tempfile.TemporaryDirectory()
         self.addCleanup(directory.cleanup)
@@ -23,12 +24,12 @@ class TestKFoldPerSubject(unittest.TestCase):
             seen = []
             selected = list(splitter.split(dataset, subject=subject))
             self.assertEqual(len(selected), 5)
-            expected = set(dataset.info.loc[
-                dataset.info.subject_id.eq(subject), 'clip_id'])
+            expected = set(
+                dataset.info.loc[dataset.info.subject_id.eq(subject), 'clip_id'])
             for train, test in selected:
                 self.assertEqual(set(train.info.subject_id), {subject})
                 self.assertEqual(set(test.info.subject_id), {subject})
-                a, b = set(train.info.clip_id), set(test.info.clip_id)
+                a, b = (set(train.info.clip_id), set(test.info.clip_id))
                 self.assertFalse(a & b)
                 self.assertEqual(a | b, expected)
                 seen.extend(test.info.clip_id)
@@ -41,10 +42,10 @@ class TestKFoldPerSubject(unittest.TestCase):
         dataset = _make_dataset()
         selections = []
         for suffix in ('a', 'b'):
-            splitter = KFoldPerSubject(n_splits=5, shuffle=True, random_state=7,
-                                       split_path=self._path + suffix)
+            splitter = KFoldPerSubject(
+                n_splits=5, shuffle=True, random_state=7, split_path=self._path + suffix)
             selections.append([test.info.clip_id.tolist()
-                               for _, test in splitter.split(dataset)])
+                              for _, test in splitter.split(dataset)])
         self.assertEqual(selections[0], selections[1])
 
     def test_invalid_fold_count_is_rejected(self):

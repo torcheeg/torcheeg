@@ -5,7 +5,7 @@ import torch.nn as nn
 
 
 class CCNN(nn.Module):
-    r'''
+    r"""
     Continuous Convolutional Neural Network (CCNN). For more details, please refer to the following information.
 
     - Paper: Yang Y, Wu Q, Fu Y, et al. Continuous convolutional neural network with 3D input for EEG-based emotion recognition[C]//International Conference on Neural Information Processing. Springer, Cham, 2018: 433-443.
@@ -22,20 +22,24 @@ class CCNN(nn.Module):
         from torcheeg.models import CCNN
         from torch.utils.data import DataLoader
 
-        dataset = DEAPDataset(root_path='./data_preprocessed_python',
-                              offline_transform=transforms.Compose([
-                                  transforms.BandDifferentialEntropy(),
-                                  transforms.ToGrid(get_locations(DEAPDataset.channels, DEAPDataset.grid))
-                              ]),
-                              online_transform=transforms.ToTensor(),
-                              label_transform=transforms.Compose([
-                                  transforms.Select('valence'),
-                                  transforms.Binary(5.0),
-                              ]))
+        def preprocess_sample_1(sample):
+            sample = dict(sample)
+            sample['eeg'] = transforms.BandDifferentialEntropy()(sample['eeg'])
+            sample['eeg'] = transforms.ToGrid(get_locations(DEAPDataset.channels, DEAPDataset.grid))(sample['eeg'])
+            return sample
+
+        def prepare_training_1(sample):
+            sample = dict(sample)
+            sample['eeg'] = transforms.ToTensor()(sample['eeg'])
+            return {'eeg': sample['eeg'], 'labels': transforms.Compose([transforms.Select('valence'), transforms.Binary(5.0)])(sample['info'])}
+
+        dataset = DEAPDataset(root_path='./data_preprocessed_python', transform=preprocess_sample_1).with_transform(prepare_training_1)
 
         model = CCNN(num_classes=2, in_channels=4, grid_size=(9, 9))
 
-        x, y = next(iter(DataLoader(dataset, batch_size=64)))
+        batch = next(iter(DataLoader(dataset, batch_size=64)))
+
+        x, y = batch['eeg'], batch['labels']
         model(x)
 
     Args:
@@ -43,7 +47,7 @@ class CCNN(nn.Module):
         grid_size (tuple): Spatial dimensions of grid-like EEG representation. (default: :obj:`(9, 9)`)
         num_classes (int): The number of classes to predict. (default: :obj:`2`)
         dropout (float): Probability of an element to be zeroed in the dropout layers. (default: :obj:`0.25`)
-    '''
+    """
 
     def __init__(self, in_channels: int = 4, grid_size: Tuple[int, int] = (9, 9), num_classes: int = 2, dropout: float = 0.5):
         super(CCNN, self).__init__()

@@ -32,6 +32,7 @@ Transformers.
 
    installation
    contributing
+   data_processing
    about_us
 
 .. toctree::
@@ -52,6 +53,7 @@ Transformers.
 
    torcheeg.datasets
    torcheeg.io
+   torcheeg.runners
    torcheeg.model_selection
    torcheeg.models
    torcheeg.transforms

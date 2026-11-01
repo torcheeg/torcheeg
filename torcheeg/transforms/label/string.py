@@ -5,7 +5,7 @@ from ..base_transform import LabelTransform
 
 
 class StringToInt(LabelTransform):
-    r'''
+    r"""
     Identify numbers in strings and convert strings to numbers. If there is no number in the string, the output corresponding to the string is 0.
 
     .. code-block:: python
@@ -13,11 +13,11 @@ class StringToInt(LabelTransform):
         from torcheeg import transforms
 
         t = transforms.StringToInt()
-        t(y='None')['y']
+        t('None')
         >>> 0
 
         t = transforms.StringToInt()
-        t(y='sub001')['y']
+        t('sub001')
         >>> 1
 
     :obj:`StringToInt` allows converting a list of strings to a list of numbers with the same conversion behavior as a single string.
@@ -25,24 +25,14 @@ class StringToInt(LabelTransform):
     .. code-block:: python
 
         t = transforms.StringToInt()
-        t(y=['sub001', '4'])['y']
+        t(['sub001', '4'])
         >>> 1, 4
 
     .. automethod:: __call__
-    '''
+    """
 
     def __init__(self):
         super(StringToInt, self).__init__()
-
-    def __call__(self, *args, y: Union[str, List[str]], **kwargs) -> Union[int, List[int]]:
-        r'''
-        Args:
-            label (str): The input label or list of labels.
-
-        Returns:
-            int: The output label or list of labels after binarization.
-        '''
-        return super().__call__(*args, y=y, **kwargs)
 
     def apply(self, y: Union[str, List[str]], **kwargs) -> Union[int, List[int]]:
         if isinstance(y, list):

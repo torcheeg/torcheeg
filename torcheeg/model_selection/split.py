@@ -16,7 +16,7 @@ def train_test_split(
         shuffle: bool = False,
         random_state: Union[int, None] = None,
         split_path: Union[None, str] = None) -> Tuple[BaseDataset, BaseDataset]:
-    r'''
+    r"""
     A tool function for cross-validations, to divide the training set and the test set. It is suitable for experiments with large dataset volume and no need to use k-fold cross-validations. The test samples are sampled according to a certain proportion, and other samples are used as training samples. In most literatures, 20% of the data are sampled for testing.
 
     :obj:`train_test_split` divides the training set and the test set without grouping. It means that during random sampling, adjacent signal samples may be assigned to the training set and the test set, respectively. When random sampling is not used, some subjects are not included in the training set. If you think these situations shouldn't happen, consider using :obj:`train_test_split_per_subject_groupby_trial` or :obj:`train_test_split_groupby_trial`.
@@ -35,16 +35,13 @@ def train_test_split(
         from torcheeg import transforms
         from torch.utils.data import DataLoader
 
-        dataset = DEAPDataset(root_path='./data_preprocessed_python',
-                              online_transform=transforms.Compose([
-                                  transforms.To2d(),
-                                  transforms.ToTensor()
-                              ]),
-                              label_transform=transforms.Compose([
-                                  transforms.Select(['valence', 'arousal']),
-                                  transforms.Binary(5.0),
-                                  transforms.BinariesToCategory()
-                              ]))
+        def prepare_training_1(sample):
+            sample = dict(sample)
+            sample['eeg'] = transforms.To2d()(sample['eeg'])
+            sample['eeg'] = transforms.ToTensor()(sample['eeg'])
+            return {'eeg': sample['eeg'], 'labels': transforms.Compose([transforms.Select(['valence', 'arousal']), transforms.Binary(5.0), transforms.BinariesToCategory()])(sample['info'])}
+
+        dataset = DEAPDataset(root_path='./data_preprocessed_python').with_transform(prepare_training_1)
 
         train_dataset, test_dataset = train_test_split(dataset=dataset)
 
@@ -59,7 +56,7 @@ def train_test_split(
         random_state (int, optional): When shuffle is :obj:`True`, :obj:`random_state` affects the ordering of the indices, which controls the randomness of each fold. Otherwise, this parameter has no effect. (default: :obj:`None`)
         split_path (str, optional): Directory for saved splits.
             If None, generate a random path. (default: :obj:`None`)
-    '''
+    """
     if split_path is None:
         split_path = get_random_dir_path(dir_prefix='model_selection')
 

@@ -7,7 +7,7 @@ from ..base_transform import EEGTransform
 
 
 class Resize(EEGTransform):
-    r'''
+    r"""
     Use an interpolation algorithm to scale a grid-like EEG signal at the spatial dimension.
 
     .. code-block:: python
@@ -15,39 +15,21 @@ class Resize(EEGTransform):
         from torcheeg import transforms
 
         t = transforms.ToTensor(size=(64, 64))
-        t(eeg=torch.randn(128, 9, 9))['eeg'].shape
+        t(torch.randn(128, 9, 9)).shape
         >>> (128, 64, 64)
 
     Args:
         size (tuple): The output spatial size.
         interpolation (str): The interpolation algorithm used for upsampling, can be nearest, linear, bilinear, bicubic, trilinear, and area. (default: :obj:`'nearest'`)
-        apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (default: :obj:`False`)
+
 
     .. automethod:: __call__
-    '''
+    """
 
-    def __init__(self,
-                 size: Union[Sequence[int], int],
-                 interpolation: str = "bilinear",
-                 apply_to_baseline: bool = False):
-        super(Resize, self).__init__(apply_to_baseline=apply_to_baseline)
+    def __init__(self, size: Union[Sequence[int], int], interpolation: str = 'bilinear'):
+        super(Resize, self).__init__()
         self.size = size
         self.interpolation = interpolation
-
-    def __call__(self,
-                 *args,
-                 eeg: torch.Tensor,
-                 baseline: Union[torch.Tensor, None] = None,
-                 **kwargs) -> Dict[str, torch.Tensor]:
-        r'''
-        Args:
-            eeg (torch.Tensor): The input EEG signal in shape of [height of grid, width of grid, number of data points].
-            baseline (torch.Tensor, optional) : The corresponding baseline signal, if apply_to_baseline is set to True and baseline is passed, the baseline signal will be transformed with the same way as the experimental signal.
-
-        Returns:
-            torch.Tensor[new height of grid, new width of grid, number of sub-bands]: The scaled EEG signal at the saptial dimension.
-        '''
-        return super().__call__(*args, eeg=eeg, baseline=baseline, **kwargs)
 
     def apply(self, eeg: torch.Tensor, **kwargs) -> torch.Tensor:
         if not (eeg.dim() == 3):

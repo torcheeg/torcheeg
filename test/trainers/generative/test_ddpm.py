@@ -1,5 +1,6 @@
 import random
 import unittest
+from test.trainers.test_classifier import _TensorDataset
 
 import numpy as np
 import torch
@@ -22,33 +23,27 @@ class _DummyDataset(Dataset):
         return self.length
 
     def __getitem__(self, i) -> int:
-        return torch.randn(4, 9, 9), random.randint(0, 1)
+        return {'eeg': torch.randn(4, 9, 9), 'labels': random.randint(0, 1)}
 
 
 class _Extractor(nn.Module):
 
     def __init__(self, in_channels=4):
         super().__init__()
-        self.conv1 = nn.Sequential(
-            nn.ZeroPad2d((1, 2, 1, 2)),
-            nn.Conv2d(in_channels, 64, kernel_size=4, stride=1), nn.ReLU())
-        self.conv2 = nn.Sequential(nn.ZeroPad2d((1, 2, 1, 2)),
-                                   nn.Conv2d(64, 128, kernel_size=4, stride=1),
-                                   nn.ReLU())
-        self.conv3 = nn.Sequential(nn.ZeroPad2d((1, 2, 1, 2)),
-                                   nn.Conv2d(
-                                       128, 256, kernel_size=4, stride=1),
-                                   nn.ReLU())
-        self.conv4 = nn.Sequential(nn.ZeroPad2d((1, 2, 1, 2)),
-                                   nn.Conv2d(256, 64, kernel_size=4, stride=1),
-                                   nn.ReLU())
+        self.conv1 = nn.Sequential(nn.ZeroPad2d((1, 2, 1, 2)), nn.Conv2d(
+            in_channels, 64, kernel_size=4, stride=1), nn.ReLU())
+        self.conv2 = nn.Sequential(nn.ZeroPad2d((1, 2, 1, 2)), nn.Conv2d(
+            64, 128, kernel_size=4, stride=1), nn.ReLU())
+        self.conv3 = nn.Sequential(nn.ZeroPad2d((1, 2, 1, 2)), nn.Conv2d(
+            128, 256, kernel_size=4, stride=1), nn.ReLU())
+        self.conv4 = nn.Sequential(nn.ZeroPad2d((1, 2, 1, 2)), nn.Conv2d(
+            256, 64, kernel_size=4, stride=1), nn.ReLU())
 
     def forward(self, x):
         x = self.conv1(x)
         x = self.conv2(x)
         x = self.conv3(x)
         x = self.conv4(x)
-
         x = x.flatten(start_dim=1)
         return x
 
@@ -57,20 +52,14 @@ class _Classifier(nn.Module):
 
     def __init__(self, in_channels=4, num_classes=2):
         super().__init__()
-        self.conv1 = nn.Sequential(
-            nn.ZeroPad2d((1, 2, 1, 2)),
-            nn.Conv2d(in_channels, 64, kernel_size=4, stride=1), nn.ReLU())
-        self.conv2 = nn.Sequential(nn.ZeroPad2d((1, 2, 1, 2)),
-                                   nn.Conv2d(64, 128, kernel_size=4, stride=1),
-                                   nn.ReLU())
-        self.conv3 = nn.Sequential(nn.ZeroPad2d((1, 2, 1, 2)),
-                                   nn.Conv2d(
-                                       128, 256, kernel_size=4, stride=1),
-                                   nn.ReLU())
-        self.conv4 = nn.Sequential(nn.ZeroPad2d((1, 2, 1, 2)),
-                                   nn.Conv2d(256, 64, kernel_size=4, stride=1),
-                                   nn.ReLU())
-
+        self.conv1 = nn.Sequential(nn.ZeroPad2d((1, 2, 1, 2)), nn.Conv2d(
+            in_channels, 64, kernel_size=4, stride=1), nn.ReLU())
+        self.conv2 = nn.Sequential(nn.ZeroPad2d((1, 2, 1, 2)), nn.Conv2d(
+            64, 128, kernel_size=4, stride=1), nn.ReLU())
+        self.conv3 = nn.Sequential(nn.ZeroPad2d((1, 2, 1, 2)), nn.Conv2d(
+            128, 256, kernel_size=4, stride=1), nn.ReLU())
+        self.conv4 = nn.Sequential(nn.ZeroPad2d((1, 2, 1, 2)), nn.Conv2d(
+            256, 64, kernel_size=4, stride=1), nn.ReLU())
         self.lin1 = nn.Linear(9 * 9 * 64, 1024)
         self.lin2 = nn.Linear(1024, num_classes)
 
@@ -79,7 +68,6 @@ class _Classifier(nn.Module):
         x = self.conv2(x)
         x = self.conv3(x)
         x = self.conv4(x)
-
         x = x.flatten(start_dim=1)
         x = self.lin1(x)
         x = self.lin2(x)
@@ -87,68 +75,47 @@ class _Classifier(nn.Module):
 
 
 class TestDDPMTrainer(unittest.TestCase):
+
     def setUp(self):
         self.addCleanup(torch.set_rng_state, torch.get_rng_state())
         torch.manual_seed(0)
         self.addCleanup(random.setstate, random.getstate())
         random.seed(0)
-        """Set up common test data"""
-        # Prepare minimal datasets and dataloaders for testing
-        self.train_dataset = _DummyDataset(length=10)  # Reduced dataset size
+        'Set up common test data'
+        self.train_dataset = _DummyDataset(length=10)
         self.val_dataset = _DummyDataset(length=10)
-
-        self.train_loader = DataLoader(
-            self.train_dataset, batch_size=4)  # Smaller batch size
+        self.train_loader = DataLoader(self.train_dataset, batch_size=4)
         self.val_loader = DataLoader(self.val_dataset, batch_size=4)
 
     def test_ddpm_trainer_basic(self):
         """Test basic functionality of DDPMTrainer"""
         model = BUNet(in_channels=4)
-        trainer = DDPMTrainer(
-            model,
-            metric_extractor=_Extractor(),
-            metric_classifier=_Classifier(),
-            metric_num_features=9 * 9 * 64,
-            metrics=['fid', 'is'],
-            accelerator='cpu'
-        )
-
-        # Only test single training step
+        trainer = DDPMTrainer(model, metric_extractor=_Extractor(), metric_classifier=_Classifier(
+        ), metric_num_features=9 * 9 * 64, metrics=['fid', 'is'], accelerator='cpu')
         loss = trainer.training_step(
             next(iter(self.train_loader)), batch_idx=0)
         self.assertEqual(loss.ndim, 0)
         self.assertEqual(loss.device.type, 'cpu')
         self.assertTrue(torch.isfinite(loss))
         self.assertTrue(loss.requires_grad)
-
-        # Only test single validation step
         trainer.validation_step(next(iter(self.val_loader)), batch_idx=0)
 
     def test_cddpm_trainer_basic(self):
         """Test basic functionality of CDDPMTrainer"""
         model = BCUNet(in_channels=4)
-        trainer = CDDPMTrainer(
-            model,
-            metric_extractor=_Extractor(),
-            metric_classifier=_Classifier(),
-            metric_num_features=9 * 9 * 64,
-            metrics=['fid', 'is'],
-            accelerator='cpu'
-        )
-
-        # Only test single training step
+        trainer = CDDPMTrainer(model, metric_extractor=_Extractor(), metric_classifier=_Classifier(
+        ), metric_num_features=9 * 9 * 64, metrics=['fid', 'is'], accelerator='cpu')
         loss = trainer.training_step(
             next(iter(self.train_loader)), batch_idx=0)
         self.assertEqual(loss.ndim, 0)
         self.assertEqual(loss.device.type, 'cpu')
         self.assertTrue(torch.isfinite(loss))
         self.assertTrue(loss.requires_grad)
-
-        # Only test single validation step
         trainer.validation_step(next(iter(self.val_loader)), batch_idx=0)
 
 
 class _LinearDenoiser(nn.Module):
+
     def __init__(self):
         super().__init__()
         self.scale = nn.Parameter(torch.tensor(0.1))
@@ -158,6 +125,7 @@ class _LinearDenoiser(nn.Module):
 
 
 class TestDiffusionMath(unittest.TestCase):
+
     def setUp(self):
         self.addCleanup(torch.set_rng_state, torch.get_rng_state())
         torch.manual_seed(7)
@@ -166,12 +134,9 @@ class TestDiffusionMath(unittest.TestCase):
         return trainer_class(_LinearDenoiser(), timesteps=4, use_ema=False, **kwargs)
 
     def test_beta_schedules_follow_independent_formulas(self):
-        start, end, steps = 0.001, 0.02, 4
-        expected = {
-            'linear': np.linspace(np.sqrt(start), np.sqrt(end), steps) ** 2,
-            'sqrt_linear': np.linspace(start, end, steps),
-            'sqrt': np.sqrt(np.linspace(start, end, steps)),
-        }
+        start, end, steps = (0.001, 0.02, 4)
+        expected = {'linear': np.linspace(np.sqrt(start), np.sqrt(
+            end), steps) ** 2, 'sqrt_linear': np.linspace(start, end, steps), 'sqrt': np.sqrt(np.linspace(start, end, steps))}
         angles = (np.arange(steps + 1) / steps + 0.008) / 1.008 * np.pi / 2
         cumulative = np.cos(angles) ** 2
         expected['cosine'] = np.minimum(
@@ -182,8 +147,8 @@ class TestDiffusionMath(unittest.TestCase):
                     schedule, steps, linear_start=start, linear_end=end), reference)
         with self.assertRaisesRegex(ValueError, 'unknown'):
             _make_beta_schedule('unknown', steps)
-        np.testing.assert_allclose(_betas_for_alpha_bar(4, lambda t: 1 - t / 2),
-                                   [1 / 8, 1 / 7, 1 / 6, 1 / 5])
+        np.testing.assert_allclose(_betas_for_alpha_bar(
+            4, lambda t: 1 - t / 2), [1 / 8, 1 / 7, 1 / 6, 1 / 5])
 
     def test_forward_noise_and_inverse_parameterizations_recover_original_signal(self):
         trainer = self._make_trainer()
@@ -204,7 +169,7 @@ class TestDiffusionMath(unittest.TestCase):
         mean, variance, log_variance = trainer.q_mean_variance(signal, t)
         torch.testing.assert_close(mean, alpha.sqrt() * signal)
         torch.testing.assert_close(variance, 1 - alpha)
-        beta64 = np.linspace(np.sqrt(1e-4), np.sqrt(0.02), 4) ** 2
+        beta64 = np.linspace(np.sqrt(0.0001), np.sqrt(0.02), 4) ** 2
         log_reference = torch.tensor(
             np.log1p(-np.cumprod(1 - beta64)), dtype=torch.float32)
         torch.testing.assert_close(
@@ -223,8 +188,8 @@ class TestDiffusionMath(unittest.TestCase):
                     alpha = torch.cumprod(
                         1 - trainer.betas, dim=0)[t].reshape(2, 1, 1, 1)
                     noisy = alpha.sqrt() * signal + (1 - alpha).sqrt() * noise
-                    targets = {'eps': noise, 'x0': signal,
-                               'v': alpha.sqrt() * noise - (1 - alpha).sqrt() * signal}
+                    targets = {'eps': noise, 'x0': signal, 'v': alpha.sqrt(
+                    ) * noise - (1 - alpha).sqrt() * signal}
                     reference = (
                         0.1 * noisy - targets[parameterization]).square().mean()
                     args = (signal, t, torch.tensor(
@@ -236,7 +201,7 @@ class TestDiffusionMath(unittest.TestCase):
                     loss.backward()
                     self.assertTrue(torch.isfinite(trainer.model.scale.grad))
                     trainer.p_losses(*args)
-        pred, target = torch.tensor([1., 3.]), torch.tensor([2., 1.])
+        pred, target = (torch.tensor([1.0, 3.0]), torch.tensor([2.0, 1.0]))
         for loss_type in ('l1', 'l2'):
             trainer = self._make_trainer(loss_type=loss_type)
             expected = (pred - target).abs()
@@ -252,8 +217,8 @@ class TestDiffusionMath(unittest.TestCase):
             for parameterization in ('eps', 'x0', 'v'):
                 for clip in (False, True):
                     with self.subTest(trainer=trainer_class.__name__, parameterization=parameterization, clip=clip):
-                        trainer = self._make_trainer(trainer_class, parameterization=parameterization,
-                                                     clip_denoised=clip)
+                        trainer = self._make_trainer(
+                            trainer_class, parameterization=parameterization, clip_denoised=clip)
                         x = torch.full((2, 1, 2, 3), 3.0 if clip else 0.3)
                         t = torch.zeros(2, dtype=torch.long)
                         labels = torch.tensor([0, 1])
@@ -263,15 +228,12 @@ class TestDiffusionMath(unittest.TestCase):
                             *args, clip_denoised=clip)
                         alpha = trainer.alphas_cumprod[t].reshape(2, 1, 1, 1)
                         prediction = x * 0.1
-                        expected_start = {
-                            'eps': (x - (1 - alpha).sqrt() * prediction) / alpha.sqrt(),
-                            'x0': prediction,
-                            'v': alpha.sqrt() * x - (1 - alpha).sqrt() * prediction,
-                        }[parameterization]
+                        expected_start = {'eps': (x - (1 - alpha).sqrt() * prediction) / alpha.sqrt(
+                        ), 'x0': prediction, 'v': alpha.sqrt() * x - (1 - alpha).sqrt() * prediction}[parameterization]
                         if clip:
                             expected_start = expected_start.clamp(-1, 1)
-                        expected_mean = (trainer.posterior_mean_coef1[t].reshape(2, 1, 1, 1) * expected_start
-                                         + trainer.posterior_mean_coef2[t].reshape(2, 1, 1, 1) * x)
+                        expected_mean = trainer.posterior_mean_coef1[t].reshape(
+                            2, 1, 1, 1) * expected_start + trainer.posterior_mean_coef2[t].reshape(2, 1, 1, 1) * x
                         torch.testing.assert_close(mean, expected_mean)
                         torch.testing.assert_close(
                             trainer.p_sample(*args, clip_denoised=clip), mean)
@@ -281,7 +243,7 @@ class TestDiffusionMath(unittest.TestCase):
                         self.assertEqual(result.shape, x.shape)
                         self.assertTrue(torch.isfinite(result).all())
                         trainer.p_sample(*args, repeat_noise=True)
-                        batch = (x, labels)
+                        batch = {'eeg': x, 'labels': labels}
                         self.assertEqual(trainer.predict_step(
                             batch, 0).shape, x.shape)
 
@@ -304,28 +266,25 @@ class TestDiffusionMath(unittest.TestCase):
         data = torch.arange(120, dtype=torch.float32).reshape(
             20, 1, 2, 3) / 120
         labels = torch.arange(20) % 2
-        loader = DataLoader(torch.utils.data.TensorDataset(
-            data, labels), batch_size=4)
-        options = dict(logger=False, enable_checkpointing=False, enable_progress_bar=False,
-                       enable_model_summary=False)
+        loader = DataLoader(_TensorDataset(data, labels), batch_size=4)
+        options = dict(logger=False, enable_checkpointing=False,
+                       enable_progress_bar=False, enable_model_summary=False)
         for trainer_class in (DDPMTrainer, CDDPMTrainer):
             with self.subTest(trainer=trainer_class.__name__):
-                trainer = trainer_class(_LinearDenoiser(), timesteps=2,
-                                        metric_extractor=nn.Flatten(), metric_num_features=6,
-                                        metric_classifier=nn.Sequential(
-                                            nn.Flatten(), nn.Linear(6, 2)),
-                                        metrics=['fid', 'is'])
-                trainer.fit(loader, loader, max_epochs=1, max_steps=1,
-                            num_sanity_val_steps=0, **options)
+                trainer = trainer_class(_LinearDenoiser(), timesteps=2, metric_extractor=nn.Flatten(
+                ), metric_num_features=6, metric_classifier=nn.Sequential(nn.Flatten(), nn.Linear(6, 2)), metrics=['fid', 'is'])
+                trainer.fit(loader, loader, max_epochs=1,
+                            max_steps=1, num_sanity_val_steps=0, **options)
                 self.assertEqual(trainer.trainer.global_step, 1)
                 metrics = trainer.test(loader, **options)[0]
-                self.assertTrue(all(np.isfinite(value)
-                                for value in metrics.values()))
+                self.assertTrue(all((np.isfinite(value)
+                                for value in metrics.values())))
                 self.assertIn('test_fid', metrics)
                 self.assertIn('test_is', metrics)
 
 
 class TestLitEma(unittest.TestCase):
+
     def setUp(self):
         self.addCleanup(torch.set_rng_state, torch.get_rng_state())
         torch.manual_seed(0)
@@ -339,9 +298,9 @@ class TestLitEma(unittest.TestCase):
         ema(model)
         ema.store(model.parameters())
         ema.copy_to(model)
-        torch.testing.assert_close(model.weight, torch.tensor([[2.]]))
+        torch.testing.assert_close(model.weight, torch.tensor([[2.0]]))
         ema.restore(model.parameters())
-        torch.testing.assert_close(model.weight, torch.tensor([[3.]]))
+        torch.testing.assert_close(model.weight, torch.tensor([[3.0]]))
         ema.reset_num_updates()
         self.assertEqual(ema.num_updates.item(), 0)
         ema(model)

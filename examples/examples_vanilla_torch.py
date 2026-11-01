@@ -75,21 +75,27 @@ from torcheeg import transforms
 from torcheeg.datasets import DEAPDataset
 from torcheeg.datasets.utils import get_locations
 
-dataset = DEAPDataset(
-    io_path=f'./examples_vanilla_torch/deap',
-    root_path='./tmp_in/data_preprocessed_python',
-    offline_transform=transforms.Compose([
-        transforms.BandDifferentialEntropy(apply_to_baseline=True),
-        transforms.BaselineRemoval(),
-        transforms.ToGrid(get_locations(
-            DEAPDataset.channels, DEAPDataset.grid))
-    ]),
-    online_transform=transforms.ToTensor(),
-    label_transform=transforms.Compose([
-        transforms.Select('valence'),
-        transforms.Binary(5.0),
-    ]),
-    num_worker=8)
+
+def preprocess_sample_1(sample):
+    sample = dict(sample)
+    sample['eeg'] = transforms.BandDifferentialEntropy()(sample['eeg'])
+    sample['baseline'] = transforms.BandDifferentialEntropy()(
+        sample['baseline'])
+    sample['eeg'] = transforms.BaselineRemoval(
+        baseline=sample['baseline'])(sample['eeg'])
+    sample['eeg'] = transforms.ToGrid(get_locations(
+        DEAPDataset.channels, DEAPDataset.grid))(sample['eeg'])
+    return sample
+
+
+def prepare_training_1(sample):
+    sample = dict(sample)
+    sample['eeg'] = transforms.ToTensor()(sample['eeg'])
+    return {'eeg': sample['eeg'], 'labels': transforms.Compose([transforms.Select('valence'), transforms.Binary(5.0)])(sample['info'])}
+
+
+dataset = DEAPDataset(io_path=f'./examples_vanilla_torch/deap', root_path='./tmp_in/data_preprocessed_python',
+                      num_worker=8, transform=preprocess_sample_1).with_transform(prepare_training_1)
 
 
 ######################################################################
@@ -128,8 +134,8 @@ def train(dataloader, model, loss_fn, optimizer):
 
     model.train()
     for batch_idx, batch in enumerate(dataloader):
-        X = batch[0].to(device)
-        y = batch[1].to(device)
+        X = batch['eeg'].to(device)
+        y = batch['labels'].to(device)
 
         # Compute prediction error
         pred = model(X)
@@ -155,8 +161,8 @@ def valid(dataloader, model, loss_fn):
     loss, correct = 0, 0
     with torch.no_grad():
         for batch in dataloader:
-            X = batch[0].to(device)
-            y = batch[1].to(device)
+            X = batch['eeg'].to(device)
+            y = batch['labels'].to(device)
 
             pred = model(X)
             loss += loss_fn(pred, y).item()

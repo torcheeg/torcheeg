@@ -258,38 +258,30 @@ e.g. ``./tmp_in/data_preprocessed_python``.
 
    from torcheeg.datasets.utils import get_locations
 
+   def preprocess_sample(sample):
+       features = transforms.BandDifferentialEntropy()
+       eeg = features(sample['eeg'])
+       baseline = features(sample['baseline'])
+       eeg = transforms.BaselineRemoval(baseline)(eeg)
+       grid = transforms.ToGrid(get_locations(DEAPDataset.channels, DEAPDataset.grid))
+       return {**sample, 'eeg': grid(eeg)}
+
+   def prepare_training(sample):
+       return {'eeg': transforms.ToTensor()(sample['eeg']),
+               'labels': int(sample['info']['valence'] > 5)}
+
    dataset = DEAPDataset(
-       io_path=f'./tmp_out/examples_pipeline/deap',
+       io_path='./tmp_out/examples_pipeline/deap',
        root_path='./tmp_in/data_preprocessed_python',
-       offline_transform=transforms.Compose([
-           transforms.BandDifferentialEntropy(apply_to_baseline=True),
-           transforms.ToGrid(get_locations(DEAPDataset.channels, DEAPDataset.grid), apply_to_baseline=True)
-       ]),
-       online_transform=transforms.Compose(
-           [transforms.BaselineRemoval(),
-            transforms.ToTensor()]),
-       label_transform=transforms.Compose([
-           transforms.Select('valence'),
-           transforms.Binary(5.0),
-       ]),
-       num_worker=8)
+       transform=preprocess_sample,
+       num_worker=4,
+   ).with_transform(prepare_training)
 
-The ``DEAPDataset`` API further contains three parameters:
-``online_transform``, ``offline_transform``, and ``label_transform``,
-which are used to modify samples and labels, respectively.
-
-Here, ``offline_transform`` will only be called once when the dataset is
-initialized to preprocess all samples in the dataset, and the processed
-dataset will be stored in ``io_path`` to avoid time-consuming repeated
-transformations in subsequent use. If offline preprocessing is a
-computationally intensive operation, we also recommend setting multi-CPU
-parallelism for offline_transform, e.g., set ``num_worker`` to 4.
-
-``online_transform`` is used to transform samples on the fly. Please use
-``online_transform`` if you don’t want to wait for the preprocessing of
-the entire dataset (suitable for scenarios where new ``transform``
-algorithms are designed) or expect data transformation with randomness
-each time a sample is indexed.
+``transform`` preprocesses each sample before it is stored in the cache.
+``with_transform`` creates a view that applies a function each time a sample
+is read. Chained calls append transformations in order, and are equivalent to
+passing ``transforms.Compose([f, g])``. Samples and training batches are
+dictionaries; functions choose the EEG, baseline and metadata fields they need.
 
 Next, we need to divide the dataset into a training set and a test set.
 In the field of EEG analysis, commonly used data partitioning methods

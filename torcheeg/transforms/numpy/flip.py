@@ -41,7 +41,7 @@ def horizontal_flip(eeg, eeg_channel_dim, pair):
 
 
 class HorizontalFlip(EEGTransform):
-    r'''
+    r"""
     Flip the EEG signal horizontally based on the electrode's position.
 
     .. code-block:: python
@@ -55,7 +55,7 @@ class HorizontalFlip(EEGTransform):
             location_dict=get_locations(BCICIV2aDataset.channels, BCICIV2aDataset.grid),
             channel_dim=2
         )
-        t(eeg=eeg)['eeg'].shape
+        t(eeg).shape
         >>> (32, 4, 22, 128)
 
     Args:
@@ -63,13 +63,10 @@ class HorizontalFlip(EEGTransform):
         channel_dim (int): The dim of electrodes in EEG data.
 
     .. automethod:: __call__
-    '''
+    """
 
-    def __init__(self,
-                 location_dict: Union[dict, None],
-                 channel_dim: int = 0):
-
-        super().__init__(apply_to_baseline=False)
+    def __init__(self, location_dict: Union[dict, None], channel_dim: int = 0):
+        super().__init__()
         self.location_dict = location_dict
         self.swap_pair = get_swap_pair(location_dict)
         self.channel_dim = channel_dim
@@ -80,6 +77,5 @@ class HorizontalFlip(EEGTransform):
 
     @property
     def repr_body(self) -> Dict:
-        return dict(super().repr_body, **{'apply_to_baseline': self.apply_to_baseline,
-                                          'loaction_dict': self.location_dict,
+        return dict(super().repr_body, **{'location_dict': self.location_dict,
                                           'channel_dim': self.channel_dim})

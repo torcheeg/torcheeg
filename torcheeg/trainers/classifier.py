@@ -154,9 +154,9 @@ class ClassifierTrainer(pl.LightningModule):
     def forward(self, x: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         return self.model(x, *args, **kwargs)
 
-    def training_step(self, batch: Tuple[torch.Tensor],
+    def training_step(self, batch: dict,
                       batch_idx: int) -> torch.Tensor:
-        x, y = batch
+        x, y = batch['eeg'], batch['labels']
         y_hat = self(x)
         loss = self.ce_fn(y_hat, y)
 
@@ -207,9 +207,9 @@ class ClassifierTrainer(pl.LightningModule):
         self.train_loss.reset()
         self.train_metrics.reset()
 
-    def validation_step(self, batch: Tuple[torch.Tensor],
+    def validation_step(self, batch: dict,
                         batch_idx: int) -> torch.Tensor:
-        x, y = batch
+        x, y = batch['eeg'], batch['labels']
         y_hat = self(x)
         loss = self.ce_fn(y_hat, y)
 
@@ -244,9 +244,9 @@ class ClassifierTrainer(pl.LightningModule):
         self.val_loss.reset()
         self.val_metrics.reset()
 
-    def test_step(self, batch: Tuple[torch.Tensor],
+    def test_step(self, batch: dict,
                   batch_idx: int) -> torch.Tensor:
-        x, y = batch
+        x, y = batch['eeg'], batch['labels']
         y_hat = self(x)
         loss = self.ce_fn(y_hat, y)
 
@@ -290,10 +290,10 @@ class ClassifierTrainer(pl.LightningModule):
         return optimizer
 
     def predict_step(self,
-                     batch: Tuple[torch.Tensor],
+                     batch: dict,
                      batch_idx: int,
                      dataloader_idx: int = 0):
-        x, y = batch
+        x, y = batch['eeg'], batch['labels']
         y_hat = self(x)
         # print(y_hat)
         return y_hat

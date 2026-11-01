@@ -1,21 +1,13 @@
-import logging
-import os
-from copy import copy
-from typing import Any, Callable, Dict, Union
+import numbers
+from copy import copy, deepcopy
+from uuid import uuid4
 
 import numpy as np
 import pandas as pd
-import torch
-from joblib import Parallel, delayed
 from torch.utils.data import Dataset
-from tqdm import tqdm
 
-from torcheeg.io import EEGSignalIO, MetaInfoIO
-
-from ..utils import get_random_dir_path
-from .utils import compute_fingerprint, ensure_cache
-
-_log = logging.getLogger('torcheeg')
+from ..io import BaseEEGIO, BaseInfoIO
+from ..transforms.any.compose import Compose
 
 
 class _RequiredMetadata:
@@ -25,578 +17,165 @@ class _RequiredMetadata:
     def __get__(self, instance, owner):
         raise NotImplementedError(
             "Attribute " + self._name + " is not implemented in class "
-            + owner.__name__
-        )
+            + owner.__name__)
 
 
 class BaseDataset(Dataset):
+    """Store sample dictionaries and create selections and transform views."""
 
     channels = _RequiredMetadata()
     grid = _RequiredMetadata()
     adjacency = _RequiredMetadata()
+    _STORAGE_COLUMNS = frozenset(('_record_id', 'clip_id', 'baseline_id'))
 
-    def __init__(self,
-                 io_path: Union[None, str] = None,
-                 io_size: int = 1048576,
-                 io_mode: str = 'lmdb',
-                 lazy_threshold: int = 128,
-                 num_worker: int = 0,
-                 verbose: bool = True,
-                 after_trial: Callable = None,
-                 after_session: Callable = None,
-                 after_subject: Callable = None,
-                 **kwargs):
-        io_path = get_random_dir_path(
-            dir_prefix='datasets') if io_path is None else os.fspath(io_path)
-        self.io_path = io_path
-        self.io_size = io_size
-        self.io_mode = io_mode
-        self.lazy_threshold = lazy_threshold
-        self.num_worker = num_worker
-        self.verbose = verbose
-        self.after_trial = after_trial
-        self.after_session = after_session
-        self.after_subject = after_subject
+    def __init__(self, eeg_io, info_io):
+        if not isinstance(eeg_io, BaseEEGIO):
+            raise TypeError('eeg_io must be a BaseEEGIO.')
+        if not isinstance(info_io, BaseInfoIO):
+            raise TypeError('info_io must be a BaseInfoIO.')
+        self.eeg_io = eeg_io
+        self.info_io = info_io
+        self._info = None
+        self._transforms = ()
+        self._is_view = False
 
-        configuration = {
-            name: value
-            for name, value in kwargs.items()
-            if name not in ('online_transform', 'label_transform')
-        }
-        configuration.update(io_mode=io_mode,
-                             after_trial=after_trial,
-                             after_session=after_session,
-                             after_subject=after_subject)
-        records = list(self.set_records(**kwargs))
-        if self.io_mode == 'memory':
-            self._build_cache(None, records, kwargs)
-        else:
-            fingerprint = compute_fingerprint(type(self), configuration, records,
-                                              io_path)
-            ensure_cache(io_path, fingerprint,
-                         lambda path: self._build_cache(path, records, kwargs))
-            self.init_io(io_path=self.io_path,
-                         io_size=self.io_size,
-                         io_mode=self.io_mode)
+    @property
+    def info(self):
+        """Sample metadata in the current selection order."""
+        if self._info is None:
+            self._info = self.info_io.read_all()
+        return self._info
 
-    def _build_cache(self, path, records, kwargs):
-        final_path = self.io_path
-        self.io_path = path
+    @info.setter
+    def info(self, value):
+        if not isinstance(value, pd.DataFrame):
+            raise TypeError('info must be a pandas DataFrame.')
+        self._info = value.reset_index(drop=True).copy(deep=True)
+        for name in self._info.select_dtypes(include='object'):
+            self._info[name] = self._info[name].map(deepcopy)
+        self._is_view = True
+
+    def append(self, sample):
+        """Append one raw sample; storage identities are assigned internally."""
+        if self._is_view:
+            raise ValueError(
+                'Append to a storage dataset, not a selection or transform view.')
+        if not isinstance(sample, dict):
+            raise TypeError('sample must be a dictionary.')
+        if not {'eeg', 'info'} <= sample.keys():
+            raise ValueError('sample must contain eeg and info.')
+        if set(sample) - {'eeg', 'baseline', 'info'}:
+            raise ValueError(
+                'Stored samples support eeg, info and optional baseline.')
+        if not isinstance(sample['info'], dict):
+            raise TypeError('sample info must be a dictionary.')
+        if self._STORAGE_COLUMNS.intersection(sample['info']):
+            raise ValueError(
+                'Sample metadata must not contain storage identifiers.')
+        if sample['eeg'] is None or ('baseline' in sample and sample['baseline'] is None):
+            raise ValueError('Stored signals must not be None.')
+        info = deepcopy(sample['info'])
+        record = uuid4().hex
+        self.eeg_io.write_eeg(deepcopy(sample['eeg']), 'eeg', record=record)
+        info.update(_record_id=record, clip_id='eeg')
+        if 'baseline' in sample:
+            self.eeg_io.write_eeg(
+                deepcopy(sample['baseline']), 'baseline', record=record)
+            info['baseline_id'] = 'baseline'
+        self.info_io.write_info(info)
+        self._info = None
+
+    def extend(self, samples):
+        """Consume and store samples incrementally."""
+        iterator = iter(samples)
         try:
-            if self.num_worker == 0:
-                results = [
-                    self.handle_record(io_path=path,
-                                       io_size=self.io_size,
-                                       io_mode=self.io_mode,
-                                       record=record,
-                                       record_id=index,
-                                       read_record=self.read_record,
-                                       process_record=self.process_record,
-                                       verbose=self.verbose,
-                                       **kwargs)
-                    for index, record in tqdm(enumerate(records),
-                                              total=len(records),
-                                              disable=not self.verbose,
-                                              desc='[PROCESS]')
-                ]
-            else:
-                results = Parallel(n_jobs=self.num_worker)(
-                    delayed(self.handle_record)(io_path=path,
-                                                io_size=self.io_size,
-                                                io_mode=self.io_mode,
-                                                record=record,
-                                                record_id=index,
-                                                read_record=self.read_record,
-                                                process_record=self.process_record,
-                                                verbose=self.verbose,
-                                                **kwargs)
-                    for index, record in tqdm(enumerate(records),
-                                              total=len(records),
-                                              disable=not self.verbose,
-                                              desc='[PROCESS]'))
-            if self.io_mode == 'memory':
-                if not results:
-                    raise ValueError(
-                        'No records were processed for the memory dataset.')
-                self.eeg_io_router = {}
-                self.eeg_signal_paths = {}
-                info_frames = []
-                for item in results:
-                    info = item['info']
-                    if '_record_id' in info.columns:
-                        raise ValueError(
-                            "column '_record_id' is a forbidden reserved word.")
-                    info['_record_id'] = item['record']
-                    info_frames.append(info)
-                    self.eeg_io_router[item['record']] = item['eeg_io']
-                self.info = pd.concat(info_frames, ignore_index=True)
-            else:
-                self.init_io(io_path=path, io_size=self.io_size,
-                             io_mode=self.io_mode)
-            if any(hook is not None for hook in (self.after_trial, self.after_session,
-                                                 self.after_subject)):
-                self.update_record(after_trial=self.after_trial,
-                                   after_session=self.after_session,
-                                   after_subject=self.after_subject)
+            for sample in iterator:
+                self.append(sample)
         finally:
-            if self.io_mode != 'memory':
-                self._close_io()
-            self.io_path = final_path
+            close = getattr(iterator, 'close', None)
+            if close is not None:
+                close()
 
-    def _close_io(self):
-        for eeg_io in getattr(self, 'eeg_io_router', {}).values():
-            backend = eeg_io._io
-            if self.io_mode == 'lmdb':
-                backend._env.close()
-        self.eeg_io_router = {}
-        self.eeg_signal_paths = {}
-
-    def init_io(self, io_path: str, io_size: int, io_mode: str):
-        # get all records
-        records = os.listdir(io_path)
-        # filter the records with the prefix '_record_'
-        records = list(filter(lambda x: '_record_' in x, records))
-        # sort the records
-        records = sorted(records, key=lambda x: int(x.split('_')[2]))
-
-        if not (len(records) > 0):
-            raise RuntimeError(
-                f'The io_path, {io_path}, is corrupted. Please delete this folder and try again.'
-            )
-
-        info_merged = []
-
-        if len(records) > self.lazy_threshold:
-            # Store paths instead of EEGSignalIO instances
-            self.eeg_signal_paths = {}
-            for record in records:
-                meta_info_io_path = os.path.join(io_path, record, 'info.csv')
-                eeg_signal_path = os.path.join(io_path, record, 'eeg')
-
-                info_io = MetaInfoIO(meta_info_io_path)
-                self.eeg_signal_paths[record] = eeg_signal_path
-
-                info_df = info_io.read_all()
-                if not ('_record_id' not in info_df.columns):
+    def __getitem__(self, index):
+        if isinstance(index, (bool, np.bool_)):
+            raise TypeError('A scalar boolean is not a sample index.')
+        if isinstance(index, numbers.Integral):
+            sample = self._read_sample(int(index))
+            for transform in self._transforms:
+                sample = transform(sample)
+                if not isinstance(sample, dict):
+                    raise TypeError(
+                        'A sample transform must return a dictionary.')
+            return sample
+        if isinstance(index, slice):
+            rows = self.info.iloc[index]
+        else:
+            positions = np.asarray(index)
+            if positions.ndim != 1:
+                raise ValueError('Sample indices must be one-dimensional.')
+            if positions.dtype.kind == 'b':
+                if len(positions) != len(self):
                     raise ValueError(
-                        "column '_record_id' is a forbidden reserved word.")
-                info_df['_record_id'] = record
-                info_merged.append(info_df)
+                        'Boolean mask length must equal dataset length.')
+            elif positions.size and positions.dtype.kind not in 'iu':
+                raise TypeError('Sample indices must be integers or booleans.')
+            elif not positions.size:
+                positions = positions.astype(np.intp)
+            rows = self.info.iloc[positions]
+        result = copy(self)
+        result.info = rows
+        return result
 
-            self.eeg_io_router = {}  # Not used in lazy mode
-        else:
-            self.eeg_io_router = {}
-            for record in records:
-                meta_info_io_path = os.path.join(io_path, record, 'info.csv')
-                eeg_signal_io_path = os.path.join(io_path, record, 'eeg')
+    def _read_sample(self, index):
+        info = self.info.iloc[index].to_dict()
+        record = info['_record_id']
+        sample = {
+            'eeg': deepcopy(self.eeg_io.read_eeg(info['clip_id'], record=record)),
+            'info': deepcopy({key: value for key, value in info.items()
+                              if key not in self._STORAGE_COLUMNS}),
+        }
+        baseline = info.get('baseline_id')
+        if isinstance(baseline, str):
+            sample['baseline'] = deepcopy(
+                self.eeg_io.read_eeg(baseline, record=record))
+        return sample
 
-                info_io = MetaInfoIO(meta_info_io_path)
-                eeg_io = EEGSignalIO(eeg_signal_io_path,
-                                     io_size=io_size,
-                                     io_mode=io_mode)
-                self.eeg_io_router[record] = eeg_io
-
-                info_df = info_io.read_all()
-                if not ('_record_id' not in info_df.columns):
-                    raise ValueError(
-                        "column '_record_id' is a forbidden reserved word.")
-                info_df['_record_id'] = record
-                info_merged.append(info_df)
-
-            self.eeg_signal_paths = {}  # Not used in eager mode
-
-        self.info = pd.concat(info_merged, ignore_index=True)
-
-    def is_lazy(self):
-        if not (hasattr(self, 'eeg_io_router') or hasattr(self, 'eeg_signal_paths')):
-            raise RuntimeError(
-                'The dataset should contain eeg_io_router or eeg_signal_paths.')
-        if hasattr(self, 'eeg_io_router') and len(self.eeg_io_router) > 0:
-            return False
-        if hasattr(
-                self, 'eeg_signal_paths') and len(self.eeg_signal_paths) > 0:
-            return True
-        raise ValueError("Both eeg_io_router and eeg_signal_paths are empty.")
-
-    def read_eeg(self, record: str, key: str) -> Any:
-        if self.is_lazy():
-            # Create temporary EEGSignalIO instance
-            eeg_io = EEGSignalIO(
-                self.eeg_signal_paths[record],
-                io_size=self.io_size,
-                io_mode=self.io_mode
-            )
-            return eeg_io.read_eeg(key)
-        else:
-            eeg_io = self.eeg_io_router[record]
-            return eeg_io.read_eeg(key)
-
-    def write_eeg(self, record: str, key: str, eeg: Any):
-        if self.is_lazy():
-            # Create temporary EEGSignalIO instance
-            eeg_io = EEGSignalIO(
-                self.eeg_signal_paths[record],
-                io_size=self.io_size,
-                io_mode=self.io_mode
-            )
-            eeg_io.write_eeg(eeg=eeg, key=key)
-        else:
-            eeg_io = self.eeg_io_router[record]
-            eeg_io.write_eeg(eeg=eeg, key=key)
-
-    def read_info(self, index: int) -> Dict:
-        r'''
-        Query the corresponding meta information in the MetaInfoIO according to the the given :obj:`index`.
-
-        In meta infomation, clip_id is required. Specifies the corresponding key of EEG in EEGSginalIO, which can be used to index EEG samples based on :obj:`self.read_eeg(key)`.
-
-        Args:
-            index (int): The index of the meta information to be queried.
-
-        Returns:
-            dict: The meta information.
-        '''
-        return self.info.iloc[index].to_dict()
-
-    def exist(self, io_path: str) -> bool:
-        '''
-        Check if the database IO exists.
-
-        Args:
-            io_path (str): The path of the database IO.
-        Returns:
-            bool: True if the database IO exists, otherwise False.
-        '''
-
-        return os.path.isfile(os.path.join(io_path, 'manifest.json'))
-
-    def __getitem__(self, index: int) -> any:
-        info = self.read_info(index)
-
-        eeg_index = str(info['clip_id'])
-        eeg_record = str(info['_record_id'])
-        eeg = self.read_eeg(eeg_record, eeg_index)
-
-        return eeg, info
-
-    def get_labels(self) -> list:
-        '''
-        Get the labels of the dataset.
-
-        Returns:
-            list: The list of labels.
-        '''
-        labels = []
-        for i in range(len(self)):
-            _, label = self.__getitem__(i)
-            labels.append(label)
-        return labels
+    def __iter__(self):
+        for index in range(len(self)):
+            yield self[index]
 
     def __len__(self):
         return len(self.info)
 
-    def __copy__(self) -> 'BaseDataset':
-        cls = self.__class__
-        result = cls.__new__(cls)
-        # Copy basic attributes
-        result.__dict__.update({
-            k: v
-            for k, v in self.__dict__.items()
-            if k not in ['eeg_io_router', 'info', 'eeg_signal_paths']
-        })
-
-        if self.is_lazy():
-            # Copy paths for lazy loading
-            result.eeg_signal_paths = self.eeg_signal_paths.copy()
-            result.eeg_io_router = {}
-        else:
-            # Original eager loading copy
-            result.eeg_io_router = {}
-            for record, eeg_io in self.eeg_io_router.items():
-                result.eeg_io_router[record] = copy(eeg_io)
-
-        # Deep copy info
-        result.info = copy(self.info)
+    def __copy__(self):
+        result = type(self).__new__(type(self))
+        result.__dict__ = self.__dict__.copy()
+        result._info = self.info.copy(deep=True)
+        for name in result._info.select_dtypes(include='object'):
+            result._info[name] = result._info[name].map(deepcopy)
+        result._is_view = True
         return result
 
-    def set_records(self, **kwargs):
-        '''
-        The block method for generating the database. It is used to describe which data blocks need to be processed to generate the database. It is called in parallel by :obj:`joblib.Parallel` in :obj:`__init__` of the class.
+    def with_transform(self, transform):
+        """Return a view that appends a sample transform to the current pipeline."""
+        if not callable(transform):
+            raise TypeError('transform must be callable.')
+        result = copy(self)
+        steps = transform.transforms if isinstance(
+            transform, Compose) else (transform,)
+        result._transforms = self._transforms + tuple(steps)
+        return result
 
-        Args:
-            lock (joblib.parallel.Lock): The lock for IO writter. (default: :obj:`None`)
-            **kwargs: The arguments derived from __init__ of the class.
-
-        .. code-block:: python
-
-        def set_records(self, root_path: str = None, **kwargs):
-                # e.g., return file name list for process_record to process
-                return os.listdir(root_path)
-
-        '''
-        raise NotImplementedError(
-            "Method set_records is not implemented in class "
-            + self.__class__.__name__
-        )
-
-    @staticmethod
-    def handle_record(io_path: Union[None, str] = None,
-                      io_size: int = 1048576,
-                      io_mode: str = 'lmdb',
-                      record: Any = None,
-                      record_id: int = None,
-                      read_record: Callable = None,
-                      process_record: Callable = None,
-                      verbose: bool = True,
-                      **kwargs):
-        _record_id = str(record_id)
-        if io_mode == 'memory':
-            info_rows = []
-            eeg_signal_io_path = None
-        else:
-            meta_info_io_path = os.path.join(io_path, f'_record_{_record_id}',
-                                             'info.csv')
-            eeg_signal_io_path = os.path.join(io_path, f'_record_{_record_id}',
-                                              'eeg')
-            info_io = MetaInfoIO(meta_info_io_path)
-        eeg_io = EEGSignalIO(eeg_signal_io_path,
-                             io_size=io_size,
-                             io_mode=io_mode)
-
-        pbar = None
-        try:
-            kwargs['record'] = record
-            kwargs.update(read_record(**kwargs))
-            if record_id == 0:
-                pbar = tqdm(disable=not verbose,
-                            desc=f'[RECORD {record}]',
-                            position=1,
-                            leave=None)
-            for item in process_record(**kwargs):
-                if pbar is not None:
-                    pbar.update(1)
-                if item and 'eeg' in item and 'key' in item:
-                    eeg_io.write_eeg(item['eeg'], item['key'])
-                if item and 'info' in item:
-                    if io_mode == 'memory':
-                        info_rows.append(item['info'].copy())
-                    else:
-                        info_io.write_info(item['info'])
-
-            result = {'record': f'_record_{_record_id}'}
-            if io_mode == 'memory':
-                result['eeg_io'] = eeg_io
-                result['info'] = pd.DataFrame(info_rows)
-            return result
-        finally:
-            if pbar is not None:
-                pbar.close()
-            if io_mode == 'lmdb':
-                eeg_io._io._env.close()
-
-    @classmethod
-    def read_record(cls, record: Any, **kwargs) -> Dict:
-        '''
-        The IO method for reading the database. It is used to describe how the files are read. It is called in parallel by :obj:`joblib.Parallel` in :obj:`__init__` of the class, the output of this method will be passed to :obj:`process_record`.
-
-        Args:
-            record (Any): The record to be processed. It is an element in the list returned by set_records. (default: :obj:`Any`)
-            **kwargs: The arguments derived from :obj:`__init__` of the class.
-
-        .. code-block:: python
-
-            def read_record(**kwargs):
-                return {
-                    'samples': ...
-                    'labels': ...
-                }
-
-        '''
-
-        raise NotImplementedError(
-            "Method read_record is not implemented in class "
-            + cls.__name__
-        )
-
-    @classmethod
-    def process_record(cls, record: Any, **kwargs) -> Dict:
-        '''
-        The IO method for generating the database. It is used to describe how files are processed to generate the database. It is called in parallel by :obj:`joblib.Parallel` in :obj:`__init__` of the class.
-
-        Args:
-            record (Any): The record to be processed. It is an element in the list returned by set_records. (default: :obj:`Any`)
-            **kwargs: The arguments derived from :obj:`__init__` of the class.
-
-        .. code-block:: python
-
-            def process_record(record: Any = None, chunk_size: int = 128, **kwargs):
-                # process record
-                eeg = np.ndarray((chunk_size, 64, 128), dtype=np.float32)
-                key = '1'
-                info = {
-                    'subject': '1',
-                    'session': '1',
-                    'run': '1',
-                    'label': '1'
-                }
-                yield {
-                    'eeg': eeg,
-                    'key': key,
-                    'info': info
-                }
-
-        '''
-
-        raise NotImplementedError(
-            "Method process_record is not implemented in class "
-            + cls.__name__
-        )
-
-    def update_record(self,
-                      after_trial: Callable = None,
-                      after_session: Callable = None,
-                      after_subject: Callable = None):
-        '''
-        The hook method for post-processing the data. It is used to describe how to post-process the data.
-        '''
-        pbar = tqdm(total=len(self),
-                    disable=not self.verbose,
-                    desc="[POST-PROCESS]")
-
-        # if all the hooks are None, then return
-        if after_trial is None and after_session is None and after_subject is None:
-            return
-
-        if 'subject_id' in self.info.columns:
-            subject_df = self.info.groupby('subject_id')
-        else:
-            subject_df = [(None, self.info)]
-            # if not after_subject is None:
-            #     log.info(
-            #         "No subject_id column found in info, after_subject hook is ignored."
-            #     )
-        if after_subject is None:
-            def after_subject(x): return x
-
-        for _, subject_info in subject_df:
-
-            subject_record_list = []
-            subject_index_list = []
-            subject_samples = []
-
-            # check if have a session_id column
-            if 'session_id' in subject_info.columns:
-                session_df = subject_info.groupby('session_id')
-            else:
-                session_df = [(None, subject_info)]
-                # if not after_session is None:
-                #     log.info(
-                #         "No session_id column found in info, after_session hook is ignored."
-                #     )
-            if after_session is None:
-                def after_session(x): return x
-
-            for _, session_info in session_df:
-
-                # check if have a trial_id column
-                if 'trial_id' in session_info.columns:
-                    trial_df = session_info.groupby('trial_id')
-                else:
-                    trial_df = [(None, session_info)]
-                    if not after_trial is None:
-                        _log.info(
-                            "No trial_id column found in info, after_trial hook is ignored."
-                        )
-                if after_trial is None:
-                    def after_trial(x): return x
-
-                session_samples = []
-                for _, trial_info in trial_df:
-                    trial_samples = []
-                    for i in range(len(trial_info)):
-                        eeg_index = str(trial_info.iloc[i]['clip_id'])
-                        eeg_record = str(trial_info.iloc[i]['_record_id'])
-
-                        subject_record_list.append(eeg_record)
-                        subject_index_list.append(eeg_index)
-
-                        eeg = self.read_eeg(eeg_record, eeg_index)
-                        trial_samples += [eeg]
-
-                        pbar.update(1)
-
-                    trial_samples = self.hook_data_interface(
-                        after_trial, trial_samples)
-                    session_samples += trial_samples
-
-                session_samples = self.hook_data_interface(
-                    after_session, session_samples)
-                subject_samples += session_samples
-
-            subject_samples = self.hook_data_interface(after_subject,
-                                                       subject_samples)
-
-            # save the data
-            for i, eeg in enumerate(subject_samples):
-                eeg_index = str(subject_index_list[i])
-                eeg_record = str(subject_record_list[i])
-
-                self.write_eeg(eeg_record, eeg_index, eeg)
-
-        pbar.close()
-
-    @staticmethod
-    def hook_data_interface(hook: Callable, data: Any):
-        # like [np.random.randn(32, 128), np.random.randn(32, 128)]
-        if isinstance(data[0], np.ndarray):
-            data = np.stack(data, axis=0)
-        elif isinstance(data[0], torch.Tensor):
-            data = torch.stack(data, axis=0)
-        # else list
-
-        # shape like (2, 32, 128)
-        data = hook(data)
-
-        # back to list like [np.random.randn(32, 128), np.random.randn(32, 128)]
-        if isinstance(data, np.ndarray):
-            data = np.split(data, data.shape[0], axis=0)
-            data = [np.squeeze(d, axis=0) for d in data]
-        elif isinstance(data, torch.Tensor):
-            data = torch.split(data, data.shape[0], dim=0)
-            data = [torch.squeeze(d, axis=0) for d in data]
-        # else list
-        return data
+    def close(self):
+        self.eeg_io.close()
+        self.info_io.close()
 
     @property
-    def repr_body(self) -> Dict:
-        return {
-            'io_path': self.io_path,
-            'io_size': self.io_size,
-            'io_mode': self.io_mode
-        }
+    def repr_body(self):
+        return {'eeg_io': type(self.eeg_io).__name__,
+                'info_io': type(self.info_io).__name__}
 
-    @property
-    def repr_tail(self) -> Dict:
-        return {'length': self.__len__()}
-
-    def __repr__(self) -> str:
-        # init info
-        format_string = self.__class__.__name__ + '('
-        for i, (k, v) in enumerate(self.repr_body.items()):
-            # line end
-            if i:
-                format_string += ','
-            format_string += '\n'
-            # str param
-            if isinstance(v, str):
-                format_string += f"    {k}='{v}'"
-            else:
-                format_string += f"    {k}={v}"
-        format_string += '\n)'
-        # other info
-        format_string += '\n'
-        for i, (k, v) in enumerate(self.repr_tail.items()):
-            if i:
-                format_string += ', '
-            format_string += f'{k}={v}'
-        return format_string
+    def __repr__(self):
+        values = ', '.join(f'{key}={value!r}' for key,
+                           value in self.repr_body.items())
+        return f'{type(self).__name__}({values}, length={len(self)})'

@@ -111,7 +111,7 @@ class GraphConvolution(Module):
 
 
 class LGGNet(nn.Module):
-    r'''
+    r"""
     DLocal-Global-Graph Networks (LGGNet). For more details, please refer to the following information.
 
     - Paper: Ding Y, Robinson N, Zeng Q, et al. LGGNet: learning from Local-global-graph representations for brain-computer interface[J]. arXiv preprint arXiv:2105.02786, 2021.
@@ -128,21 +128,23 @@ class LGGNet(nn.Module):
         from torcheeg.datasets.utils import get_regions
         from torcheeg.datasets.montage import GENERAL_REGION_LIST
 
-        dataset = SEEDDataset(root_path='./Preprocessed_EEG',
-                              offline_transform=transforms.Compose([
-                                  transforms.MeanStdNormalize(),
-                                  transforms.To2d()
-                              ]),
-                              online_transform=transforms.Compose([
-                                  transforms.ToTensor()
-                              ]),
-                              label_transform=transforms.Compose([
-                                  transforms.Select('emotion'),
-                                  transforms.Lambda(lambda x: x + 1)
-                              ]))
+        def preprocess_sample_1(sample):
+            sample = dict(sample)
+            sample['eeg'] = transforms.MeanStdNormalize()(sample['eeg'])
+            sample['eeg'] = transforms.To2d()(sample['eeg'])
+            return sample
+
+        def prepare_training_1(sample):
+            sample = dict(sample)
+            sample['eeg'] = transforms.ToTensor()(sample['eeg'])
+            return {'eeg': sample['eeg'], 'labels': transforms.Compose([transforms.Select('emotion'), transforms.Lambda(lambda x: x + 1)])(sample['info'])}
+
+        dataset = SEEDDataset(root_path='./Preprocessed_EEG', transform=preprocess_sample_1).with_transform(prepare_training_1)
         model = LGGNet(region_list=get_regions(SEEDDataset.channels, GENERAL_REGION_LIST), chunk_size=128, num_electrodes=32, hid_channels=32, num_classes=2)
 
-        x, y = next(iter(DataLoader(dataset, batch_size=64)))
+        batch = next(iter(DataLoader(dataset, batch_size=64)))
+
+        x, y = batch['eeg'], batch['labels']
         model(x)
 
     The current built-in :obj:`region_list` includs:
@@ -171,7 +173,7 @@ class LGGNet(nn.Module):
         pool_kernel_size (int): The kernel size of pooling layers in the temporal blocks (default: :obj:`16`)
         pool_stride (int): The stride of pooling layers in the temporal blocks (default: :obj:`4`)
         num_classes (int): The number of classes to predict. (default: :obj:`2`)
-    '''
+    """
 
     def __init__(self,
                  region_list,

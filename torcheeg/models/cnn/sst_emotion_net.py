@@ -7,7 +7,7 @@ import torch.nn.functional as F
 
 
 class SSTEmotionNet(nn.Module):
-    r'''
+    r"""
     Spatial-Spectral-Temporal based Attention 3D Dense Network (SST-EmotionNet) for EEG emotion recognition. For more details, please refer to the following information.
 
     - Paper: Jia Z, Lin Y, Cai X, et al. Sst-emotionnet: Spatial-spectral-temporal based attention 3d dense network for eeg emotion recognition[C]//Proceedings of the 28th ACM International Conference on Multimedia. 2020: 2909-2917.
@@ -25,33 +25,26 @@ class SSTEmotionNet(nn.Module):
         from torcheeg.models import SSTEmotionNet
         from torch.utils.data import DataLoader
 
-        dataset = DEAPDataset(root_path='./data_preprocessed_python',
-                              offline_transform=transforms.Compose([
-                                  transforms.BaselineRemoval(),
-                                  transforms.Concatenate([
-                                      transforms.Compose([
-                                          transforms.BandDifferentialEntropy(sampling_rate=128),
-                                          transforms.MeanStdNormalize()
-                                      ]),
-                                      transforms.Compose([
-                                          transforms.Downsample(num_points=32),
-                                          transforms.MinMaxNormalize()
-                                      ])
-                                  ]),
-                                  transforms.ToInterpolatedGrid(get_locations(DEAPDataset.channels, DEAPDataset.grid))
-                              ]),
-                              online_transform=transforms.Compose([
-                                  transforms.ToTensor(),
-                                  transforms.Resize((16, 16))
-                              ]),
-                              label_transform=transforms.Compose([
-                                  transforms.Select('valence'),
-                                  transforms.Binary(5.0),
-                              ]))
+        def preprocess_sample_1(sample):
+            sample = dict(sample)
+            sample['eeg'] = transforms.BaselineRemoval(baseline=sample['baseline'])(sample['eeg'])
+            sample['eeg'] = transforms.Concatenate([transforms.Compose([transforms.BandDifferentialEntropy(sampling_rate=128), transforms.MeanStdNormalize()]), transforms.Compose([transforms.Downsample(num_points=32), transforms.MinMaxNormalize()])])(sample['eeg'])
+            sample['eeg'] = transforms.ToInterpolatedGrid(get_locations(DEAPDataset.channels, DEAPDataset.grid))(sample['eeg'])
+            return sample
+
+        def prepare_training_1(sample):
+            sample = dict(sample)
+            sample['eeg'] = transforms.ToTensor()(sample['eeg'])
+            sample['eeg'] = transforms.Resize((16, 16))(sample['eeg'])
+            return {'eeg': sample['eeg'], 'labels': transforms.Compose([transforms.Select('valence'), transforms.Binary(5.0)])(sample['info'])}
+
+        dataset = DEAPDataset(root_path='./data_preprocessed_python', transform=preprocess_sample_1).with_transform(prepare_training_1)
 
         model = SSTEmotionNet(temporal_in_channels=32, spectral_in_channels=4, grid_size=(16, 16), num_classes=2)
 
-        x, y = next(iter(DataLoader(dataset, batch_size=64)))
+        batch = next(iter(DataLoader(dataset, batch_size=64)))
+
+        x, y = batch['eeg'], batch['labels']
         model(x)
 
     Args:
@@ -67,7 +60,7 @@ class SSTEmotionNet(nn.Module):
         densenet_dropout (int): Probability of an element to be zeroed in the dropout layers from densenet blocks. (default: :obj:`0.0`)
         task_dropout (int): Probability of an element to be zeroed in the dropout layers from task-specific classification blocks. (default: :obj:`0.0`)
         num_classes (int): The number of classes to predict. (default: :obj:`2`)
-    '''
+    """
 
     def __init__(self,
                  grid_size: Tuple[int, int] = (32, 32),

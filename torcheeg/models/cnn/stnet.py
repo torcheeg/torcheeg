@@ -44,7 +44,7 @@ class SeparableConv2d(nn.Module):
 
 
 class STNet(nn.Module):
-    r'''
+    r"""
     Spatio-temporal Network (STNet). For more details, please refer to the following information.
 
     - Paper: Zhang Z, Zhong S, Liu Y. GANSER: A Self-supervised Data Augmentation Framework for EEG-based Emotion Recognition[J]. IEEE Transactions on Affective Computing, 2022.
@@ -61,19 +61,23 @@ class STNet(nn.Module):
         from torcheeg.models import STNet
         from torch.utils.data import DataLoader
 
-        dataset = DEAPDataset(root_path='./data_preprocessed_python',
-                              offline_transform=transforms.Compose([
-                                  transforms.ToGrid(get_locations(DEAPDataset.channels, DEAPDataset.grid))
-                              ]),
-                              online_transform=transforms.ToTensor(),
-                              label_transform=transforms.Compose([
-                                  transforms.Select('valence'),
-                                  transforms.Binary(5.0),
-                              ]))
+        def preprocess_sample_1(sample):
+            sample = dict(sample)
+            sample['eeg'] = transforms.ToGrid(get_locations(DEAPDataset.channels, DEAPDataset.grid))(sample['eeg'])
+            return sample
+
+        def prepare_training_1(sample):
+            sample = dict(sample)
+            sample['eeg'] = transforms.ToTensor()(sample['eeg'])
+            return {'eeg': sample['eeg'], 'labels': transforms.Compose([transforms.Select('valence'), transforms.Binary(5.0)])(sample['info'])}
+
+        dataset = DEAPDataset(root_path='./data_preprocessed_python', transform=preprocess_sample_1).with_transform(prepare_training_1)
 
         model = STNet(num_classes=2, chunk_size=128, grid_size=(9, 9), dropout=0.2)
 
-        x, y = next(iter(DataLoader(dataset, batch_size=64)))
+        batch = next(iter(DataLoader(dataset, batch_size=64)))
+
+        x, y = batch['eeg'], batch['labels']
         model(x)
 
     Args:
@@ -81,7 +85,7 @@ class STNet(nn.Module):
         grid_size (tuple): Spatial dimensions of grid-like EEG representation. (default: :obj:`(9, 9)`)
         num_classes (int): The number of classes to predict. (default: :obj:`2`)
         dropout (float): Probability of an element to be zeroed in the dropout layers. (default: :obj:`0.2`)
-    '''
+    """
 
     def __init__(self,
                  chunk_size: int = 128,

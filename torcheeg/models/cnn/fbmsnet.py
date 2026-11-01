@@ -189,18 +189,22 @@ class FBMSNet(nn.Module):
                 'sub band8': [32, 36],
                 'sub band9': [36, 40]
             }
-            dataset = BCICIV2aDataset(root_path='./BCICIV_2a_mat',
-                                      chunk_size=512,
-                                      offline_transform=transforms.BandSignal(band_dict=freq_range_per_band,
-                                                                              sampling_rate=250),
-                                      online_transform=transforms.ToTensor(),
-                                      label_transform=transforms.Compose(
-                                          [transforms.Select('label'),
-                                          transforms.Lambda(lambda x: x - 1)]))
+            def preprocess_sample(sample):
+                transform = transforms.BandSignal(band_dict=freq_range_per_band, sampling_rate=250)
+                return {**sample, 'eeg': transform(sample['eeg'])}
+
+            def prepare_training(sample):
+                return {'eeg': transforms.ToTensor()(sample['eeg']),
+                        'labels': sample['info']['label'] - 1}
+
+            dataset = BCICIV2aDataset(root_path='./BCICIV_2a_mat', chunk_size=512,
+                                     transform=preprocess_sample).with_transform(prepare_training)
 
             model = FBMSNet(num_classes=4, num_electrodes=22, chunk_size=512, in_channels=9)
 
-            x, y = next(iter(DataLoader(dataset, batch_size=64)))
+            batch = next(iter(DataLoader(dataset, batch_size=64)))
+
+            x, y = batch['eeg'], batch['labels']
             model(x)
 
         Args:

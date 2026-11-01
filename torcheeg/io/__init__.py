@@ -1,2 +1,4 @@
-from .eeg_signal import EEGSignalIO
-from .meta_info import MetaInfoIO
+from .eeg_io import (LMDBEEGIO, BaseEEGIO, MemoryEEGIO, NumpyEEGIO,
+                     PickleEEGIO, ZarrEEGIO)
+from .info_io import (BaseInfoIO, CSVInfoIO, JSONLInfoIO, MemoryInfoIO,
+                      SQLiteInfoIO)

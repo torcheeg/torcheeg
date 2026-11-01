@@ -20,7 +20,6 @@ def _interrupted_split_writer(split_path, ready):
         import time
         ready.send(True)
         time.sleep(30)
-
     splitter.build = write_partial
     list(splitter.split(_make_dataset()))
 
@@ -30,8 +29,8 @@ class TestTrainTestSplitPerSubjectGroupbyTrial(unittest.TestCase):
     def test_retry_after_writer_process_is_terminated(self):
         context = mp.get_context('spawn')
         ready, child_ready = context.Pipe(duplex=False)
-        process = context.Process(target=_interrupted_split_writer,
-                                  args=(self._split_path, child_ready))
+        process = context.Process(
+            target=_interrupted_split_writer, args=(self._split_path, child_ready))
         try:
             process.start()
             self.assertTrue(ready.poll(20))
@@ -40,10 +39,8 @@ class TestTrainTestSplitPerSubjectGroupbyTrial(unittest.TestCase):
             process.join(timeout=10)
             self.assertFalse(process.is_alive())
             self.assertFalse(Path(self._split_path).exists())
-            # The abandoned private staging directory cannot be read as a cache.
-            self._assert_folds(
-                self._dataset,
-                list(self._make_splitter().split(self._dataset)))
+            self._assert_folds(self._dataset, list(
+                self._make_splitter().split(self._dataset)))
         finally:
             ready.close()
             child_ready.close()
@@ -68,47 +65,39 @@ class TestTrainTestSplitPerSubjectGroupbyTrial(unittest.TestCase):
         self.assertEqual(len(folds), 5)
         all_clips = set()
         for (train, test), subject in zip(folds, pd.unique(dataset.info['subject_id'])):
-            train_clips, test_clips = set(train.info['clip_id']), set(
-                test.info['clip_id'])
+            train_clips, test_clips = (
+                set(train.info['clip_id']), set(test.info['clip_id']))
             self.assertFalse(train_clips & test_clips)
-            self.assertEqual(
-                train_clips | test_clips,
-                set(dataset.info.loc[dataset.info['subject_id'] == subject, 'clip_id']))
+            self.assertEqual(train_clips | test_clips, set(
+                dataset.info.loc[dataset.info['subject_id'] == subject, 'clip_id']))
             all_clips.update(train_clips | test_clips)
             for subset, count in ((train, 3), (test, 2)):
                 self.assertEqual(set(subset.info['subject_id']), {subject})
-                self.assertEqual(
-                    subset.info.groupby('trial_id').size().tolist(), [count] * 5)
+                self.assertEqual(subset.info.groupby(
+                    'trial_id').size().tolist(), [count] * 5)
                 for index in range(len(subset)):
-                    signal, info = subset[index]
+                    signal = subset[index]['eeg']
+                    info = subset.info.iloc[index]
                     self.assertEqual(signal[0], int(info['clip_id']))
         self.assertEqual(all_clips, set(dataset.info['clip_id']))
 
     def test_samples_partition_each_subject_and_trial(self):
-        self._assert_folds(self._dataset,
-                           list(self._make_splitter().split(self._dataset)))
+        self._assert_folds(self._dataset, list(
+            self._make_splitter().split(self._dataset)))
 
     def test_without_shuffle_preserves_trial_sample_order(self):
         train, test = next(self._make_splitter().split(self._dataset))
-        self.assertEqual(
-            train.info['clip_id'].tolist(),
-            [str(trial * 5 + clip) for trial in range(5) for clip in range(3)])
-        self.assertEqual(
-            test.info['clip_id'].tolist(),
-            [str(trial * 5 + clip) for trial in range(5) for clip in (3, 4)])
+        self.assertEqual(train.info['clip_id'].tolist(), [str(
+            trial * 5 + clip) for trial in range(5) for clip in range(3)])
+        self.assertEqual(test.info['clip_id'].tolist(), [str(
+            trial * 5 + clip) for trial in range(5) for clip in (3, 4)])
 
     def test_dataframe_labels_are_not_used_as_positions(self):
-        for labels in (range(1000, 1125), ['duplicate'] * 125,
-                       ['row_' + str(i) for i in range(125)]):
-            with self.subTest(labels=type(
-                    labels).__name__), tempfile.TemporaryDirectory() as path:
+        for labels in (range(1000, 1125), ['duplicate'] * 125, ['row_' + str(i) for i in range(125)]):
+            with self.subTest(labels=type(labels).__name__), tempfile.TemporaryDirectory() as path:
                 self._dataset.info.index = labels
-                self._assert_folds(
-                    self._dataset,
-                    list(
-                        self._make_splitter(
-                            split_path=os.path.join(path, 'split')).split(
-                                self._dataset)))
+                self._assert_folds(self._dataset, list(self._make_splitter(
+                    split_path=os.path.join(path, 'split')).split(self._dataset)))
 
     def test_original_metadata_types_and_values_are_preserved(self):
         original = self._dataset.info.copy(deep=True)
@@ -124,27 +113,20 @@ class TestTrainTestSplitPerSubjectGroupbyTrial(unittest.TestCase):
     def test_shuffle_is_reproducible_and_does_not_change_global_rng(self):
         np.random.seed(71)
         before = np.random.get_state()
-        first = list(
-            self._make_splitter(shuffle=True, random_state=3).split(self._dataset))
+        first = list(self._make_splitter(
+            shuffle=True, random_state=3).split(self._dataset))
         after = np.random.get_state()
         for expected, actual in zip(before, after):
             np.testing.assert_equal(expected, actual)
         with tempfile.TemporaryDirectory() as path:
-            second = list(
-                self._make_splitter(shuffle=True,
-                                    random_state=3,
-                                    split_path=os.path.join(path, 'split')).split(
-                                        self._dataset))
+            second = list(self._make_splitter(shuffle=True, random_state=3,
+                          split_path=os.path.join(path, 'split')).split(self._dataset))
         for a, b in zip(first, second):
             for x, y in zip(a, b):
                 pd.testing.assert_frame_equal(x.info, y.info)
         self._assert_folds(self._dataset, first)
-        patterns = [
-            tuple(
-                int(value) % 5
-                for value in first[0][0].info.loc[first[0][0].info.trial_id == trial,
-                                                  'clip_id']) for trial in range(5)
-        ]
+        patterns = [tuple((int(value) % 5 for value in first[0][0].info.loc[first[0]
+                          [0].info.trial_id == trial, 'clip_id'])) for trial in range(5)]
         self.assertGreater(len(set(patterns)), 1)
 
     def test_subject_filter_accepts_metadata_id_and_numeric_string(self):
@@ -167,8 +149,8 @@ class TestTrainTestSplitPerSubjectGroupbyTrial(unittest.TestCase):
             lambda i: 'trial_' + str(i))
         splitter = self._make_splitter()
         self._assert_folds(self._dataset, list(splitter.split(self._dataset)))
-        self.assertEqual(splitter.subjects,
-                         sorted(['../01', 'a/b', 'a%b', '空 格', '004']))
+        self.assertEqual(splitter.subjects, sorted(
+            ['../01', 'a/b', 'a%b', '空 格', '004']))
         self.assertEqual(
             len(list(splitter.split(self._dataset, subject='a/b'))), 1)
         self.assertFalse(Path(self._directory.name, '01.csv').exists())
@@ -182,13 +164,12 @@ class TestTrainTestSplitPerSubjectGroupbyTrial(unittest.TestCase):
             list(self._make_splitter().split(self._dataset))
 
     def test_invalid_constructor_parameters(self):
-        cases = [({
-            'train_size': value
-        }, ValueError) for value in (0, 1, -1, float('nan'))]
+        cases = [({'train_size': value}, ValueError)
+                 for value in (0, 1, -1, float('nan'))]
         cases += [({'train_size': value}, TypeError)
                   for value in (True, '0.8')]
         cases += [({'random_state': value}, ValueError)
-                  for value in (-1, 2**32)]
+                  for value in (-1, 2 ** 32)]
         cases += [({'random_state': value}, TypeError)
                   for value in (True, 1.5)]
         cases += [({'shuffle': 'yes'}, TypeError)]
@@ -197,11 +178,8 @@ class TestTrainTestSplitPerSubjectGroupbyTrial(unittest.TestCase):
                 self._make_splitter(**parameters)
 
     def test_empty_missing_and_null_group_columns(self):
-        frames = [
-            self._dataset.info.iloc[:0],
-            self._dataset.info.drop(columns=['subject_id']),
-            self._dataset.info.drop(columns=['trial_id'])
-        ]
+        frames = [self._dataset.info.iloc[:0], self._dataset.info.drop(
+            columns=['subject_id']), self._dataset.info.drop(columns=['trial_id'])]
         for column in ('subject_id', 'trial_id'):
             frame = self._dataset.info.copy()
             frame.loc[0, column] = np.nan
@@ -216,13 +194,11 @@ class TestTrainTestSplitPerSubjectGroupbyTrial(unittest.TestCase):
             with self.subTest(ratio=ratio), tempfile.TemporaryDirectory() as path:
                 dataset = _make_dataset()
                 if ratio == 0.99:
-                    dataset.info = dataset.info.drop(index=[1, 2, 3, 4]).reset_index(
-                        drop=True)
+                    dataset.info = dataset.info.drop(
+                        index=[1, 2, 3, 4]).reset_index(drop=True)
                 with self.assertRaisesRegex(ValueError, 'at least one'):
-                    list(
-                        self._make_splitter(train_size=ratio,
-                                            split_path=os.path.join(
-                                                path, 'split')).split(dataset))
+                    list(self._make_splitter(train_size=ratio,
+                         split_path=os.path.join(path, 'split')).split(dataset))
                 self.assertFalse(os.path.exists(os.path.join(path, 'split')))
 
     def test_corrupted_cache_files_are_rejected(self):
@@ -237,8 +213,7 @@ class TestTrainTestSplitPerSubjectGroupbyTrial(unittest.TestCase):
 
     def test_repr_documents_configuration(self):
         text = repr(self._make_splitter(shuffle=True, random_state=42))
-        for part in ('TrainTestSplitPerSubjectGroupbyTrial', 'train_size=0.6',
-                     'shuffle=True', 'random_state=42', self._split_path):
+        for part in ('TrainTestSplitPerSubjectGroupbyTrial', 'train_size=0.6', 'shuffle=True', 'random_state=42', self._split_path):
             self.assertIn(part, text)
 
 

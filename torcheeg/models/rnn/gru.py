@@ -4,7 +4,7 @@ import torch.nn.functional as F
 
 
 class GRU(nn.Module):
-    r'''
+    r"""
     A simple but effective gate recurrent unit (GRU) network structure from the book of Zhang et al. For more details, please refer to the following information.
 
     - Book: Zhang X, Yao L. Deep Learning for EEG-Based Brain-Computer Interfaces: Representations, Algorithms and Applications[M]. 2021.
@@ -20,23 +20,25 @@ class GRU(nn.Module):
         from torcheeg.models import GRU
         from torch.utils.data import DataLoader
 
-        dataset = DEAPDataset(root_path='./data_preprocessed_python',
-                              online_transform=transforms.ToTensor(),
-                              label_transform=transforms.Compose([
-                                  transforms.Select('valence'),
-                                  transforms.Binary(5.0),
-                              ]))
+        def prepare_training_1(sample):
+            sample = dict(sample)
+            sample['eeg'] = transforms.ToTensor()(sample['eeg'])
+            return {'eeg': sample['eeg'], 'labels': transforms.Compose([transforms.Select('valence'), transforms.Binary(5.0)])(sample['info'])}
+
+        dataset = DEAPDataset(root_path='./data_preprocessed_python').with_transform(prepare_training_1)
 
         model = GRU(num_electrodes=32, hid_channels=64, num_classes=2)
 
-        x, y = next(iter(DataLoader(dataset, batch_size=64)))
+        batch = next(iter(DataLoader(dataset, batch_size=64)))
+
+        x, y = batch['eeg'], batch['labels']
         model(x)
 
     Args:
         num_electrodes (int): The number of electrodes, i.e., :math:`C` in the paper. (default: :obj:`32`)
         hid_channels (int): The number of hidden nodes in the GRU layers and the fully connected layer. (default: :obj:`64`)
         num_classes (int): The number of classes to predict. (default: :obj:`2`)
-    '''
+    """
 
     def __init__(self,
                  num_electrodes: int = 32,

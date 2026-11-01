@@ -16,13 +16,13 @@ class TestToTransforms(unittest.TestCase):
 
     def test_to_tensor(self):
         eeg = np.random.randn(32, 128)
-        transformed_eeg = ToTensor()(eeg=eeg)
-        self.assertEqual(eeg.shape, tuple(transformed_eeg['eeg'].shape))
-        self.assertTrue(isinstance(transformed_eeg['eeg'], torch.Tensor))
+        transformed_eeg = ToTensor()(eeg)
+        self.assertEqual(eeg.shape, tuple(transformed_eeg.shape))
+        self.assertTrue(isinstance(transformed_eeg, torch.Tensor))
 
     def test_conversion_preserves_values_and_cpu_float_dtype(self):
         eeg = np.arange(12, dtype=np.float64).reshape(3, 4)
-        result = ToTensor()(eeg=eeg, y='rest')
+        result = {'eeg': ToTensor()(eeg), 'y': 'rest'}
         self.assertEqual(result['eeg'].device.type, 'cpu')
         self.assertEqual(result['eeg'].dtype, torch.float32)
         torch.testing.assert_close(

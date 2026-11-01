@@ -4,7 +4,7 @@ from ..base_transform import LabelTransform
 
 
 class Mapping(LabelTransform):
-    r'''
+    r"""
     Mapping the label according to a certain dictionary.
 
     .. code-block:: python
@@ -15,7 +15,7 @@ class Mapping(LabelTransform):
             'left_hand': 0,
             'right_hand': 1,
         })
-        t(y='left_hand')['y']
+        t('left_hand')
         >>> 0
 
     :obj:`Mapping` allows simultaneous binarization using the same threshold for multiple labels.
@@ -30,7 +30,7 @@ class Mapping(LabelTransform):
             'left_feet': 0,
             'right_feet': 1
         })
-        t(y=['left_hand', 'left_feet'])['y']
+        t(['left_hand', 'left_feet'])
         >>> [0, 0]
 
     Args:
@@ -38,23 +38,12 @@ class Mapping(LabelTransform):
         default (float, optional): The default value when the input label is not in the dictionary. (default: :obj:`-1`)
 
     .. automethod:: __call__
-    '''
+    """
 
     def __init__(self, map_dict: float, default: float = -1) -> None:
         super(Mapping, self).__init__()
         self.map_dict = map_dict
         self.default = default
-
-    def __call__(self, *args, y: Union[int, float, List],
-                 **kwargs) -> Union[int, List]:
-        r'''
-        Args:
-            label (int, float, or list): The input label or list of labels.
-
-        Returns:
-            int, float, or list: The output label or list of labels after binarization.
-        '''
-        return super().__call__(*args, y=y, **kwargs)
 
     def apply(self, y: Union[int, float, List], **kwargs) -> Union[int, List]:
         if isinstance(y, list):

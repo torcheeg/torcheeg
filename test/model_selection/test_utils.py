@@ -12,52 +12,43 @@ import pandas as pd
 
 from torcheeg import model_selection
 from torcheeg.datasets import BaseDataset
-from torcheeg.io import EEGSignalIO
+from torcheeg.io import MemoryEEGIO, MemoryInfoIO
 
 
 def _make_dataset():
-    dataset = BaseDataset.__new__(BaseDataset)
+    dataset = BaseDataset(MemoryEEGIO(), MemoryInfoIO())
     rows = []
-    io = EEGSignalIO('unused', io_mode='memory')
+    io = dataset.eeg_io
     for subject in range(5):
         for trial in range(5):
             for clip in range(5):
                 index = len(rows)
-                io.write_eeg(np.array([index, trial, clip]), key=str(index))
-                rows.append({
-                    'subject_id': subject,
-                    'trial_id': trial,
-                    'clip_id': str(index),
-                    '_record_id': '_record_0',
-                    'split': ('train', 'val', 'test')[index % 3]
-                })
+                io.write_eeg(np.array([index, trial, clip]),
+                             key=str(index), record='_record_0')
+                rows.append({'subject_id': subject, 'trial_id': trial, 'clip_id': str(
+                    index), '_record_id': '_record_0', 'split': ('train', 'val', 'test')[index % 3]})
     dataset.info = pd.DataFrame(rows)
-    dataset.info['category'] = pd.Categorical(['rest', 'task', 'task', 'rest', 'rest'] *
-                                              25)
+    dataset.info['category'] = pd.Categorical(
+        ['rest', 'task', 'task', 'rest', 'rest'] * 25)
     dataset.info['timestamp'] = pd.date_range('2020-01-01', periods=len(rows))
-    dataset.eeg_io_router = {'_record_0': io}
-    dataset.eeg_signal_paths = {}
     return dataset
 
 
 def _split_worker(class_name, parameters, split_path, queue):
     try:
-        splitter = getattr(model_selection, class_name)(split_path=split_path,
-                                                        **parameters)
+        splitter = getattr(model_selection, class_name)(
+            split_path=split_path, **parameters)
         folds = list(splitter.split(_make_dataset()))
-        queue.put(('ok', [[list(subset.info['clip_id']) for subset in fold]
-                          for fold in folds]))
+        queue.put(('ok', [[list(subset.info['clip_id'])
+                  for subset in fold] for fold in folds]))
     except Exception as error:
         queue.put(('error', repr(error)))
 
 
 class TestModelSelectionUtils(unittest.TestCase):
     _splitter_class = model_selection.TrainValTestSplitCrossSubject
-    _parameters = {
-        'train_subjects': [0, 1, 2],
-        'val_subjects': [3],
-        'test_subjects': [4]
-    }
+    _parameters = {'train_subjects': [0, 1, 2],
+                   'val_subjects': [3], 'test_subjects': [4]}
     _fold_count = 1
     _group_column = 'subject_id'
     _metadata_column = 'subject_id'
@@ -70,9 +61,7 @@ class TestModelSelectionUtils(unittest.TestCase):
     def _make_splitter(self, split_path=None, **overrides):
         parameters = dict(self._parameters)
         parameters.update(overrides)
-        return self._splitter_class(
-            split_path=self._split_path if split_path is None else split_path,
-            **parameters)
+        return self._splitter_class(split_path=self._split_path if split_path is None else split_path, **parameters)
 
     def _assert_partition(self, dataset, folds):
         self.assertEqual(len(folds), self._fold_count)
@@ -83,13 +72,13 @@ class TestModelSelectionUtils(unittest.TestCase):
             for first, second in ((0, 1), (0, 2), (1, 2)):
                 self.assertFalse(clips[first] & clips[second])
                 if self._group_column is not None:
-                    self.assertFalse(
-                        set(fold[first].info[self._group_column])
-                        & set(fold[second].info[self._group_column]))
+                    self.assertFalse(set(fold[first].info[self._group_column]) & set(
+                        fold[second].info[self._group_column]))
             for subset in fold:
                 self.assertGreater(len(subset), 0)
                 for index in range(len(subset)):
-                    signal, info = subset[index]
+                    signal = subset[index]['eeg']
+                    info = subset.info.iloc[index]
                     self.assertEqual(signal[0], int(info['clip_id']))
 
     def test_samples_and_groups_form_complete_disjoint_partitions(self):
@@ -98,14 +87,12 @@ class TestModelSelectionUtils(unittest.TestCase):
             self._make_splitter().split(dataset)))
 
     def test_nonconsecutive_duplicate_and_string_dataframe_indices(self):
-        for labels in (range(1000, 1125), ['row'] * 125,
-                       ['row_' + str(index) for index in range(125)]):
+        for labels in (range(1000, 1125), ['row'] * 125, ['row_' + str(index) for index in range(125)]):
             dataset = _make_dataset()
             dataset.info.index = labels
-            with self.subTest(labels=type(
-                    labels).__name__), tempfile.TemporaryDirectory() as path:
-                folds = list(
-                    self._make_splitter(os.path.join(path, 'split')).split(dataset))
+            with self.subTest(labels=type(labels).__name__), tempfile.TemporaryDirectory() as path:
+                folds = list(self._make_splitter(
+                    os.path.join(path, 'split')).split(dataset))
                 self._assert_partition(dataset, folds)
 
     def test_metadata_and_original_dataset_are_preserved(self):
@@ -124,23 +111,16 @@ class TestModelSelectionUtils(unittest.TestCase):
     def test_cache_reuse_does_not_rewrite_files(self):
         dataset = _make_dataset()
         first = list(self._make_splitter().split(dataset))
-        before = {
-            str(file.relative_to(self._split_path)): file.read_bytes()
-            for file in Path(self._split_path).rglob('*') if file.is_file()
-        }
+        before = {str(file.relative_to(self._split_path)): file.read_bytes()
+                  for file in Path(self._split_path).rglob('*') if file.is_file()}
         splitter = self._make_splitter()
-        with patch.object(splitter,
-                          'build',
-                          side_effect=AssertionError('Unexpected cache rewrite')):
+        with patch.object(splitter, 'build', side_effect=AssertionError('Unexpected cache rewrite')):
             cached = list(splitter.split(dataset))
         for expected_fold, cached_fold in zip(first, cached):
             for expected, actual in zip(expected_fold, cached_fold):
                 pd.testing.assert_frame_equal(expected.info, actual.info)
-        self.assertEqual(
-            before, {
-                str(file.relative_to(self._split_path)): file.read_bytes()
-                for file in Path(self._split_path).rglob('*') if file.is_file()
-            })
+        self.assertEqual(before, {str(file.relative_to(self._split_path)): file.read_bytes(
+        ) for file in Path(self._split_path).rglob('*') if file.is_file()})
 
     def test_dataframe_index_labels_do_not_invalidate_cache(self):
         dataset = _make_dataset()
@@ -154,8 +134,8 @@ class TestModelSelectionUtils(unittest.TestCase):
     def test_equal_sample_ids_from_new_string_objects_reuse_cache(self):
         dataset = _make_dataset()
         expected = list(self._make_splitter().split(dataset))
-        dataset.info['_record_id'] = [(value + ' ').rstrip()
-                                      for value in dataset.info['_record_id']]
+        dataset.info['_record_id'] = [
+            (value + ' ').rstrip() for value in dataset.info['_record_id']]
         cached = list(self._make_splitter().split(dataset))
         for a, b in zip(expected, cached):
             for first, second in zip(a, b):
@@ -166,10 +146,8 @@ class TestModelSelectionUtils(unittest.TestCase):
         column = self._metadata_column
         dataset.info[column] = dataset.info[column].astype(object)
         list(self._make_splitter().split(dataset))
-        dataset.info[column] = [
-            value.encode() if isinstance(value, str) else str(value)
-            for value in dataset.info[column]
-        ]
+        dataset.info[column] = [value.encode() if isinstance(
+            value, str) else str(value) for value in dataset.info[column]]
         with self.assertRaisesRegex(ValueError, 'changed'):
             next(self._make_splitter().split(dataset))
 
@@ -214,7 +192,6 @@ class TestModelSelectionUtils(unittest.TestCase):
         def failed_writer(info, split_path):
             Path(split_path, 'train.csv').write_text('index\n0\n')
             raise RuntimeError('Simulated failed creation')
-
         with patch.object(splitter, 'build', side_effect=failed_writer):
             with self.assertRaisesRegex(RuntimeError, 'Simulated'):
                 list(splitter.split(dataset))
@@ -224,22 +201,21 @@ class TestModelSelectionUtils(unittest.TestCase):
         self._assert_partition(dataset, list(splitter.split(dataset)))
 
     def test_parallel_threads_wait_for_complete_cache(self):
-        first, second = self._make_splitter(), self._make_splitter()
+        first, second = (self._make_splitter(), self._make_splitter())
         dataset = _make_dataset()
         started = threading.Event()
         release = threading.Event()
         writer = first.build
 
         def delayed_writer(info, split_path):
-            directory = Path(split_path,
-                             'fold_0') if self._fold_count > 1 else Path(split_path)
+            directory = Path(
+                split_path, 'fold_0') if self._fold_count > 1 else Path(split_path)
             directory.mkdir(exist_ok=True)
             Path(directory, 'train.csv').write_text('index\n0\n')
             started.set()
             if not release.wait(timeout=10):
                 raise RuntimeError('Test writer was not released')
             writer(info, split_path)
-
         with patch.object(first, 'build', side_effect=delayed_writer):
             with concurrent.futures.ThreadPoolExecutor(max_workers=2) as pool:
                 created = pool.submit(lambda: list(first.split(dataset)))
@@ -256,11 +232,8 @@ class TestModelSelectionUtils(unittest.TestCase):
     def test_parallel_spawn_processes_reuse_the_same_cache(self):
         context = mp.get_context('spawn')
         queue = context.Queue()
-        processes = [
-            context.Process(target=_split_worker,
-                            args=(self._splitter_class.__name__, self._parameters,
-                                  self._split_path, queue)) for _ in range(2)
-        ]
+        processes = [context.Process(target=_split_worker, args=(
+            self._splitter_class.__name__, self._parameters, self._split_path, queue)) for _ in range(2)]
         try:
             for process in processes:
                 process.start()
@@ -295,11 +268,10 @@ class TestModelSelectionUtils(unittest.TestCase):
                 dataset.info[self._metadata_column] = None
             else:
                 dataset.info = dataset.info.drop(columns=self._metadata_column)
-            with self.subTest(
-                    null_values=null_values), tempfile.TemporaryDirectory() as path:
+            with self.subTest(null_values=null_values), tempfile.TemporaryDirectory() as path:
                 with self.assertRaisesRegex(ValueError, self._metadata_column):
-                    list(
-                        self._make_splitter(os.path.join(path, 'split')).split(dataset))
+                    list(self._make_splitter(
+                        os.path.join(path, 'split')).split(dataset))
 
     def test_invalid_positions_are_rejected(self):
         from torcheeg.model_selection.utils import validate_indices
@@ -312,57 +284,48 @@ class TestModelSelectionUtils(unittest.TestCase):
         dataset.info['subject_id'] = dataset.info['subject_id'].map(
             lambda value: f'{value:03d}')
         with tempfile.TemporaryDirectory() as directory:
-            splitter = model_selection.KFoldCrossSubject(n_splits=5,
-                                                         split_path=os.path.join(
-                                                             directory, 'split'))
+            splitter = model_selection.KFoldCrossSubject(
+                n_splits=5, split_path=os.path.join(directory, 'split'))
             for train, test in splitter.split(dataset):
-                self.assertEqual(
-                    set(train.info.subject_id) | set(test.info.subject_id),
-                    {'000', '001', '002', '003', '004'})
+                self.assertEqual(set(train.info.subject_id) | set(
+                    test.info.subject_id), {'000', '001', '002', '003', '004'})
 
     def test_stratification_parameters_are_checked_for_classes_and_functions(self):
         dataset = _make_dataset()
         for class_based in (True, False):
-            with self.subTest(
-                    class_based=class_based), tempfile.TemporaryDirectory() as path:
-                split_path = os.path.join(path, "split")
-                transform = lambda y: {"y": y["subject_id"] % 2}
-                changed = lambda y: {"y": (y["subject_id"] + 1) % 2}
+            with self.subTest(class_based=class_based), tempfile.TemporaryDirectory() as path:
+                split_path = os.path.join(path, 'split')
+                transform = lambda y: y['subject_id'] % 2
+                changed = lambda y: (y['subject_id'] + 1) % 2
                 if class_based:
                     splitter = model_selection.KFoldCrossSubject(
-                        n_splits=2,
-                        shuffle=True,
-                        random_state=42,
-                        label_transform=transform,
-                        split_path=split_path)
+                        n_splits=2, shuffle=True, random_state=42, label_transform=transform, split_path=split_path)
                     folds = list(splitter.split(dataset))
                     repeated = list(splitter.split(dataset))
                     for first, second in zip(folds, repeated):
                         for a, b in zip(first, second):
                             pd.testing.assert_frame_equal(a.info, b.info)
                     splitter.label_transform = changed
-                    with self.assertRaisesRegex(ValueError, "parameters"):
+                    with self.assertRaisesRegex(ValueError, 'parameters'):
                         list(splitter.split(dataset))
                 else:
-                    arguments = dict(test_size=0.4,
-                                     shuffle=True,
-                                     random_state=42,
-                                     split_path=split_path)
+                    arguments = dict(test_size=0.4, shuffle=True,
+                                     random_state=42, split_path=split_path)
                     first = model_selection.train_test_split_cross_subject(
                         dataset, label_transform=transform, **arguments)
                     second = model_selection.train_test_split_cross_subject(
                         dataset, label_transform=transform, **arguments)
                     for a, b in zip(first, second):
                         pd.testing.assert_frame_equal(a.info, b.info)
-                    with self.assertRaisesRegex(ValueError, "parameters"):
+                    with self.assertRaisesRegex(ValueError, 'parameters'):
                         model_selection.train_test_split_cross_subject(
                             dataset, label_transform=changed, **arguments)
 
     def test_reordered_samples_without_clip_or_record_ids_reject_cache(self):
         dataset = _make_dataset()
         dataset.info = dataset.info.drop(columns=['clip_id', '_record_id'])
-        splitter = model_selection.KFoldGroupbyTrial(n_splits=5,
-                                                     split_path=self._split_path)
+        splitter = model_selection.KFoldGroupbyTrial(
+            n_splits=5, split_path=self._split_path)
         list(splitter.split(dataset))
         dataset.info.iloc[[0, 1]] = dataset.info.iloc[[1, 0]].to_numpy()
         with self.assertRaisesRegex(ValueError, 'changed'):

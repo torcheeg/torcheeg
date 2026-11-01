@@ -35,7 +35,7 @@ def plot_graph(data: 'pyg.data.Data',
         import numpy as np
 
         eeg = np.random.randn(32, 128)
-        g = ToG(get_adjacency(DEAPDataset.channels, DEAPDataset.adjacency))(eeg=eeg)['eeg']
+        g = ToG(get_adjacency(DEAPDataset.channels, DEAPDataset.adjacency))(eeg)
         img = plot_graph(g, get_locations(DEAPDataset.channels, DEAPDataset.grid))
         # If using jupyter, the output image will be drawn on notebooks.
 

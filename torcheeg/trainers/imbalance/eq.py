@@ -96,7 +96,8 @@ class EQLossTrainer(ClassifierTrainer):
 
         if isinstance(class_frequency, DataLoader):
             _class_frequency = [0] * self.num_classes
-            for _, batch_y in class_frequency:
+            for batch in class_frequency:
+                batch_y = batch['labels']
                 # assert every item in batch_y is less than self.num_classes
                 if not (torch.all(batch_y < self.num_classes)):
                     raise ValueError(
@@ -111,9 +112,9 @@ class EQLossTrainer(ClassifierTrainer):
 
         self.eq_fn = EQLoss(self._class_frequency, self.gamma, self.lambd)
 
-    def training_step(self, batch: Tuple[torch.Tensor],
+    def training_step(self, batch: dict,
                       batch_idx: int) -> torch.Tensor:
-        x, y = batch
+        x, y = batch['eeg'], batch['labels']
         y_hat = self(x)
         loss = self.eq_fn(y_hat, y)
 
@@ -135,9 +136,9 @@ class EQLossTrainer(ClassifierTrainer):
 
         return loss
 
-    def validation_step(self, batch: Tuple[torch.Tensor],
+    def validation_step(self, batch: dict,
                         batch_idx: int) -> torch.Tensor:
-        x, y = batch
+        x, y = batch['eeg'], batch['labels']
         y_hat = self(x)
         loss = self.eq_fn(y_hat, y)
 
@@ -145,9 +146,9 @@ class EQLossTrainer(ClassifierTrainer):
         self.val_metrics.update(y_hat, y)
         return loss
 
-    def test_step(self, batch: Tuple[torch.Tensor],
+    def test_step(self, batch: dict,
                   batch_idx: int) -> torch.Tensor:
-        x, y = batch
+        x, y = batch['eeg'], batch['labels']
         y_hat = self(x)
         loss = self.eq_fn(y_hat, y)
 

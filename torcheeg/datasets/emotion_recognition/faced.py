@@ -5,7 +5,8 @@ from typing import Any, Callable, Dict, Tuple, Union
 import numpy as np
 
 from ...utils import get_random_dir_path
-from ..base_dataset import BaseDataset
+from ..base_data import BaseData
+from ..cached_dataset import CachedDataset
 
 _VALENCE_DICT = {
     1: -1,  # negative
@@ -70,99 +71,8 @@ _EMOTION_DICT = {
 }
 
 
-class FACEDDataset(BaseDataset):
-    r'''
-    The FACED dataset was provided by the Tsinghua Laboratory of Brain and Intelligence. The Finer-grained Affective Computing EEG Dataset (FACED) recorded 32-channel EEG signals from 123 subjects. During the experiment, subjects watched 28 emotion-elicitation video clips covering nine emotion categories (amusement, inspiration, joy, tenderness; anger, fear, disgust, sadness, and neutral emotion), providing a fine-grained and balanced categorization on both the positive and negative sides of emotion.
-    This class generates training samples and test samples according to the given parameters, and caches the generated results in a unified input and output format (IO). The relevant information of the dataset is as follows:
-
-    - Author: Please refer to the downloaded URL.
-    - Year: 2023
-    - Download URL: https://www.synapse.org/#!Synapse:syn50614194/files/
-    - Reference: Please refer to the downloaded URL.
-    - Stimulus: video clips.
-    - Signals: Electroencephalogram (30 channels at 250Hz) and two channels of left/right mastoid signals from 123 subjects.
-    - Rating: 28 video clips are annotated in valence and discrete emotion dimensions. The valence is divided into positive (1), negative (-1), and neutral (0). Discrete emotions are divided into anger (0), disgust (1), fear (2), sadness (3), neutral (4), amusement (5), inspiration (6), joy (7), and tenderness (8).
-
-    In order to use this dataset, the download folder :obj:`Processed_data` (download from this url: https://www.synapse.org/#!Synapse:syn50615881) is required, containing the following files:
-
-    .. code-block:: text
-
-        Processed_data/
-        ├── sub000.pkl
-        ├── sub001.pkl
-        ├── sub002.pkl
-        └── ...
-
-    An example dataset for CNN-based methods:
-
-    .. code-block:: python
-
-        from torcheeg.datasets import FACEDDataset
-        from torcheeg import transforms
-        from torcheeg.datasets.utils import get_locations
-
-        dataset = FACEDDataset(root_path='./Processed_data',
-                               offline_transform=transforms.Compose([
-                                   transforms.BandDifferentialEntropy(),
-                                   transforms.ToGrid(get_locations(FACEDDataset.channels, FACEDDataset.grid))
-                               ]),
-                               online_transform=transforms.ToTensor(),
-                               label_transform=transforms.Select('emotion'))
-
-        print(dataset[0])
-        # EEG signal (torch.Tensor[4, 8, 9]),
-        # label (int)
-
-    Another example dataset for CNN-based methods:
-
-    .. code-block:: python
-
-        from torcheeg.datasets import FACEDDataset
-        from torcheeg import transforms
-
-        dataset = FACEDDataset(root_path='./Processed_data',
-                               online_transform=transforms.Compose(
-                                   [transforms.ToTensor(),
-                                    transforms.To2d()]),
-                               label_transform=transforms.Select('emotion'))
-
-        print(dataset[0])
-        # EEG signal (torch.Tensor[1, 30, 250]),
-        # label (int)
-
-    An example dataset for GNN-based methods:
-
-    .. code-block:: python
-
-        from torcheeg.datasets import FACEDDataset
-        from torcheeg import transforms
-        from torcheeg.datasets.utils import get_adjacency
-        from torcheeg.transforms import ToG
-
-        dataset = FACEDDataset(root_path='./Processed_data',
-                               online_transform=transforms.Compose([ToG(get_adjacency(FACEDDataset.channels, FACEDDataset.adjacency))]),
-                               label_transform=transforms.Select('emotion'))
-
-        print(dataset[0])
-        # EEG signal (torch_geometric.data.Data),
-        # label (int)
-
-    Args:
-        root_path (str): Downloaded data files in matlab (unzipped Processed_data.zip) formats (default: :obj:`'./Processed_data'`)
-        chunk_size (int): Number of data points included in each EEG chunk as training or test samples. If set to -1, the EEG signal of a trial is used as a sample of a chunk. (default: :obj:`250`)
-        overlap (int): The number of overlapping data points between different chunks when dividing EEG chunks. (default: :obj:`0`)
-        num_channel (int): Number of channels used, of which the first 30 channels are EEG signals. (default: :obj:`30`)
-        online_transform (Callable, optional): The transformation of the EEG signals and baseline EEG signals. The input is a :obj:`np.ndarray`, and the ouput is used as the first and second value of each element in the dataset. (default: :obj:`None`)
-        offline_transform (Callable, optional): The usage is the same as :obj:`online_transform`, but executed before generating IO intermediate results. (default: :obj:`None`)
-        label_transform (Callable, optional): The transformation of the label. The input is an information dictionary, and the ouput is used as the third value of each element in the dataset. (default: :obj:`None`)
-        before_trial (Callable, optional): The hook performed on the trial to which the sample belongs. It is performed before the offline transformation and thus typically used to implement context-dependent sample transformations, such as moving averages, etc. The input of this hook function is a 2D EEG signal with shape (number of electrodes, number of data points), whose ideal output shape is also (number of electrodes, number of data points).
-        after_trial (Callable, optional): The hook performed on the trial to which the sample belongs. It is performed after the offline transformation and thus typically used to implement context-dependent sample transformations, such as moving averages, etc. The input and output of this hook function should be a sequence of dictionaries representing a sequence of EEG samples. Each dictionary contains two key-value pairs, indexed by :obj:`eeg` (the EEG signal matrix) and :obj:`key` (the index in the database) respectively.
-        io_path (str): The path to generated unified data IO, cached as an intermediate result. If set to None, a random path will be generated. (default: :obj:`None`)
-        io_size (int): Maximum size database may grow to; used to size the memory mapping. If database grows larger than ``map_size``, an exception will be raised and the user must close and reopen. (default: :obj:`1048576`)
-        io_mode (str): Storage mode of EEG signal. When io_mode is set to :obj:`lmdb`, TorchEEG provides an efficient database (LMDB) for storing EEG signals. LMDB may not perform well on limited operating systems, where a file system based EEG signal storage is also provided. When io_mode is set to :obj:`pickle`, pickle-based persistence files are used. When io_mode is set to :obj:`memory`, memory are used. (default: :obj:`lmdb`)
-        num_worker (int): Number of subprocesses to use for data loading. 0 means that the data will be loaded in the main process. (default: :obj:`0`)
-        verbose (bool): Whether to display logs during processing, such as progress bars, etc. (default: :obj:`True`)  
-    '''
+class FACEDData(BaseData):
+    """Read and preprocess records for :class:`FACEDDataset`."""
 
     channels = [
         'FP1', 'FP2', 'FZ',  'F3',  'F4',  'F7',  'F8',  'FC1',
@@ -220,45 +130,22 @@ class FACEDDataset(BaseDataset):
                  chunk_size: int = 250,
                  overlap: int = 0,
                  num_channel: int = 30,
-                 online_transform: Union[None, Callable] = None,
-                 offline_transform: Union[None, Callable] = None,
-                 label_transform: Union[None, Callable] = None,
-                 before_trial: Union[None, Callable] = None,
-                 after_trial: Union[Callable, None] = None,
-                 after_subject: Union[Callable, None] = None,
-                 io_path: Union[None, str] = None,
-                 io_size: int = 1048576,
-                 io_mode: str = 'lmdb',
-                 num_worker: int = 0,
-                 verbose: bool = True):
-        if io_path is None:
-            io_path = get_random_dir_path(dir_prefix='datasets')
+                 transform: Union[None, Callable] = None):
 
-        # pass all arguments to super class
-        params = {
-            'root_path': root_path,
-            'chunk_size': chunk_size,
-            'overlap': overlap,
-            'num_channel': num_channel,
-            'online_transform': online_transform,
-            'offline_transform': offline_transform,
-            'label_transform': label_transform,
-            'before_trial': before_trial,
-            'after_trial': after_trial,
-            'after_subject': after_subject,
-            'io_path': io_path,
-            'io_size': io_size,
-            'io_mode': io_mode,
-            'num_worker': num_worker,
-            'verbose': verbose
-        }
-        super().__init__(**params)
-        # save all arguments to __dict__
-        self.__dict__.update(params)
+        super().__init__(
+            transform=transform,
+            root_path=root_path,
+            chunk_size=chunk_size,
+            overlap=overlap,
+            num_channel=num_channel
+        )
 
-    @staticmethod
-    def read_record(record: str,
-                    root_path: str = './Processed_data', **kwargs) -> Dict:
+    def read_record(self,
+                    record: str,
+                    root_path: str = None,
+                    **kwargs) -> Dict:
+        if root_path is None:
+            root_path = self.root_path
         file_name = os.path.basename(
             record)  # an element from file name list, such as 'sub087.pkl'
         # derive the given arguments (kwargs)
@@ -285,71 +172,38 @@ class FACEDDataset(BaseDataset):
             'record': 'sub087.pkl'
         }
 
-    @staticmethod
-    def process_record(record: str,
-                       samples: np.ndarray,
-                       chunk_size: int = 250,
-                       overlap: int = 0,
-                       num_channel: int = 30,
-                       before_trial: Union[None, Callable] = None,
-                       offline_transform: Union[None, Callable] = None,
-                       **kwargs):
-        file_name = os.path.basename(
-            record)  # an element from file name list, such as 'sub087.pkl'
-        subject_id = int(file_name.split('.')[0]
-                         [3:])  # get subject_id from 'sub087.pkl', such as 87
-
-        write_pointer = 0
-
+    def process_record(self, record: str, samples: np.ndarray, chunk_size: int = None, overlap: int = None, num_channel: int = None, **kwargs):
+        if chunk_size is None:
+            chunk_size = self.chunk_size
+        if overlap is None:
+            overlap = self.overlap
+        if num_channel is None:
+            num_channel = self.num_channel
+        file_name = os.path.basename(record)
+        subject_id = int(file_name.split('.')[0][3:])
         for trial_id in range(len(samples)):
-            trial_samples = samples[
-                trial_id, :
-                # default 30(remove A1 and A2 from 32 channels), 30s*250hz(time points)
-                num_channel]
-            if before_trial:
-                trial_samples = before_trial(trial_samples)
-
-            # record the common meta info
-            trial_meta_info = {
-                'subject_id': subject_id,
-                'trial_id': trial_id,
-                'valence': _VALENCE_DICT[trial_id + 1],
-                'emotion': _EMOTION_DICT[trial_id + 1],
-            }
+            trial_samples = samples[trial_id, :num_channel]
+            trial_meta_info = {'subject_id': subject_id, 'trial_id': trial_id,
+                               'valence': _VALENCE_DICT[trial_id + 1], 'emotion': _EMOTION_DICT[trial_id + 1]}
             start_at = 0
             if chunk_size <= 0:
                 dynamic_chunk_size = trial_samples.shape[1] - start_at
             else:
                 dynamic_chunk_size = chunk_size
-
-            # chunk with chunk size
             end_at = start_at + dynamic_chunk_size
-            # calculate moving step
             step = dynamic_chunk_size - overlap
-
             while end_at <= trial_samples.shape[1]:
                 clip_sample = trial_samples[:, start_at:end_at]
-
                 t_eeg = clip_sample
-                if not offline_transform is None:
-                    t_eeg = offline_transform(eeg=clip_sample)['eeg']
-
-                clip_id = f'{file_name}_{write_pointer}'
-                write_pointer += 1
-
-                # record meta info for each signal
-                record_info = {
-                    'start_at': start_at,
-                    'end_at': end_at,
-                    'clip_id': clip_id
-                }
+                record_info = {'start_at': start_at, 'end_at': end_at}
                 record_info.update(trial_meta_info)
-                yield {'eeg': t_eeg, 'key': clip_id, 'info': record_info}
-
+                yield {'eeg': t_eeg, 'info': record_info}
                 start_at = start_at + step
                 end_at = start_at + dynamic_chunk_size
 
-    def set_records(self, root_path: str = './Processed_data', **kwargs):
+    def set_records(self, root_path: str = None, **kwargs):
+        if root_path is None:
+            root_path = self.root_path
         if not (os.path.exists(root_path)):
             raise FileNotFoundError(
                 f'root_path ({root_path}) does not exist. Please download the dataset and set the root_path to the downloaded path.'
@@ -361,38 +215,127 @@ class FACEDDataset(BaseDataset):
         ]
         return file_path_list
 
-    def __getitem__(self, index: int) -> Tuple[any, any, int, int, int]:
-        info = self.read_info(index)
 
-        eeg_index = str(info['clip_id'])
-        eeg_record = str(info['_record_id'])
-        eeg = self.read_eeg(eeg_record, eeg_index)
+class FACEDDataset(CachedDataset):
 
-        signal = eeg
-        label = info
+    r"""
+    The FACED dataset was provided by the Tsinghua Laboratory of Brain and Intelligence. The Finer-grained Affective Computing EEG Dataset (FACED) recorded 32-channel EEG signals from 123 subjects. During the experiment, subjects watched 28 emotion-elicitation video clips covering nine emotion categories (amusement, inspiration, joy, tenderness; anger, fear, disgust, sadness, and neutral emotion), providing a fine-grained and balanced categorization on both the positive and negative sides of emotion.
+    This class generates training samples and test samples according to the given parameters, and caches the generated results in a unified input and output format (IO). The relevant information of the dataset is as follows:
 
-        if self.online_transform:
-            signal = self.online_transform(eeg=eeg)['eeg']
+    - Author: Please refer to the downloaded URL.
+    - Year: 2023
+    - Download URL: https://www.synapse.org/#!Synapse:syn50614194/files/
+    - Reference: Please refer to the downloaded URL.
+    - Stimulus: video clips.
+    - Signals: Electroencephalogram (30 channels at 250Hz) and two channels of left/right mastoid signals from 123 subjects.
+    - Rating: 28 video clips are annotated in valence and discrete emotion dimensions. The valence is divided into positive (1), negative (-1), and neutral (0). Discrete emotions are divided into anger (0), disgust (1), fear (2), sadness (3), neutral (4), amusement (5), inspiration (6), joy (7), and tenderness (8).
 
-        if self.label_transform:
-            label = self.label_transform(y=info)['y']
+    In order to use this dataset, the download folder :obj:`Processed_data` (download from this url: https://www.synapse.org/#!Synapse:syn50615881) is required, containing the following files:
 
-        return signal, label
+    .. code-block:: text
+
+        Processed_data/
+        ├── sub000.pkl
+        ├── sub001.pkl
+        ├── sub002.pkl
+        └── ...
+
+    An example dataset for CNN-based methods:
+
+    .. code-block:: python
+
+        from torcheeg.datasets import FACEDDataset
+        from torcheeg import transforms
+        from torcheeg.datasets.utils import get_locations
+
+        def preprocess_sample_1(sample):
+            sample = dict(sample)
+            sample['eeg'] = transforms.BandDifferentialEntropy()(sample['eeg'])
+            sample['eeg'] = transforms.ToGrid(get_locations(FACEDDataset.channels, FACEDDataset.grid))(sample['eeg'])
+            return sample
+
+        def prepare_training_1(sample):
+            sample = dict(sample)
+            sample['eeg'] = transforms.ToTensor()(sample['eeg'])
+            return {'eeg': sample['eeg'], 'labels': transforms.Select('emotion')(sample['info'])}
+
+        dataset = FACEDDataset(root_path='./Processed_data', transform=preprocess_sample_1).with_transform(prepare_training_1)
+
+        print(dataset[0])
+        # EEG signal (torch.Tensor[4, 8, 9]),
+        # label (int)
+
+    Another example dataset for CNN-based methods:
+
+    .. code-block:: python
+
+        from torcheeg.datasets import FACEDDataset
+        from torcheeg import transforms
+
+        def prepare_training_1(sample):
+            sample = dict(sample)
+            sample['eeg'] = transforms.ToTensor()(sample['eeg'])
+            sample['eeg'] = transforms.To2d()(sample['eeg'])
+            return {'eeg': sample['eeg'], 'labels': transforms.Select('emotion')(sample['info'])}
+
+        dataset = FACEDDataset(root_path='./Processed_data').with_transform(prepare_training_1)
+
+        print(dataset[0])
+        # EEG signal (torch.Tensor[1, 30, 250]),
+        # label (int)
+
+    An example dataset for GNN-based methods:
+
+    .. code-block:: python
+
+        from torcheeg.datasets import FACEDDataset
+        from torcheeg import transforms
+        from torcheeg.datasets.utils import get_adjacency
+        from torcheeg.transforms import ToG
+
+        def prepare_training_1(sample):
+            sample = dict(sample)
+            sample['eeg'] = ToG(get_adjacency(FACEDDataset.channels, FACEDDataset.adjacency))(sample['eeg'])
+            return {'eeg': sample['eeg'], 'labels': transforms.Select('emotion')(sample['info'])}
+
+        dataset = FACEDDataset(root_path='./Processed_data').with_transform(prepare_training_1)
+
+        print(dataset[0])
+        # EEG signal (torch_geometric.data.Data),
+        # label (int)
+
+    Args:
+        root_path (str): Downloaded data files in matlab (unzipped Processed_data.zip) formats (default: :obj:`'./Processed_data'`)
+        chunk_size (int): Number of data points included in each EEG chunk as training or test samples. If set to -1, the EEG signal of a trial is used as a sample of a chunk. (default: :obj:`250`)
+        overlap (int): The number of overlapping data points between different chunks when dividing EEG chunks. (default: :obj:`0`)
+        num_channel (int): Number of channels used, of which the first 30 channels are EEG signals. (default: :obj:`30`)
+
+
+
+        transform (Callable, optional): Sample dictionary transform applied before storage. (default: :obj:`None`)
+        io_path (str): The path to generated unified data IO, cached as an intermediate result. If set to None, a random path will be generated. (default: :obj:`None`)
+        io_size (int): Maximum size database may grow to; used to size the memory mapping. If database grows larger than ``map_size``, an exception will be raised and the user must close and reopen. (default: :obj:`1048576`)
+        io_mode (str): Storage mode of EEG signal. When io_mode is set to :obj:`lmdb`, TorchEEG provides an efficient database (LMDB) for storing EEG signals. LMDB may not perform well on limited operating systems, where a file system based EEG signal storage is also provided. When io_mode is set to :obj:`pickle`, pickle-based persistence files are used. When io_mode is set to :obj:`memory`, memory are used. (default: :obj:`lmdb`)
+        num_worker (int): Number of subprocesses to use for data loading. 0 means that the data will be loaded in the main process. (default: :obj:`0`)
+        verbose (bool): Whether to display logs during processing, such as progress bars, etc. (default: :obj:`True`)
+    """
+
+    data_class = FACEDData
+
+    channels = FACEDData.channels
+
+    grid = FACEDData.grid
+
+    adjacency = FACEDData.adjacency
+
+    def __init__(self, root_path: str = './Processed_data', chunk_size: int = 250, overlap: int = 0, num_channel: int = 30, transform: Union[None, Callable] = None, io_path: Union[None, str] = None, io_size: int = 1048576, io_mode: str = 'lmdb', num_worker: int = 0, verbose: bool = True):
+        if io_path is None:
+            io_path = get_random_dir_path(dir_prefix='datasets')
+        params = {'root_path': root_path, 'chunk_size': chunk_size, 'overlap': overlap, 'num_channel': num_channel,
+                  'transform': transform, 'io_path': io_path, 'io_size': io_size, 'io_mode': io_mode, 'num_worker': num_worker, 'verbose': verbose}
+        super().__init__(**params)
+        self.__dict__.update(params)
 
     @property
     def repr_body(self) -> Dict:
-        return dict(
-            super().repr_body, **{
-                'root_path': self.root_path,
-                'chunk_size': self.chunk_size,
-                'overlap': self.overlap,
-                'num_channel': self.num_channel,
-                'online_transform': self.online_transform,
-                'offline_transform': self.offline_transform,
-                'label_transform': self.label_transform,
-                'before_trial': self.before_trial,
-                'after_trial': self.after_trial,
-                'num_worker': self.num_worker,
-                'verbose': self.verbose,
-                'io_size': self.io_size
-            })
+        return dict(super().repr_body, **{'root_path': self.root_path, 'chunk_size': self.chunk_size, 'overlap': self.overlap, 'num_channel': self.num_channel, 'transform': self.transform, 'num_worker': self.num_worker, 'verbose': self.verbose, 'io_size': self.io_size})

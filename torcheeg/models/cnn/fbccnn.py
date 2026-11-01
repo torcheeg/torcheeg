@@ -5,7 +5,7 @@ import torch.nn as nn
 
 
 class FBCCNN(nn.Module):
-    r'''
+    r"""
     Frequency Band Correlation Convolutional Neural Network (FBCCNN). For more details, please refer to the following information.
 
     - Paper: Pan B, Zheng W. Emotion Recognition Based on EEG Using Generative Adversarial Nets and Convolutional Neural Network[J]. Computational and Mathematical Methods in Medicine, 2021.
@@ -21,26 +21,26 @@ class FBCCNN(nn.Module):
         from torcheeg.models import FBCCNN
         from torch.utils.data import DataLoader
 
-        dataset = DEAPDataset(root_path='./data_preprocessed_python',
-                              online_transform=transforms.Compose([
-                                  transforms.BandPowerSpectralDensity(),
-                                  transforms.ToGrid(get_locations(DEAPDataset.channels, DEAPDataset.grid))
-                              ]),
-                              label_transform=transforms.Compose([
-                                  transforms.Select('valence'),
-                                  transforms.Binary(5.0),
-                              ]))
+        def prepare_training_1(sample):
+            sample = dict(sample)
+            sample['eeg'] = transforms.BandPowerSpectralDensity()(sample['eeg'])
+            sample['eeg'] = transforms.ToGrid(get_locations(DEAPDataset.channels, DEAPDataset.grid))(sample['eeg'])
+            return {'eeg': sample['eeg'], 'labels': transforms.Compose([transforms.Select('valence'), transforms.Binary(5.0)])(sample['info'])}
+
+        dataset = DEAPDataset(root_path='./data_preprocessed_python').with_transform(prepare_training_1)
 
         model = FBCCNN(num_classes=2, in_channels=4, grid_size=(9, 9))
 
-        x, y = next(iter(DataLoader(dataset, batch_size=64)))
+        batch = next(iter(DataLoader(dataset, batch_size=64)))
+
+        x, y = batch['eeg'], batch['labels']
         model(x)
 
     Args:
         in_channels (int): The feature dimension of each electrode, i.e., :math:`N` in the paper. (default: :obj:`4`)
         grid_size (tuple): Spatial dimensions of grid-like EEG representation. (default: :obj:`(9, 9)`)
         num_classes (int): The number of classes to predict. (default: :obj:`2`)
-    '''
+    """
 
     def __init__(self, in_channels: int = 4, grid_size: Tuple[int, int] = (9, 9), num_classes: int = 2):
         super(FBCCNN, self).__init__()

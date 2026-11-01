@@ -21,18 +21,8 @@ def butter_bandpass(low_cut, high_cut, fs, order=5):
 
 
 class BandTransform(EEGTransform):
-    def __init__(self,
-                 sampling_rate: int = 128,
-                 order: int = 5,
-                 band_dict: Dict[str, Tuple[int, int]] = {
-                     "theta": [4, 8],
-                     "alpha": [8, 14],
-                     "beta": [14, 31],
-                     "gamma": [31, 49]
-                 },
-                 apply_to_baseline: bool = False):
-        super(BandTransform, self).__init__(
-            apply_to_baseline=apply_to_baseline)
+    def __init__(self, sampling_rate: int = 128, order: int = 5, band_dict: Dict[str, Tuple[int, int]] = {'theta': [4, 8], 'alpha': [8, 14], 'beta': [14, 31], 'gamma': [31, 49]}):
+        super(BandTransform, self).__init__()
         self.sampling_rate = sampling_rate
         self.order = order
         self.band_dict = band_dict
@@ -68,7 +58,7 @@ class BandTransform(EEGTransform):
 
 
 class BandSignal(BandTransform):
-    r'''
+    r"""
     A transform method to split the EEG signal into signals in different sub-bands.
 
     .. code-block:: python
@@ -76,31 +66,17 @@ class BandSignal(BandTransform):
         from torcheeg import transforms
 
         t = transforms.BandSignal()
-        t(eeg=np.random.randn(32, 128))['eeg'].shape
+        t(np.random.randn(32, 128)).shape
         >>> (4, 32, 128)
 
     Args:
         sampling_rate (int): The original sampling rate of EEG signals in Hz. (default: :obj:`128`)
         order (int): The order of the filter. (default: :obj:`5`)
         band_dict: (dict): Band name and the critical sampling rate or frequencies. By default, the differential entropy of the four sub-bands, theta, alpha, beta and gamma, is calculated. (default: :obj:`{...}`)
-        apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (default: :obj:`False`)
+
 
     .. automethod:: __call__
-    '''
-
-    def __call__(self,
-                 *args,
-                 eeg: np.ndarray,
-                 baseline: Union[np.ndarray, None] = None,
-                 **kwargs) -> Dict[str, np.ndarray]:
-        r'''
-        Args:
-            eeg (np.ndarray): The input EEG signals in shape of [number of electrodes, number of data points].
-            baseline (np.ndarray, optional) : The corresponding baseline signal, if apply_to_baseline is set to True and baseline is passed, the baseline signal will be transformed with the same way as the experimental signal.
-        Returns:
-            np.ndarray[number of electrodes, number of sub-bands]: The differential entropy of several sub-bands for all electrodes.
-        '''
-        return super().__call__(*args, eeg=eeg, baseline=baseline, **kwargs)
+    """
 
     def opt(self, eeg: np.ndarray, **kwargs) -> np.ndarray:
         return eeg
@@ -120,7 +96,7 @@ class BandSignal(BandTransform):
 
 
 class BandDifferentialEntropy(BandTransform):
-    r'''
+    r"""
     A transform method for calculating the differential entropy of EEG signals in several sub-bands with EEG signals as input. It is a widely accepted differential entropy calculation method by the community, which is often applied to the DEAP and DREAMER datasets. It is relatively easy to understand and has a smaller scale and more gradual changes than the :obj:`BandDifferentialEntropyV1` calculated based on average power spectral density. 
 
     - Related Paper: Fdez J, Guttenberg N, Witkowski O, et al. Cross-subject EEG-based emotion recognition through neural networks with stratified normalization[J]. Frontiers in neuroscience, 2021, 15: 626277.
@@ -136,38 +112,24 @@ class BandDifferentialEntropy(BandTransform):
         from torcheeg import transforms
 
         t = transforms.BandDifferentialEntropy()
-        t(eeg=np.random.randn(32, 128))['eeg'].shape
+        t(np.random.randn(32, 128)).shape
         >>> (32, 4)
 
     Args:
         sampling_rate (int): The original sampling rate of EEG signals in Hz. (default: :obj:`128`)
         order (int): The order of the filter. (default: :obj:`5`)
         band_dict: (dict): Band name and the critical sampling rate or frequencies. By default, the differential entropy of the four sub-bands, theta, alpha, beta and gamma, is calculated. (default: :obj:`{...}`)
-        apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (default: :obj:`False`)
+
 
     .. automethod:: __call__
-    '''
-
-    def __call__(self,
-                 *args,
-                 eeg: np.ndarray,
-                 baseline: Union[np.ndarray, None] = None,
-                 **kwargs) -> Dict[str, np.ndarray]:
-        r'''
-        Args:
-            eeg (np.ndarray): The input EEG signals in shape of [number of electrodes, number of data points].
-            baseline (np.ndarray, optional) : The corresponding baseline signal, if apply_to_baseline is set to True and baseline is passed, the baseline signal will be transformed with the same way as the experimental signal.
-        Returns:
-            np.ndarray[number of electrodes, number of sub-bands]: The differential entropy of several sub-bands for all electrodes.
-        '''
-        return super().__call__(*args, eeg=eeg, baseline=baseline, **kwargs)
+    """
 
     def opt(self, eeg: np.ndarray, **kwargs) -> np.ndarray:
         return 1 / 2 * np.log2(2 * np.pi * np.e * np.var(eeg))
 
 
 class BandDifferentialEntropyV1(EEGTransform):
-    r'''
+    r"""
     A transform method for calculating the differential entropy of EEG signals in several sub-bands with EEG signals as input. This version calculates the differential entropy based on the relationship between the differential entropy and the average power spectral density, which is identical to the processing of the SEED dataset.
 
     - Related Paper: Shi L C, Jiao Y Y, Lu B L. Differential entropy feature for EEG-based vigilance estimation[C]//2013 35th Annual International Conference of the IEEE Engineering in Medicine and Biology Society (EMBC). IEEE, 2013: 6627-6630.
@@ -178,36 +140,23 @@ class BandDifferentialEntropyV1(EEGTransform):
         from torcheeg import transforms
 
         t = transforms.BandDifferentialEntropyV1()
-        t(eeg=np.random.randn(32, 128))['eeg'].shape
+        t(np.random.randn(32, 128)).shape
         >>> (32, 4)
 
     Args:
         sampling_rate (int): The original sampling rate of EEG signals in Hz. (default: :obj:`128`)
         order (int): The order of the filter. (default: :obj:`5`)
         band_dict: (dict): Band name and the critical sampling rate or frequencies. By default, the differential entropy of the four sub-bands, theta, alpha, beta and gamma, is calculated. (default: :obj:`{...}`)
-        apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (default: :obj:`False`)
+
 
     .. automethod:: __call__
-    '''
+    """
 
-    def __init__(self,
-                 sampling_rate: int = 128,
-                 fft_n: int = None,
-                 num_window: int = 1,
-                 band_dict: Dict[str, Tuple[int, int]] = {
-                     "theta": [4, 8],
-                     "alpha": [8, 14],
-                     "beta": [14, 31],
-                     "gamma": [31, 49]
-                 },
-                 apply_to_baseline: bool = False):
-        super(BandDifferentialEntropyV1,
-              self).__init__(apply_to_baseline=apply_to_baseline)
+    def __init__(self, sampling_rate: int = 128, fft_n: int = None, num_window: int = 1, band_dict: Dict[str, Tuple[int, int]] = {'theta': [4, 8], 'alpha': [8, 14], 'beta': [14, 31], 'gamma': [31, 49]}):
+        super(BandDifferentialEntropyV1, self).__init__()
         self.sampling_rate = sampling_rate
-
         if fft_n is None:
             fft_n = self.sampling_rate
-
         self.fft_n = fft_n
         self.num_window = num_window
         self.band_dict = band_dict
@@ -240,20 +189,6 @@ class BandDifferentialEntropyV1(EEGTransform):
 
         return np.stack(band_list, axis=-1)
 
-    def __call__(self,
-                 *args,
-                 eeg: np.ndarray,
-                 baseline: Union[np.ndarray, None] = None,
-                 **kwargs) -> Dict[str, np.ndarray]:
-        r'''
-        Args:
-            eeg (np.ndarray): The input EEG signals in shape of [number of electrodes, number of data points].
-            baseline (np.ndarray, optional) : The corresponding baseline signal, if apply_to_baseline is set to True and baseline is passed, the baseline signal will be transformed with the same way as the experimental signal.
-        Returns:
-            np.ndarray[number of electrodes, number of sub-bands]: The power spectral density of several sub-bands for all electrodes.
-        '''
-        return super().__call__(*args, eeg=eeg, baseline=baseline, **kwargs)
-
     @property
     def repr_body(self) -> Dict:
         return dict(
@@ -266,7 +201,7 @@ class BandDifferentialEntropyV1(EEGTransform):
 
 
 class BandPowerSpectralDensity(EEGTransform):
-    r'''
+    r"""
     A transform method for calculating the power spectral density of EEG signals in several sub-bands with EEG signals as input.
 
     .. code-block:: python
@@ -274,7 +209,7 @@ class BandPowerSpectralDensity(EEGTransform):
         from torcheeg import transforms
 
         t = transforms.BandPowerSpectralDensity()
-        t(eeg=np.random.randn(32, 128))['eeg'].shape
+        t(np.random.randn(32, 128)).shape
         >>> (32, 4)
 
     Args:
@@ -283,29 +218,16 @@ class BandPowerSpectralDensity(EEGTransform):
         num_window (int): Welch's method computes an estimate of the power spectral density by dividing the data into non-overlapping segments, where the num_window denotes the number of windows. (default: :obj:`1`)
         order (int): The order of the filter. (default: :obj:`5`)
         band_dict: (dict): Band name and the critical sampling rate or frequencies. By default, the power spectral density of the four sub-bands, theta, alpha, beta and gamma, is calculated. (default: :obj:`{...}`)
-        apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (default: :obj:`False`)
+
 
     .. automethod:: __call__
-    '''
+    """
 
-    def __init__(self,
-                 sampling_rate: int = 128,
-                 fft_n: int = None,
-                 num_window: int = 1,
-                 band_dict: Dict[str, Tuple[int, int]] = {
-                     "theta": [4, 8],
-                     "alpha": [8, 14],
-                     "beta": [14, 31],
-                     "gamma": [31, 49]
-                 },
-                 apply_to_baseline: bool = False):
-        super(BandPowerSpectralDensity,
-              self).__init__(apply_to_baseline=apply_to_baseline)
+    def __init__(self, sampling_rate: int = 128, fft_n: int = None, num_window: int = 1, band_dict: Dict[str, Tuple[int, int]] = {'theta': [4, 8], 'alpha': [8, 14], 'beta': [14, 31], 'gamma': [31, 49]}):
+        super(BandPowerSpectralDensity, self).__init__()
         self.sampling_rate = sampling_rate
-
         if fft_n is None:
             fft_n = self.sampling_rate
-
         self.fft_n = fft_n
         self.num_window = num_window
         self.band_dict = band_dict
@@ -337,20 +259,6 @@ class BandPowerSpectralDensity(EEGTransform):
 
         return np.stack(band_list, axis=-1)
 
-    def __call__(self,
-                 *args,
-                 eeg: np.ndarray,
-                 baseline: Union[np.ndarray, None] = None,
-                 **kwargs) -> Dict[str, np.ndarray]:
-        r'''
-        Args:
-            eeg (np.ndarray): The input EEG signals in shape of [number of electrodes, number of data points].
-            baseline (np.ndarray, optional) : The corresponding baseline signal, if apply_to_baseline is set to True and baseline is passed, the baseline signal will be transformed with the same way as the experimental signal.
-        Returns:
-            np.ndarray[number of electrodes, number of sub-bands]: The power spectral density of several sub-bands for all electrodes.
-        '''
-        return super().__call__(*args, eeg=eeg, baseline=baseline, **kwargs)
-
     @property
     def repr_body(self) -> Dict:
         return dict(
@@ -363,7 +271,7 @@ class BandPowerSpectralDensity(EEGTransform):
 
 
 class BandMeanAbsoluteDeviation(BandTransform):
-    r'''
+    r"""
     A transform method for calculating the mean absolute deviation of EEG signals in several sub-bands with EEG signals as input.
 
     .. code-block:: python
@@ -371,7 +279,7 @@ class BandMeanAbsoluteDeviation(BandTransform):
         from torcheeg import transforms
 
         t = transforms.BandMeanAbsoluteDeviation()
-        t(eeg=np.random.randn(32, 128))['eeg'].shape
+        t(np.random.randn(32, 128)).shape
         >>> (32, 4)
 
     Args:
@@ -380,28 +288,14 @@ class BandMeanAbsoluteDeviation(BandTransform):
         band_dict: (dict): Band name and the critical sampling rate or frequencies. By default, the mean absolute deviation of the four sub-bands, theta, alpha, beta and gamma, is calculated. (default: :obj:`{...}`)
 
     .. automethod:: __call__
-    '''
-
-    def __call__(self,
-                 *args,
-                 eeg: np.ndarray,
-                 baseline: Union[np.ndarray, None] = None,
-                 **kwargs) -> Dict[str, np.ndarray]:
-        r'''
-        Args:
-            eeg (np.ndarray): The input EEG signals in shape of [number of electrodes, number of data points].
-            baseline (np.ndarray, optional) : The corresponding baseline signal, if apply_to_baseline is set to True and baseline is passed, the baseline signal will be transformed with the same way as the experimental signal.
-        Returns:
-            np.ndarray[number of electrodes, number of sub-bands]: The mean absolute deviation of several sub-bands for all electrodes.
-        '''
-        return super().__call__(*args, eeg=eeg, baseline=baseline, **kwargs)
+    """
 
     def opt(self, eeg: np.ndarray, **kwargs) -> np.ndarray:
         return np.mean(np.abs(eeg - np.mean(eeg)))
 
 
 class BandKurtosis(BandTransform):
-    r'''
+    r"""
     A transform method for calculating the kurtosis of EEG signals in several sub-bands with EEG signals as input.
 
     .. code-block:: python
@@ -409,7 +303,7 @@ class BandKurtosis(BandTransform):
         from torcheeg import transforms
 
         t = transforms.BandKurtosis()
-        t(eeg=np.random.randn(32, 128))['eeg'].shape
+        t(np.random.randn(32, 128)).shape
         >>> (32, 4)
 
     Args:
@@ -418,21 +312,7 @@ class BandKurtosis(BandTransform):
         band_dict: (dict): Band name and the critical sampling rate or frequencies. By default, the kurtosis of the four sub-bands, theta, alpha, beta and gamma, is calculated. (default: :obj:`{...}`)
 
     .. automethod:: __call__
-    '''
-
-    def __call__(self,
-                 *args,
-                 eeg: np.ndarray,
-                 baseline: Union[np.ndarray, None] = None,
-                 **kwargs) -> Dict[str, np.ndarray]:
-        r'''
-        Args:
-            eeg (np.ndarray): The input EEG signals in shape of [number of electrodes, number of data points].
-            baseline (np.ndarray, optional) : The corresponding baseline signal, if apply_to_baseline is set to True and baseline is passed, the baseline signal will be transformed with the same way as the experimental signal.
-        Returns:
-            np.ndarray[number of electrodes, number of sub-bands]: The kurtosis of several sub-bands for all electrodes.
-        '''
-        return super().__call__(*args, eeg=eeg, baseline=baseline, **kwargs)
+    """
 
     def opt(self, eeg: np.ndarray, **kwargs) -> np.ndarray:
         n = len(eeg)
@@ -451,7 +331,7 @@ class BandKurtosis(BandTransform):
 
 
 class BandSkewness(BandTransform):
-    r'''
+    r"""
     A transform method for calculating the skewness of EEG signals in several sub-bands with EEG signals as input.
 
     .. code-block:: python
@@ -459,7 +339,7 @@ class BandSkewness(BandTransform):
         from torcheeg import transforms
 
         t = transforms.BandSkewness()
-        t(eeg=np.random.randn(32, 128))['eeg'].shape
+        t(np.random.randn(32, 128)).shape
         >>> (32, 4)
 
     Args:
@@ -468,21 +348,7 @@ class BandSkewness(BandTransform):
         band_dict: (dict): Band name and the critical sampling rate or frequencies. By default, the skewness of the four sub-bands, theta, alpha, beta and gamma, is calculated. (default: :obj:`{...}`)
 
     .. automethod:: __call__
-    '''
-
-    def __call__(self,
-                 *args,
-                 eeg: np.ndarray,
-                 baseline: Union[np.ndarray, None] = None,
-                 **kwargs) -> Dict[str, np.ndarray]:
-        r'''
-        Args:
-            eeg (np.ndarray): The input EEG signals in shape of [number of electrodes, number of data points].
-            baseline (np.ndarray, optional) : The corresponding baseline signal, if apply_to_baseline is set to True and baseline is passed, the baseline signal will be transformed with the same way as the experimental signal.
-        Returns:
-            np.ndarray[number of electrodes, number of sub-bands]: The skewness of several sub-bands for all electrodes.
-        '''
-        return super().__call__(*args, eeg=eeg, baseline=baseline, **kwargs)
+    """
 
     def opt(self, eeg: np.ndarray, **kwargs) -> np.ndarray:
         inv_n = 1 / len(eeg)

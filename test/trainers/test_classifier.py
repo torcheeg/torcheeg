@@ -18,7 +18,7 @@ class _DummyClassificationDataset(Dataset):
         return self.length
 
     def __getitem__(self, i) -> int:
-        return torch.randn(120), random.choice([0, 1])
+        return {'eeg': torch.randn(120), 'labels': random.choice([0, 1])}
 
 
 class _DummyModel(nn.Module):
@@ -34,6 +34,7 @@ class _DummyModel(nn.Module):
 
 
 class TestClassifierTrainer(unittest.TestCase):
+
     def setUp(self):
         self.addCleanup(torch.set_rng_state, torch.get_rng_state())
         torch.manual_seed(0)
@@ -42,45 +43,39 @@ class TestClassifierTrainer(unittest.TestCase):
 
     def test_classifier_trainer_basic(self):
         """Test basic functionality of ClassifierTrainer"""
-        # Prepare minimal datasets and dataloaders for testing
         train_dataset = _DummyClassificationDataset()
         val_dataset = _DummyClassificationDataset()
-
         train_loader = DataLoader(train_dataset, batch_size=5)
         val_loader = DataLoader(val_dataset, batch_size=5)
-
         model = _DummyModel()
         trainer = ClassifierTrainer(model, num_classes=2)
-
-        # Only test single training step instead of full epoch
         loss = trainer.training_step(next(iter(train_loader)), batch_idx=0)
         self.assertEqual(loss.ndim, 0)
         self.assertEqual(loss.device.type, 'cpu')
         self.assertTrue(torch.isfinite(loss))
         self.assertTrue(loss.requires_grad)
-
-        # Only test single validation step instead of full epoch
         trainer.validation_step(next(iter(val_loader)), batch_idx=0)
 
     def test_classifier_trainer_metrics(self):
         """Test metrics configuration of ClassifierTrainer"""
         model = _DummyModel()
-
-        # Test if all supported metrics can be initialized properly
-        trainer = ClassifierTrainer(
-            model,
-            num_classes=2,
-            metrics=['accuracy', 'recall', 'precision',
-                     'f1score', 'matthews', 'auroc', 'kappa']
-        )
-
+        trainer = ClassifierTrainer(model, num_classes=2, metrics=[
+                                    'accuracy', 'recall', 'precision', 'f1score', 'matthews', 'auroc', 'kappa'])
         self.assertEqual(trainer.accelerator, 'cpu')
-
-        # Test if unsupported metrics raise ValueError
         with self.assertRaises(ValueError):
-            ClassifierTrainer(
-                model, num_classes=2, metrics=['unexpected'])
+            ClassifierTrainer(model, num_classes=2, metrics=['unexpected'])
 
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class _TensorDataset(Dataset):
+    def __init__(self, eeg, labels):
+        self.eeg, self.labels = eeg, labels
+
+    def __len__(self):
+        return len(self.eeg)
+
+    def __getitem__(self, index):
+        return {'eeg': self.eeg[index], 'labels': self.labels[index]}

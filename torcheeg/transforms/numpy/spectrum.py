@@ -9,7 +9,7 @@ from ..base_transform import EEGTransform
 
 
 class CWTSpectrum(EEGTransform):
-    r'''
+    r"""
         A transform method to convert EEG signals of each channel into spectrograms using wavelet transform.
 
         .. code-block:: python
@@ -17,7 +17,7 @@ class CWTSpectrum(EEGTransform):
             from torcheeg import transforms
 
             t = transforms.CWTSpectrum()
-            t(eeg=np.random.randn(32, 1000))['eeg'].shape
+            t(np.random.randn(32, 1000)).shape
             >>> (32, 128, 1000)
 
         Part of the existing work uses :obj:`Resize` to warp the output spectrum to a specified size suitable for CNN processing.
@@ -31,7 +31,7 @@ class CWTSpectrum(EEGTransform):
                 ToTensor(),
                 Resize([260, 260])
             ])
-            t(eeg=np.random.randn(32, 1000))['eeg'].shape
+            t(np.random.randn(32, 1000)).shape
             >>> (32, 128, 1000)
 
         When contourf is set to True, a spectrogram of filled contours will be generated for each channel and converted to np.ndarray and returned. This option is usually used for single-channel analysis or visualization of a single channel.
@@ -41,7 +41,7 @@ class CWTSpectrum(EEGTransform):
             from torcheeg import transforms
 
             t = CWTSpectrum(contourf=True)
-            t(eeg=np.random.randn(32, 1000))['eeg'].shape
+            t(np.random.randn(32, 1000)).shape
             >>> (32, 480, 640, 4)
 
         Args:
@@ -49,40 +49,20 @@ class CWTSpectrum(EEGTransform):
             wavelet (str): Wavelet to use. Options include: cgau1, cgau2, cgau3, cgau4, cgau5, cgau6, cgau7, cgau8, cmor, fbsp, gaus1, gaus2 , gaus3, gaus4, gaus5, gaus6, gaus7, gaus8, mexh, morl, shan. (default: :obj:`'morl'`)
             total_scale: (int): The total wavelet scales to use. (default: :obj:`128`)
             contourf: (bool): Whether to output the np.ndarray corresponding to the image with content of filled contours. (default: :obj:`False`)
-            apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (default: :obj:`False`)
+
 
         .. automethod:: __call__
-    '''
+    """
 
-    def __init__(self,
-                 sampling_rate: int = 250,
-                 wavelet: str = 'morl',
-                 total_scale: int = 128,
-                 contourf: bool = False,
-                 apply_to_baseline: bool = False):
-        super(CWTSpectrum, self).__init__(apply_to_baseline=apply_to_baseline)
+    def __init__(self, sampling_rate: int = 250, wavelet: str = 'morl', total_scale: int = 128, contourf: bool = False):
+        super(CWTSpectrum, self).__init__()
         self.sampling_rate = sampling_rate
         self.wavelet = wavelet
         self.total_scale = total_scale
         self.contourf = contourf
-
         fc = pywt.central_frequency(wavelet)
         cparam = 2 * fc * total_scale
         self.scales = cparam / np.arange(1, self.total_scale + 1)
-
-    def __call__(self,
-                 *args,
-                 eeg: np.ndarray,
-                 baseline: Union[np.ndarray, None] = None,
-                 **kwargs) -> Dict[str, np.ndarray]:
-        r'''
-        Args:
-            eeg (np.ndarray): The input EEG signals in shape of [number of electrodes, number of data points].
-            baseline (np.ndarray, optional) : The corresponding baseline signal, if apply_to_baseline is set to True and baseline is passed, the baseline signal will be transformed with the same way as the experimental signal.
-        Returns:
-            np.ndarray[number of electrodes, ...]: The spectrograms based on the wavelet transform for all electrodes. If contourf=False, the output shape is [number of electrodes, total_scale, number of data points]. Otherwise, the output shape is [number of electrodes, height of image, width of image of image, 4], where 4 represents the four channels of the image colors.
-        '''
-        return super().__call__(*args, eeg=eeg, baseline=baseline, **kwargs)
 
     def apply(self, eeg: np.ndarray, **kwargs) -> np.ndarray:
         channel_list = []
@@ -139,7 +119,7 @@ class CWTSpectrum(EEGTransform):
 
 
 class DWTDecomposition(EEGTransform):
-    r'''    
+    r"""
         Splitting the EEG signal from each electrode into two functions using wavelet decomposition.
 
         .. code-block:: python
@@ -147,32 +127,17 @@ class DWTDecomposition(EEGTransform):
             from torcheeg import transforms
 
             t = transforms.DWTDecomposition()
-            t(eeg=np.random.randn(32, 1000))['eeg'].shape
+            t(np.random.randn(32, 1000)).shape
             >>> (32, 500)
 
         Args:
-            apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (default: :obj:`False`)
+
 
         .. automethod:: __call__
-    '''
+    """
 
-    def __init__(self, apply_to_baseline: bool = False):
-        super(DWTDecomposition,
-              self).__init__(apply_to_baseline=apply_to_baseline)
-
-    def __call__(self,
-                 *args,
-                 eeg: np.ndarray,
-                 baseline: Union[np.ndarray, None] = None,
-                 **kwargs) -> Dict[str, np.ndarray]:
-        r'''
-        Args:
-            eeg (np.ndarray): The input EEG signals in shape of [number of electrodes, number of data points].
-            baseline (np.ndarray, optional) : The corresponding baseline signal, if apply_to_baseline is set to True and baseline is passed, the baseline signal will be transformed with the same way as the experimental signal.
-        Returns:
-            np.ndarray[number of electrodes, 2, number of data points / 2]: EEG signal after wavelet decomposition, where 2 corresponds to the two functions of the wavelet decomposition, and number of data points / 2 represents the length of each component
-        '''
-        return super().__call__(*args, eeg=eeg, baseline=baseline, **kwargs)
+    def __init__(self):
+        super(DWTDecomposition, self).__init__()
 
     def apply(self, eeg: np.ndarray, **kwargs) -> np.ndarray:
         return np.stack(pywt.dwt(eeg, 'haar'), axis=0)

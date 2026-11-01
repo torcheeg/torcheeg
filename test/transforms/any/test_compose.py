@@ -1,48 +1,33 @@
 import unittest
 
-import numpy as np
+from torcheeg.transforms import Compose
 
-from torcheeg.datasets import DEAPDataset
-from torcheeg.datasets.utils import get_locations
-from torcheeg.transforms import (BandDifferentialEntropy, Binary, Compose,
-                                 MeanStdNormalize, RandomMask, RandomNoise,
-                                 Resize, Select, ToGrid, ToTensor)
+
+def add_one(value):
+    return value + 1
+
+
+def double(value):
+    return value * 2
 
 
 class TestComposeTransforms(unittest.TestCase):
+    def test_order_and_flattening(self):
+        transform = Compose([add_one, Compose([double, add_one])])
+        self.assertEqual(transform(3), 9)
+        self.assertEqual(len(transform.transforms), 3)
 
-    def setUp(self):
-        self.addCleanup(np.random.set_state, np.random.get_state())
-        np.random.seed(0)
-
-    def test_compose(self):
-        # torch
+    def test_dictionary_pipeline(self):
         transform = Compose([
-            ToTensor(),
-            Resize(size=(64, 64)),
-            RandomNoise(p=0.1),
-            RandomMask(p=0.1)
+            lambda sample: {**sample, 'eeg': sample['eeg'] + 1},
+            lambda sample: {'eeg': sample['eeg'] *
+                            2, 'labels': sample['info']['label']},
         ])
+        self.assertEqual(transform({'eeg': 2, 'info': {'label': 1}}),
+                         {'eeg': 6, 'labels': 1})
 
-        self.assertEqual(
-            tuple(transform(eeg=np.random.randn(128, 9, 9))['eeg'].shape),
-            (128, 64, 64))
-
-        # numpy
-        transform = Compose([
-            BandDifferentialEntropy(),
-            MeanStdNormalize(),
-            ToGrid(get_locations(DEAPDataset.channels, DEAPDataset.grid))
-        ])
-        self.assertEqual(
-            tuple(transform(eeg=np.random.randn(32, 128))['eeg'].shape),
-            (4, 9, 9))
-
-        # label
-        info = {'valence': 4.5, 'arousal': 5.5, 'subject_id': 7}
-        transform = Compose([Select(key='valence'), Binary(threshold=5.0)])
-        self.assertEqual(transform(y=info)['y'], 0)
-
-
-if __name__ == '__main__':
-    unittest.main()
+    def test_identity_and_validation(self):
+        value = object()
+        self.assertIs(Compose([])(value), value)
+        with self.assertRaises(TypeError):
+            Compose([None])
