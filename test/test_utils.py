@@ -1,5 +1,6 @@
 import hashlib
 import io
+import logging
 import os
 import random
 import shutil
@@ -90,6 +91,9 @@ class TestUtilsImports(unittest.TestCase):
 
 class TestUtilityFunctions(unittest.TestCase):
     def setUp(self):
+        logger = logging.getLogger('torcheeg')
+        self.addCleanup(logger.setLevel, logger.level)
+        logger.setLevel(logging.INFO)
         self._directory = tempfile.TemporaryDirectory()
         self.addCleanup(self._directory.cleanup)
         self._root = Path(self._directory.name)

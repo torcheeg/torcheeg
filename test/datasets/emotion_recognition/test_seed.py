@@ -1,4 +1,5 @@
 import unittest
+from test.datasets.test_base_dataset import _assert_memory_dataset
 from unittest.mock import patch
 
 import numpy as np
@@ -14,7 +15,6 @@ class TestSEEDDataset(unittest.TestCase):
         np.random.seed(0)
 
     def test_seed_class_metadata_before_initialization(self):
-        from unittest.mock import patch
 
         from torcheeg.datasets import BaseDataset
         from torcheeg.datasets.utils import get_locations, get_positions
@@ -64,42 +64,7 @@ class TestFakeRecordMetadata(unittest.TestCase):
     def test_memory_construction_preserves_preprocessing_and_item_transforms(self):
         for dataset_class in (SEEDDataset,):
             with self.subTest(dataset=dataset_class.__name__):
-                payload = dataset_class.fake_record(record='fake_record')
-                record = payload.pop('record', 'fake_record')
-                original_process = dataset_class.process_record
-                expected = []
-
-                def process_one_sample(**kwargs):
-                    for item in original_process(**kwargs):
-                        yield item
-                        if 'info' in item:
-                            expected.append(item['eeg'].copy())
-                            break
-
-                def increment(**signals):
-                    return {name: value + 1 for name, value in signals.items()}
-
-                with patch.object(dataset_class, 'set_records', return_value=[record]), patch.object(
-                        dataset_class, 'read_record', return_value=payload), patch.object(
-                        dataset_class, 'process_record', side_effect=process_one_sample):
-                    dataset = dataset_class(
-                        io_mode='memory', verbose=False,
-                        before_trial=lambda signal: signal * 2,
-                        offline_transform=increment,
-                        online_transform=lambda **signals: {
-                            'eeg': signals['eeg'] + 3},
-                        label_transform=lambda y: {'y': y['clip_id']})
-                self.assertEqual(len(dataset), 1)
-                signal, label = dataset[0]
-                np.testing.assert_array_equal(signal, expected[0] + 3)
-                self.assertEqual(label, dataset.info.iloc[0]['clip_id'])
-                self.assertIn('io_mode', dataset.repr_body)
-                self.assertIn(dataset_class.__name__, repr(dataset))
-                dataset.online_transform = None
-                dataset.label_transform = None
-                signal, info = dataset[0]
-                np.testing.assert_array_equal(signal, expected[0])
-                self.assertEqual(info['clip_id'], label)
+                _assert_memory_dataset(self, dataset_class)
 
 
 if __name__ == '__main__':

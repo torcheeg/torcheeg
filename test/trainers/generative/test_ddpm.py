@@ -254,13 +254,25 @@ class TestDiffusionMath(unittest.TestCase):
                     with self.subTest(trainer=trainer_class.__name__, parameterization=parameterization, clip=clip):
                         trainer = self._make_trainer(trainer_class, parameterization=parameterization,
                                                      clip_denoised=clip)
-                        x = torch.full((2, 1, 2, 3), 0.3)
+                        x = torch.full((2, 1, 2, 3), 3.0 if clip else 0.3)
                         t = torch.zeros(2, dtype=torch.long)
                         labels = torch.tensor([0, 1])
                         args = (x, t, labels) if trainer_class is CDDPMTrainer else (
                             x, t)
                         mean, _, _ = trainer.p_mean_variance(
                             *args, clip_denoised=clip)
+                        alpha = trainer.alphas_cumprod[t].reshape(2, 1, 1, 1)
+                        prediction = x * 0.1
+                        expected_start = {
+                            'eps': (x - (1 - alpha).sqrt() * prediction) / alpha.sqrt(),
+                            'x0': prediction,
+                            'v': alpha.sqrt() * x - (1 - alpha).sqrt() * prediction,
+                        }[parameterization]
+                        if clip:
+                            expected_start = expected_start.clamp(-1, 1)
+                        expected_mean = (trainer.posterior_mean_coef1[t].reshape(2, 1, 1, 1) * expected_start
+                                         + trainer.posterior_mean_coef2[t].reshape(2, 1, 1, 1) * x)
+                        torch.testing.assert_close(mean, expected_mean)
                         torch.testing.assert_close(
                             trainer.p_sample(*args, clip_denoised=clip), mean)
                         forward_args = (

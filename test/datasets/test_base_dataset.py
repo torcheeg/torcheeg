@@ -6,6 +6,7 @@ import tempfile
 import unittest
 from copy import copy
 from pathlib import Path
+from unittest.mock import patch
 
 import mne
 import numpy as np
@@ -17,6 +18,46 @@ from torcheeg import transforms
 from torcheeg.datasets import BaseDataset, MNERawDataset
 from torcheeg.model_selection import (KFoldCrossSubject, Subcategory,
                                       train_test_split)
+
+
+def _assert_memory_dataset(test_case, dataset_class, **configuration):
+    payload = dataset_class.fake_record(record='fake_record')
+    record = payload.pop('record', 'fake_record')
+    original_process = dataset_class.process_record
+    expected = []
+
+    def process_one_sample(**kwargs):
+        # Keep the real preprocessing algorithm and stop after one cached clip.
+        for item in original_process(**kwargs):
+            if 'info' in item:
+                expected.append(item['eeg'].copy())
+            yield item
+            if 'info' in item:
+                break
+
+    def increment(**signals):
+        return {name: value + 1 for name, value in signals.items()}
+
+    with patch.object(dataset_class, 'set_records', return_value=[record]), patch.object(
+            dataset_class, 'read_record', return_value=payload), patch.object(
+            dataset_class, 'process_record', side_effect=process_one_sample):
+        dataset = dataset_class(
+            io_mode='memory', verbose=False,
+            before_trial=lambda signal: signal * 2,
+            offline_transform=increment,
+            online_transform=lambda **signals: {'eeg': signals['eeg'] + 3},
+            label_transform=lambda y: {'y': y['clip_id']}, **configuration)
+    test_case.assertEqual(len(dataset), 1)
+    signal, label = dataset[0]
+    np.testing.assert_array_equal(signal, expected[0] + 3)
+    test_case.assertEqual(label, dataset.info.iloc[0]['clip_id'])
+    test_case.assertIn('io_mode', dataset.repr_body)
+    test_case.assertIn(dataset_class.__name__, repr(dataset))
+    dataset.online_transform = None
+    dataset.label_transform = None
+    signal, info = dataset[0]
+    np.testing.assert_array_equal(signal, expected[0])
+    test_case.assertEqual(info['clip_id'], label)
 
 
 class TestBaseDataset(unittest.TestCase):
