@@ -26,13 +26,11 @@ class SSTEmotionNet(nn.Module):
         from torch.utils.data import DataLoader
 
 
-        def transform_fn(sample):
+        def transform_fn(sample: dict) -> dict:
             eeg_transform = transforms.Compose([
                 transforms.BaselineRemoval(baseline=sample['baseline']),
-                transforms.Concatenate([transforms.Compose([transforms.BandDifferentialEntropy(sampling_rate=128), transforms.MeanStdNormalize(
-                )]), transforms.Compose([transforms.Downsample(num_points=32), transforms.MinMaxNormalize()])]),
-                transforms.ToInterpolatedGrid(get_locations(
-                    DEAPDataset.channels, DEAPDataset.grid)),
+                transforms.Concatenate([transforms.Compose([transforms.BandDifferentialEntropy(sampling_rate=128), transforms.MeanStdNormalize()]), transforms.Compose([transforms.Downsample(num_points=32), transforms.MinMaxNormalize()])]),
+                transforms.ToInterpolatedGrid(get_locations(DEAPDataset.channels, DEAPDataset.grid)),
                 transforms.ToTensor(),
                 transforms.Resize((16, 16)),
             ])
@@ -41,13 +39,15 @@ class SSTEmotionNet(nn.Module):
                 transforms.Binary(5.0),
             ])
             return {
-                "eeg": eeg_transform(sample["eeg"]),
-                "label": label_transform(sample["info"]),
+                'eeg': eeg_transform(sample['eeg']),
+                'label': label_transform(sample['info']),
             }
 
 
         dataset = DEAPDataset(
-            root_path='./data_preprocessed_python').with_transform(transform_fn)
+            root_path='./data_preprocessed_python',
+            online_transform=transform_fn,
+        )
 
         model = SSTEmotionNet(temporal_in_channels=32,
                               spectral_in_channels=4, grid_size=(16, 16), num_classes=2)

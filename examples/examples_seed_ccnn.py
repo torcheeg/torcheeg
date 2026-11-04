@@ -11,7 +11,7 @@ In this tutorial, we'll demonstrate how you can leverage TorchEEG to train a Con
 # ----------------------------------------------
 #
 # To begin with, we employ the SEED dataset provided by TorchEEG. Each EEG sample in this dataset lasts for 1 second and contains 200 data points.
-# transform_fn performs these operations when a sample is read:
+# preprocess_fn caches features; transform_fn prepares training inputs:
 # - Divide each electrode's EEG signal into 4 frequency sub-bands
 # - Compute the differential entropy of each sub-band to serve as a feature
 # - Map the preprocessed signals onto a 2D grid
@@ -23,11 +23,20 @@ from torcheeg.datasets import SEEDDataset
 from torcheeg.datasets.utils import get_locations
 
 
-def transform_fn(sample):
+def preprocess_fn(sample: dict) -> dict:
     eeg_transform = transforms.Compose([
         transforms.BandDifferentialEntropy(sampling_rate=200),
         transforms.ToGrid(get_locations(
             SEEDDataset.channels, SEEDDataset.grid)),
+    ])
+    return {
+        **sample,
+        'eeg': eeg_transform(sample['eeg']),
+    }
+
+
+def transform_fn(sample: dict) -> dict:
+    eeg_transform = transforms.Compose([
         transforms.ToTensor(),
     ])
     label_transform = transforms.Compose([
@@ -35,13 +44,19 @@ def transform_fn(sample):
         transforms.Lambda(lambda x: x + 1),
     ])
     return {
-        "eeg": eeg_transform(sample["eeg"]),
-        "label": label_transform(sample["info"]),
+        'eeg': eeg_transform(sample['eeg']),
+        'label': label_transform(sample['info']),
     }
 
 
-dataset = SEEDDataset(io_path=f'./examples_seed_ccnn/seed', root_path='./Preprocessed_EEG',
-                      chunk_size=200, num_worker=4).with_transform(transform_fn)
+dataset = SEEDDataset(
+    io_path=f'./examples_seed_ccnn/seed',
+    root_path='./Preprocessed_EEG',
+    chunk_size=200,
+    num_worker=4,
+    offline_transform=preprocess_fn,
+    online_transform=transform_fn,
+)
 
 ######################################################################
 # Step 2: Divide the Training and Test Samples in the Dataset

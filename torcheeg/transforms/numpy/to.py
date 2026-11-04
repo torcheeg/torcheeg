@@ -28,7 +28,7 @@ class ToChunks(EEGTransform):
         super().__init__()
         self.num_chunks = num_chunks
 
-    def __call__(self, eeg: np.ndarray, **kwargs) -> np.ndarray:
+    def __call__(self, eeg: np.ndarray) -> np.ndarray:
         num_electrodes, num_datapoints = eeg.shape
         chunk_size = num_datapoints // self.num_chunks
 
@@ -58,7 +58,7 @@ class To2d(EEGTransform):
     .. automethod:: __call__
     """
 
-    def __call__(self, eeg: np.ndarray, **kwargs) -> np.ndarray:
+    def __call__(self, eeg: np.ndarray) -> np.ndarray:
         return eeg[np.newaxis, ...]
 
 
@@ -104,7 +104,7 @@ class ToGrid(EEGTransform):
         self.height = max((row for row, _ in positions)) + 1
         self.width = max((column for _, column in positions)) + 1
 
-    def __call__(self, eeg: np.ndarray, **kwargs) -> np.ndarray:
+    def __call__(self, eeg: np.ndarray) -> np.ndarray:
         if eeg.ndim != 2 or eeg.shape[0] != len(self.channel_location_dict):
             raise ValueError(
                 'ToGrid requires [electrodes, time points] with one row per channel mapping.')
@@ -188,7 +188,7 @@ class ToInterpolatedGrid(EEGTransform):
         self.grid_x, self.grid_y = np.mgrid[min(self.location_array[:, 0]):max(
             self.location_array[:, 0]):self.width * 1j, min(self.location_array[:, 1]):max(self.location_array[:, 1]):self.height * 1j]
 
-    def __call__(self, eeg: np.ndarray, **kwargs) -> np.ndarray:
+    def __call__(self, eeg: np.ndarray) -> np.ndarray:
         # channel eeg timestep
         eeg = eeg.transpose(1, 0)
         # timestep eeg channel

@@ -10,7 +10,7 @@ class CorrelationTransform(EEGTransform):
     def __init__(self):
         super(CorrelationTransform, self).__init__()
 
-    def __call__(self, eeg: np.ndarray, **kwargs) -> np.ndarray:
+    def __call__(self, eeg: np.ndarray) -> np.ndarray:
         if len(eeg.shape) == 3:
             band_list = []
             num_item = eeg.shape[1]

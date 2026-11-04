@@ -36,7 +36,7 @@ class PickElectrode(EEGTransform):
         super(PickElectrode, self).__init__()
         self.pick_list = pick_list
 
-    def __call__(self, eeg: np.ndarray, **kwargs) -> np.ndarray:
+    def __call__(self, eeg: np.ndarray) -> np.ndarray:
         if not (max(self.pick_list) < eeg.shape[0]):
             raise ValueError(
                 f'The index {max(self.pick_list)} of the specified electrode is out of bounds {eeg.shape[0]}.'
@@ -108,7 +108,7 @@ class OrderElectrode(EEGTransform):
         self.target_electrodes = target_electrodes
         self.padding_value = padding_value
 
-    def __call__(self, eeg: np.ndarray, **kwargs) -> np.ndarray:
+    def __call__(self, eeg: np.ndarray) -> np.ndarray:
         if len(eeg.shape) != 2:
             raise ValueError(
                 "Input EEG should be a 2D array with shape (electrodes, time_points)")

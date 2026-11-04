@@ -243,31 +243,42 @@ class TSUBenckmarkDataset(CachedDataset):
         from torcheeg.datasets.utils import get_locations
 
 
-        def transform_fn(sample):
+        def preprocess_fn(sample: dict) -> dict:
             eeg_transform = transforms.Compose([
                 transforms.BandDifferentialEntropy(),
-                transforms.ToGrid(get_locations(
-                    TSUBenckmarkDataset.channels, TSUBenckmarkDataset.grid)),
+                transforms.ToGrid(get_locations(TSUBenckmarkDataset.channels, TSUBenckmarkDataset.grid)),
+            ])
+            return {
+                **sample,
+                'eeg': eeg_transform(sample['eeg']),
+            }
+
+
+        def transform_fn(sample: dict) -> dict:
+            eeg_transform = transforms.Compose([
                 transforms.ToTensor(),
             ])
             label_transform = transforms.Compose([
                 transforms.Select(['trial_id']),
             ])
             return {
-                "eeg": eeg_transform(sample["eeg"]),
-                "label": label_transform(sample["info"]),
+                'eeg': eeg_transform(sample['eeg']),
+                'label': label_transform(sample['info']),
             }
 
 
         dataset = TSUBenckmarkDataset(
-            root_path='./TSUBenchmark').with_transform(transform_fn)
+            root_path='./TSUBenchmark',
+            offline_transform=preprocess_fn,
+            online_transform=transform_fn,
+        )
         print(dataset[0])
 
     Another example dataset for CNN-based methods:
 
     .. code-block:: python
 
-        def transform_fn(sample):
+        def transform_fn(sample: dict) -> dict:
             eeg_transform = transforms.Compose([
                 transforms.ToTensor(),
                 transforms.To2d(),
@@ -276,13 +287,15 @@ class TSUBenckmarkDataset(CachedDataset):
                 transforms.Select(['trial_id']),
             ])
             return {
-                "eeg": eeg_transform(sample["eeg"]),
-                "label": label_transform(sample["info"]),
+                'eeg': eeg_transform(sample['eeg']),
+                'label': label_transform(sample['info']),
             }
 
 
         dataset = TSUBenckmarkDataset(
-            root_path='./TSUBenchmark').with_transform(transform_fn)
+            root_path='./TSUBenchmark',
+            online_transform=transform_fn,
+        )
         print(dataset[0])
 
     An example dataset for GNN-based methods:
@@ -293,22 +306,23 @@ class TSUBenckmarkDataset(CachedDataset):
         from torcheeg.datasets.utils import get_adjacency
 
 
-        def transform_fn(sample):
+        def transform_fn(sample: dict) -> dict:
             eeg_transform = transforms.Compose([
-                ToG(get_adjacency(TSUBenckmarkDataset.channels,
-                    TSUBenckmarkDataset.adjacency)),
+                ToG(get_adjacency(TSUBenckmarkDataset.channels, TSUBenckmarkDataset.adjacency)),
             ])
             label_transform = transforms.Compose([
                 transforms.Select(['trial_id']),
             ])
             return {
-                "eeg": eeg_transform(sample["eeg"]),
-                "label": label_transform(sample["info"]),
+                'eeg': eeg_transform(sample['eeg']),
+                'label': label_transform(sample['info']),
             }
 
 
         dataset = TSUBenckmarkDataset(
-            root_path='./TSUBenchmark').with_transform(transform_fn)
+            root_path='./TSUBenchmark',
+            online_transform=transform_fn,
+        )
         print(dataset[0])
 
     Args:
@@ -319,7 +333,8 @@ class TSUBenckmarkDataset(CachedDataset):
 
 
 
-        transform (Callable, optional): Sample dictionary transform applied before storage. (default: :obj:`None`)
+        offline_transform (Callable, optional): Sample dictionary transform applied before storage. (default: :obj:`None`)
+        online_transform (Callable, optional): Sample transform applied on each read. (default: :obj:`None`)
         io_path (str): The path to generated unified data IO, cached as an intermediate result. If set to None, a random path will be generated. (default: :obj:`None`)
         num_worker (int): Number of subprocesses to use for data loading. 0 means that the data will be loaded in the main process. (default: :obj:`0`)
         verbose (bool): Whether to display logs during processing, such as progress bars, etc. (default: :obj:`True`)
@@ -334,14 +349,14 @@ class TSUBenckmarkDataset(CachedDataset):
 
     adjacency = TSUBenckmarkData.adjacency
 
-    def __init__(self, root_path: str = './TSUBenchmark', chunk_size: int = 250, overlap: int = 0, num_channel: int = 64, transform: Union[None, Callable] = None, io_path: Union[None, str] = None, io_size: int = 1048576, io_mode: str = 'lmdb', num_worker: int = 0, verbose: bool = True):
+    def __init__(self, root_path: str = './TSUBenchmark', chunk_size: int = 250, overlap: int = 0, num_channel: int = 64, offline_transform: Union[None, Callable] = None, online_transform: Union[None, Callable] = None, io_path: Union[None, str] = None, io_size: int = 1048576, io_mode: str = 'lmdb', num_worker: int = 0, verbose: bool = True):
         if io_path is None:
             io_path = get_random_dir_path(dir_prefix='datasets')
         params = {'root_path': root_path, 'chunk_size': chunk_size, 'overlap': overlap, 'num_channel': num_channel,
-                  'transform': transform, 'io_path': io_path, 'io_size': io_size, 'io_mode': io_mode, 'num_worker': num_worker, 'verbose': verbose}
+                  'offline_transform': offline_transform, 'online_transform': online_transform, 'io_path': io_path, 'io_size': io_size, 'io_mode': io_mode, 'num_worker': num_worker, 'verbose': verbose}
         super().__init__(**params)
         self.__dict__.update(params)
 
     @property
     def repr_body(self) -> Dict:
-        return dict(super().repr_body, **{'root_path': self.root_path, 'chunk_size': self.chunk_size, 'overlap': self.overlap, 'num_channel': self.num_channel, 'transform': self.transform, 'num_worker': self.num_worker, 'verbose': self.verbose, 'io_size': self.io_size})
+        return dict(super().repr_body, **{'root_path': self.root_path, 'chunk_size': self.chunk_size, 'overlap': self.overlap, 'num_channel': self.num_channel, 'offline_transform': self.offline_transform, 'online_transform': self.online_transform, 'num_worker': self.num_worker, 'verbose': self.verbose, 'io_size': self.io_size})

@@ -26,25 +26,33 @@ corrected = transforms.BaselineRemoval(baseline=baseline)(eeg)
 # Prepare a complete training sample in one function.
 
 
-def transform_fn(sample):
+def preprocess_fn(sample: dict) -> dict:
     eeg_transform = transforms.Compose([
         transforms.BandDifferentialEntropy(),
-        transforms.BaselineRemoval(
-            baseline=transforms.BandDifferentialEntropy()(sample["baseline"]),
-        ),
-        transforms.ToTensor(),
-    ])
-    label_transform = transforms.Compose([
-        transforms.Select("label"),
     ])
     return {
-        "eeg": eeg_transform(sample["eeg"]),
-        "label": label_transform(sample["info"]),
+        **sample,
+        'eeg': eeg_transform(sample['eeg']),
+        'baseline': eeg_transform(sample['baseline']),
     }
 
 
-dataset = MemoryDataset()
-dataset.append({'eeg': eeg, 'baseline': eeg * 0.5, 'info': {'label': 1}})
-training = dataset.with_transform(transform_fn)
-print(training[0]['eeg'].shape)
-print(training[0]['label'])
+def transform_fn(sample: dict) -> dict:
+    eeg_transform = transforms.Compose([
+        transforms.BaselineRemoval(baseline=sample['baseline']),
+        transforms.ToTensor(),
+    ])
+    label_transform = transforms.Compose([
+        transforms.Select('label'),
+    ])
+    return {
+        'eeg': eeg_transform(sample['eeg']),
+        'label': label_transform(sample['info']),
+    }
+
+
+dataset = MemoryDataset(transform=transform_fn)
+dataset.append(preprocess_fn(
+    {'eeg': eeg, 'baseline': eeg * 0.5, 'info': {'label': 1}}))
+print(dataset[0]['eeg'].shape)
+print(dataset[0]['label'])

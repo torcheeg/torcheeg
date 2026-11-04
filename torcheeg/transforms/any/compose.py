@@ -1,3 +1,5 @@
+from typing import Any
+
 from ..base_transform import BaseTransform
 
 
@@ -15,7 +17,7 @@ class Compose(BaseTransform):
                 steps.append(transform)
         self.transforms = tuple(steps)
 
-    def __call__(self, x):
+    def __call__(self, x: Any) -> Any:
         for transform in self.transforms:
             x = transform(x)
         return x

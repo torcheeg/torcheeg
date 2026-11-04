@@ -242,23 +242,35 @@ class MPEDFeatureDataset(CachedDataset):
         from torcheeg.datasets.utils import get_locations
 
 
-        def transform_fn(sample):
+        def preprocess_fn(sample: dict) -> dict:
             eeg_transform = transforms.Compose([
-                transforms.ToGrid(get_locations(
-                    MPEDFeatureDataset.channels, MPEDFeatureDataset.grid)),
+                transforms.ToGrid(get_locations(MPEDFeatureDataset.channels, MPEDFeatureDataset.grid)),
+            ])
+            return {
+                **sample,
+                'eeg': eeg_transform(sample['eeg']),
+            }
+
+
+        def transform_fn(sample: dict) -> dict:
+            eeg_transform = transforms.Compose([
                 transforms.ToTensor(),
             ])
             label_transform = transforms.Compose([
                 transforms.Select('emotion'),
             ])
             return {
-                "eeg": eeg_transform(sample["eeg"]),
-                "label": label_transform(sample["info"]),
+                'eeg': eeg_transform(sample['eeg']),
+                'label': label_transform(sample['info']),
             }
 
 
         dataset = MPEDFeatureDataset(
-            root_path='./EEG_feature', features=['PSD']).with_transform(transform_fn)
+            root_path='./EEG_feature',
+            features=['PSD'],
+            offline_transform=preprocess_fn,
+            online_transform=transform_fn,
+        )
         print(dataset[0])
 
     An example dataset for GNN-based methods:
@@ -271,7 +283,7 @@ class MPEDFeatureDataset(CachedDataset):
         from torcheeg.transforms.graph import ToG
 
 
-        def transform_fn(sample):
+        def transform_fn(sample: dict) -> dict:
             eeg_transform = transforms.Compose([
                 ToG(get_adjacency(MPEDFeatureDataset.channels, MPEDFeatureDataset.adjacency)),
             ])
@@ -279,13 +291,16 @@ class MPEDFeatureDataset(CachedDataset):
                 transforms.Select('emotion'),
             ])
             return {
-                "eeg": eeg_transform(sample["eeg"]),
-                "label": label_transform(sample["info"]),
+                'eeg': eeg_transform(sample['eeg']),
+                'label': label_transform(sample['info']),
             }
 
 
         dataset = MPEDFeatureDataset(
-            root_path='./Preprocessed_EEG', features=['PSD']).with_transform(transform_fn)
+            root_path='./Preprocessed_EEG',
+            features=['PSD'],
+            online_transform=transform_fn,
+        )
         print(dataset[0])
 
     Args:
@@ -295,7 +310,8 @@ class MPEDFeatureDataset(CachedDataset):
 
 
 
-        transform (Callable, optional): Sample dictionary transform applied before storage. (default: :obj:`None`)
+        offline_transform (Callable, optional): Sample dictionary transform applied before storage. (default: :obj:`None`)
+        online_transform (Callable, optional): Sample transform applied on each read. (default: :obj:`None`)
         io_path (str): The path to generated unified data IO, cached as an intermediate result. If set to None, a random path will be generated. (default: :obj:`None`)
         io_size (int): Maximum size database may grow to; used to size the memory mapping. If database grows larger than ``map_size``, an exception will be raised and the user must close and reopen. (default: :obj:`1048576`)
         io_mode (str): Storage mode of EEG signal. When io_mode is set to :obj:`lmdb`, TorchEEG provides an efficient database (LMDB) for storing EEG signals. LMDB may not perform well on limited operating systems, where a file system based EEG signal storage is also provided. When io_mode is set to :obj:`pickle`, pickle-based persistence files are used. When io_mode is set to :obj:`memory`, memory are used. (default: :obj:`lmdb`)
@@ -311,14 +327,14 @@ class MPEDFeatureDataset(CachedDataset):
 
     adjacency = MPEDFeatureData.adjacency
 
-    def __init__(self, root_path: str = './EEG_feature', feature: list = ['PSD'], num_channel: int = 62, transform: Union[None, Callable] = None, io_path: Union[None, str] = None, io_size: int = 1048576, io_mode: str = 'lmdb', num_worker: int = 0, verbose: bool = True):
+    def __init__(self, root_path: str = './EEG_feature', feature: list = ['PSD'], num_channel: int = 62, offline_transform: Union[None, Callable] = None, online_transform: Union[None, Callable] = None, io_path: Union[None, str] = None, io_size: int = 1048576, io_mode: str = 'lmdb', num_worker: int = 0, verbose: bool = True):
         if io_path is None:
             io_path = get_random_dir_path(dir_prefix='datasets')
-        params = {'root_path': root_path, 'feature': feature, 'num_channel': num_channel, 'transform': transform,
+        params = {'root_path': root_path, 'feature': feature, 'num_channel': num_channel, 'offline_transform': offline_transform, 'online_transform': online_transform,
                   'io_path': io_path, 'io_size': io_size, 'io_mode': io_mode, 'num_worker': num_worker, 'verbose': verbose}
         super().__init__(**params)
         self.__dict__.update(params)
 
     @property
     def repr_body(self) -> Dict:
-        return dict(super().repr_body, **{'root_path': self.root_path, 'feature': self.feature, 'num_channel': self.num_channel, 'transform': self.transform, 'num_worker': self.num_worker, 'verbose': self.verbose, 'io_size': self.io_size})
+        return dict(super().repr_body, **{'root_path': self.root_path, 'feature': self.feature, 'num_channel': self.num_channel, 'offline_transform': self.offline_transform, 'online_transform': self.online_transform, 'num_worker': self.num_worker, 'verbose': self.verbose, 'io_size': self.io_size})

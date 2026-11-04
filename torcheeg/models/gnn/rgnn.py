@@ -71,24 +71,36 @@ class RGNN(torch.nn.Module):
         from torch_geometric.data import DataLoader
 
 
-        def transform_fn(sample):
+        def preprocess_fn(sample: dict) -> dict:
             eeg_transform = transforms.Compose([
                 transforms.BandDifferentialEntropy(),
-                ToG(get_standard_adjacency(SEEDDataset.channels,
-                    get_positions(SEEDDataset.channels))),
+            ])
+            return {
+                **sample,
+                'eeg': eeg_transform(sample['eeg']),
+            }
+
+
+        def transform_fn(sample: dict) -> dict:
+            eeg_transform = transforms.Compose([
+                ToG(get_standard_adjacency(SEEDDataset.channels, get_positions(SEEDDataset.channels))),
             ])
             label_transform = transforms.Compose([
                 transforms.Select('emotion'),
                 transforms.Lambda(lambda x: int(x) + 1),
             ])
             return {
-                "eeg": eeg_transform(sample["eeg"]),
-                "label": label_transform(sample["info"]),
+                'eeg': eeg_transform(sample['eeg']),
+                'label': label_transform(sample['info']),
             }
 
 
-        dataset = SEEDDataset(root_path='./Preprocessed_EEG',
-                              num_worker=8).with_transform(transform_fn)
+        dataset = SEEDDataset(
+            root_path='./Preprocessed_EEG',
+            num_worker=8,
+            offline_transform=preprocess_fn,
+            online_transform=transform_fn,
+        )
 
         model = RGNN(adj=torch.Tensor(get_standard_adjacency(SEEDDataset.channels, get_positions(SEEDDataset.channels))),
                      in_channels=5,

@@ -35,11 +35,20 @@ from torcheeg.models import CCNN
 from torcheeg.trainers import ClassifierTrainer
 
 
-def transform_fn(sample):
+def preprocess_fn(sample: dict) -> dict:
     eeg_transform = transforms.Compose([
         transforms.BandDifferentialEntropy(),
-        transforms.BaselineRemoval(
-            baseline=transforms.BandDifferentialEntropy()(sample['baseline'])),
+    ])
+    return {
+        **sample,
+        'eeg': eeg_transform(sample['eeg']),
+        'baseline': eeg_transform(sample['baseline']),
+    }
+
+
+def transform_fn(sample: dict) -> dict:
+    eeg_transform = transforms.Compose([
+        transforms.BaselineRemoval(baseline=sample['baseline']),
         transforms.ToGrid(get_locations(
             DEAPDataset.channels, DEAPDataset.grid)),
         transforms.ToTensor(),
@@ -49,13 +58,18 @@ def transform_fn(sample):
         transforms.Binary(5.0),
     ])
     return {
-        "eeg": eeg_transform(sample["eeg"]),
-        "label": label_transform(sample["info"]),
+        'eeg': eeg_transform(sample['eeg']),
+        'label': label_transform(sample['info']),
     }
 
 
-dataset = DEAPDataset(io_path=f'./examples_trainers_1/deap',
-                      root_path='./data_preprocessed_python', num_worker=8).with_transform(transform_fn)
+dataset = DEAPDataset(
+    io_path=f'./examples_trainers_1/deap',
+    root_path='./data_preprocessed_python',
+    num_worker=8,
+    offline_transform=preprocess_fn,
+    online_transform=transform_fn,
+)
 
 k_fold = KFoldGroupbyTrial(n_splits=10,
                            split_path='./examples_trainers_1/split',
@@ -169,11 +183,20 @@ from torcheeg.models import CCNN
 from torcheeg.trainers import CORALTrainer
 
 
-def transform_fn(sample):
+def preprocess_fn(sample: dict) -> dict:
     eeg_transform = transforms.Compose([
         transforms.BandDifferentialEntropy(),
-        transforms.BaselineRemoval(
-            baseline=transforms.BandDifferentialEntropy()(sample['baseline'])),
+    ])
+    return {
+        **sample,
+        'eeg': eeg_transform(sample['eeg']),
+        'baseline': eeg_transform(sample['baseline']),
+    }
+
+
+def transform_fn(sample: dict) -> dict:
+    eeg_transform = transforms.Compose([
+        transforms.BaselineRemoval(baseline=sample['baseline']),
         transforms.ToGrid(get_locations(
             DEAPDataset.channels, DEAPDataset.grid)),
         transforms.ToTensor(),
@@ -183,13 +206,18 @@ def transform_fn(sample):
         transforms.Binary(5.0),
     ])
     return {
-        "eeg": eeg_transform(sample["eeg"]),
-        "label": label_transform(sample["info"]),
+        'eeg': eeg_transform(sample['eeg']),
+        'label': label_transform(sample['info']),
     }
 
 
-dataset = DEAPDataset(io_path=f'./examples_trainers_2/deap',
-                      root_path='./data_preprocessed_python', num_worker=8).with_transform(transform_fn)
+dataset = DEAPDataset(
+    io_path=f'./examples_trainers_2/deap',
+    root_path='./data_preprocessed_python',
+    num_worker=8,
+    offline_transform=preprocess_fn,
+    online_transform=transform_fn,
+)
 
 k_fold = LeaveOneSubjectOut(split_path='./examples_trainers_2/split')
 

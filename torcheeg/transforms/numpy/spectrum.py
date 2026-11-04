@@ -64,7 +64,7 @@ class CWTSpectrum(EEGTransform):
         cparam = 2 * fc * total_scale
         self.scales = cparam / np.arange(1, self.total_scale + 1)
 
-    def __call__(self, eeg: np.ndarray, **kwargs) -> np.ndarray:
+    def __call__(self, eeg: np.ndarray) -> np.ndarray:
         channel_list = []
         for channel in eeg:
             channel_list.append(self.opt(channel))
@@ -139,5 +139,5 @@ class DWTDecomposition(EEGTransform):
     def __init__(self):
         super(DWTDecomposition, self).__init__()
 
-    def __call__(self, eeg: np.ndarray, **kwargs) -> np.ndarray:
+    def __call__(self, eeg: np.ndarray) -> np.ndarray:
         return np.stack(pywt.dwt(eeg, 'haar'), axis=0)

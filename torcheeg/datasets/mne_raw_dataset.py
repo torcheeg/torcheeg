@@ -83,7 +83,7 @@ class MNERawDataset(CachedDataset):
                      for event_code in event_codes]
 
 
-        def transform_fn(sample):
+        def transform_fn(sample: dict) -> dict:
             eeg_transform = transforms.Compose([
                 transforms.ToTensor(),
             ])
@@ -91,13 +91,18 @@ class MNERawDataset(CachedDataset):
                 transforms.Select('trial_id'),
             ])
             return {
-                "eeg": eeg_transform(sample["eeg"]),
-                "label": label_transform(sample["info"]),
+                'eeg': eeg_transform(sample['eeg']),
+                'label': label_transform(sample['info']),
             }
 
 
-        dataset = MNERawDataset(raw_list=raw_list, info_list=info_list,
-                                chunk_size=500, overlap=0).with_transform(transform_fn)
+        dataset = MNERawDataset(
+            raw_list=raw_list,
+            info_list=info_list,
+            chunk_size=500,
+            overlap=0,
+            online_transform=transform_fn,
+        )
 
     Args:
         raw_list (List): A list of MNE Raw objects containing the EEG data.
@@ -107,7 +112,8 @@ class MNERawDataset(CachedDataset):
 
 
 
-        transform (Callable, optional): Sample dictionary transform applied before storage. (default: :obj:`None`)
+        offline_transform (Callable, optional): Sample dictionary transform applied before storage. (default: :obj:`None`)
+        online_transform (Callable, optional): Sample transform applied on each read. (default: :obj:`None`)
         io_path (str): The path to generated unified data IO, cached as an intermediate result. If set to None, a random path will be generated. (default: :obj:`None`)
         io_size (int): Maximum size database may grow to; used to size the memory mapping. If database grows larger than ``map_size``, an exception will be raised and the user must close and reopen. (default: :obj:`1048576`)
         io_mode (str): Storage mode of EEG signal. When io_mode is set to :obj:`lmdb`, TorchEEG provides an efficient database (LMDB) for storing EEG signals. LMDB may not perform well on limited operating systems, where a file system based EEG signal storage is also provided. When io_mode is set to :obj:`pickle`, pickle-based persistence files are used. When io_mode is set to :obj:`memory`, memory are used. (default: :obj:`lmdb`)
@@ -117,10 +123,10 @@ class MNERawDataset(CachedDataset):
 
     data_class = MNERawData
 
-    def __init__(self, raw_list: List, info_list: List, chunk_size: int = 3000, overlap: int = 0, transform: Union[None, Callable] = None, io_path: Union[None, str] = None, io_size: int = 1048576, io_mode: str = 'lmdb', num_worker: int = 0, verbose: bool = True, **kwargs):
+    def __init__(self, raw_list: List, info_list: List, chunk_size: int = 3000, overlap: int = 0, offline_transform: Union[None, Callable] = None, online_transform: Union[None, Callable] = None, io_path: Union[None, str] = None, io_size: int = 1048576, io_mode: str = 'lmdb', num_worker: int = 0, verbose: bool = True, **kwargs):
         if io_path is None:
             io_path = get_random_dir_path(dir_prefix='datasets')
-        params = {'raw_list': raw_list, 'info_list': info_list, 'chunk_size': chunk_size, 'overlap': overlap, 'transform': transform,
+        params = {'raw_list': raw_list, 'info_list': info_list, 'chunk_size': chunk_size, 'overlap': overlap, 'offline_transform': offline_transform, 'online_transform': online_transform,
                   'io_path': io_path, 'io_size': io_size, 'io_mode': io_mode, 'num_worker': num_worker, 'verbose': verbose}
         params.update(kwargs)
         super().__init__(**params)
@@ -128,4 +134,4 @@ class MNERawDataset(CachedDataset):
 
     @property
     def repr_body(self) -> Dict:
-        return dict(super().repr_body, **{'chunk_size': self.chunk_size, 'overlap': self.overlap, 'transform': self.transform, 'num_worker': self.num_worker, 'verbose': self.verbose, 'io_size': self.io_size})
+        return dict(super().repr_body, **{'chunk_size': self.chunk_size, 'overlap': self.overlap, 'offline_transform': self.offline_transform, 'online_transform': self.online_transform, 'num_worker': self.num_worker, 'verbose': self.verbose, 'io_size': self.io_size})

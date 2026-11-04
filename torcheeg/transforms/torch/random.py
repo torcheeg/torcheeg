@@ -14,12 +14,12 @@ class RandomEEGTransform(EEGTransform):
         super(RandomEEGTransform, self).__init__()
         self.p = p
 
-    def __call__(self, eeg: torch.Tensor, **kwargs) -> torch.Tensor:
+    def __call__(self, eeg: torch.Tensor) -> torch.Tensor:
         if self.p < torch.rand(1):
             return eeg
-        return self.random_apply(eeg, **kwargs)
+        return self.random_apply(eeg)
 
-    def random_apply(self, eeg: torch.Tensor, **kwargs) -> torch.Tensor:
+    def random_apply(self, eeg: torch.Tensor) -> torch.Tensor:
         raise NotImplementedError(
             "Method random_apply is not implemented in class "
             + self.__class__.__name__
@@ -56,7 +56,7 @@ class RandomNoise(RandomEEGTransform):
         self.mean = mean
         self.std = std
 
-    def random_apply(self, eeg: torch.Tensor, **kwargs) -> torch.Tensor:
+    def random_apply(self, eeg: torch.Tensor) -> torch.Tensor:
         noise = torch.randn_like(eeg)
         noise = (noise + self.mean) * self.std
         return eeg + noise
@@ -88,7 +88,7 @@ class RandomMask(RandomEEGTransform):
         super(RandomMask, self).__init__(p=p)
         self.ratio = ratio
 
-    def random_apply(self, eeg: torch.Tensor, **kwargs) -> torch.Tensor:
+    def random_apply(self, eeg: torch.Tensor) -> torch.Tensor:
         mask = torch.rand_like(eeg)
         mask = (mask > self.ratio).to(eeg.dtype)
         return eeg * mask
@@ -120,7 +120,7 @@ class RandomMask2D(RandomEEGTransform):
         super(RandomMask2D, self).__init__(p=p)
         self.ratio = ratio
 
-    def random_apply(self, eeg: torch.Tensor, **kwargs) -> torch.Tensor:
+    def random_apply(self, eeg: torch.Tensor) -> torch.Tensor:
         # mask at the electrode dimension
         mask = torch.rand(eeg.shape[1], device=eeg.device)
         mask = (mask > self.ratio).to(eeg.dtype)
@@ -156,7 +156,7 @@ class RandomMaskGrid(RandomEEGTransform):
         super(RandomMaskGrid, self).__init__(p=p)
         self.ratio = ratio
 
-    def random_apply(self, eeg: torch.Tensor, **kwargs) -> torch.Tensor:
+    def random_apply(self, eeg: torch.Tensor) -> torch.Tensor:
         # mask at the electrode dimension
         mask = torch.rand(eeg.shape[1], eeg.shape[2], device=eeg.device)
         mask = (mask > self.ratio).to(eeg.dtype)
@@ -200,7 +200,7 @@ class RandomWindowSlice(RandomEEGTransform):
         self.window_size = window_size
         self.series_dim = series_dim
 
-    def random_apply(self, eeg: torch.Tensor, **kwargs) -> torch.Tensor:
+    def random_apply(self, eeg: torch.Tensor) -> torch.Tensor:
         eeg = eeg.numpy()
 
         if not (len(eeg.shape) == 2 or len(eeg.shape) == 3):
@@ -300,7 +300,7 @@ class RandomWindowWarp(RandomEEGTransform):
         self.warp_size = warp_size
         self.series_dim = series_dim
 
-    def random_apply(self, eeg: torch.Tensor, **kwargs) -> torch.Tensor:
+    def random_apply(self, eeg: torch.Tensor) -> torch.Tensor:
         eeg = eeg.numpy()
 
         if not (len(eeg.shape) == 2 or len(eeg.shape) == 3):
@@ -410,7 +410,7 @@ class RandomPCANoise(RandomEEGTransform):
         self.n_components = n_components
         self.series_dim = series_dim
 
-    def random_apply(self, eeg: torch.Tensor, **kwargs) -> torch.Tensor:
+    def random_apply(self, eeg: torch.Tensor) -> torch.Tensor:
         eeg = eeg.numpy()
 
         if not (len(eeg.shape) == 2 or len(eeg.shape) == 3):
@@ -490,7 +490,7 @@ class RandomFlip(RandomEEGTransform):
         super(RandomFlip, self).__init__(p=p)
         self.dim = dim
 
-    def random_apply(self, eeg: torch.Tensor, **kwargs) -> torch.Tensor:
+    def random_apply(self, eeg: torch.Tensor) -> torch.Tensor:
         return torch.flip(eeg, dims=(self.dim, ))
 
     @property
@@ -518,7 +518,7 @@ class RandomSignFlip(RandomEEGTransform):
     def __init__(self, p: float = 0.5):
         super(RandomSignFlip, self).__init__(p=p)
 
-    def random_apply(self, eeg: torch.Tensor, **kwargs) -> torch.Tensor:
+    def random_apply(self, eeg: torch.Tensor) -> torch.Tensor:
         return -eeg
 
 
@@ -548,7 +548,7 @@ class RandomShift(RandomEEGTransform):
         self.shift_max = shift_max
         self.dim = dim
 
-    def random_apply(self, eeg: torch.Tensor, **kwargs) -> torch.Tensor:
+    def random_apply(self, eeg: torch.Tensor) -> torch.Tensor:
         shift = torch.randint(low=self.shift_min,
                               high=self.shift_max,
                               size=(1, ))
@@ -584,7 +584,7 @@ class RandomChannelShuffle(RandomEEGTransform):
     def __init__(self, p: float = 0.5):
         super(RandomChannelShuffle, self).__init__(p=p)
 
-    def random_apply(self, eeg: torch.Tensor, **kwargs) -> torch.Tensor:
+    def random_apply(self, eeg: torch.Tensor) -> torch.Tensor:
         index_list = np.arange(len(eeg))
         np.random.shuffle(index_list)
         return eeg[index_list]
@@ -623,7 +623,7 @@ class RandomHemisphereChannelShuffle(RandomEEGTransform):
         self.left_channel_list = left_channel_list
         self.right_channel_list = right_channel_list
 
-    def random_apply(self, eeg: torch.Tensor, **kwargs) -> torch.Tensor:
+    def random_apply(self, eeg: torch.Tensor) -> torch.Tensor:
         if 0.5 < torch.rand(1):
             index_list = self.left_channel_list
         else:
@@ -677,7 +677,7 @@ class RandomFrequencyShift(RandomEEGTransform):
         self.shift_max = shift_max
         self.series_dim = series_dim
 
-    def random_apply(self, eeg: torch.Tensor, **kwargs) -> torch.Tensor:
+    def random_apply(self, eeg: torch.Tensor) -> torch.Tensor:
         if self.series_dim != (len(eeg.shape) - 1):
             permute_dims = list(range(len(eeg.shape)))
             permute_dims.pop(self.series_dim)

@@ -23,7 +23,7 @@ from torcheeg import transforms
 from torcheeg.datasets import DREAMERDataset
 
 
-def transform_fn(sample):
+def transform_fn(sample: dict) -> dict:
     eeg_transform = transforms.Compose([
         transforms.BaselineRemoval(baseline=sample['baseline']),
         transforms.MeanStdNormalize(),
@@ -35,13 +35,20 @@ def transform_fn(sample):
         transforms.Binary(3.0),
     ])
     return {
-        "eeg": eeg_transform(sample["eeg"]),
-        "label": label_transform(sample["info"]),
+        'eeg': eeg_transform(sample['eeg']),
+        'label': label_transform(sample['info']),
     }
 
 
-dataset = DREAMERDataset(io_path='./examples_dreamer_tsception/dreamer', mat_path='./DREAMER.mat',
-                         chunk_size=128, baseline_chunk_size=128, num_baseline=61, num_worker=4).with_transform(transform_fn)
+dataset = DREAMERDataset(
+    io_path='./examples_dreamer_tsception/dreamer',
+    mat_path='./DREAMER.mat',
+    chunk_size=128,
+    baseline_chunk_size=128,
+    num_baseline=61,
+    num_worker=4,
+    online_transform=transform_fn,
+)
 
 ######################################################################
 # Step 2: Divide the Training and Test Samples in the Dataset

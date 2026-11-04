@@ -20,9 +20,9 @@ In this tutorial, we demonstrate a complete deep learning workflow using TorchEE
 # seconds long, which we divide into three sections and then average to
 # obtain the trial’s baseline signal.
 #
-# The dataset caches raw windows. A single sample function computes band
-# features, removes the baseline, maps electrodes to a grid, and prepares
-# the label each time a sample is read.
+# The offline function computes and caches band features. The online function
+# removes the baseline, maps electrodes to a grid, and prepares training inputs
+# each time a sample is read.
 #
 
 from torcheeg import transforms
@@ -30,11 +30,20 @@ from torcheeg.datasets import DEAPDataset
 from torcheeg.datasets.utils import get_locations
 
 
-def transform_fn(sample):
+def preprocess_fn(sample: dict) -> dict:
     eeg_transform = transforms.Compose([
         transforms.BandDifferentialEntropy(),
-        transforms.BaselineRemoval(
-            baseline=transforms.BandDifferentialEntropy()(sample['baseline'])),
+    ])
+    return {
+        **sample,
+        'eeg': eeg_transform(sample['eeg']),
+        'baseline': eeg_transform(sample['baseline']),
+    }
+
+
+def transform_fn(sample: dict) -> dict:
+    eeg_transform = transforms.Compose([
+        transforms.BaselineRemoval(baseline=sample['baseline']),
         transforms.ToGrid(get_locations(
             DEAPDataset.channels, DEAPDataset.grid)),
         transforms.ToTensor(),
@@ -44,13 +53,18 @@ def transform_fn(sample):
         transforms.Binary(5.0),
     ])
     return {
-        "eeg": eeg_transform(sample["eeg"]),
-        "label": label_transform(sample["info"]),
+        'eeg': eeg_transform(sample['eeg']),
+        'label': label_transform(sample['info']),
     }
 
 
-dataset = DEAPDataset(io_path=f'./examples_pipeline/deap',
-                      root_path='./data_preprocessed_python', num_worker=8).with_transform(transform_fn)
+dataset = DEAPDataset(
+    io_path=f'./examples_pipeline/deap',
+    root_path='./data_preprocessed_python',
+    num_worker=8,
+    offline_transform=preprocess_fn,
+    online_transform=transform_fn,
+)
 
 
 ######################################################################

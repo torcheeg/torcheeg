@@ -27,8 +27,8 @@ def prepare_training(sample):
 
 class TestIODataset(unittest.TestCase):
 
-    def make_dataset(self):
-        dataset = IODataset(MemoryEEGIO(), MemoryInfoIO())
+    def make_dataset(self, transform=None):
+        dataset = IODataset(MemoryEEGIO(), MemoryInfoIO(), transform=transform)
         for index in range(3):
             sample = {'eeg': np.full((2, 4), index, dtype=np.float32), 'info': {
                 'subject_id': f'{index:03}', 'label': index}}
@@ -78,26 +78,27 @@ class TestIODataset(unittest.TestCase):
         np.testing.assert_array_equal(dataset[0]['baseline'], np.ones((2, 4)))
         self.assertEqual(dataset[0]['info']['subject_id'], '001')
 
-    def test_transform_chaining_equals_compose_and_isolated(self):
+    def test_transform_composition_selection_and_serialization(self):
         dataset = self.make_dataset()
-        chain = dataset.with_transform(add_one).with_transform(double)
-        composed = dataset.with_transform(
-            Compose([add_one, Compose([double])]))
+        chain = IODataset(dataset.eeg_io, dataset.info_io,
+                          transform=Compose([add_one, double]))
+        composed = IODataset(dataset.eeg_io, dataset.info_io,
+                             transform=Compose([add_one, Compose([double])]))
         for index in range(3):
             np.testing.assert_array_equal(
                 chain[index]['eeg'], composed[index]['eeg'])
             np.testing.assert_array_equal(
                 chain[index]['eeg'], np.full((2, 4), 2 * (index + 1)))
         np.testing.assert_array_equal(dataset[0]['eeg'], np.zeros((2, 4)))
-        self.assertEqual(len(chain._transforms), 2)
-        self.assertEqual(len(composed._transforms), 2)
+        self.assertEqual(len(chain.transform.transforms), 2)
+        self.assertEqual(len(composed.transform.transforms), 2)
         np.testing.assert_array_equal(chain[[2, 0]][0]['eeg'], chain[2]['eeg'])
         restored = pickle.loads(pickle.dumps(chain))
         np.testing.assert_array_equal(restored[0]['eeg'], chain[0]['eeg'])
 
     def test_views_cannot_append_and_metadata_is_independent(self):
         dataset = self.make_dataset()
-        for view in (dataset[:1], dataset.with_transform(add_one), copy(dataset)):
+        for view in (dataset[:1], copy(dataset)):
             view.info.loc[0, 'subject_id'] = 'edited'
             self.assertEqual(dataset.info.loc[0, 'subject_id'], '000')
             with self.assertRaises(ValueError):
@@ -123,7 +124,8 @@ class TestIODataset(unittest.TestCase):
     def test_transformed_samples_can_be_saved(self):
         source = self.make_dataset()
         target = IODataset(MemoryEEGIO(), MemoryInfoIO())
-        target.extend(source.with_transform(add_one))
+        target.extend(
+            IODataset(source.eeg_io, source.info_io, transform=add_one))
         target.extend(source[:1])
         self.assertEqual(len(target), 4)
         np.testing.assert_array_equal(target[0]['eeg'], np.ones((2, 4)))
@@ -139,13 +141,14 @@ class TestIODataset(unittest.TestCase):
             dataset.close()
             reopened = IODataset(NumpyEEGIO(eeg_path), CSVInfoIO(info_path))
             self.assertEqual(reopened[0]['info']['subject_id'], '000')
-            changed = reopened.with_transform(add_one)[0]
+            changed = IODataset(
+                reopened.eeg_io, reopened.info_io, transform=add_one)[0]
             np.testing.assert_array_equal(changed['eeg'], np.ones((2, 4)))
             np.testing.assert_array_equal(reopened[0]['eeg'], np.zeros((2, 4)))
             reopened.close()
 
     def test_training_batch_is_dictionary(self):
-        dataset = self.make_dataset().with_transform(prepare_training)
+        dataset = self.make_dataset(transform=prepare_training)
         batch = next(iter(DataLoader(dataset, batch_size=2, num_workers=0)))
         self.assertEqual(set(batch), {'eeg', 'label'})
         self.assertEqual(tuple(batch['eeg'].shape), (2, 2, 4))
@@ -153,7 +156,7 @@ class TestIODataset(unittest.TestCase):
 
     def test_spawned_loader_and_cpu_training(self):
         import torch
-        dataset = self.make_dataset().with_transform(prepare_training)
+        dataset = self.make_dataset(transform=prepare_training)
         loader = DataLoader(dataset, batch_size=2,
                             num_workers=1, multiprocessing_context='spawn')
         batches = list(loader)
@@ -172,6 +175,7 @@ class TestIODataset(unittest.TestCase):
             with self.subTest(sample=sample), self.assertRaises((TypeError, ValueError)):
                 dataset.append(sample)
         with self.assertRaises(TypeError):
-            dataset.with_transform(None)
+            IODataset(dataset.eeg_io, dataset.info_io, transform=1)
         with self.assertRaises(TypeError):
-            dataset.with_transform(lambda sample: sample['eeg'])[0]
+            IODataset(dataset.eeg_io, dataset.info_io,
+                      transform=lambda sample: sample['eeg'])[0]

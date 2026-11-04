@@ -36,7 +36,7 @@ def train_test_split_per_subject_groupby_trial(
         from torch.utils.data import DataLoader
 
 
-        def transform_fn(sample):
+        def transform_fn(sample: dict) -> dict:
             eeg_transform = transforms.Compose([
                 transforms.ToTensor(),
                 transforms.To2d(),
@@ -47,13 +47,15 @@ def train_test_split_per_subject_groupby_trial(
                 transforms.BinariesToCategory(),
             ])
             return {
-                "eeg": eeg_transform(sample["eeg"]),
-                "label": label_transform(sample["info"]),
+                'eeg': eeg_transform(sample['eeg']),
+                'label': label_transform(sample['info']),
             }
 
 
         dataset = DEAPDataset(
-            root_path='./data_preprocessed_python').with_transform(transform_fn)
+            root_path='./data_preprocessed_python',
+            online_transform=transform_fn,
+        )
 
         train_dataset, test_dataset = train_test_split_per_subject_groupby_trial(
             dataset=dataset)

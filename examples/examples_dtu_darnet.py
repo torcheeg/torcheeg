@@ -68,10 +68,10 @@ for i, (train_dataset, val_dataset) in enumerate(k_fold.split(dataset)):
         y.append(sample['info']['attended_speaker'] - 1)
     csp.fit(X, y)
 
-    def transform_fn(sample):
+    def transform_fn(sample: dict) -> dict:
         eeg_transform = transforms.Compose([
-            transforms.Lambda(
-                lambda eeg: csp.transform(eeg[None])[0].astype(np.float32)),
+            transforms.Lambda(lambda eeg: csp.transform(
+                eeg[None])[0].astype(np.float32)),
             transforms.ToTensor(),
         ])
         label_transform = transforms.Compose([
@@ -83,9 +83,11 @@ for i, (train_dataset, val_dataset) in enumerate(k_fold.split(dataset)):
             'label': label_transform(sample['info']),
         }
 
-    train_loader = DataLoader(train_dataset.with_transform(transform_fn),
+    train_dataset.transform = transform_fn
+    val_dataset.transform = transform_fn
+    train_loader = DataLoader(train_dataset,
                               batch_size=64, shuffle=True)
-    val_loader = DataLoader(val_dataset.with_transform(transform_fn),
+    val_loader = DataLoader(val_dataset,
                             batch_size=64, shuffle=False)
 
     model = DARNet(num_electrodes=64,

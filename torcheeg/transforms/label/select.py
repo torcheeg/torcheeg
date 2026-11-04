@@ -36,7 +36,7 @@ class Select(LabelTransform):
         self.key = key
         self.select_list = isinstance(key, list) or isinstance(key, tuple)
 
-    def __call__(self, y: Dict, **kwargs) -> Union[int, float, List]:
+    def __call__(self, y: Dict) -> Union[int, float, List]:
         if not (isinstance(y, dict)):
             raise TypeError(
                 f'The transform Select only accepts label dict as input, but obtain {type(y)} as input.'

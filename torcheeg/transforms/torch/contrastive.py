@@ -1,4 +1,8 @@
 from copy import deepcopy
+from typing import Any, List, Union
+
+import numpy as np
+import torch
 
 from ..base_transform import EEGTransform
 
@@ -12,7 +16,7 @@ class Contrastive(EEGTransform):
         self.transform = transform
         self.num_views = num_views
 
-    def __call__(self, eeg):
+    def __call__(self, eeg: Union[np.ndarray, torch.Tensor]) -> List[Any]:
         return [self.transform(deepcopy(eeg)) for _ in range(self.num_views)]
 
     @property

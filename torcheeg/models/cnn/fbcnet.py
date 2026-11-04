@@ -105,7 +105,7 @@ class FBCNet(nn.Module):
         from torch.utils.data import DataLoader
 
 
-        def transform_fn(sample):
+        def transform_fn(sample: dict) -> dict:
             eeg_transform = transforms.Compose([
                 transforms.BandSignal(),
                 transforms.ToTensor(),
@@ -115,13 +115,18 @@ class FBCNet(nn.Module):
                 transforms.Binary(5.0),
             ])
             return {
-                "eeg": eeg_transform(sample["eeg"]),
-                "label": label_transform(sample["info"]),
+                'eeg': eeg_transform(sample['eeg']),
+                'label': label_transform(sample['info']),
             }
 
 
-        dataset = DEAPDataset(root_path='./data_preprocessed_python', chunk_size=512,
-                              num_baseline=1, baseline_chunk_size=512).with_transform(transform_fn)
+        dataset = DEAPDataset(
+            root_path='./data_preprocessed_python',
+            chunk_size=512,
+            num_baseline=1,
+            baseline_chunk_size=512,
+            online_transform=transform_fn,
+        )
 
         model = FBCNet(num_classes=2,
                        num_electrodes=32,

@@ -85,7 +85,7 @@ class TestDEAPData(unittest.TestCase):
             IODataset(eeg, info).extend(SequentialRunner()(data))
             explicit = IODataset(eeg, info)
             shortcut = DEAPDataset(
-                **configuration, io_mode='memory', transform=increment, verbose=False)
+                **configuration, io_mode='memory', offline_transform=increment, verbose=False)
             self.assertEqual(len(explicit), 5)
             self.assertEqual(len(shortcut), len(explicit))
             for index in range(len(explicit)):

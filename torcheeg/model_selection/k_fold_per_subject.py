@@ -33,7 +33,7 @@ class KFoldPerSubject(BaseModelSelection):
         cv = KFoldPerSubject(n_splits=5, shuffle=True)
 
 
-        def transform_fn(sample):
+        def transform_fn(sample: dict) -> dict:
             eeg_transform = transforms.Compose([
                 transforms.ToTensor(),
                 transforms.To2d(),
@@ -44,13 +44,15 @@ class KFoldPerSubject(BaseModelSelection):
                 transforms.BinariesToCategory(),
             ])
             return {
-                "eeg": eeg_transform(sample["eeg"]),
-                "label": label_transform(sample["info"]),
+                'eeg': eeg_transform(sample['eeg']),
+                'label': label_transform(sample['info']),
             }
 
 
         dataset = DEAPDataset(
-            root_path='./data_preprocessed_python').with_transform(transform_fn)
+            root_path='./data_preprocessed_python',
+            online_transform=transform_fn,
+        )
 
         for train_dataset, test_dataset in cv.split(dataset):
             # The total number of experiments is the number subjects multiplied by K
@@ -70,9 +72,18 @@ class KFoldPerSubject(BaseModelSelection):
         cv = KFoldPerSubject(n_splits=5, shuffle=True)
 
 
-        def transform_fn(sample):
+        def preprocess_fn(sample: dict) -> dict:
             eeg_transform = transforms.Compose([
                 transforms.To2d(),
+            ])
+            return {
+                **sample,
+                'eeg': eeg_transform(sample['eeg']),
+            }
+
+
+        def transform_fn(sample: dict) -> dict:
+            eeg_transform = transforms.Compose([
                 transforms.ToTensor(),
             ])
             label_transform = transforms.Compose([
@@ -81,13 +92,16 @@ class KFoldPerSubject(BaseModelSelection):
                 transforms.BinariesToCategory(),
             ])
             return {
-                "eeg": eeg_transform(sample["eeg"]),
-                "label": label_transform(sample["info"]),
+                'eeg': eeg_transform(sample['eeg']),
+                'label': label_transform(sample['info']),
             }
 
 
         dataset = DEAPDataset(
-            root_path='./data_preprocessed_python').with_transform(transform_fn)
+            root_path='./data_preprocessed_python',
+            offline_transform=preprocess_fn,
+            online_transform=transform_fn,
+        )
 
         for train_dataset, test_dataset in cv.split(dataset, subject=1):
             # k-fold cross-validation for subject 1

@@ -62,10 +62,18 @@ class STNet(nn.Module):
         from torch.utils.data import DataLoader
 
 
-        def transform_fn(sample):
+        def preprocess_fn(sample: dict) -> dict:
             eeg_transform = transforms.Compose([
-                transforms.ToGrid(get_locations(
-                    DEAPDataset.channels, DEAPDataset.grid)),
+                transforms.ToGrid(get_locations(DEAPDataset.channels, DEAPDataset.grid)),
+            ])
+            return {
+                **sample,
+                'eeg': eeg_transform(sample['eeg']),
+            }
+
+
+        def transform_fn(sample: dict) -> dict:
+            eeg_transform = transforms.Compose([
                 transforms.ToTensor(),
             ])
             label_transform = transforms.Compose([
@@ -73,13 +81,16 @@ class STNet(nn.Module):
                 transforms.Binary(5.0),
             ])
             return {
-                "eeg": eeg_transform(sample["eeg"]),
-                "label": label_transform(sample["info"]),
+                'eeg': eeg_transform(sample['eeg']),
+                'label': label_transform(sample['info']),
             }
 
 
         dataset = DEAPDataset(
-            root_path='./data_preprocessed_python').with_transform(transform_fn)
+            root_path='./data_preprocessed_python',
+            offline_transform=preprocess_fn,
+            online_transform=transform_fn,
+        )
 
         model = STNet(num_classes=2, chunk_size=128, grid_size=(9, 9), dropout=0.2)
 

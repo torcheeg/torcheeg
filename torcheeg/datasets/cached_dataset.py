@@ -15,7 +15,8 @@ class CachedDataset(IODataset):
     data_class = None
 
     def __init__(self, io_path=None, io_size=1048576, io_mode='lmdb',
-                 num_worker=0, verbose=True, transform=None, **configuration):
+                 num_worker=0, verbose=True, offline_transform=None,
+                 online_transform=None, **configuration):
         if self.data_class is None:
             raise NotImplementedError(
                 'Attribute data_class is not implemented in class ' + self.__class__.__name__)
@@ -29,8 +30,16 @@ class CachedDataset(IODataset):
         self.io_mode = io_mode
         self.num_worker = num_worker
         self.verbose = verbose
-        self.transform = transform
-        self.data = self.data_class(transform=transform, **configuration)
+        for name, transform in (('offline_transform', offline_transform),
+                                ('online_transform', online_transform)):
+            if transform is not None and not callable(transform):
+                raise TypeError(name + ' must be callable.')
+        if 'transform' in configuration:
+            raise TypeError('Use offline_transform or online_transform.')
+        self.offline_transform = offline_transform
+        self.online_transform = online_transform
+        self.data = self.data_class(
+            transform=offline_transform, **configuration)
         eeg_path = None if io_mode == 'memory' else os.path.join(
             self.io_path, 'eeg')
         info_path = None if io_mode == 'memory' else os.path.join(
@@ -41,7 +50,8 @@ class CachedDataset(IODataset):
         records = self.data.get_records()
         if not records:
             raise ValueError('No records were found for the dataset.')
-        options = dict(configuration, transform=transform, io_mode=io_mode)
+        options = dict(
+            configuration, offline_transform=offline_transform, io_mode=io_mode)
         fingerprint = compute_fingerprint(
             self.data_class, options, records, self.io_path)
 
@@ -51,4 +61,4 @@ class CachedDataset(IODataset):
                 num_worker=num_worker).iterate(self.data, records))
 
         ensure_cache(eeg, info, fingerprint, build)
-        super().__init__(eeg, info)
+        super().__init__(eeg, info, transform=online_transform)

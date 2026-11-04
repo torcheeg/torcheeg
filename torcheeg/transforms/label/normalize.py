@@ -56,7 +56,7 @@ class Normalize(LabelTransform):
             raise ValueError(
                 'Either (min, max) or (mean, std) should be provided, but not both.')
 
-    def __call__(self, y: Union[int, float, List], **kwargs) -> Union[float, List]:
+    def __call__(self, y: Union[int, float, List]) -> Union[float, List]:
         if isinstance(y, list):
             if self.mode == 'minmax':
                 return [(float(l) - self.min) / (self.max - self.min) for l in y]

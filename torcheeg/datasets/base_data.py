@@ -1,5 +1,10 @@
 class BaseData:
-    """Define record discovery, reading and sample preprocessing."""
+    """Define record discovery, reading and sample preprocessing.
+
+    Args:
+        transform (Callable, optional): Transform each generated sample before storage.
+        **configuration: Arguments passed to record discovery and processing.
+    """
 
     def __init__(self, transform=None, **configuration):
         removed = {'before_trial', 'after_trial',
@@ -9,6 +14,8 @@ class BaseData:
         if invalid:
             raise TypeError('Removed Data arguments: ' +
                             ', '.join(sorted(invalid)))
+        if transform is not None and not callable(transform):
+            raise TypeError("transform must be callable.")
         self.transform = transform
         self.configuration = dict(configuration)
         self.__dict__.update(configuration)

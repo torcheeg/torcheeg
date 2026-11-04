@@ -51,24 +51,38 @@ class BYOLTrainer(pl.LightningModule):
         from torcheeg.datasets.utils import get_locations
 
 
-        def transform_fn(sample):
+        def preprocess_fn(sample: dict) -> dict:
             eeg_transform = transforms.Compose([
                 transforms.BandDifferentialEntropy(sampling_rate=128),
-                transforms.BaselineRemoval(baseline=transforms.BandDifferentialEntropy(
-                    sampling_rate=128)(sample['baseline'])),
-                transforms.ToGrid(get_locations(
-                    DEAPDataset.channels, DEAPDataset.grid)),
-                transforms.ToTensor(),
-                transforms.Contrastive(transforms.Compose(
-                    [transforms.RandomMask(p=0.5), transforms.RandomNoise(p=0.5)]), num_views=2),
             ])
             return {
-                "eeg": eeg_transform(sample["eeg"]),
+                **sample,
+                'eeg': eeg_transform(sample['eeg']),
+                'baseline': eeg_transform(sample['baseline']),
             }
 
 
-        contras_dataset = DEAPDataset(io_path=f'./io/deap', root_path='./data_preprocessed_python',
-                                      chunk_size=128, baseline_chunk_size=128, num_baseline=3).with_transform(transform_fn)
+        def transform_fn(sample: dict) -> dict:
+            eeg_transform = transforms.Compose([
+                transforms.BaselineRemoval(baseline=sample['baseline']),
+                transforms.ToGrid(get_locations(DEAPDataset.channels, DEAPDataset.grid)),
+                transforms.ToTensor(),
+                transforms.Contrastive(transforms.Compose([transforms.RandomMask(p=0.5), transforms.RandomNoise(p=0.5)]), num_views=2),
+            ])
+            return {
+                'eeg': eeg_transform(sample['eeg']),
+            }
+
+
+        contras_dataset = DEAPDataset(
+            io_path=f'./io/deap',
+            root_path='./data_preprocessed_python',
+            chunk_size=128,
+            baseline_chunk_size=128,
+            num_baseline=3,
+            offline_transform=preprocess_fn,
+            online_transform=transform_fn,
+        )
 
         trainer.fit(train_loader, val_loader)
 

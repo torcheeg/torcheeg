@@ -31,7 +31,7 @@ class ARRCoefficient(EEGTransform):
         self.order = order
         self.norm = norm
 
-    def __call__(self, eeg: np.ndarray, **kwargs):
+    def __call__(self, eeg: np.ndarray) -> np.ndarray:
         c_list = []
         for c in eeg:
             ar_coeffs, _, _ = aryule(c, order=self.order, norm=self.norm)

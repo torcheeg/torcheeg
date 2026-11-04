@@ -23,11 +23,20 @@ from torcheeg import transforms
 from torcheeg.datasets import AMIGOSDataset
 
 
-def transform_fn(sample):
+def preprocess_fn(sample: dict) -> dict:
     eeg_transform = transforms.Compose([
         transforms.BandDifferentialEntropy(sampling_rate=128),
-        transforms.BaselineRemoval(baseline=transforms.BandDifferentialEntropy(
-            sampling_rate=128)(sample['baseline'])),
+    ])
+    return {
+        **sample,
+        'eeg': eeg_transform(sample['eeg']),
+        'baseline': eeg_transform(sample['baseline']),
+    }
+
+
+def transform_fn(sample: dict) -> dict:
+    eeg_transform = transforms.Compose([
+        transforms.BaselineRemoval(baseline=sample['baseline']),
         transforms.ToTensor(),
     ])
     label_transform = transforms.Compose([
@@ -35,13 +44,21 @@ def transform_fn(sample):
         transforms.Binary(5.0),
     ])
     return {
-        "eeg": eeg_transform(sample["eeg"]),
-        "label": label_transform(sample["info"]),
+        'eeg': eeg_transform(sample['eeg']),
+        'label': label_transform(sample['info']),
     }
 
 
-dataset = AMIGOSDataset(io_path=f'./examples_amigos_dgcnn/amigos', root_path='./data_preprocessed',
-                        chunk_size=128, baseline_chunk_size=128, num_baseline=5, num_worker=4).with_transform(transform_fn)
+dataset = AMIGOSDataset(
+    io_path=f'./examples_amigos_dgcnn/amigos',
+    root_path='./data_preprocessed',
+    chunk_size=128,
+    baseline_chunk_size=128,
+    num_baseline=5,
+    num_worker=4,
+    offline_transform=preprocess_fn,
+    online_transform=transform_fn,
+)
 
 ######################################################################
 # Step 2: Divide the Training and Test samples in the Dataset

@@ -25,9 +25,9 @@ class TestSEEDDataset(unittest.TestCase):
         transform = transforms.ToGrid(get_locations(
             SEEDDataset.channels, SEEDDataset.grid))
         with patch.object(CachedDataset, '__init__', return_value=None):
-            dataset = SEEDDataset(transform=transform)
+            dataset = SEEDDataset(offline_transform=transform)
             SEEDDataset(num_channel=32)
-        self.assertIs(dataset.transform, transform)
+        self.assertIs(dataset.offline_transform, transform)
         self.assertEqual(len(SEEDDataset.channels), 62)
         self.assertEqual(SEEDFeatureDataset.channels, SEEDDataset.channels)
         self.assertEqual(SEEDFeatureDataset.grid, SEEDDataset.grid)

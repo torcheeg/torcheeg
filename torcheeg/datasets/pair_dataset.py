@@ -26,6 +26,7 @@ class PairDataset(BaseDataset):
         dataset[0]
 
     Args:
+        transform (Callable, optional): Sample transform applied on each read. (default: :obj:`None`)
         datasets (List[BaseDataset]): A list of datasets to be paired. Each dataset should inherit from BaseDataset.
         join_key (str): The key used to join the datasets. This should be a column name present in all datasets' info DataFrames. Common join keys could be 'subject_id', 'trial_id', 'clip_id', etc. (default: :obj:`'subject_id'`)
         join_type (str): The type of join to perform. Valid options are:
@@ -46,8 +47,10 @@ class PairDataset(BaseDataset):
                  join_key: str = 'subject_id',
                  join_type: str = 'inner',
                  pair_info_fn: Optional[Callable] = None,
-                 distinct_key: Optional[str] = None):
-        self._transforms = ()
+                 distinct_key: Optional[str] = None, transform=None):
+        if transform is not None and not callable(transform):
+            raise TypeError('transform must be callable.')
+        self.transform = transform
         self.datasets = datasets
 
         if pair_info_fn is None:

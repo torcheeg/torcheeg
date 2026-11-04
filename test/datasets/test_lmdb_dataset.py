@@ -33,7 +33,8 @@ class TestLMDBDataset(unittest.TestCase):
             dataset = LMDBDataset(directory)
             dataset.extend({'eeg': np.full((2, 4), index),
                             'info': {'label': index}} for index in range(3))
-            selected = dataset[[2, 0]].with_transform(prepare_training)
+            selected = LMDBDataset(
+                directory, transform=prepare_training)[[2, 0]]
             dataset.close()
             for method in multiprocessing.get_all_start_methods():
                 with self.subTest(method=method):

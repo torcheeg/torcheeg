@@ -20,11 +20,19 @@ class TSCeption(nn.Module):
         from torch.utils.data import DataLoader
 
 
-        def transform_fn(sample):
+        def preprocess_fn(sample: dict) -> dict:
             eeg_transform = transforms.Compose([
-                transforms.PickElectrode(PickElectrode.to_index_list(['FP1', 'AF3', 'F3', 'F7', 'FC5', 'FC1', 'C3', 'T7', 'CP5', 'CP1', 'P3', 'P7',
-                                         'PO3', 'O1', 'FP2', 'AF4', 'F4', 'F8', 'FC6', 'FC2', 'C4', 'T8', 'CP6', 'CP2', 'P4', 'P8', 'PO4', 'O2'], DEAPDataset.channels)),
+                transforms.PickElectrode(PickElectrode.to_index_list(['FP1', 'AF3', 'F3', 'F7', 'FC5', 'FC1', 'C3', 'T7', 'CP5', 'CP1', 'P3', 'P7', 'PO3', 'O1', 'FP2', 'AF4', 'F4', 'F8', 'FC6', 'FC2', 'C4', 'T8', 'CP6', 'CP2', 'P4', 'P8', 'PO4', 'O2'], DEAPDataset.channels)),
                 transforms.To2d(),
+            ])
+            return {
+                **sample,
+                'eeg': eeg_transform(sample['eeg']),
+            }
+
+
+        def transform_fn(sample: dict) -> dict:
+            eeg_transform = transforms.Compose([
                 transforms.ToTensor(),
             ])
             label_transform = transforms.Compose([
@@ -32,13 +40,19 @@ class TSCeption(nn.Module):
                 transforms.Binary(5.0),
             ])
             return {
-                "eeg": eeg_transform(sample["eeg"]),
-                "label": label_transform(sample["info"]),
+                'eeg': eeg_transform(sample['eeg']),
+                'label': label_transform(sample['info']),
             }
 
 
-        dataset = DEAPDataset(root_path='./data_preprocessed_python', chunk_size=512,
-                              num_baseline=1, baseline_chunk_size=512).with_transform(transform_fn)
+        dataset = DEAPDataset(
+            root_path='./data_preprocessed_python',
+            chunk_size=512,
+            num_baseline=1,
+            baseline_chunk_size=512,
+            offline_transform=preprocess_fn,
+            online_transform=transform_fn,
+        )
 
         model = TSCeption(num_classes=2,
                           num_electrodes=28,

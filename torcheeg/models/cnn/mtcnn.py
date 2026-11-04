@@ -32,25 +32,25 @@ class MTCNN(nn.Module):
                             ['-', '-', '-', 'O1', 'OZ', 'O2', '-', '-', '-']]
 
 
-        def transform_fn(sample):
+        def transform_fn(sample: dict) -> dict:
             eeg_transform = transforms.Compose([
-                transforms.Concatenate(
-                    [transforms.BandDifferentialEntropy(), transforms.BandPowerSpectralDensity()]),
-                transforms.ToGrid(get_locations(
-                    DEAPDataset.channels, DEAPDataset.grid)),
+                transforms.Concatenate([transforms.BandDifferentialEntropy(), transforms.BandPowerSpectralDensity()]),
+                transforms.ToGrid(get_locations(DEAPDataset.channels, DEAPDataset.grid)),
             ])
             label_transform = transforms.Compose([
                 transforms.Select('valence'),
                 transforms.Binary(5.0),
             ])
             return {
-                "eeg": eeg_transform(sample["eeg"]),
-                "label": label_transform(sample["info"]),
+                'eeg': eeg_transform(sample['eeg']),
+                'label': label_transform(sample['info']),
             }
 
 
         dataset = DEAPDataset(
-            root_path='./data_preprocessed_python').with_transform(transform_fn)
+            root_path='./data_preprocessed_python',
+            online_transform=transform_fn,
+        )
 
         model = MTCNN(num_classes=2, in_channels=8, grid_size=(8, 9), dropout=0.2)
 

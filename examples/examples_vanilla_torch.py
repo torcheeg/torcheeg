@@ -62,9 +62,9 @@ seed_everything(42)
 # For this example, we utilize the DEAP dataset, as supported by TorchEEG.
 # We configure an EEG sample to be 1 second long, encompassing 128 data
 # points. A 3-second-long baseline signal is segmented into three parts
-# and averaged to establish the baseline signal for the trial. transform_fn
-# computes band features, removes the baseline, maps electrodes to a grid,
-# and converts the result to a tensor each time a sample is read.
+# and averaged to establish the baseline signal for the trial. preprocess_fn
+# caches band features; transform_fn removes the baseline, maps electrodes
+# to a grid, and converts the result to a tensor on each read.
 #
 
 from torcheeg import transforms
@@ -72,11 +72,20 @@ from torcheeg.datasets import DEAPDataset
 from torcheeg.datasets.utils import get_locations
 
 
-def transform_fn(sample):
+def preprocess_fn(sample: dict) -> dict:
     eeg_transform = transforms.Compose([
         transforms.BandDifferentialEntropy(),
-        transforms.BaselineRemoval(
-            baseline=transforms.BandDifferentialEntropy()(sample['baseline'])),
+    ])
+    return {
+        **sample,
+        'eeg': eeg_transform(sample['eeg']),
+        'baseline': eeg_transform(sample['baseline']),
+    }
+
+
+def transform_fn(sample: dict) -> dict:
+    eeg_transform = transforms.Compose([
+        transforms.BaselineRemoval(baseline=sample['baseline']),
         transforms.ToGrid(get_locations(
             DEAPDataset.channels, DEAPDataset.grid)),
         transforms.ToTensor(),
@@ -86,13 +95,18 @@ def transform_fn(sample):
         transforms.Binary(5.0),
     ])
     return {
-        "eeg": eeg_transform(sample["eeg"]),
-        "label": label_transform(sample["info"]),
+        'eeg': eeg_transform(sample['eeg']),
+        'label': label_transform(sample['info']),
     }
 
 
-dataset = DEAPDataset(io_path=f'./examples_vanilla_torch/deap',
-                      root_path='./tmp_in/data_preprocessed_python', num_worker=8).with_transform(transform_fn)
+dataset = DEAPDataset(
+    io_path=f'./examples_vanilla_torch/deap',
+    root_path='./tmp_in/data_preprocessed_python',
+    num_worker=8,
+    offline_transform=preprocess_fn,
+    online_transform=transform_fn,
+)
 
 
 ######################################################################

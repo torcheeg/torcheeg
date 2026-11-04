@@ -93,7 +93,7 @@ class VanillaTransformer(nn.Module):
         from torch.utils.data import DataLoader
 
 
-        def transform_fn(sample):
+        def transform_fn(sample: dict) -> dict:
             eeg_transform = transforms.Compose([
                 transforms.ToTensor(),
             ])
@@ -102,13 +102,15 @@ class VanillaTransformer(nn.Module):
                 transforms.Binary(5.0),
             ])
             return {
-                "eeg": eeg_transform(sample["eeg"]),
-                "label": label_transform(sample["info"]),
+                'eeg': eeg_transform(sample['eeg']),
+                'label': label_transform(sample['info']),
             }
 
 
         dataset = DEAPDataset(
-            root_path='./data_preprocessed_python').with_transform(transform_fn)
+            root_path='./data_preprocessed_python',
+            online_transform=transform_fn,
+        )
 
         model = VanillaTransformer(chunk_size=128,
                                    num_electrodes=32,

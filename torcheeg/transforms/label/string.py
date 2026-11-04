@@ -34,7 +34,7 @@ class StringToInt(LabelTransform):
     def __init__(self):
         super(StringToInt, self).__init__()
 
-    def __call__(self, y: Union[str, List[str]], **kwargs) -> Union[int, List[int]]:
+    def __call__(self, y: Union[str, List[str]]) -> Union[int, List[int]]:
         if isinstance(y, list):
             return [self.opt(i) for i in y]
         return self.opt(y)

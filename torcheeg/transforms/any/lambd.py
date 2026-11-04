@@ -1,3 +1,5 @@
+from typing import Any
+
 from ..base_transform import BaseTransform
 
 
@@ -7,7 +9,7 @@ class Lambda(BaseTransform):
     def __init__(self, lambd):
         self.lambd = lambd
 
-    def __call__(self, x):
+    def __call__(self, x: Any) -> Any:
         return self.lambd(x)
 
     @property

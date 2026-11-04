@@ -244,10 +244,19 @@ class MHANet(nn.Module):
         from torch.utils.data import DataLoader
 
 
-        def transform_fn(sample):
+        def preprocess_fn(sample: dict) -> dict:
             eeg_transform = transforms.Compose([
                 transforms.MinMaxNormalize(axis=-1),
                 transforms.To2d(),
+            ])
+            return {
+                **sample,
+                'eeg': eeg_transform(sample['eeg']),
+            }
+
+
+        def transform_fn(sample: dict) -> dict:
+            eeg_transform = transforms.Compose([
                 transforms.ToTensor(),
             ])
             label_transform = transforms.Compose([
@@ -255,12 +264,16 @@ class MHANet(nn.Module):
                 transforms.Lambda(lambda x: x - 1),
             ])
             return {
-                "eeg": eeg_transform(sample["eeg"]),
-                "label": label_transform(sample["info"]),
+                'eeg': eeg_transform(sample['eeg']),
+                'label': label_transform(sample['info']),
             }
 
 
-        dataset = DTUDataset(root_path='./DATA_preproc').with_transform(transform_fn)
+        dataset = DTUDataset(
+            root_path='./DATA_preproc',
+            offline_transform=preprocess_fn,
+            online_transform=transform_fn,
+        )
 
         model = MHANet(num_electrodes=64,
                        chunk_size=64,

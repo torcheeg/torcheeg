@@ -45,7 +45,7 @@ class Mapping(LabelTransform):
         self.map_dict = map_dict
         self.default = default
 
-    def __call__(self, y: Union[int, float, List], **kwargs) -> Union[int, List]:
+    def __call__(self, y: Union[int, float, List]) -> Union[int, List]:
         if isinstance(y, list):
             return [self.map_dict.get(label, self.default) for label in y]
         else:

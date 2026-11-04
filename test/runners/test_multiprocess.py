@@ -22,16 +22,21 @@ class _LargeRecordData(_WindowData):
         raise ValueError('failure after first sample')
 
 
+def _increment_sample(sample):
+    return {**sample, 'eeg': sample['eeg'] + 1}
+
+
 class TestMultiprocessRunner(unittest.TestCase):
     def test_start_methods_preserve_order_and_values(self):
         for method in multiprocessing.get_all_start_methods():
             with self.subTest(method=method):
                 runner = MultiprocessRunner(
                     2, multiprocessing_context=method, prefetch=1)
-                samples = list(runner(_WindowData()))
+                samples = list(
+                    runner(_WindowData(transform=_increment_sample)))
                 self.assertEqual([(s['info']['subject_id'], s['info']['index']) for s in samples],
                                  [(f'{record:03}', index) for record in range(3) for index in range(8)])
-                self.assertEqual(samples[0]['eeg'].sum(), 0)
+                self.assertEqual(samples[0]['eeg'].sum(), 8)
 
     def test_first_sample_is_not_delayed_until_record_completion(self):
         samples = MultiprocessRunner(1)(_LargeRecordData())

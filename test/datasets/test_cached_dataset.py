@@ -3,11 +3,12 @@ import os
 import pickle
 import tempfile
 import unittest
+from copy import copy
 from unittest.mock import patch
 
 import numpy as np
 
-from torcheeg.datasets import BaseData, DEAPData, DEAPDataset
+from torcheeg.datasets import BaseData, DEAPDataset
 
 
 def _fake_data(dataset_class, **configuration):
@@ -38,12 +39,14 @@ def _assert_memory_dataset(test_case, dataset_class, **configuration):
         return {**sample, 'eeg': sample['eeg'] + 1}
     with patch.object(data_class, 'set_records', return_value=[record]), patch.object(data_class, 'read_record', return_value=payload), patch.object(data_class, 'process_record', one_sample):
         dataset = dataset_class(
-            io_mode='memory', verbose=False, transform=increment, **configuration)
+            io_mode='memory', verbose=False, offline_transform=increment,
+            online_transform=lambda sample: {**sample, 'eeg': sample['eeg'] * 2}, **configuration)
     test_case.assertEqual(len(dataset), 1)
-    np.testing.assert_array_equal(dataset[0]['eeg'], expected['eeg'] + 1)
-    changed = dataset.with_transform(
-        lambda sample: {**sample, 'eeg': sample['eeg'] + 3})
-    np.testing.assert_array_equal(changed[0]['eeg'], expected['eeg'] + 1 + 3)
+    np.testing.assert_array_equal(dataset[0]['eeg'], (expected['eeg'] + 1) * 2)
+    changed = copy(dataset)
+    changed.transform = lambda sample: {**sample, 'eeg': sample['eeg'] + 3}
+    np.testing.assert_array_equal(
+        changed[0]['eeg'], expected['eeg'] + 1 + 3)
     test_case.assertNotIn('clip_id', dataset[0]['info'])
 
 
@@ -81,9 +84,46 @@ class TestCachedDataset(unittest.TestCase):
             def fail(sample):
                 raise RuntimeError('deliberate failure')
             with self.assertRaisesRegex(RuntimeError, 'deliberate failure'):
-                DEAPDataset(**config, io_path=path, transform=fail)
+                DEAPDataset(**config, io_path=path, offline_transform=fail)
             self.assertFalse(os.path.exists(
                 os.path.join(path, 'manifest.json')))
             dataset = DEAPDataset(**config, io_path=path)
             self.assertEqual(len(dataset), 5)
             dataset.close()
+
+    def test_online_transform_runs_on_each_read_and_reuses_offline_cache(self):
+        def offline(sample):
+            return {**sample, 'eeg': sample['eeg'] + 10}
+
+        calls = []
+
+        def online(sample):
+            calls.append(sample['info']['valence'])
+            sample['eeg'] *= 2
+            return {'eeg': sample['eeg'], 'label': sample['info']['valence']}
+
+        with tempfile.TemporaryDirectory() as directory:
+            config = self.make_source(directory)
+            path = os.path.join(directory, 'cache')
+            dataset = DEAPDataset(**config, io_path=path,
+                                  offline_transform=offline, online_transform=online)
+            self.assertEqual(calls, [])
+            first = dataset[0]
+            np.testing.assert_array_equal(dataset[0]['eeg'], first['eeg'])
+            self.assertEqual(calls, [1, 1])
+            self.assertEqual(set(first), {'eeg', 'label'})
+            self.assertEqual(first['label'], 1)
+            dataset.close()
+            with patch('torcheeg.datasets.cached_dataset.MultiprocessRunner.iterate', side_effect=AssertionError('cache rebuilt')):
+                dataset = DEAPDataset(
+                    **config, io_path=path, offline_transform=offline)
+                np.testing.assert_array_equal(
+                    dataset[0]['eeg'] * 2, first['eeg'])
+                dataset.close()
+            with self.assertRaises(ValueError):
+                DEAPDataset(**config, io_path=path)
+
+    def test_stage_transforms_must_be_callable(self):
+        for name in ('offline_transform', 'online_transform'):
+            with self.subTest(name=name), self.assertRaisesRegex(TypeError, name):
+                DEAPDataset(io_mode='memory', **{name: 1})

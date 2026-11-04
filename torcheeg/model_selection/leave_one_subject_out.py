@@ -32,7 +32,7 @@ class LeaveOneSubjectOut(BaseModelSelection):
         cv = LeaveOneSubjectOut()
 
 
-        def transform_fn(sample):
+        def transform_fn(sample: dict) -> dict:
             eeg_transform = transforms.Compose([
                 transforms.ToTensor(),
                 transforms.To2d(),
@@ -43,13 +43,15 @@ class LeaveOneSubjectOut(BaseModelSelection):
                 transforms.BinariesToCategory(),
             ])
             return {
-                "eeg": eeg_transform(sample["eeg"]),
-                "label": label_transform(sample["info"]),
+                'eeg': eeg_transform(sample['eeg']),
+                'label': label_transform(sample['info']),
             }
 
 
         dataset = DEAPDataset(
-            root_path='./data_preprocessed_python').with_transform(transform_fn)
+            root_path='./data_preprocessed_python',
+            online_transform=transform_fn,
+        )
 
         for train_dataset, test_dataset in cv.split(dataset):
             train_loader = DataLoader(train_dataset)

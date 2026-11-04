@@ -243,24 +243,37 @@ class ISRUCDataset(CachedDataset):
 
     .. code-block:: python
 
-        def transform_fn(sample):
+        def preprocess_fn(sample: dict) -> dict:
             eeg_transform = transforms.Compose([
                 transforms.MeanStdNormalize(),
+            ])
+            return {
+                **sample,
+                'eeg': eeg_transform(sample['eeg']),
+            }
+
+
+        def transform_fn(sample: dict) -> dict:
+            eeg_transform = transforms.Compose([
                 transforms.ToTensor(),
             ])
             label_transform = transforms.Compose([
                 transforms.Select('label'),
-                transforms.Mapping({'Sleep stage W': 0, 'Sleep stage N1': 1, 'Sleep stage N2': 2,
-                                   'Sleep stage N3': 3, 'Sleep stage R': 4, 'Lights off@@EEG F4-A1': 0}),
+                transforms.Mapping({'Sleep stage W': 0, 'Sleep stage N1': 1, 'Sleep stage N2': 2, 'Sleep stage N3': 3, 'Sleep stage R': 4, 'Lights off@@EEG F4-A1': 0}),
             ])
             return {
-                "eeg": eeg_transform(sample["eeg"]),
-                "label": label_transform(sample["info"]),
+                'eeg': eeg_transform(sample['eeg']),
+                'label': label_transform(sample['info']),
             }
 
 
-        dataset = ISRUCDataset(root_path='./ISRUC-SLEEP', sfreq=100, channels=[
-                               'F3-M2', 'C3-M2', 'O1-M2', 'F4-M1', 'C4-M1', 'O2-M1']).with_transform(transform_fn)
+        dataset = ISRUCDataset(
+            root_path='./ISRUC-SLEEP',
+            sfreq=100,
+            channels=['F3-M2', 'C3-M2', 'O1-M2', 'F4-M1', 'C4-M1', 'O2-M1'],
+            offline_transform=preprocess_fn,
+            online_transform=transform_fn,
+        )
         print(dataset[0])
 
     Args:
@@ -273,7 +286,8 @@ class ISRUCDataset(CachedDataset):
 
 
 
-        transform (Callable, optional): Sample dictionary transform applied before storage. (default: :obj:`None`)
+        offline_transform (Callable, optional): Sample dictionary transform applied before storage. (default: :obj:`None`)
+        online_transform (Callable, optional): Sample transform applied on each read. (default: :obj:`None`)
         io_path (str, optional): The path to generated unified data IO, cached as an intermediate result. If set to None, a random path will be generated. (default: :obj:`None`)
         io_size (int): Maximum size database may grow to; used to size the memory mapping. If database grows larger than ``map_size``, an exception will be raised and the user must close and reopen. (default: :obj:`1048576`)
         io_mode (str): Storage mode of EEG signal. When io_mode is set to :obj:`lmdb`, TorchEEG provides an efficient database (LMDB) for storing EEG signals. When io_mode is set to :obj:`pickle`, pickle-based persistence files are used. When io_mode is set to :obj:`memory`, memory are used. (default: :obj:`lmdb`)
@@ -287,15 +301,15 @@ class ISRUCDataset(CachedDataset):
 
     grid = ISRUCData.grid
 
-    def __init__(self, root_path: str = './ISRUC-SLEEP', groups: List = [0, 1, 2], channels: List = ['F3-M2', 'C3-M2', 'O1-M2', 'F4-M1', 'C4-M1', 'O2-M1'], l_freq: float = 0.5, h_freq: float = 30, sfreq: int = 100, transform: Union[None, Callable] = None, io_path: Union[None, str] = None, io_size: int = 1048576, io_mode: str = 'lmdb', num_worker: int = 0, verbose: bool = True, **kwargs):
+    def __init__(self, root_path: str = './ISRUC-SLEEP', groups: List = [0, 1, 2], channels: List = ['F3-M2', 'C3-M2', 'O1-M2', 'F4-M1', 'C4-M1', 'O2-M1'], l_freq: float = 0.5, h_freq: float = 30, sfreq: int = 100, offline_transform: Union[None, Callable] = None, online_transform: Union[None, Callable] = None, io_path: Union[None, str] = None, io_size: int = 1048576, io_mode: str = 'lmdb', num_worker: int = 0, verbose: bool = True, **kwargs):
         if io_path is None:
             io_path = get_random_dir_path(dir_prefix='datasets')
         params = {'root_path': root_path, 'groups': groups, 'channels': channels, 'l_freq': l_freq, 'h_freq': h_freq, 'sfreq': sfreq,
-                  'transform': transform, 'io_path': io_path, 'io_size': io_size, 'io_mode': io_mode, 'num_worker': num_worker, 'verbose': verbose}
+                  'offline_transform': offline_transform, 'online_transform': online_transform, 'io_path': io_path, 'io_size': io_size, 'io_mode': io_mode, 'num_worker': num_worker, 'verbose': verbose}
         params.update(kwargs)
         self.__dict__.update(params)
         super().__init__(**params)
 
     @property
     def repr_body(self) -> Dict:
-        return dict(super().repr_body, **{'transform': self.transform, 'num_worker': self.num_worker, 'verbose': self.verbose, 'io_size': self.io_size})
+        return dict(super().repr_body, **{'offline_transform': self.offline_transform, 'online_transform': self.online_transform, 'num_worker': self.num_worker, 'verbose': self.verbose, 'io_size': self.io_size})

@@ -104,10 +104,18 @@ class DGCNN(nn.Module):
         from torcheeg import transforms
 
 
-        def transform_fn(sample):
+        def preprocess_fn(sample: dict) -> dict:
             eeg_transform = transforms.Compose([
-                transforms.BandDifferentialEntropy(band_dict={'delta': [1, 4], 'theta': [
-                                                   4, 8], 'alpha': [8, 14], 'beta': [14, 31], 'gamma': [31, 49]}),
+                transforms.BandDifferentialEntropy(band_dict={'delta': [1, 4], 'theta': [4, 8], 'alpha': [8, 14], 'beta': [14, 31], 'gamma': [31, 49]}),
+            ])
+            return {
+                **sample,
+                'eeg': eeg_transform(sample['eeg']),
+            }
+
+
+        def transform_fn(sample: dict) -> dict:
+            eeg_transform = transforms.Compose([
                 transforms.ToTensor(),
             ])
             label_transform = transforms.Compose([
@@ -115,13 +123,16 @@ class DGCNN(nn.Module):
                 transforms.Lambda(lambda x: x + 1),
             ])
             return {
-                "eeg": eeg_transform(sample["eeg"]),
-                "label": label_transform(sample["info"]),
+                'eeg': eeg_transform(sample['eeg']),
+                'label': label_transform(sample['info']),
             }
 
 
         dataset = SEEDDataset(
-            root_path='./Preprocessed_EEG').with_transform(transform_fn)
+            root_path='./Preprocessed_EEG',
+            offline_transform=preprocess_fn,
+            online_transform=transform_fn,
+        )
 
         model = DGCNN(in_channels=5, num_electrodes=62,
                       hid_channels=32, num_layers=2, num_classes=2)

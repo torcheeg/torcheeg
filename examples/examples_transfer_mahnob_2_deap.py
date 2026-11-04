@@ -15,8 +15,8 @@ In this tutorial, we demonstrate how to use TorchEEG to implement transfer learn
 # seconds long, which we divide into three sections and then average to
 # obtain the trial’s baseline signal.
 #
-# Each sample is transformed when read: calculate band features, remove the
-# baseline, map electrodes to a grid, and convert the result to a tensor.
+# Offline preprocessing caches band features. Online processing removes the
+# baseline, maps electrodes to a grid, and converts the result to a tensor.
 #
 #
 
@@ -25,11 +25,20 @@ from torcheeg.datasets import MAHNOBDataset
 from torcheeg.datasets.utils import get_locations
 
 
-def transform_fn(sample):
+def preprocess_fn(sample: dict) -> dict:
     eeg_transform = transforms.Compose([
         transforms.BandDifferentialEntropy(sampling_rate=128),
-        transforms.BaselineRemoval(baseline=transforms.BandDifferentialEntropy(
-            sampling_rate=128)(sample['baseline'])),
+    ])
+    return {
+        **sample,
+        'eeg': eeg_transform(sample['eeg']),
+        'baseline': eeg_transform(sample['baseline']),
+    }
+
+
+def transform_fn(sample: dict) -> dict:
+    eeg_transform = transforms.Compose([
+        transforms.BaselineRemoval(baseline=sample['baseline']),
         transforms.ToGrid(get_locations(
             MAHNOBDataset.channels, MAHNOBDataset.grid)),
         transforms.ToTensor(),
@@ -39,13 +48,21 @@ def transform_fn(sample):
         transforms.Binary(5.0),
     ])
     return {
-        "eeg": eeg_transform(sample["eeg"]),
-        "label": label_transform(sample["info"]),
+        'eeg': eeg_transform(sample['eeg']),
+        'label': label_transform(sample['info']),
     }
 
 
-dataset = MAHNOBDataset(io_path='./examples_transfer_mahnob_2_deap/mahnob', root_path='./Sessions',
-                        chunk_size=128, baseline_chunk_size=128, num_baseline=30, num_worker=4).with_transform(transform_fn)
+dataset = MAHNOBDataset(
+    io_path='./examples_transfer_mahnob_2_deap/mahnob',
+    root_path='./Sessions',
+    chunk_size=128,
+    baseline_chunk_size=128,
+    num_baseline=30,
+    num_worker=4,
+    offline_transform=preprocess_fn,
+    online_transform=transform_fn,
+)
 
 ######################################################################
 # Step 2: Divide the Training and Test samples in the Dataset
@@ -119,19 +136,28 @@ state_dict = model.state_dict()
 # seconds long, which we divide into three sections and then average to
 # obtain the trial’s baseline signal.
 #
-# Each sample is transformed when read: calculate band features, remove the
-# baseline, map electrodes to a grid, and convert the result to a tensor.
+# Offline preprocessing caches band features. Online processing removes the
+# baseline, maps electrodes to a grid, and converts the result to a tensor.
 #
 
 from torcheeg.datasets import DEAPDataset
 from torcheeg.datasets.utils import get_locations
 
 
-def transform_fn(sample):
+def preprocess_fn(sample: dict) -> dict:
     eeg_transform = transforms.Compose([
         transforms.BandDifferentialEntropy(),
-        transforms.BaselineRemoval(
-            baseline=transforms.BandDifferentialEntropy()(sample['baseline'])),
+    ])
+    return {
+        **sample,
+        'eeg': eeg_transform(sample['eeg']),
+        'baseline': eeg_transform(sample['baseline']),
+    }
+
+
+def transform_fn(sample: dict) -> dict:
+    eeg_transform = transforms.Compose([
+        transforms.BaselineRemoval(baseline=sample['baseline']),
         transforms.ToGrid(get_locations(
             DEAPDataset.channels, DEAPDataset.grid)),
         transforms.ToTensor(),
@@ -141,13 +167,18 @@ def transform_fn(sample):
         transforms.Binary(5.0),
     ])
     return {
-        "eeg": eeg_transform(sample["eeg"]),
-        "label": label_transform(sample["info"]),
+        'eeg': eeg_transform(sample['eeg']),
+        'label': label_transform(sample['info']),
     }
 
 
-dataset = DEAPDataset(io_path=f'./examples_transfer_mahnob_2_deap/deap',
-                      root_path='./data_preprocessed_python', num_worker=8).with_transform(transform_fn)
+dataset = DEAPDataset(
+    io_path=f'./examples_transfer_mahnob_2_deap/deap',
+    root_path='./data_preprocessed_python',
+    num_worker=8,
+    offline_transform=preprocess_fn,
+    online_transform=transform_fn,
+)
 
 ######################################################################
 # Step 5: Split the Dataset into Training and Test Sets

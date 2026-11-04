@@ -1,7 +1,10 @@
 import unittest
 from test.runners.test_base import _WindowData
 
+import numpy as np
+
 from torcheeg.datasets import BaseData
+from torcheeg.transforms import Compose
 
 
 class TestBaseData(unittest.TestCase):
@@ -36,3 +39,22 @@ class TestBaseData(unittest.TestCase):
                 yield {'eeg': samples, 'info': {'record': record}}
         self.assertEqual(list(StaticData().iter_record('record')), [
                          {'eeg': 'record', 'info': {'record': 'record'}}])
+
+    def test_transform_composition_preserves_source_configuration(self):
+        def increment(sample):
+            return {**sample, 'eeg': sample['eeg'] + 1}
+
+        def double(sample):
+            return {**sample, 'eeg': sample['eeg'] * 2}
+
+        data = _WindowData()
+        first = _WindowData(transform=increment)
+        chained = _WindowData(transform=Compose([increment, double]))
+        composed = _WindowData(transform=Compose(
+            [increment, Compose([double])]))
+        np.testing.assert_array_equal(next(data.iter_record(0))['eeg'], 0)
+        np.testing.assert_array_equal(next(first.iter_record(0))['eeg'], 1)
+        np.testing.assert_array_equal(next(chained.iter_record(0))['eeg'], 2)
+        np.testing.assert_array_equal(next(composed.iter_record(0))['eeg'], 2)
+        with self.assertRaises(TypeError):
+            _WindowData(transform=1)

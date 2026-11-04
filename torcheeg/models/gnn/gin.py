@@ -30,24 +30,35 @@ class GIN(nn.Module):
         from torch_geometric.data import DataLoader
 
 
-        def transform_fn(sample):
+        def preprocess_fn(sample: dict) -> dict:
             eeg_transform = transforms.Compose([
                 transforms.BandDifferentialEntropy(),
-                ToG(get_standard_adjacency(SEEDDataset.channels,
-                    get_positions(SEEDDataset.channels))),
+            ])
+            return {
+                **sample,
+                'eeg': eeg_transform(sample['eeg']),
+            }
+
+
+        def transform_fn(sample: dict) -> dict:
+            eeg_transform = transforms.Compose([
+                ToG(get_standard_adjacency(SEEDDataset.channels, get_positions(SEEDDataset.channels))),
             ])
             label_transform = transforms.Compose([
                 transforms.Select('valence'),
                 transforms.Binary(5.0),
             ])
             return {
-                "eeg": eeg_transform(sample["eeg"]),
-                "label": label_transform(sample["info"]),
+                'eeg': eeg_transform(sample['eeg']),
+                'label': label_transform(sample['info']),
             }
 
 
         dataset = DEAPDataset(
-            root_path='./data_preprocessed_python').with_transform(transform_fn)
+            root_path='./data_preprocessed_python',
+            offline_transform=preprocess_fn,
+            online_transform=transform_fn,
+        )
 
         model = GIN(in_channels=4, hid_channels=64, num_classes=2)
 

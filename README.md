@@ -148,32 +148,45 @@ from torcheeg import transforms
 
 from torcheeg.datasets.utils import get_locations
 
-def transform_fn(sample):
+def preprocess_fn(sample: dict) -> dict:
     eeg_transform = transforms.Compose([
         transforms.BandDifferentialEntropy(),
-        transforms.BaselineRemoval(
-            baseline=transforms.BandDifferentialEntropy()(sample["baseline"]),
-        ),
+    ])
+    return {
+        **sample,
+        'eeg': eeg_transform(sample['eeg']),
+        'baseline': eeg_transform(sample['baseline']),
+    }
+
+
+def transform_fn(sample: dict) -> dict:
+    eeg_transform = transforms.Compose([
+        transforms.BaselineRemoval(baseline=sample['baseline']),
         transforms.ToGrid(get_locations(DEAPDataset.channels, DEAPDataset.grid)),
         transforms.ToTensor(),
     ])
     label_transform = transforms.Compose([
-        transforms.Select("valence"),
+        transforms.Select('valence'),
         transforms.Binary(5.0),
     ])
     return {
-        "eeg": eeg_transform(sample["eeg"]),
-        "label": label_transform(sample["info"]),
+        'eeg': eeg_transform(sample['eeg']),
+        'label': label_transform(sample['info']),
     }
 
 dataset = DEAPDataset(
     io_path='./tmp_out/examples_pipeline/deap',
     root_path='./tmp_in/data_preprocessed_python',
     num_worker=4,
-).with_transform(transform_fn)
+    offline_transform=preprocess_fn,
+    online_transform=transform_fn,
+)
 ```
 
-`with_transform` applies the function each time a sample is read, leaving stored samples unchanged. `eeg_transform` and `label_transform` describe the EEG and label operations independently. The returned fields are `eeg` and `label`, which PyTorch DataLoader also preserves when batching samples.
+`offline_transform` computes features when creating the cache.
+`online_transform` prepares each sample when it is read, returning
+`eeg` and `label` for training. Labels are constructed inside
+the online function. `num_worker` controls offline processing workers.
 
 Next, we need to divide the dataset into a training set and a test set. In the field of EEG analysis, commonly used data partitioning methods include k-fold cross-validation and leave-one-out cross-validation. In this tutorial, we use k-fold cross-validation on the entire dataset (`KFold`) as an example of dataset splitting.
 

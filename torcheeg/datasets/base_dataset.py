@@ -7,7 +7,6 @@ import pandas as pd
 from torch.utils.data import Dataset
 
 from ..io import BaseEEGIO, BaseInfoIO
-from ..transforms.any.compose import Compose
 
 
 class _RequiredMetadata:
@@ -21,14 +20,14 @@ class _RequiredMetadata:
 
 
 class BaseDataset(Dataset):
-    """Store sample dictionaries and create selections and transform views."""
+    """Store sample dictionaries and transform selected samples on reading."""
 
     channels = _RequiredMetadata()
     grid = _RequiredMetadata()
     adjacency = _RequiredMetadata()
     _STORAGE_COLUMNS = frozenset(('_record_id', 'clip_id', 'baseline_id'))
 
-    def __init__(self, eeg_io, info_io):
+    def __init__(self, eeg_io, info_io, transform=None):
         if not isinstance(eeg_io, BaseEEGIO):
             raise TypeError('eeg_io must be a BaseEEGIO.')
         if not isinstance(info_io, BaseInfoIO):
@@ -36,7 +35,9 @@ class BaseDataset(Dataset):
         self.eeg_io = eeg_io
         self.info_io = info_io
         self._info = None
-        self._transforms = ()
+        if transform is not None and not callable(transform):
+            raise TypeError('transform must be callable.')
+        self.transform = transform
         self._is_view = False
 
     @property
@@ -101,8 +102,8 @@ class BaseDataset(Dataset):
             raise TypeError('A scalar boolean is not a sample index.')
         if isinstance(index, numbers.Integral):
             sample = self._read_sample(int(index))
-            for transform in self._transforms:
-                sample = transform(sample)
+            if self.transform is not None:
+                sample = self.transform(sample)
                 if not isinstance(sample, dict):
                     raise TypeError(
                         'A sample transform must return a dictionary.')
@@ -154,16 +155,6 @@ class BaseDataset(Dataset):
         for name in result._info.select_dtypes(include='object'):
             result._info[name] = result._info[name].map(deepcopy)
         result._is_view = True
-        return result
-
-    def with_transform(self, transform):
-        """Return a view that appends a sample transform to the current pipeline."""
-        if not callable(transform):
-            raise TypeError('transform must be callable.')
-        result = copy(self)
-        steps = transform.transforms if isinstance(
-            transform, Compose) else (transform,)
-        result._transforms = self._transforms + tuple(steps)
         return result
 
     def close(self):

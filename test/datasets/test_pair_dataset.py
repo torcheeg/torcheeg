@@ -40,7 +40,7 @@ class TestPairDataset(unittest.TestCase):
             self.assertEqual(sample['info']['sources'], [
                              dataset_a[index]['info'], dataset_b[index]['info']])
 
-    def test_selection_and_transform_views(self):
+    def test_selection_preserves_constructor_transform(self):
         import numpy as np
 
         from torcheeg.datasets import MemoryDataset
@@ -54,8 +54,8 @@ class TestPairDataset(unittest.TestCase):
         for index, original in enumerate((2, 0, 2)):
             np.testing.assert_array_equal(
                 selected[index]['eeg'], combined[original]['eeg'])
-        view = selected.with_transform(
-            lambda sample: {**sample, 'marker': True})
+        view = PairDataset([first, second], join_key='subject_id',
+                           transform=lambda sample: {**sample, 'marker': True})[[2, 0, 2]]
         self.assertTrue(view[0]['marker'])
         self.assertNotIn('marker', selected[0])
         self.assertIn('PairDataset', repr(combined))

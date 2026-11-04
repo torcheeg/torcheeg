@@ -13,7 +13,7 @@ In this tutorial, you'll learn how to utilize TorchEEG's Associative Domain Adap
 # We leverage the SEED dataset, supported by TorchEEG, where each EEG sample lasts 1 second and consists of 200 data points.
 #
 # The dataset provides extracted band features. transform_fn maps them to a
-# grid and converts them to tensors when a sample is read.
+# grid before caching; transform_fn converts them to tensors on each read.
 #
 
 import numpy as np
@@ -24,10 +24,19 @@ from torcheeg.datasets import SEEDDataset, SEEDFeatureDataset
 from torcheeg.datasets.utils import get_locations
 
 
-def transform_fn(sample):
+def preprocess_fn(sample: dict) -> dict:
     eeg_transform = transforms.Compose([
         transforms.ToGrid(get_locations(
             SEEDDataset.channels, SEEDDataset.grid)),
+    ])
+    return {
+        **sample,
+        'eeg': eeg_transform(sample['eeg']),
+    }
+
+
+def transform_fn(sample: dict) -> dict:
+    eeg_transform = transforms.Compose([
         transforms.ToTensor(),
     ])
     label_transform = transforms.Compose([
@@ -35,13 +44,19 @@ def transform_fn(sample):
         transforms.Lambda(lambda x: x + 1),
     ])
     return {
-        "eeg": eeg_transform(sample["eeg"]),
-        "label": label_transform(sample["info"]),
+        'eeg': eeg_transform(sample['eeg']),
+        'label': label_transform(sample['info']),
     }
 
 
-dataset = SEEDFeatureDataset(io_path=f'./examples_seed_domain_adaption/seed',
-                             root_path='./ExtractedFeatures', feature=['de_LDS'], num_worker=4).with_transform(transform_fn)
+dataset = SEEDFeatureDataset(
+    io_path=f'./examples_seed_domain_adaption/seed',
+    root_path='./ExtractedFeatures',
+    feature=['de_LDS'],
+    num_worker=4,
+    offline_transform=preprocess_fn,
+    online_transform=transform_fn,
+)
 
 ######################################################################
 # Step 2: Define the Model

@@ -191,10 +191,9 @@ class FBMSNet(nn.Module):
             }
 
 
-            def transform_fn(sample):
+            def transform_fn(sample: dict) -> dict:
                 eeg_transform = transforms.Compose([
-                    transforms.BandSignal(
-                        band_dict=freq_range_per_band, sampling_rate=250),
+                    transforms.BandSignal(band_dict=freq_range_per_band, sampling_rate=250),
                     transforms.ToTensor(),
                 ])
                 label_transform = transforms.Compose([
@@ -207,8 +206,11 @@ class FBMSNet(nn.Module):
                 }
 
 
-            dataset = BCICIV2aDataset(root_path='./BCICIV_2a_mat',
-                                      chunk_size=512).with_transform(transform_fn)
+            dataset = BCICIV2aDataset(
+                root_path='./BCICIV_2a_mat',
+                chunk_size=512,
+                online_transform=transform_fn,
+            )
 
             model = FBMSNet(num_classes=4, num_electrodes=22,
                             chunk_size=512, in_channels=9)

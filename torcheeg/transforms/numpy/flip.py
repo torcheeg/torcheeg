@@ -2,6 +2,7 @@ from copy import deepcopy
 from typing import Dict, Union
 
 import numpy as np
+import torch
 
 from torcheeg.transforms import EEGTransform
 
@@ -71,7 +72,7 @@ class HorizontalFlip(EEGTransform):
         self.swap_pair = get_swap_pair(location_dict)
         self.channel_dim = channel_dim
 
-    def __call__(self, eeg: any, **kwargs) -> any:
+    def __call__(self, eeg: Union[np.ndarray, torch.Tensor]) -> Union[np.ndarray, torch.Tensor]:
         eeg = horizontal_flip(eeg, self.channel_dim, self.swap_pair)
         return eeg
 

@@ -35,7 +35,7 @@ class FixCategory(LabelTransform):
         super(FixCategory, self).__init__()
         self.value = value
 
-    def __call__(self, y: Dict, **kwargs) -> Union[int, float, List]:
+    def __call__(self, y: Dict) -> Union[int, float, List]:
         return self.value
 
     @property

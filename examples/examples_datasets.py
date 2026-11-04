@@ -12,7 +12,7 @@ This guide will help you understand how to easily load and manipulate these data
 # An Example of Emotion Recognition Dataset
 # ----------------------------------------------
 #
-# To begin, you'll need to download the DEAP dataset from DEAP download link. Once you have the dataset, use the following code to load it. The dataset caches EEG windows and metadata. transform_fn prepares EEG features and a label when a sample is read.
+# To begin, you'll need to download the DEAP dataset from DEAP download link. Once you have the dataset, use the following code to load it. preprocess_fn computes features before storage; transform_fn prepares EEG and a label each time a sample is read.
 #
 
 from torcheeg import transforms
@@ -20,11 +20,20 @@ from torcheeg.datasets import DEAPDataset
 from torcheeg.datasets.utils import get_locations
 
 
-def transform_fn(sample):
+def preprocess_fn(sample: dict) -> dict:
     eeg_transform = transforms.Compose([
         transforms.BandDifferentialEntropy(),
-        transforms.BaselineRemoval(
-            baseline=transforms.BandDifferentialEntropy()(sample['baseline'])),
+    ])
+    return {
+        **sample,
+        'eeg': eeg_transform(sample['eeg']),
+        'baseline': eeg_transform(sample['baseline']),
+    }
+
+
+def transform_fn(sample: dict) -> dict:
+    eeg_transform = transforms.Compose([
+        transforms.BaselineRemoval(baseline=sample['baseline']),
         transforms.ToGrid(get_locations(
             DEAPDataset.channels, DEAPDataset.grid)),
         transforms.ToTensor(),
@@ -34,13 +43,18 @@ def transform_fn(sample):
         transforms.Binary(5.0),
     ])
     return {
-        "eeg": eeg_transform(sample["eeg"]),
-        "label": label_transform(sample["info"]),
+        'eeg': eeg_transform(sample['eeg']),
+        'label': label_transform(sample['info']),
     }
 
 
-dataset = DEAPDataset(io_path=f'./deap', root_path='./data_preprocessed_python',
-                      num_worker=8).with_transform(transform_fn)
+dataset = DEAPDataset(
+    io_path=f'./deap',
+    root_path='./data_preprocessed_python',
+    num_worker=8,
+    offline_transform=preprocess_fn,
+    online_transform=transform_fn,
+)
 
 ######################################################################
 #
@@ -76,7 +90,7 @@ img = plot_3d_tensor(torch.tensor(dataset[0]['eeg']))
 # ----------------------------------------------
 #
 # Use a new io_path after changing preprocessing. Reading transforms can be
-# appended with dataset.with_transform without rebuilding the stored samples.
+# configured through online_transform without rebuilding the stored samples.
 #
 # .. code-block:: bash
 #
@@ -115,22 +129,31 @@ dataset.subject_list = [1, 2, 3]
 paradigm = LeftRightImagery()
 
 
-def transform_fn(sample):
+def preprocess_fn(sample: dict) -> dict:
     eeg_transform = transforms.Compose([
         transforms.BandDifferentialEntropy(),
+    ])
+    return {
+        **sample,
+        'eeg': eeg_transform(sample['eeg']),
+    }
+
+
+def transform_fn(sample: dict) -> dict:
+    eeg_transform = transforms.Compose([
         transforms.ToTensor(),
     ])
     label_transform = transforms.Compose([
         transforms.Select('label'),
     ])
     return {
-        "eeg": eeg_transform(sample["eeg"]),
-        "label": label_transform(sample["info"]),
+        'eeg': eeg_transform(sample['eeg']),
+        'label': label_transform(sample['info']),
     }
 
 
 dataset = moabb_dataset.MOABBDataset(
-    dataset=dataset, paradigm=paradigm, io_path='./moabb').with_transform(transform_fn)
+    dataset=dataset, paradigm=paradigm, io_path='./moabb', online_transform=transform_fn)
 
 ######################################################################
 # Custom Datasets
@@ -157,7 +180,7 @@ from torcheeg.datasets import FolderDataset
 label_map = {'label01': 0, 'label02': 1}
 
 
-def transform_fn(sample):
+def transform_fn(sample: dict) -> dict:
     eeg_transform = transforms.Compose([
         transforms.ToTensor(),
     ])
@@ -166,13 +189,19 @@ def transform_fn(sample):
         transforms.Lambda(lambda x: label_map[x]),
     ])
     return {
-        "eeg": eeg_transform(sample["eeg"]),
-        "label": label_transform(sample["info"]),
+        'eeg': eeg_transform(sample['eeg']),
+        'label': label_transform(sample['info']),
     }
 
 
-dataset = FolderDataset(io_path='./folder', root_path='./root_folder',
-                        structure='subject_in_label', num_channel=14, num_worker=4).with_transform(transform_fn)
+dataset = FolderDataset(
+    io_path='./folder',
+    root_path='./root_folder',
+    structure='subject_in_label',
+    num_channel=14,
+    num_worker=4,
+    online_transform=transform_fn,
+)
 
 ######################################################################
 # Alternatively, you can use a CSV file to specify more detailed
@@ -193,7 +222,7 @@ dataset = FolderDataset(io_path='./folder', root_path='./root_folder',
 from torcheeg.datasets import CSVFolderDataset
 
 
-def transform_fn(sample):
+def transform_fn(sample: dict) -> dict:
     eeg_transform = transforms.Compose([
         transforms.ToTensor(),
     ])
@@ -201,13 +230,16 @@ def transform_fn(sample):
         transforms.Select('label'),
     ])
     return {
-        "eeg": eeg_transform(sample["eeg"]),
-        "label": label_transform(sample["info"]),
+        'eeg': eeg_transform(sample['eeg']),
+        'label': label_transform(sample['info']),
     }
 
 
-dataset = CSVFolderDataset(csv_path='./data.csv',
-                           num_worker=4).with_transform(transform_fn)
+dataset = CSVFolderDataset(
+    csv_path='./data.csv',
+    num_worker=4,
+    online_transform=transform_fn,
+)
 
 ######################################################################
 # By default, TorchEEG uses mne to read recorded EEG signals, but you can
@@ -226,7 +258,7 @@ def default_read_fn(file_path, **kwargs):
     return epochs
 
 
-def transform_fn(sample):
+def transform_fn(sample: dict) -> dict:
     eeg_transform = transforms.Compose([
         transforms.ToTensor(),
     ])
@@ -234,10 +266,15 @@ def transform_fn(sample):
         transforms.Select('label'),
     ])
     return {
-        "eeg": eeg_transform(sample["eeg"]),
-        "label": label_transform(sample["info"]),
+        'eeg': eeg_transform(sample['eeg']),
+        'label': label_transform(sample['info']),
     }
 
 
-dataset = CSVFolderDataset(io_path='./csv_folder', csv_path='./data.csv',
-                           read_fn=default_read_fn, num_worker=4).with_transform(transform_fn)
+dataset = CSVFolderDataset(
+    io_path='./csv_folder',
+    csv_path='./data.csv',
+    read_fn=default_read_fn,
+    num_worker=4,
+    online_transform=transform_fn,
+)

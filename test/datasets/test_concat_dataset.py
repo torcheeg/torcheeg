@@ -38,7 +38,7 @@ class TestConcatDataset(unittest.TestCase):
             concat_dataset[len(dataset_a)]['eeg'], dataset_b[0]['eeg'])
         self.assertEqual(concat_dataset[-1]['eeg'], dataset_b[-1]['eeg'])
 
-    def test_selection_and_transform_views(self):
+    def test_selection_preserves_constructor_transform(self):
         import numpy as np
 
         from torcheeg.datasets import MemoryDataset
@@ -52,8 +52,8 @@ class TestConcatDataset(unittest.TestCase):
         for index, original in enumerate((2, 0, 2)):
             np.testing.assert_array_equal(
                 selected[index]['eeg'], combined[original]['eeg'])
-        view = selected.with_transform(
-            lambda sample: {**sample, 'marker': True})
+        view = ConcatDataset(first, second,
+                             transform=lambda sample: {**sample, 'marker': True})[[2, 0, 2]]
         self.assertTrue(view[0]['marker'])
         self.assertNotIn('marker', selected[0])
         self.assertIn('ConcatDataset', repr(combined))

@@ -1,7 +1,10 @@
+from typing import Any
+
+
 class BaseTransform:
     """Transform one value into another value."""
 
-    def __call__(self, x):
+    def __call__(self, x: Any) -> Any:
         raise NotImplementedError(
             "Method __call__ is not implemented in class " + self.__class__.__name__)
 
