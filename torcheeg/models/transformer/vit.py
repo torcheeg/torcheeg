@@ -105,7 +105,7 @@ class Transformer(nn.Module):
 
 
 class ViT(nn.Module):
-    r'''
+    r"""
     The Vision Transformer. For more details, please refer to the following information. It is worth noting that this model is not designed for EEG analysis, but shows good performance and can serve as a good research start.
 
     - Paper: Dosovitskiy A, Beyer L, Kolesnikov A, et al. An image is worth 16x16 words: Transformers for image recognition at scale[J]. arXiv preprint arXiv:2010.11929, 2020.
@@ -122,44 +122,100 @@ class ViT(nn.Module):
         from torch.utils.data import DataLoader
         from torcheeg.datasets.utils import get_locations
 
-        dataset = DEAPDataset(root_path='./data_preprocessed_python',
-                              offline_transform=transforms.Compose([
-                                  transforms.MinMaxNormalize(axis=-1),
-                                  transforms.ToGrid(get_locations(DEAPDataset.channels, DEAPDataset.grid))
-                              ]),
-                              online_transform=transforms.Compose([
-                                  transforms.ToTensor(),
-                              ]),
-                              label_transform=transforms.Compose([
-                                  transforms.Select('valence'),
-                                  transforms.Binary(5.0),
-                              ]))
+
+        def preprocess_fn(eeg, baseline=None, **kwargs) -> dict:
+            eeg_transform = transforms.Compose([
+                transforms.MinMaxNormalize(axis=-1),
+                transforms.ToGrid(get_locations(
+                    DEAPDataset.channels, DEAPDataset.grid)),
+            ])
+            return {
+                'eeg': eeg_transform(eeg),
+                'baseline': eeg_transform(baseline) if baseline is not None else None,
+            }
+
+
+        def transform_fn(eeg, baseline=None, **kwargs) -> dict:
+            eeg_transform = transforms.Compose([
+                transforms.ToTensor(),
+            ])
+            return {
+                'eeg': eeg_transform(eeg),
+                'baseline': eeg_transform(baseline) if baseline is not None else None,
+            }
+
+
+        def label_fn(info: dict, **kwargs) -> dict:
+            label_transform = transforms.Compose([
+                transforms.Select('valence'),
+                transforms.Binary(5.0),
+            ])
+            return {
+                'label': label_transform(info),
+            }
+
+
+        dataset = DEAPDataset(
+            root_path='./data_preprocessed_python',
+            offline_transform=preprocess_fn,
+            online_transform=transform_fn,
+            label_transform=label_fn,
+        )
 
         model = ViT(chunk_size=128,
                     grid_size=(9, 9),
                     t_patch_size=32,
                     num_classes=2)
 
-        x, y = next(iter(DataLoader(dataset, batch_size=64)))
+        batch = next(iter(DataLoader(dataset, batch_size=64)))
+
+        x, y = batch['eeg'], batch['label']
         model(x)
 
     It can also be used for the analysis of features such as DE, PSD, etc:
 
     .. code-block:: python
 
-        dataset = DEAPDataset(io_path=f'./deap',
-                    root_path='./data_preprocessed_python',
-                    offline_transform=transforms.Compose([
-                        transforms.BandDifferentialEntropy(sampling_rate=128),
-                        transforms.ToGrid(get_locations(DEAPDataset.channels, DEAPDataset.grid))
-                    ]),
-                    online_transform=transforms.Compose([
-                        transforms.ToTensor(),
-                    ]),
-                    label_transform=transforms.Compose([
-                        transforms.Select('valence'),
-                        transforms.Binary(5.0),
-                    ]))
+
+        def preprocess_fn(eeg, baseline=None, **kwargs) -> dict:
+            eeg_transform = transforms.Compose([
+                transforms.BandDifferentialEntropy(sampling_rate=128),
+                transforms.ToGrid(get_locations(
+                    DEAPDataset.channels, DEAPDataset.grid)),
+            ])
+            return {
+                'eeg': eeg_transform(eeg),
+                'baseline': eeg_transform(baseline) if baseline is not None else None,
+            }
+
+
+        def transform_fn(eeg, baseline=None, **kwargs) -> dict:
+            eeg_transform = transforms.Compose([
+                transforms.ToTensor(),
+            ])
+            return {
+                'eeg': eeg_transform(eeg),
+                'baseline': eeg_transform(baseline) if baseline is not None else None,
+            }
+
+
+        def label_fn(info: dict, **kwargs) -> dict:
+            label_transform = transforms.Compose([
+                transforms.Select('valence'),
+                transforms.Binary(5.0),
+            ])
+            return {
+                'label': label_transform(info),
+            }
+
+
+        dataset = DEAPDataset(
+            io_path=f'./deap',
+            root_path='./data_preprocessed_python',
+            offline_transform=preprocess_fn,
+            online_transform=transform_fn,
+            label_transform=label_fn,
+        )
         model = ViT(chunk_size=4,
                     grid_size=(9, 9),
                     t_patch_size=1,
@@ -179,7 +235,7 @@ class ViT(nn.Module):
         embed_dropout (float): Probability of an element to be zeroed in the dropout layers of the embedding layers. (default: :obj:`0.0`)
         dropout (float): Probability of an element to be zeroed in the dropout layers of the transformer layers. (default: :obj:`0.0`)
         pool_func (str): The pool function before the classifier, optionally including :obj:`cls` and :obj:`mean`, where :obj:`cls` represents selecting classification-related token and :obj:`mean` represents the average pooling. (default: :obj:`cls`)
-    '''
+    """
 
     def __init__(self,
                  chunk_size: int = 128,

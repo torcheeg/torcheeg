@@ -88,7 +88,7 @@ class swish(nn.Module):
 
 
 class FBCNet(nn.Module):
-    r'''
+    r"""
     An Efficient Multi-view Convolutional Neural Network for Brain-Computer Interface. For more details, please refer to the following information.
 
     - Paper: Mane R, Chew E, Chua K, et al. FBCNet: A multi-view convolutional neural network for brain-computer interface[J]. arXiv preprint arXiv:2104.01233, 2021.
@@ -104,16 +104,36 @@ class FBCNet(nn.Module):
         from torcheeg.models import FBCNet
         from torch.utils.data import DataLoader
 
-        dataset = DEAPDataset(root_path='./data_preprocessed_python',
-                              chunk_size=512,
-                              num_baseline=1,
-                              baseline_chunk_size=512,
-                              offline_transform=transforms.BandSignal(),
-                              online_transform=transforms.ToTensor(),
-                              label_transform=transforms.Compose([
-                                  transforms.Select('valence'),
-                                  transforms.Binary(5.0),
-                              ]))
+
+        def transform_fn(eeg, baseline=None, **kwargs) -> dict:
+            eeg_transform = transforms.Compose([
+                transforms.BandSignal(),
+                transforms.ToTensor(),
+            ])
+            return {
+                'eeg': eeg_transform(eeg),
+                'baseline': eeg_transform(baseline) if baseline is not None else None,
+            }
+
+
+        def label_fn(info: dict, **kwargs) -> dict:
+            label_transform = transforms.Compose([
+                transforms.Select('valence'),
+                transforms.Binary(5.0),
+            ])
+            return {
+                'label': label_transform(info),
+            }
+
+
+        dataset = DEAPDataset(
+            root_path='./data_preprocessed_python',
+            chunk_size=512,
+            num_baseline=1,
+            baseline_chunk_size=512,
+            online_transform=transform_fn,
+            label_transform=label_fn,
+        )
 
         model = FBCNet(num_classes=2,
                        num_electrodes=32,
@@ -121,7 +141,9 @@ class FBCNet(nn.Module):
                        in_channels=4,
                        num_S=32)
 
-        x, y = next(iter(DataLoader(dataset, batch_size=64)))
+        batch = next(iter(DataLoader(dataset, batch_size=64)))
+
+        x, y = batch['eeg'], batch['label']
         model(x)
 
     Args:
@@ -133,7 +155,7 @@ class FBCNet(nn.Module):
         temporal (str): The temporal layer used, with options including VarLayer, StdLayer, LogVarLayer, MeanLayer, and MaxLayer, used to compute statistics using different techniques in the temporal dimension. (default: :obj:`LogVarLayer`)
         stride_factor (int): The stride factor. (default: :obj:`4`)
         weight_norm (bool): Whether to use weight renormalization technique in Conv2dWithConstraint. (default: :obj:`True`)
-    '''
+    """
 
     def __init__(self,
                  num_electrodes: int = 20,

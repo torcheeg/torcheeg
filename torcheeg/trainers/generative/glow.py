@@ -150,15 +150,15 @@ class GlowTrainer(pl.LightningModule):
         return self.model.sample(num, temperature)
 
     def predict_step(self,
-                     batch: Tuple[torch.Tensor],
+                     batch: dict,
                      batch_idx: int,
                      dataloader_idx: int = 0) -> torch.Tensor:
-        x, _ = batch
+        x = batch['eeg']
         return self(x.shape[0], self.temperature)
 
-    def training_step(self, batch: Tuple[torch.Tensor],
+    def training_step(self, batch: dict,
                       batch_idx: int) -> torch.Tensor:
-        x, _ = batch
+        x = batch['eeg']
 
         log_probs = self.model.log_probs(x)
         loss = log_probs.mean()
@@ -191,9 +191,9 @@ class GlowTrainer(pl.LightningModule):
         self.train_loss.reset()
 
     @torch.enable_grad()
-    def validation_step(self, batch: Tuple[torch.Tensor],
+    def validation_step(self, batch: dict,
                         batch_idx: int) -> torch.Tensor:
-        x, _ = batch
+        x = batch['eeg']
 
         log_probs = self.model.log_probs(x)
         loss = log_probs.mean()
@@ -220,9 +220,9 @@ class GlowTrainer(pl.LightningModule):
         self.val_loss.reset()
 
     @torch.enable_grad()
-    def test_step(self, batch: Tuple[torch.Tensor],
+    def test_step(self, batch: dict,
                   batch_idx: int) -> torch.Tensor:
-        x, _ = batch
+        x = batch['eeg']
 
         log_probs = self.model.log_probs(x)
         loss = log_probs.mean()
@@ -384,15 +384,15 @@ class CGlowTrainer(GlowTrainer):
         return self.model.sample(y, temperature)
 
     def predict_step(self,
-                     batch: Tuple[torch.Tensor],
+                     batch: dict,
                      batch_idx: int,
                      dataloader_idx: int = 0) -> torch.Tensor:
-        x, y = batch
+        x, y = batch['eeg'], batch['label']
         return self(y, self.temperature)
 
-    def training_step(self, batch: Tuple[torch.Tensor],
+    def training_step(self, batch: dict,
                       batch_idx: int) -> torch.Tensor:
-        x, y = batch
+        x, y = batch['eeg'], batch['label']
 
         kld_loss, y_logits = self.model.log_probs(x, y)
         kld_loss = kld_loss.mean()
@@ -440,9 +440,9 @@ class CGlowTrainer(GlowTrainer):
         self.train_class_loss.reset()
 
     @torch.enable_grad()
-    def validation_step(self, batch: Tuple[torch.Tensor],
+    def validation_step(self, batch: dict,
                         batch_idx: int) -> torch.Tensor:
-        x, y = batch
+        x, y = batch['eeg'], batch['label']
 
         kld_loss, y_logits = self.model.log_probs(x, y)
         kld_loss = kld_loss.mean()
@@ -480,9 +480,9 @@ class CGlowTrainer(GlowTrainer):
         self.val_class_loss.reset()
 
     @torch.enable_grad()
-    def test_step(self, batch: Tuple[torch.Tensor],
+    def test_step(self, batch: dict,
                   batch_idx: int) -> torch.Tensor:
-        x, y = batch
+        x, y = batch['eeg'], batch['label']
 
         kld_loss, y_logits = self.model.log_probs(x, y)
         kld_loss = kld_loss.mean()

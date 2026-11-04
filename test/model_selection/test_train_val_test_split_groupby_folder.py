@@ -22,9 +22,7 @@ class TestTrainValTestSplitGroupbyFolder(unittest.TestCase):
     def _make_splitter(self, split_path=None, **overrides):
         parameters = dict(self._parameters)
         parameters.update(overrides)
-        return self._splitter_class(
-            split_path=self._split_path if split_path is None else split_path,
-            **parameters)
+        return self._splitter_class(split_path=self._split_path if split_path is None else split_path, **parameters)
 
     def test_train_val_test_split_groupby_folder(self):
         dataset = _make_dataset()

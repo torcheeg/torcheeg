@@ -158,7 +158,7 @@ class ClassificationHead(nn.Sequential):
 
 
 class Conformer(nn.Module):
-    r'''
+    r"""
     The EEG Conformer model is based on the paper "EEG Conformer: Convolutional Transformer for EEG Decoding and Visualization". For more details, please refer to the following information. 
 
     - Paper: Song Y, Zheng Q, Liu B, et al. EEG Conformer: Convolutional Transformer for EEG Decoding and Visualization[J]. IEEE Transactions on Neural Systems and Rehabilitation Engineering, 2022.
@@ -174,16 +174,44 @@ class Conformer(nn.Module):
         from torcheeg import transforms
         from torch.utils.data import DataLoader
 
-        dataset = SEEDDataset(root_path='./Preprocessed_EEG',
-                              offline_transform=transforms.Compose([
-                                  transforms.MinMaxNormalize(axis=-1),
-                                  transforms.To2d()
-                              ]),
-                              online_transform=transforms.ToTensor(),
-                              label_transform=transforms.Compose([
-                                  transforms.Select('emotion'),
-                                  transforms.Lambda(lambda x: x + 1)
-                              ]))
+
+        def preprocess_fn(eeg, baseline=None, **kwargs) -> dict:
+            eeg_transform = transforms.Compose([
+                transforms.MinMaxNormalize(axis=-1),
+                transforms.To2d(),
+            ])
+            return {
+                'eeg': eeg_transform(eeg),
+                'baseline': eeg_transform(baseline) if baseline is not None else None,
+            }
+
+
+        def transform_fn(eeg, baseline=None, **kwargs) -> dict:
+            eeg_transform = transforms.Compose([
+                transforms.ToTensor(),
+            ])
+            return {
+                'eeg': eeg_transform(eeg),
+                'baseline': eeg_transform(baseline) if baseline is not None else None,
+            }
+
+
+        def label_fn(info: dict, **kwargs) -> dict:
+            label_transform = transforms.Compose([
+                transforms.Select('emotion'),
+                transforms.Lambda(lambda x: x + 1),
+            ])
+            return {
+                'label': label_transform(info),
+            }
+
+
+        dataset = SEEDDataset(
+            root_path='./Preprocessed_EEG',
+            offline_transform=preprocess_fn,
+            online_transform=transform_fn,
+            label_transform=label_fn,
+        )
 
         model = Conformer(num_electrodes=62,
                           sampling_rate=200,
@@ -195,7 +223,9 @@ class Conformer(nn.Module):
                           forward_dropout=0.5,
                           num_classes=2)
 
-        x, y = next(iter(DataLoader(dataset, batch_size=64)))
+        batch = next(iter(DataLoader(dataset, batch_size=64)))
+
+        x, y = batch['eeg'], batch['label']
         model(x)
 
     Args:
@@ -208,7 +238,7 @@ class Conformer(nn.Module):
         forward_expansion (int): The expansion factor of the feedforward layer. (default: :obj:`4`)
         forward_dropout (float): The dropout rate of the feedforward layer. (default: :obj:`0.5`)
         num_classes (int): The number of classes. (default: :obj:`2`)
-    '''
+    """
 
     def __init__(self,
                  num_electrodes: int = 62,

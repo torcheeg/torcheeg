@@ -12,9 +12,8 @@ In this tutorial, you'll learn how to utilize TorchEEG's Associative Domain Adap
 #
 # We leverage the SEED dataset, supported by TorchEEG, where each EEG sample lasts 1 second and consists of 200 data points.
 #
-# In offline preprocessing, each electrode's EEG signal is segmented into 4 sub-bands. We then calculate the differential entropy for each sub-band as a feature. The signals are debaselined, mapped onto a grid, and finally saved locally.
-#
-# For online processing, we convert all EEG signals into Tensors for neural network input. Additionally, we apply after_hook_normalize to reduce trial variance effects on cross-subject emotion recognition.
+# The dataset provides extracted band features. transform_fn maps them to a
+# grid before caching; transform_fn converts them to tensors on each read.
 #
 
 import numpy as np
@@ -23,20 +22,48 @@ from pytorch_lightning.callbacks import ModelCheckpoint
 from torcheeg import transforms
 from torcheeg.datasets import SEEDDataset, SEEDFeatureDataset
 from torcheeg.datasets.utils import get_locations
-from torcheeg.transforms import after_hook_normalize
+
+
+def preprocess_fn(eeg, baseline=None, **kwargs) -> dict:
+    eeg_transform = transforms.Compose([
+        transforms.ToGrid(get_locations(
+            SEEDDataset.channels, SEEDDataset.grid)),
+    ])
+    return {
+        'eeg': eeg_transform(eeg),
+        'baseline': eeg_transform(baseline) if baseline is not None else None,
+    }
+
+
+def transform_fn(eeg, baseline=None, **kwargs) -> dict:
+    eeg_transform = transforms.Compose([
+        transforms.ToTensor(),
+    ])
+    return {
+        'eeg': eeg_transform(eeg),
+        'baseline': eeg_transform(baseline) if baseline is not None else None,
+    }
+
+
+def label_fn(info: dict, **kwargs) -> dict:
+    label_transform = transforms.Compose([
+        transforms.Select('emotion'),
+        transforms.Lambda(lambda x: x + 1),
+    ])
+    return {
+        'label': label_transform(info),
+    }
+
 
 dataset = SEEDFeatureDataset(
     io_path=f'./examples_seed_domain_adaption/seed',
     root_path='./ExtractedFeatures',
-    after_session=after_hook_normalize,
-    offline_transform=transforms.Compose(
-        [transforms.ToGrid(get_locations(SEEDDataset.channels, SEEDDataset.grid))]),
-    online_transform=transforms.ToTensor(),  # seed do not have baseline signals
-    label_transform=transforms.Compose(
-        [transforms.Select('emotion'),
-         transforms.Lambda(lambda x: x + 1)]),
     feature=['de_LDS'],
-    num_worker=4)
+    num_worker=4,
+    offline_transform=preprocess_fn,
+    online_transform=transform_fn,
+    label_transform=label_fn,
+)
 
 ######################################################################
 # Step 2: Define the Model

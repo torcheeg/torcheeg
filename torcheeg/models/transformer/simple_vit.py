@@ -130,7 +130,7 @@ class Transformer(nn.Module):
 
 
 class SimpleViT(nn.Module):
-    r'''
+    r"""
     A Simple and Effective Vision Transformer (SimpleViT). The authors of Vision Transformer (ViT) present a few minor modifications and dramatically improve the performance of plain ViT models. For more details, please refer to the following information. 
 
     It is worth noting that this model is not designed for EEG analysis, but shows good performance and can serve as a good research start.
@@ -148,26 +148,55 @@ class SimpleViT(nn.Module):
         from torcheeg.models import SimpleViT
         from torch.utils.data import DataLoader
 
-        dataset = DEAPDataset(io_path=f'./deap',
-                    root_path='./data_preprocessed_python',
-                    offline_transform=transforms.Compose([
-                        transforms.MinMaxNormalize(axis=-1),
-                        transforms.ToGrid(get_locations(DEAPDataset.channels, DEAPDataset.grid))
-                    ]),
-                    online_transform=transforms.Compose([
-                        transforms.ToTensor(),
-                    ]),
-                    label_transform=transforms.Compose([
-                        transforms.Select('valence'),
-                        transforms.Binary(5.0),
-                    ]))
+
+        def preprocess_fn(eeg, baseline=None, **kwargs) -> dict:
+            eeg_transform = transforms.Compose([
+                transforms.MinMaxNormalize(axis=-1),
+                transforms.ToGrid(get_locations(
+                    DEAPDataset.channels, DEAPDataset.grid)),
+            ])
+            return {
+                'eeg': eeg_transform(eeg),
+                'baseline': eeg_transform(baseline) if baseline is not None else None,
+            }
+
+
+        def transform_fn(eeg, baseline=None, **kwargs) -> dict:
+            eeg_transform = transforms.Compose([
+                transforms.ToTensor(),
+            ])
+            return {
+                'eeg': eeg_transform(eeg),
+                'baseline': eeg_transform(baseline) if baseline is not None else None,
+            }
+
+
+        def label_fn(info: dict, **kwargs) -> dict:
+            label_transform = transforms.Compose([
+                transforms.Select('valence'),
+                transforms.Binary(5.0),
+            ])
+            return {
+                'label': label_transform(info),
+            }
+
+
+        dataset = DEAPDataset(
+            io_path=f'./deap',
+            root_path='./data_preprocessed_python',
+            offline_transform=preprocess_fn,
+            online_transform=transform_fn,
+            label_transform=label_fn,
+        )
 
         model = SimpleViT(chunk_size=128,
                           grid_size=(9, 9),
                           t_patch_size=32,
                           num_classes=2)
 
-        x, y = next(iter(DataLoader(dataset, batch_size=64)))
+        batch = next(iter(DataLoader(dataset, batch_size=64)))
+
+        x, y = batch['eeg'], batch['label']
         model(x)
 
     It can also be used for the analysis of features such as DE, PSD, etc:
@@ -181,31 +210,54 @@ class SimpleViT(nn.Module):
         from torcheeg.datasets.utils import get_locations
 
 
-        dataset = DEAPDataset(root_path='./data_preprocessed_python',
-                              offline_transform=transforms.Compose([
-                                  transforms.BandDifferentialEntropy({
-                                      "delta": [1, 4],
-                                      "theta": [4, 8],
-                                      "alpha": [8, 14],
-                                      "beta": [14, 31],
-                                      "gamma": [31, 49]
-                                  }),
-                                  transforms.ToGrid(get_locations(DEAPDataset.channels, DEAPDataset.grid))
-                              ]),
-                              online_transform=transforms.Compose([
-                                  transforms.ToTensor(),
-                              ]),
-                              label_transform=transforms.Compose([
-                                  transforms.Select('valence'),
-                                  transforms.Binary(5.0),
-                              ]))
+        def preprocess_fn(eeg, baseline=None, **kwargs) -> dict:
+            eeg_transform = transforms.Compose([
+                transforms.BandDifferentialEntropy({'delta': [1, 4], 'theta': [4, 8], 'alpha': [
+                                                   8, 14], 'beta': [14, 31], 'gamma': [31, 49]}),
+                transforms.ToGrid(get_locations(
+                    DEAPDataset.channels, DEAPDataset.grid)),
+            ])
+            return {
+                'eeg': eeg_transform(eeg),
+                'baseline': eeg_transform(baseline) if baseline is not None else None,
+            }
+
+
+        def transform_fn(eeg, baseline=None, **kwargs) -> dict:
+            eeg_transform = transforms.Compose([
+                transforms.ToTensor(),
+            ])
+            return {
+                'eeg': eeg_transform(eeg),
+                'baseline': eeg_transform(baseline) if baseline is not None else None,
+            }
+
+
+        def label_fn(info: dict, **kwargs) -> dict:
+            label_transform = transforms.Compose([
+                transforms.Select('valence'),
+                transforms.Binary(5.0),
+            ])
+            return {
+                'label': label_transform(info),
+            }
+
+
+        dataset = DEAPDataset(
+            root_path='./data_preprocessed_python',
+            offline_transform=preprocess_fn,
+            online_transform=transform_fn,
+            label_transform=label_fn,
+        )
 
         model = SimpleViT(chunk_size=5,
                           grid_size=(9, 9),
                           t_patch_size=1,
                           num_classes=2)
 
-        x, y = next(iter(DataLoader(dataset, batch_size=64)))
+        batch = next(iter(DataLoader(dataset, batch_size=64)))
+
+        x, y = batch['eeg'], batch['label']
         model(x)
 
     Args:
@@ -220,7 +272,7 @@ class SimpleViT(nn.Module):
         head_channels (int): The dimension of each attention head for each attention layer. (default: :obj:`8`)
         mlp_channels (int): The number of hidden nodes in the fully connected layer of each transformer block. (default: :obj:`64`)
         num_classes (int): The number of classes to predict. (default: :obj:`2`)
-    '''
+    """
 
     def __init__(self,
                  chunk_size: int = 128,

@@ -157,7 +157,7 @@ class AttnRefine(nn.Module):
 
 
 class DARNet(nn.Module):
-    r'''
+    r"""
     The DARNet model is based on the paper "DARNet: Dual Attention Refinement Network with Spatiotemporal Construction for Auditory Attention Detection". For more details, please refer to the following information.
 
     - Paper: Yan S, Fan C, Zhang H, et al. Darnet: Dual attention refinement network with spatiotemporal construction for auditory attention detection[J]. Advances in Neural Information Processing Systems, 2024, 37: 31688-31707.
@@ -173,16 +173,44 @@ class DARNet(nn.Module):
         from torcheeg import transforms
         from torch.utils.data import DataLoader
 
-        dataset = DTUDataset(root_path='./DATA_preproc',
-                              offline_transform=transforms.Compose([
-                                  transforms.MinMaxNormalize(axis=-1),
-                                  transforms.To2d()
-                              ]),
-                              online_transform=transforms.ToTensor(),
-                              label_transform=transforms.Compose([
-                                  transforms.Select('attended_speaker'),
-                                  transforms.Lambda(lambda x: x - 1)
-                              ]))
+
+        def preprocess_fn(eeg, baseline=None, **kwargs) -> dict:
+            eeg_transform = transforms.Compose([
+                transforms.MinMaxNormalize(axis=-1),
+                transforms.To2d(),
+            ])
+            return {
+                'eeg': eeg_transform(eeg),
+                'baseline': eeg_transform(baseline) if baseline is not None else None,
+            }
+
+
+        def transform_fn(eeg, baseline=None, **kwargs) -> dict:
+            eeg_transform = transforms.Compose([
+                transforms.ToTensor(),
+            ])
+            return {
+                'eeg': eeg_transform(eeg),
+                'baseline': eeg_transform(baseline) if baseline is not None else None,
+            }
+
+
+        def label_fn(info: dict, **kwargs) -> dict:
+            label_transform = transforms.Compose([
+                transforms.Select('attended_speaker'),
+                transforms.Lambda(lambda x: x - 1),
+            ])
+            return {
+                'label': label_transform(info),
+            }
+
+
+        dataset = DTUDataset(
+            root_path='./DATA_preproc',
+            offline_transform=preprocess_fn,
+            online_transform=transform_fn,
+            label_transform=label_fn,
+        )
 
         model = DARNet(num_electrodes=64,
                        chunk_size=64,
@@ -191,7 +219,9 @@ class DARNet(nn.Module):
                        attn_dropout=0.1,
                        num_classes=2)
 
-        x, y = next(iter(DataLoader(dataset, batch_size=64)))
+        batch = next(iter(DataLoader(dataset, batch_size=64)))
+
+        x, y = batch['eeg'], batch['label']
         model(x)
 
     Args:
@@ -201,7 +231,7 @@ class DARNet(nn.Module):
         num_heads (int): The number of attention heads. (default: :obj:`8`)
         attn_dropout (float): The dropout rate for attention layers. (default: :obj:`0.1`)
         num_classes (int): The number of classes. (default: :obj:`2`)
-    '''
+    """
 
     def __init__(self,
                  num_electrodes: int = 62,

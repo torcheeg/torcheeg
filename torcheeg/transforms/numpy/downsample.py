@@ -8,7 +8,7 @@ from ..base_transform import EEGTransform
 
 
 class Downsample(EEGTransform):
-    r'''
+    r"""
     Downsample the EEG signal to a specified number of data points.
 
     .. code-block:: python
@@ -17,41 +17,23 @@ class Downsample(EEGTransform):
 
         t = transforms.Downsample(num_points=32, axis=-1)
         # normalize along the first dimension (electrode dimension)
-        t(eeg=np.random.randn(32, 128))['eeg'].shape
+        t(np.random.randn(32, 128)).shape
         >>> (32, 32)
 
     Args:
         num_points (int): The number of data points after downsampling.
         axis (int, optional): The dimension to normalize, when no dimension is specified, the entire data is normalized. (default: :obj:`-1`)
-        apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (default: :obj:`False`)
+
 
     .. automethod:: __call__
-    '''
+    """
 
-    def __init__(self,
-                 num_points: int,
-                 axis: Union[int, None] = -1,
-                 apply_to_baseline: bool = False):
-        super(Downsample, self).__init__(apply_to_baseline=apply_to_baseline)
+    def __init__(self, num_points: int, axis: Union[int, None] = -1):
+        super(Downsample, self).__init__()
         self.num_points = num_points
         self.axis = axis
 
-    def __call__(self,
-                 *args,
-                 eeg: np.ndarray,
-                 baseline: Union[np.ndarray, None] = None,
-                 **kwargs) -> Dict[str, np.ndarray]:
-        r'''
-        Args:
-            eeg (np.ndarray): The input EEG signals or features.
-            baseline (np.ndarray, optional) : The corresponding baseline signal, if apply_to_baseline is set to True and baseline is passed, the baseline signal will be transformed with the same way as the experimental signal.
-
-        Returns:
-            np.ndarray: The normalized results.
-        '''
-        return super().__call__(*args, eeg=eeg, baseline=baseline, **kwargs)
-
-    def apply(self, eeg: np.ndarray, **kwargs):
+    def __call__(self, eeg: np.ndarray) -> np.ndarray:
         times_tamps = np.linspace(0,
                                   eeg.shape[self.axis] - 1,
                                   self.num_points,
@@ -67,7 +49,7 @@ class Downsample(EEGTransform):
 
 
 class SetSamplingRate(EEGTransform):
-    r'''
+    r"""
     Resample a EEG series from orig_sr to target_sr.
 
     .. code-block:: python
@@ -75,13 +57,13 @@ class SetSamplingRate(EEGTransform):
         from torcheeg import transforms
 
         t = SetSamplingRate(origin=500,target_sampling_rate=128)
-        t(eeg=np.random.randn(32, 1000))['eeg'].shape
+        t(np.random.randn(32, 1000)).shape
         >>> (32, 256)
 
     Args:
         origin (int): Original sampling rate of EEG.
         target_sampling_rate (int): Target sampling rate of EEG.
-        apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (default: :obj:`False`)
+
         axis (int, optional): The dimension to normalize, when no dimension is specified, the entire data is normalized. (default: :obj:`-1`)
         scale (bool, optional): Whether to scale the resampled signal so that ``y`` and ``y_hat`` have approximately equal total energy. (default: :obj:`False`)
         res_type (str, optional): The resampling method to use. (default: :obj:`'soxr_hq'`), options:
@@ -122,26 +104,19 @@ class SetSamplingRate(EEGTransform):
                 supported.
 
     .. automethod:: __call__
-    '''
+    """
 
-    def __init__(self, origin_sampling_rate: int, target_sampling_rate: int,
-                 apply_to_baseline=False,
-                 axis=-1,
-                 scale: bool = False,
-                 res_type: str = 'soxr_hq'):
-
-        super(SetSamplingRate, self).__init__(
-            apply_to_baseline=apply_to_baseline)
+    def __init__(self, origin_sampling_rate: int, target_sampling_rate: int, axis=-1, scale: bool = False, res_type: str = 'soxr_hq'):
+        super(SetSamplingRate, self).__init__()
         self.original_rate = origin_sampling_rate
         self.new_rate = target_sampling_rate
         self.axis = axis
         self.scale = scale
         self.res_type = res_type
 
-    def apply(self,
-              eeg: np.ndarray,
-              **kwargs
-              ) -> np.ndarray:
+    def __call__(self,
+                 eeg: np.ndarray
+                 ) -> np.ndarray:
         samplerate = LazyLoader(
             'samplerate', install_hint='Install with `pip install samplerate`.')
         resampy = LazyLoader(
@@ -204,12 +179,8 @@ class SetSamplingRate(EEGTransform):
         return np.asarray(EEG_res, dtype=eeg.dtype)
 
     @property
-    def __repr__(self) -> any:
-        return f'''{
-            'original_sampling_rate': self.original_rate,
+    def repr_body(self) -> Dict:
+        return {'original_sampling_rate': self.original_rate,
                 'target_sampling_rate': self.new_rate,
-                'apply_to_baseline':self.apply_to_baseline
-                'axis': self.axis,
-                'scale': self.scale,
-                'res_type': self.res_type
-            }'''
+                'axis': self.axis, 'scale': self.scale,
+                'res_type': self.res_type}

@@ -5,108 +5,12 @@ import numpy as np
 import scipy.io as scio
 
 from ...utils import get_random_dir_path
-from ..base_dataset import BaseDataset
+from ..base_data import BaseData
+from ..cached_dataset import CachedDataset
 
 
-class DREAMERDataset(BaseDataset):
-    r'''
-    A multi-modal database consisting of electroencephalogram and electrocardiogram signals recorded during affect elicitation by means of audio-visual stimuli. This class generates training samples and test samples according to the given parameters, and caches the generated results in a unified input and output format (IO). The relevant information of the dataset is as follows:
-
-    - Author: Katsigiannis et al.
-    - Year: 2017
-    - Download URL: https://zenodo.org/record/546113
-    - Reference: Katsigiannis S, Ramzan N. DREAMER: A database for emotion recognition through EEG and ECG signals from wireless low-cost off-the-shelf devices[J]. IEEE journal of biomedical and health informatics, 2017, 22(1): 98-107.
-    - Stimulus: 18 movie clips. 
-    - Signals: Electroencephalogram (14 channels at 128Hz), and electrocardiogram (2 channels at 256Hz) of 23 subjects.
-    - Rating: Arousal, valence, like/dislike, dominance, familiarity (all ona scale from 1 to 5).
-
-    In order to use this dataset, the download file :obj:`DREAMER.mat` is required.
-
-    An example dataset for CNN-based methods:
-
-    .. code-block:: python
-
-        from torcheeg.datasets import DREAMERDataset
-        from torcheeg import transforms
-        from torcheeg.datasets.utils import get_locations
-
-        dataset = DREAMERDataset(mat_path='./DREAMER.mat',
-                                 offline_transform=transforms.Compose([
-                                     transforms.BandDifferentialEntropy(),
-                                     transforms.ToGrid(get_locations(DREAMERDataset.channels, DREAMERDataset.grid))
-                                 ]),
-                                 online_transform=transforms.ToTensor(),
-                                 label_transform=transforms.Compose([
-                                     transforms.Select('valence'),
-                                     transforms.Binary(3.0),
-                                 ]))
-        print(dataset[0])
-        # EEG signal (torch.Tensor[4, 9, 9]),
-        # coresponding baseline signal (torch.Tensor[4, 9, 9]),
-        # label (int)
-
-    Another example dataset for CNN-based methods:
-
-    .. code-block:: python
-
-        from torcheeg.datasets import DREAMERDataset
-        from torcheeg import transforms
-
-        dataset = DREAMERDataset(mat_path='./DREAMER.mat',
-                                 online_transform=transforms.Compose([
-                                     transforms.To2d(),
-                                     transforms.ToTensor()
-                                 ]),
-                                 label_transform=transforms.Compose([
-                                     transforms.Select(['valence', 'arousal']),
-                                     transforms.Binary(3.0),
-                                     transforms.BinariesToCategory()
-                                 ]))
-        print(dataset[0])
-        # EEG signal (torch.Tensor[1, 14, 128]),
-        # coresponding baseline signal (torch.Tensor[1, 14, 128]),
-        # label (int)
-
-    An example dataset for GNN-based methods:
-
-    .. code-block:: python
-
-        from torcheeg.datasets import DREAMERDataset
-        from torcheeg import transforms
-        from torcheeg.datasets.utils import get_adjacency
-        from torcheeg.transforms.pyg import ToG
-
-        dataset = DREAMERDataset(mat_path='./DREAMER.mat',
-                                 online_transform=transforms.Compose([
-                                     ToG(get_adjacency(DREAMERDataset.channels, DREAMERDataset.adjacency))
-                                 ]),
-                                 label_transform=transforms.Compose([
-                                     transforms.Select('arousal'),
-                                     transforms.Binary(3.0)
-                                 ]))
-        print(dataset[0])
-        # EEG signal (torch_geometric.data.Data),
-        # coresponding baseline signal (torch_geometric.data.Data),
-        # label (int)
-
-    Args:
-        mat_path (str): Downloaded data files in pickled matlab formats (default: :obj:`'./DREAMER.mat'`)
-        chunk_size (int): Number of data points included in each EEG chunk as training or test samples. If set to -1, the EEG signal of a trial is used as a sample of a chunk. (default: :obj:`128`)
-        overlap (int): The number of overlapping data points between different chunks when dividing EEG chunks. (default: :obj:`0`)
-        num_channel (int): Number of channels used, of which the first 14 channels are EEG signals. (default: :obj:`14`)
-        num_baseline (int): Number of baseline signal chunks used. (default: :obj:`61`)
-        baseline_chunk_size (int): Number of data points included in each baseline signal chunk. The baseline signal in the DREAMER dataset has a total of 7808 data points. (default: :obj:`128`)
-        online_transform (Callable, optional): The transformation of the EEG signals and baseline EEG signals. The input is a :obj:`np.ndarray`, and the ouput is used as the first and second value of each element in the dataset. (default: :obj:`None`)
-        offline_transform (Callable, optional): The usage is the same as :obj:`online_transform`, but executed before generating IO intermediate results. (default: :obj:`None`)
-        label_transform (Callable, optional): The transformation of the label. The input is an information dictionary, and the ouput is used as the third value of each element in the dataset. (default: :obj:`None`)
-        before_trial (Callable, optional): The hook performed on the trial to which the sample belongs. It is performed before the offline transformation and thus typically used to implement context-dependent sample transformations, such as moving averages, etc. The input of this hook function is a 2D EEG signal with shape (number of electrodes, number of data points), whose ideal output shape is also (number of electrodes, number of data points).
-        after_trial (Callable, optional): The hook performed on the trial to which the sample belongs. It is performed after the offline transformation and thus typically used to implement context-dependent sample transformations, such as moving averages, etc. The input and output of this hook function should be a sequence of dictionaries representing a sequence of EEG samples. Each dictionary contains two key-value pairs, indexed by :obj:`eeg` (the EEG signal matrix) and :obj:`key` (the index in the database) respectively.
-        io_path (str): The path to generated unified data IO, cached as an intermediate result. If set to None, a random path will be generated. (default: :obj:`None`)
-        io_size (int): Maximum size database may grow to; used to size the memory mapping. If database grows larger than ``map_size``, an exception will be raised and the user must close and reopen. (default: :obj:`1048576`)
-        io_mode (str): Storage mode of EEG signal. When io_mode is set to :obj:`lmdb`, TorchEEG provides an efficient database (LMDB) for storing EEG signals. LMDB may not perform well on limited operating systems, where a file system based EEG signal storage is also provided. When io_mode is set to :obj:`pickle`, pickle-based persistence files are used. When io_mode is set to :obj:`memory`, memory are used. (default: :obj:`lmdb`)
-        num_worker (int): Number of subprocesses to use for data loading. 0 means that the data will be loaded in the main process. (default: :obj:`0`)
-        verbose (bool): Whether to display logs during processing, such as progress bars, etc. (default: :obj:`True`)       
-    '''
+class DREAMERData(BaseData):
+    """Read and preprocess records for :class:`DREAMERDataset`."""
 
     channels = [
         'AF3', 'F7',  'F3',  'FC5', 'T7',  'P7',  'O1',  'O2',
@@ -149,48 +53,21 @@ class DREAMERDataset(BaseDataset):
                  num_channel: int = 14,
                  num_baseline: int = 61,
                  baseline_chunk_size: int = 128,
-                 online_transform: Union[None, Callable] = None,
-                 offline_transform: Union[None, Callable] = None,
-                 label_transform: Union[None, Callable] = None,
-                 before_trial: Union[None, Callable] = None,
-                 after_trial: Union[Callable, None] = None,
-                 after_session: Union[Callable, None] = None,
-                 after_subject: Union[Callable, None] = None,
-                 io_path: Union[None, str] = None,
-                 io_size: int = 1048576,
-                 io_mode: str = 'lmdb',
-                 num_worker: int = 0,
-                 verbose: bool = True):
-        if io_path is None:
-            io_path = get_random_dir_path(dir_prefix='datasets')
+                 transform: Union[None, Callable] = None):
 
-        # pass all arguments to super class
-        params = {
-            'mat_path': mat_path,
-            'chunk_size': chunk_size,
-            'overlap': overlap,
-            'num_channel': num_channel,
-            'num_baseline': num_baseline,
-            'baseline_chunk_size': baseline_chunk_size,
-            'online_transform': online_transform,
-            'offline_transform': offline_transform,
-            'label_transform': label_transform,
-            'before_trial': before_trial,
-            'after_trial': after_trial,
-            'after_session': after_session,
-            'after_subject': after_subject,
-            'io_path': io_path,
-            'io_size': io_size,
-            'io_mode': io_mode,
-            'num_worker': num_worker,
-            'verbose': verbose
-        }
-        super().__init__(**params)
-        # save all arguments to __dict__
-        self.__dict__.update(params)
+        super().__init__(
+            transform=transform,
+            mat_path=mat_path,
+            chunk_size=chunk_size,
+            overlap=overlap,
+            num_channel=num_channel,
+            num_baseline=num_baseline,
+            baseline_chunk_size=baseline_chunk_size
+        )
 
-    @staticmethod
-    def read_record(record: str, mat_path: str = './DREAMER.mat', **kwargs) -> Dict:
+    def read_record(self, record: str, mat_path: str = None, **kwargs) -> Dict:
+        if mat_path is None:
+            mat_path = self.mat_path
         mat_data = scio.loadmat(mat_path,
                                 verify_compressed_data_integrity=False)
 
@@ -242,107 +119,57 @@ class DREAMERDataset(BaseDataset):
             'record': 0
         }
 
-    @staticmethod
-    def process_record(record: str,
-                       mat_data: Dict,
-                       chunk_size: int = 128,
-                       overlap: int = 0,
-                       num_channel: int = 14,
-                       num_baseline: int = 61,
-                       baseline_chunk_size: int = 128,
-                       before_trial: Union[None, Callable] = None,
-                       offline_transform: Union[None, Callable] = None,
-                       **kwargs):
+    def process_record(self, record: str, mat_data: Dict, chunk_size: int = None, overlap: int = None, num_channel: int = None, num_baseline: int = None, baseline_chunk_size: int = None, **kwargs):
+        if chunk_size is None:
+            chunk_size = self.chunk_size
+        if overlap is None:
+            overlap = self.overlap
+        if num_channel is None:
+            num_channel = self.num_channel
+        if num_baseline is None:
+            num_baseline = self.num_baseline
+        if baseline_chunk_size is None:
+            baseline_chunk_size = self.baseline_chunk_size
         subject = record
-
-        trial_len = len(
-            mat_data['DREAMER'][0, 0]['Data'][0,
-                                              0]['EEG'][0,
-                                                        0]['stimuli'][0,
-                                                                      0])  # 18
-
-        write_pointer = 0
-
-        # loop for each trial
+        trial_len = len(mat_data['DREAMER'][0, 0]['Data']
+                        [0, 0]['EEG'][0, 0]['stimuli'][0, 0])
         for trial_id in range(trial_len):
-            # extract baseline signals
-            trial_baseline_sample = mat_data['DREAMER'][0, 0]['Data'][
-                0, subject]['EEG'][0, 0]['baseline'][0, 0][trial_id, 0]
+            trial_baseline_sample = mat_data['DREAMER'][0, 0]['Data'][0,
+                                                                      subject]['EEG'][0, 0]['baseline'][0, 0][trial_id, 0]
             trial_baseline_sample = trial_baseline_sample[:, :num_channel].swapaxes(
-                1, 0)  # channel(14), timestep(61*128)
-            trial_baseline_sample = trial_baseline_sample[:, :num_baseline *
-                                                          baseline_chunk_size].reshape(
-                                                              num_channel,
-                                                              num_baseline,
-                                                              baseline_chunk_size
-            ).mean(
-                                                              axis=1
-            )  # channel(14), timestep(128)
-
-            # record the common meta info
+                1, 0)
+            trial_baseline_sample = trial_baseline_sample[:, :num_baseline * baseline_chunk_size].reshape(
+                num_channel, num_baseline, baseline_chunk_size).mean(axis=1)
             trial_meta_info = {'subject_id': subject, 'trial_id': trial_id}
-
-            trial_meta_info['valence'] = mat_data['DREAMER'][0, 0]['Data'][
-                0, subject]['ScoreValence'][0, 0][trial_id, 0]
-            trial_meta_info['arousal'] = mat_data['DREAMER'][0, 0]['Data'][
-                0, subject]['ScoreArousal'][0, 0][trial_id, 0]
-            trial_meta_info['dominance'] = mat_data['DREAMER'][0, 0]['Data'][
-                0, subject]['ScoreDominance'][0, 0][trial_id, 0]
-
-            trial_samples = mat_data['DREAMER'][0, 0]['Data'][
-                0, subject]['EEG'][0, 0]['stimuli'][0, 0][trial_id, 0]
-            trial_samples = trial_samples[:, :num_channel].swapaxes(
-                1, 0)  # channel(14), timestep(n*128)
-
-            if before_trial:
-                trial_samples = before_trial(trial_samples)
-
+            trial_meta_info['valence'] = mat_data['DREAMER'][0,
+                                                             0]['Data'][0, subject]['ScoreValence'][0, 0][trial_id, 0]
+            trial_meta_info['arousal'] = mat_data['DREAMER'][0,
+                                                             0]['Data'][0, subject]['ScoreArousal'][0, 0][trial_id, 0]
+            trial_meta_info['dominance'] = mat_data['DREAMER'][0,
+                                                               0]['Data'][0, subject]['ScoreDominance'][0, 0][trial_id, 0]
+            trial_samples = mat_data['DREAMER'][0, 0]['Data'][0,
+                                                              subject]['EEG'][0, 0]['stimuli'][0, 0][trial_id, 0]
+            trial_samples = trial_samples[:, :num_channel].swapaxes(1, 0)
             start_at = 0
             if chunk_size <= 0:
                 dynamic_chunk_size = trial_samples.shape[1] - start_at
             else:
                 dynamic_chunk_size = chunk_size
-
-            # chunk with chunk size
             end_at = dynamic_chunk_size
-            # calculate moving step
             step = dynamic_chunk_size - overlap
-
             while end_at <= trial_samples.shape[1]:
                 clip_sample = trial_samples[:, start_at:end_at]
-
                 t_eeg = clip_sample
                 t_baseline = trial_baseline_sample
-
-                if not offline_transform is None:
-                    t = offline_transform(eeg=clip_sample,
-                                          baseline=trial_baseline_sample)
-                    t_eeg = t['eeg']
-                    t_baseline = t['baseline']
-
-                # put baseline signal into IO
-                if not 'baseline_id' in trial_meta_info:
-                    trial_base_id = f'{subject}_{write_pointer}'
-                    yield {'eeg': t_baseline, 'key': trial_base_id}
-                    write_pointer += 1
-                    trial_meta_info['baseline_id'] = trial_base_id
-
-                clip_id = f'{subject}_{write_pointer}'
-                write_pointer += 1
-
-                # record meta info for each signal
-                record_info = {
-                    'start_at': start_at,
-                    'end_at': end_at,
-                    'clip_id': clip_id
-                }
+                record_info = {'start_at': start_at, 'end_at': end_at}
                 record_info.update(trial_meta_info)
-                yield {'eeg': t_eeg, 'key': clip_id, 'info': record_info}
-
+                yield {'eeg': t_eeg, 'info': record_info, 'baseline': t_baseline}
                 start_at = start_at + step
                 end_at = start_at + dynamic_chunk_size
 
-    def set_records(self, mat_path: str = './DREAMER.mat', **kwargs):
+    def set_records(self, mat_path: str = None, **kwargs):
+        if mat_path is None:
+            mat_path = self.mat_path
         if not (os.path.exists(mat_path)):
             raise FileNotFoundError(
                 f'mat_path ({mat_path}) does not exist. Please download the dataset and set the mat_path to the downloaded path.'
@@ -354,43 +181,191 @@ class DREAMERDataset(BaseDataset):
         subject_len = len(mat_data['DREAMER'][0, 0]['Data'][0])  # 23
         return list(range(subject_len))
 
-    def __getitem__(self, index: int) -> Tuple:
-        info = self.read_info(index)
 
-        eeg_index = str(info['clip_id'])
-        eeg_record = str(info['_record_id'])
-        eeg = self.read_eeg(eeg_record, eeg_index)
+class DREAMERDataset(CachedDataset):
 
-        baseline_index = str(info['baseline_id'])
-        baseline = self.read_eeg(eeg_record, baseline_index)
+    r"""
+    A multi-modal database consisting of electroencephalogram and electrocardiogram signals recorded during affect elicitation by means of audio-visual stimuli. This class generates training samples and test samples according to the given parameters, and caches the generated results in a unified input and output format (IO). The relevant information of the dataset is as follows:
 
-        signal = eeg
-        label = info
+    - Author: Katsigiannis et al.
+    - Year: 2017
+    - Download URL: https://zenodo.org/record/546113
+    - Reference: Katsigiannis S, Ramzan N. DREAMER: A database for emotion recognition through EEG and ECG signals from wireless low-cost off-the-shelf devices[J]. IEEE journal of biomedical and health informatics, 2017, 22(1): 98-107.
+    - Stimulus: 18 movie clips.
+    - Signals: Electroencephalogram (14 channels at 128Hz), and electrocardiogram (2 channels at 256Hz) of 23 subjects.
+    - Rating: Arousal, valence, like/dislike, dominance, familiarity (all ona scale from 1 to 5).
 
-        if self.online_transform:
-            signal = self.online_transform(eeg=eeg, baseline=baseline)['eeg']
+    In order to use this dataset, the download file :obj:`DREAMER.mat` is required.
 
-        if self.label_transform:
-            label = self.label_transform(y=info)['y']
+    An example dataset for CNN-based methods:
 
-        return signal, label
+    .. code-block:: python
+
+        from torcheeg.datasets import DREAMERDataset
+        from torcheeg import transforms
+        from torcheeg.datasets.utils import get_locations
+
+
+        def preprocess_fn(eeg, baseline=None, **kwargs) -> dict:
+            eeg_transform = transforms.Compose([
+                transforms.BandDifferentialEntropy(),
+                transforms.ToGrid(get_locations(
+                    DREAMERDataset.channels, DREAMERDataset.grid)),
+            ])
+            return {
+                'eeg': eeg_transform(eeg),
+                'baseline': eeg_transform(baseline) if baseline is not None else None,
+            }
+
+
+        def transform_fn(eeg, baseline=None, **kwargs) -> dict:
+            eeg_transform = transforms.Compose([
+                transforms.ToTensor(),
+            ])
+            return {
+                'eeg': eeg_transform(eeg),
+                'baseline': eeg_transform(baseline) if baseline is not None else None,
+            }
+
+
+        def label_fn(info: dict, **kwargs) -> dict:
+            label_transform = transforms.Compose([
+                transforms.Select('valence'),
+                transforms.Binary(3.0),
+            ])
+            return {
+                'label': label_transform(info),
+            }
+
+
+        dataset = DREAMERDataset(
+            mat_path='./DREAMER.mat',
+            offline_transform=preprocess_fn,
+            online_transform=transform_fn,
+            label_transform=label_fn,
+        )
+        print(dataset[0])
+
+    Another example dataset for CNN-based methods:
+
+    .. code-block:: python
+
+        from torcheeg.datasets import DREAMERDataset
+        from torcheeg import transforms
+
+
+        def preprocess_fn(eeg, baseline=None, **kwargs) -> dict:
+            eeg_transform = transforms.Compose([
+                transforms.To2d(),
+            ])
+            return {
+                'eeg': eeg_transform(eeg),
+                'baseline': eeg_transform(baseline) if baseline is not None else None,
+            }
+
+
+        def transform_fn(eeg, baseline=None, **kwargs) -> dict:
+            eeg_transform = transforms.Compose([
+                transforms.ToTensor(),
+            ])
+            return {
+                'eeg': eeg_transform(eeg),
+                'baseline': eeg_transform(baseline) if baseline is not None else None,
+            }
+
+
+        def label_fn(info: dict, **kwargs) -> dict:
+            label_transform = transforms.Compose([
+                transforms.Select(['valence', 'arousal']),
+                transforms.Binary(3.0),
+                transforms.BinariesToCategory(),
+            ])
+            return {
+                'label': label_transform(info),
+            }
+
+
+        dataset = DREAMERDataset(
+            mat_path='./DREAMER.mat',
+            offline_transform=preprocess_fn,
+            online_transform=transform_fn,
+            label_transform=label_fn,
+        )
+        print(dataset[0])
+
+    An example dataset for GNN-based methods:
+
+    .. code-block:: python
+
+        from torcheeg.datasets import DREAMERDataset
+        from torcheeg import transforms
+        from torcheeg.datasets.utils import get_adjacency
+        from torcheeg.transforms.graph import ToG
+
+
+        def transform_fn(eeg, baseline=None, **kwargs) -> dict:
+            eeg_transform = transforms.Compose([
+                ToG(get_adjacency(DREAMERDataset.channels, DREAMERDataset.adjacency)),
+            ])
+            return {
+                'eeg': eeg_transform(eeg),
+                'baseline': eeg_transform(baseline) if baseline is not None else None,
+            }
+
+
+        def label_fn(info: dict, **kwargs) -> dict:
+            label_transform = transforms.Compose([
+                transforms.Select('arousal'),
+                transforms.Binary(3.0),
+            ])
+            return {
+                'label': label_transform(info),
+            }
+
+
+        dataset = DREAMERDataset(
+            mat_path='./DREAMER.mat',
+            online_transform=transform_fn,
+            label_transform=label_fn,
+        )
+        print(dataset[0])
+
+    Args:
+        mat_path (str): Downloaded data files in pickled matlab formats (default: :obj:`'./DREAMER.mat'`)
+        chunk_size (int): Number of data points included in each EEG chunk as training or test samples. If set to -1, the EEG signal of a trial is used as a sample of a chunk. (default: :obj:`128`)
+        overlap (int): The number of overlapping data points between different chunks when dividing EEG chunks. (default: :obj:`0`)
+        num_channel (int): Number of channels used, of which the first 14 channels are EEG signals. (default: :obj:`14`)
+        num_baseline (int): Number of baseline signal chunks used. (default: :obj:`61`)
+        baseline_chunk_size (int): Number of data points included in each baseline signal chunk. The baseline signal in the DREAMER dataset has a total of 7808 data points. (default: :obj:`128`)
+
+
+
+        offline_transform (Callable, optional): EEG transform applied before storage; returns a dictionary containing eeg. (default: :obj:`None`)
+        online_transform (Callable, optional): EEG transform applied on each read. (default: :obj:`None`)
+        label_transform (Callable, optional): Transform info into a dictionary containing label on each read. (default: :obj:`None`)
+        io_path (str): The path to generated unified data IO, cached as an intermediate result. If set to None, a random path will be generated. (default: :obj:`None`)
+        io_size (int): Maximum size database may grow to; used to size the memory mapping. If database grows larger than ``map_size``, an exception will be raised and the user must close and reopen. (default: :obj:`1048576`)
+        io_mode (str): Storage mode of EEG signal. When io_mode is set to :obj:`lmdb`, TorchEEG provides an efficient database (LMDB) for storing EEG signals. LMDB may not perform well on limited operating systems, where a file system based EEG signal storage is also provided. When io_mode is set to :obj:`pickle`, pickle-based persistence files are used. When io_mode is set to :obj:`memory`, memory are used. (default: :obj:`lmdb`)
+        num_worker (int): Number of subprocesses to use for data loading. 0 means that the data will be loaded in the main process. (default: :obj:`0`)
+        verbose (bool): Whether to display logs during processing, such as progress bars, etc. (default: :obj:`True`)
+    """
+
+    data_class = DREAMERData
+
+    channels = DREAMERData.channels
+
+    grid = DREAMERData.grid
+
+    adjacency = DREAMERData.adjacency
+
+    def __init__(self, mat_path: str = './DREAMER.mat', chunk_size: int = 128, overlap: int = 0, num_channel: int = 14, num_baseline: int = 61, baseline_chunk_size: int = 128, offline_transform: Union[None, Callable] = None, online_transform: Union[None, Callable] = None, label_transform: Union[None, Callable] = None, io_path: Union[None, str] = None, io_size: int = 1048576, io_mode: str = 'lmdb', num_worker: int = 0, verbose: bool = True):
+        if io_path is None:
+            io_path = get_random_dir_path(dir_prefix='datasets')
+        params = {'mat_path': mat_path, 'chunk_size': chunk_size, 'overlap': overlap, 'num_channel': num_channel, 'num_baseline': num_baseline,
+                  'baseline_chunk_size': baseline_chunk_size, 'offline_transform': offline_transform, 'online_transform': online_transform, 'label_transform': label_transform, 'io_path': io_path, 'io_size': io_size, 'io_mode': io_mode, 'num_worker': num_worker, 'verbose': verbose}
+        super().__init__(**params)
+        self.__dict__.update(params)
 
     @property
     def repr_body(self) -> Dict:
-        return dict(
-            super().repr_body, **{
-                'mat_path': self.mat_path,
-                'chunk_size': self.chunk_size,
-                'overlap': self.overlap,
-                'num_channel': self.num_channel,
-                'num_baseline': self.num_baseline,
-                'baseline_chunk_size': self.baseline_chunk_size,
-                'online_transform': self.online_transform,
-                'offline_transform': self.offline_transform,
-                'label_transform': self.label_transform,
-                'before_trial': self.before_trial,
-                'after_trial': self.after_trial,
-                'num_worker': self.num_worker,
-                'verbose': self.verbose,
-                'io_size': self.io_size
-            })
+        return dict(super().repr_body, **{'mat_path': self.mat_path, 'chunk_size': self.chunk_size, 'overlap': self.overlap, 'num_channel': self.num_channel, 'num_baseline': self.num_baseline, 'baseline_chunk_size': self.baseline_chunk_size, 'offline_transform': self.offline_transform, 'online_transform': self.online_transform, 'label_transform': self.label_transform, 'num_worker': self.num_worker, 'verbose': self.verbose, 'io_size': self.io_size})

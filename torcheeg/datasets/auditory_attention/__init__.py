@@ -1,6 +1,6 @@
-from .aved import AVEDDataset
-from .aved_processed import AVEDProcessedDataset
-from .dtu import DTUDataset
-from .dtu_processed import DTUProcessedDataset
-from .kul import KULDataset
-from .kul_processed import KULProcessedDataset
+from .aved import AVEDData, AVEDDataset
+from .aved_processed import AVEDProcessedData, AVEDProcessedDataset
+from .dtu import DTUData, DTUDataset
+from .dtu_processed import DTUProcessedData, DTUProcessedDataset
+from .kul import KULData, KULDataset
+from .kul_processed import KULProcessedData, KULProcessedDataset

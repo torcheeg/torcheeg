@@ -6,18 +6,31 @@ torcheeg.io
     :local:
     :backlinks: top
 
-EEGSignalIO
-------------------------------
+EEG backends
+------------
 
-.. autoclass:: torcheeg.io.EEGSignalIO
-   :members:
-   :undoc-members:
-   :show-inheritance:
+.. currentmodule:: torcheeg.io
 
-MetaInfoIO
------------------------------
+.. autosummary::
+   :toctree: generated
+   :nosignatures:
 
-.. autoclass:: torcheeg.io.MetaInfoIO
-   :members:
-   :undoc-members:
-   :show-inheritance:
+   BaseEEGIO
+   MemoryEEGIO
+   LMDBEEGIO
+   PickleEEGIO
+   NumpyEEGIO
+   ZarrEEGIO
+
+Metadata backends
+-----------------
+
+.. autosummary::
+   :toctree: generated
+   :nosignatures:
+
+   BaseInfoIO
+   MemoryInfoIO
+   CSVInfoIO
+   JSONLInfoIO
+   SQLiteInfoIO

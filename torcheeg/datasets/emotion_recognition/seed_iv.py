@@ -6,108 +6,12 @@ import numpy as np
 import scipy.io as scio
 
 from ...utils import get_random_dir_path
-from ..base_dataset import BaseDataset
+from ..base_data import BaseData
+from ..cached_dataset import CachedDataset
 
 
-class SEEDIVDataset(BaseDataset):
-    r'''
-    The SEED-IV dataset provided by the BCMI laboratory, which is led by Prof. Bao-Liang Lu. This class generates training samples and test samples according to the given parameters, and caches the generated results in a unified input and output format (IO). The relevant information of the dataset is as follows:
-
-    - Author: Zheng et al.
-    - Year: 2018
-    - Download URL: https://bcmi.sjtu.edu.cn/home/seed/seed-iv.html
-    - Reference: Zheng W L, Liu W, Lu Y, et al. Emotionmeter: A multimodal framework for recognizing human emotions[J]. IEEE transactions on cybernetics, 2018, 49(3): 1110-1122.
-    - Stimulus: 168 film clips.
-    - Signals: Electroencephalogram (62 channels at 200Hz) and eye movement data of 15 subjects (8 females). Each subject conducts the experiments in three sessions, and each session contains 24 trials (6 per emotional category) totally 15 people x 3 sessions x 24 trials.
-    - Rating: neutral (0), sad (1), fear (2), and happy (3).
-
-    In order to use this dataset, the download folder :obj:`eeg_raw_data` is required, containing the following files:
-
-    .. code-block:: text
-
-        eeg_raw_data/
-        ├── label.mat
-        ├── readme.txt
-        ├── 10_20131130.mat
-        ├── ...
-        └── 9_20140704.mat
-
-    An example dataset for CNN-based methods:
-
-    .. code-block:: python
-
-        from torcheeg.datasets import SEEDIVDataset
-        from torcheeg import transforms
-        from torcheeg.datasets.utils import get_locations
-
-        dataset = SEEDIVDataset(root_path='./eeg_raw_data',
-                                offline_transform=transforms.Compose([
-                                    transforms.BandDifferentialEntropy(),
-                                    transforms.ToGrid(get_locations(SEEDIVDataset.channels, SEEDIVDataset.grid))
-                                ]),
-                                online_transform=transforms.ToTensor(),
-                                label_transform=transforms.Compose([
-                                    transforms.Select('emotion'),
-                                    transforms.Lambda(lambda x: x + 1)
-                                ]))
-        print(dataset[0])
-        # EEG signal (torch.Tensor[4, 9, 9]),
-        # coresponding baseline signal (torch.Tensor[4, 9, 9]),
-        # label (int)
-
-    Another example dataset for CNN-based methods:
-
-    .. code-block:: python
-
-        from torcheeg.datasets import SEEDIVDataset
-        from torcheeg import transforms
-
-        dataset = SEEDIVDataset(root_path='./eeg_raw_data',
-                                online_transform=transforms.Compose([
-                                    transforms.ToTensor(),
-                                    transforms.To2d()
-                                ]),
-                                label_transform=transforms.Select('emotion'))
-        print(dataset[0])
-        # EEG signal (torch.Tensor[62, 200]),
-        # coresponding baseline signal (torch.Tensor[62, 200]),
-        # label (int)
-
-    An example dataset for GNN-based methods:
-
-    .. code-block:: python
-
-        from torcheeg.datasets import SEEDIVDataset
-        from torcheeg import transforms
-        from torcheeg.datasets.utils import get_adjacency
-        from torcheeg.transforms.pyg import ToG
-
-        dataset = SEEDIVDataset(root_path='./eeg_raw_data',
-                                online_transform=transforms.Compose([
-                                    ToG(get_adjacency(SEEDIVDataset.channels, SEEDIVDataset.adjacency))
-                                ]),
-                                label_transform=transforms.Select('emotion'))
-        print(dataset[0])
-        # EEG signal (torch_geometric.data.Data),
-        # coresponding baseline signal (torch_geometric.data.Data),
-        # label (int)
-
-    Args:
-        root_path (str): Downloaded data files in matlab (unzipped eeg_raw_data.zip) formats (default: :obj:`'./eeg_raw_data'`)
-        chunk_size (int): Number of data points included in each EEG chunk as training or test samples. If set to -1, the EEG signal of a trial is used as a sample of a chunk. (default: :obj:`800`)
-        overlap (int): The number of overlapping data points between different chunks when dividing EEG chunks. (default: :obj:`0`)
-        num_channel (int): Number of channels used, of which the first 62 channels are EEG signals. (default: :obj:`62`)
-        online_transform (Callable, optional): The transformation of the EEG signals and baseline EEG signals. The input is a :obj:`np.ndarray`, and the ouput is used as the first and second value of each element in the dataset. (default: :obj:`None`)
-        offline_transform (Callable, optional): The usage is the same as :obj:`online_transform`, but executed before generating IO intermediate results. (default: :obj:`None`)
-        label_transform (Callable, optional): The transformation of the label. The input is an information dictionary, and the ouput is used as the third value of each element in the dataset. (default: :obj:`None`)
-        before_trial (Callable, optional): The hook performed on the trial to which the sample belongs. It is performed before the offline transformation and thus typically used to implement context-dependent sample transformations, such as moving averages, etc. The input of this hook function is a 2D EEG signal with shape (number of electrodes, number of data points), whose ideal output shape is also (number of electrodes, number of data points).
-        after_trial (Callable, optional): The hook performed on the trial to which the sample belongs. It is performed after the offline transformation and thus typically used to implement context-dependent sample transformations, such as moving averages, etc. The input and output of this hook function should be a sequence of dictionaries representing a sequence of EEG samples. Each dictionary contains two key-value pairs, indexed by :obj:`eeg` (the EEG signal matrix) and :obj:`key` (the index in the database) respectively.
-        io_path (str): The path to generated unified data IO, cached as an intermediate result. If set to None, a random path will be generated. (default: :obj:`None`)
-        io_size (int): Maximum size database may grow to; used to size the memory mapping. If database grows larger than ``map_size``, an exception will be raised and the user must close and reopen. (default: :obj:`1048576`)
-        io_mode (str): Storage mode of EEG signal. When io_mode is set to :obj:`lmdb`, TorchEEG provides an efficient database (LMDB) for storing EEG signals. LMDB may not perform well on limited operating systems, where a file system based EEG signal storage is also provided. When io_mode is set to :obj:`pickle`, pickle-based persistence files are used. When io_mode is set to :obj:`memory`, memory are used. (default: :obj:`lmdb`)
-        num_worker (int): Number of subprocesses to use for data loading. 0 means that the data will be loaded in the main process. (default: :obj:`0`)
-        verbose (bool): Whether to display logs during processing, such as progress bars, etc. (default: :obj:`True`)    
-    '''
+class SEEDIVData(BaseData):
+    """Read and preprocess records for :class:`SEEDIVDataset`."""
 
     channels = [
         'FP1', 'FPZ', 'FP2', 'AF3', 'AF4', 'F7',  'F5',  'F3',
@@ -202,48 +106,17 @@ class SEEDIVDataset(BaseDataset):
                  chunk_size: int = 800,
                  overlap: int = 0,
                  num_channel: int = 62,
-                 online_transform: Union[None, Callable] = None,
-                 offline_transform: Union[None, Callable] = None,
-                 label_transform: Union[None, Callable] = None,
-                 before_trial: Union[None, Callable] = None,
-                 after_trial: Union[Callable, None] = None,
-                 after_session: Union[Callable, None] = None,
-                 after_subject: Union[Callable, None] = None,
-                 io_path: Union[None, str] = None,
-                 io_size: int = 1048576,
-                 io_mode: str = 'lmdb',
-                 num_worker: int = 0,
-                 verbose: bool = True):
-        if io_path is None:
-            io_path = get_random_dir_path(dir_prefix='datasets')
+                 transform: Union[None, Callable] = None):
 
-        # pass all arguments to super class
-        params = {
-            'root_path': root_path,
-            'chunk_size': chunk_size,
-            'overlap': overlap,
-            'num_channel': num_channel,
-            'online_transform': online_transform,
-            'offline_transform': offline_transform,
-            'label_transform': label_transform,
-            'before_trial': before_trial,
-            'after_trial': after_trial,
-            'after_session': after_session,
-            'after_subject': after_subject,
-            'io_path': io_path,
-            'io_size': io_size,
-            'io_mode': io_mode,
-            'num_worker': num_worker,
-            'verbose': verbose
-        }
-        super().__init__(**params)
-        # save all arguments to __dict__
-        self.__dict__.update(params)
+        super().__init__(
+            transform=transform,
+            root_path=root_path,
+            chunk_size=chunk_size,
+            overlap=overlap,
+            num_channel=num_channel
+        )
 
-    @staticmethod
-    def read_record(record: str,
-                    **kwargs) -> Dict:
-
+    def read_record(self, record: str, **kwargs) -> Dict:
         samples = scio.loadmat(record,
                                verify_compressed_data_integrity=False
                                )  # trial (15), channel(62), timestep(n*200)
@@ -268,108 +141,45 @@ class SEEDIVDataset(BaseDataset):
             'samples': samples
         }
 
-    @staticmethod
-    def process_record(record: str,
-                       samples: Dict,
-                       chunk_size: int = 800,
-                       overlap: int = 0,
-                       num_channel: int = 62,
-                       before_trial: Union[None, Callable] = None,
-                       offline_transform: Union[None, Callable] = None,
-                       **kwargs):
-
+    def process_record(self, record: str, samples: Dict, chunk_size: int = None, overlap: int = None, num_channel: int = None, **kwargs):
+        if chunk_size is None:
+            chunk_size = self.chunk_size
+        if overlap is None:
+            overlap = self.overlap
+        if num_channel is None:
+            num_channel = self.num_channel
         session_id = os.path.basename(os.path.dirname(record))
         _, file_name = os.path.split(record)
-
-        subject = int(os.path.basename(file_name).split('.')[0].split('_')
-                      [0])  # subject (15)
-        date = int(os.path.basename(file_name).split('.')[0].split('_')
-                   [1])  # period (3)
-
-        # label file
-        labels = [
-            [
-                1, 2, 3, 0, 2, 0, 0, 1, 0, 1, 2, 1, 1, 1, 2, 3, 2, 2, 3, 3, 0,
-                3, 0, 3
-            ],
-            [
-                2, 1, 3, 0, 0, 2, 0, 2, 3, 3, 2, 3, 2, 0, 1, 1, 2, 1, 0, 3, 0,
-                1, 3, 1
-            ],
-            [
-                1, 2,
-                2, 1,
-                3, 3,
-                3, 1,
-                1, 2,
-                1, 0,
-                2, 3,
-                3, 0,
-                2, 3,
-                0, 0,
-                2, 0,
-                1, 0
-            ]
-            # The labels with 0, 1, 2, and 3 denote the ground truth, neutral, sad, fear, and happy emotions, respectively.
-        ]
+        subject = int(os.path.basename(file_name).split('.')[0].split('_')[0])
+        date = int(os.path.basename(file_name).split('.')[0].split('_')[1])
+        labels = [[1, 2, 3, 0, 2, 0, 0, 1, 0, 1, 2, 1, 1, 1, 2, 3, 2, 2, 3, 3, 0, 3, 0, 3], [2, 1, 3, 0, 0, 2, 0, 2, 3, 3, 2,
+                                                                                             3, 2, 0, 1, 1, 2, 1, 0, 3, 0, 1, 3, 1], [1, 2, 2, 1, 3, 3, 3, 1, 1, 2, 1, 0, 2, 3, 3, 0, 2, 3, 0, 0, 2, 0, 1, 0]]
         session_labels = labels[int(session_id) - 1]
-
-        trial_name_ids = [(trial_name,
-                           int(re.findall(r".*_eeg(\d+)", trial_name)[0]))
-                          for trial_name in samples.keys()
-                          if 'eeg' in trial_name]
-
-        write_pointer = 0
-        # loop for each trial
+        trial_name_ids = [(trial_name, int(re.findall('.*_eeg(\\d+)', trial_name)[0]))
+                          for trial_name in samples.keys() if 'eeg' in trial_name]
         for trial_name, trial_id in trial_name_ids:
-            trial_samples = samples[trial_name]  # channel(62), timestep(n*200)
-            if before_trial:
-                trial_samples = before_trial(trial_samples)
-
-            # record the common meta info
-            trial_meta_info = {
-                'subject_id': subject,
-                'trial_id': trial_id,
-                'session_id': session_id,
-                'emotion': int(session_labels[trial_id - 1]),
-                'date': date
-            }
-
-            # extract experimental signals
+            trial_samples = samples[trial_name]
+            trial_meta_info = {'subject_id': subject, 'trial_id': trial_id, 'session_id': session_id, 'emotion': int(
+                session_labels[trial_id - 1]), 'date': date}
             start_at = 0
             if chunk_size <= 0:
                 dynamic_chunk_size = trial_samples.shape[1] - start_at
             else:
                 dynamic_chunk_size = chunk_size
-
-            # chunk with chunk size
             end_at = dynamic_chunk_size
-            # calculate moving step
             step = dynamic_chunk_size - overlap
-
             while end_at <= trial_samples.shape[1]:
                 clip_sample = trial_samples[:num_channel, start_at:end_at]
-
                 t_eeg = clip_sample
-                if not offline_transform is None:
-                    t_eeg = offline_transform(eeg=clip_sample)['eeg']
-
-                clip_id = f'{file_name}_{write_pointer}'
-                write_pointer += 1
-
-                # record meta info for each signal
-                record_info = {
-                    'start_at': start_at,
-                    'end_at': end_at,
-                    'clip_id': clip_id
-                }
+                record_info = {'start_at': start_at, 'end_at': end_at}
                 record_info.update(trial_meta_info)
-                yield {'eeg': t_eeg, 'key': clip_id, 'info': record_info}
-
+                yield {'eeg': t_eeg, 'info': record_info}
                 start_at = start_at + step
                 end_at = start_at + dynamic_chunk_size
 
-    def set_records(self, root_path: str = './eeg_raw_data', **kwargs):
+    def set_records(self, root_path: str = None, **kwargs):
+        if root_path is None:
+            root_path = self.root_path
         if not (os.path.exists(root_path)):
             raise FileNotFoundError(
                 f'root_path ({root_path}) does not exist. Please download the dataset and set the root_path to the downloaded path.'
@@ -384,38 +194,185 @@ class SEEDIVDataset(BaseDataset):
                                                    file_name))
         return file_path_list
 
-    def __getitem__(self, index: int) -> Tuple[any, any, int, int, int]:
-        info = self.read_info(index)
 
-        eeg_index = str(info['clip_id'])
-        eeg_record = str(info['_record_id'])
-        eeg = self.read_eeg(eeg_record, eeg_index)
+class SEEDIVDataset(CachedDataset):
 
-        signal = eeg
-        label = info
+    r"""
+    The SEED-IV dataset provided by the BCMI laboratory, which is led by Prof. Bao-Liang Lu. This class generates training samples and test samples according to the given parameters, and caches the generated results in a unified input and output format (IO). The relevant information of the dataset is as follows:
 
-        if self.online_transform:
-            signal = self.online_transform(eeg=eeg)['eeg']
+    - Author: Zheng et al.
+    - Year: 2018
+    - Download URL: https://bcmi.sjtu.edu.cn/home/seed/seed-iv.html
+    - Reference: Zheng W L, Liu W, Lu Y, et al. Emotionmeter: A multimodal framework for recognizing human emotions[J]. IEEE transactions on cybernetics, 2018, 49(3): 1110-1122.
+    - Stimulus: 168 film clips.
+    - Signals: Electroencephalogram (62 channels at 200Hz) and eye movement data of 15 subjects (8 females). Each subject conducts the experiments in three sessions, and each session contains 24 trials (6 per emotional category) totally 15 people x 3 sessions x 24 trials.
+    - Rating: neutral (0), sad (1), fear (2), and happy (3).
 
-        if self.label_transform:
-            label = self.label_transform(y=info)['y']
+    In order to use this dataset, the download folder :obj:`eeg_raw_data` is required, containing the following files:
 
-        return signal, label
+    .. code-block:: text
+
+        eeg_raw_data/
+        ├── label.mat
+        ├── readme.txt
+        ├── 10_20131130.mat
+        ├── ...
+        └── 9_20140704.mat
+
+    An example dataset for CNN-based methods:
+
+    .. code-block:: python
+
+        from torcheeg.datasets import SEEDIVDataset
+        from torcheeg import transforms
+        from torcheeg.datasets.utils import get_locations
+
+
+        def preprocess_fn(eeg, baseline=None, **kwargs) -> dict:
+            eeg_transform = transforms.Compose([
+                transforms.BandDifferentialEntropy(),
+                transforms.ToGrid(get_locations(
+                    SEEDIVDataset.channels, SEEDIVDataset.grid)),
+            ])
+            return {
+                'eeg': eeg_transform(eeg),
+                'baseline': eeg_transform(baseline) if baseline is not None else None,
+            }
+
+
+        def transform_fn(eeg, baseline=None, **kwargs) -> dict:
+            eeg_transform = transforms.Compose([
+                transforms.ToTensor(),
+            ])
+            return {
+                'eeg': eeg_transform(eeg),
+                'baseline': eeg_transform(baseline) if baseline is not None else None,
+            }
+
+
+        def label_fn(info: dict, **kwargs) -> dict:
+            label_transform = transforms.Compose([
+                transforms.Select('emotion'),
+                transforms.Lambda(lambda x: x + 1),
+            ])
+            return {
+                'label': label_transform(info),
+            }
+
+
+        dataset = SEEDIVDataset(
+            root_path='./eeg_raw_data',
+            offline_transform=preprocess_fn,
+            online_transform=transform_fn,
+            label_transform=label_fn,
+        )
+        print(dataset[0])
+
+    Another example dataset for CNN-based methods:
+
+    .. code-block:: python
+
+        from torcheeg.datasets import SEEDIVDataset
+        from torcheeg import transforms
+
+
+        def transform_fn(eeg, baseline=None, **kwargs) -> dict:
+            eeg_transform = transforms.Compose([
+                transforms.ToTensor(),
+                transforms.To2d(),
+            ])
+            return {
+                'eeg': eeg_transform(eeg),
+                'baseline': eeg_transform(baseline) if baseline is not None else None,
+            }
+
+
+        def label_fn(info: dict, **kwargs) -> dict:
+            label_transform = transforms.Compose([
+                transforms.Select('emotion'),
+            ])
+            return {
+                'label': label_transform(info),
+            }
+
+
+        dataset = SEEDIVDataset(
+            root_path='./eeg_raw_data',
+            online_transform=transform_fn,
+            label_transform=label_fn,
+        )
+        print(dataset[0])
+
+    An example dataset for GNN-based methods:
+
+    .. code-block:: python
+
+        from torcheeg.datasets import SEEDIVDataset
+        from torcheeg import transforms
+        from torcheeg.datasets.utils import get_adjacency
+        from torcheeg.transforms.graph import ToG
+
+
+        def transform_fn(eeg, baseline=None, **kwargs) -> dict:
+            eeg_transform = transforms.Compose([
+                ToG(get_adjacency(SEEDIVDataset.channels, SEEDIVDataset.adjacency)),
+            ])
+            return {
+                'eeg': eeg_transform(eeg),
+                'baseline': eeg_transform(baseline) if baseline is not None else None,
+            }
+
+
+        def label_fn(info: dict, **kwargs) -> dict:
+            label_transform = transforms.Compose([
+                transforms.Select('emotion'),
+            ])
+            return {
+                'label': label_transform(info),
+            }
+
+
+        dataset = SEEDIVDataset(
+            root_path='./eeg_raw_data',
+            online_transform=transform_fn,
+            label_transform=label_fn,
+        )
+        print(dataset[0])
+
+    Args:
+        root_path (str): Downloaded data files in matlab (unzipped eeg_raw_data.zip) formats (default: :obj:`'./eeg_raw_data'`)
+        chunk_size (int): Number of data points included in each EEG chunk as training or test samples. If set to -1, the EEG signal of a trial is used as a sample of a chunk. (default: :obj:`800`)
+        overlap (int): The number of overlapping data points between different chunks when dividing EEG chunks. (default: :obj:`0`)
+        num_channel (int): Number of channels used, of which the first 62 channels are EEG signals. (default: :obj:`62`)
+
+
+
+        offline_transform (Callable, optional): EEG transform applied before storage; returns a dictionary containing eeg. (default: :obj:`None`)
+        online_transform (Callable, optional): EEG transform applied on each read. (default: :obj:`None`)
+        label_transform (Callable, optional): Transform info into a dictionary containing label on each read. (default: :obj:`None`)
+        io_path (str): The path to generated unified data IO, cached as an intermediate result. If set to None, a random path will be generated. (default: :obj:`None`)
+        io_size (int): Maximum size database may grow to; used to size the memory mapping. If database grows larger than ``map_size``, an exception will be raised and the user must close and reopen. (default: :obj:`1048576`)
+        io_mode (str): Storage mode of EEG signal. When io_mode is set to :obj:`lmdb`, TorchEEG provides an efficient database (LMDB) for storing EEG signals. LMDB may not perform well on limited operating systems, where a file system based EEG signal storage is also provided. When io_mode is set to :obj:`pickle`, pickle-based persistence files are used. When io_mode is set to :obj:`memory`, memory are used. (default: :obj:`lmdb`)
+        num_worker (int): Number of subprocesses to use for data loading. 0 means that the data will be loaded in the main process. (default: :obj:`0`)
+        verbose (bool): Whether to display logs during processing, such as progress bars, etc. (default: :obj:`True`)
+    """
+
+    data_class = SEEDIVData
+
+    channels = SEEDIVData.channels
+
+    grid = SEEDIVData.grid
+
+    adjacency = SEEDIVData.adjacency
+
+    def __init__(self, root_path: str = './eeg_raw_data', chunk_size: int = 800, overlap: int = 0, num_channel: int = 62, offline_transform: Union[None, Callable] = None, online_transform: Union[None, Callable] = None, label_transform: Union[None, Callable] = None, io_path: Union[None, str] = None, io_size: int = 1048576, io_mode: str = 'lmdb', num_worker: int = 0, verbose: bool = True):
+        if io_path is None:
+            io_path = get_random_dir_path(dir_prefix='datasets')
+        params = {'root_path': root_path, 'chunk_size': chunk_size, 'overlap': overlap, 'num_channel': num_channel,
+                  'offline_transform': offline_transform, 'online_transform': online_transform, 'label_transform': label_transform, 'io_path': io_path, 'io_size': io_size, 'io_mode': io_mode, 'num_worker': num_worker, 'verbose': verbose}
+        super().__init__(**params)
+        self.__dict__.update(params)
 
     @property
     def repr_body(self) -> Dict:
-        return dict(
-            super().repr_body, **{
-                'root_path': self.root_path,
-                'chunk_size': self.chunk_size,
-                'overlap': self.overlap,
-                'num_channel': self.num_channel,
-                'online_transform': self.online_transform,
-                'offline_transform': self.offline_transform,
-                'label_transform': self.label_transform,
-                'before_trial': self.before_trial,
-                'after_trial': self.after_trial,
-                'num_worker': self.num_worker,
-                'verbose': self.verbose,
-                'io_size': self.io_size
-            })
+        return dict(super().repr_body, **{'root_path': self.root_path, 'chunk_size': self.chunk_size, 'overlap': self.overlap, 'num_channel': self.num_channel, 'offline_transform': self.offline_transform, 'online_transform': self.online_transform, 'label_transform': self.label_transform, 'num_worker': self.num_worker, 'verbose': self.verbose, 'io_size': self.io_size})

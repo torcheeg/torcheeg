@@ -3,6 +3,7 @@ import unittest
 
 
 class TestSelfSupervisedExports(unittest.TestCase):
+
     def test_public_exports_resolve_to_their_defining_modules(self):
         package = importlib.import_module('torcheeg.trainers.self_supervised')
         expected = {'BYOLTrainer': 'torcheeg.trainers.self_supervised.byol',
@@ -13,5 +14,5 @@ class TestSelfSupervisedExports(unittest.TestCase):
                 self.assertIs(getattr(package, name), direct)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     unittest.main()

@@ -53,7 +53,7 @@ def _add_remaining_self_loops(edge_index: torch.Tensor,
 
 
 class RGNN(torch.nn.Module):
-    r'''
+    r"""
     Regularized Graph Neural Networks (RGNN). For more details, please refer to the following information.
 
     - Paper: Zhong P, Wang D, Miao C. EEG-based emotion recognition using regularized graph neural networks[J]. IEEE Transactions on Affective Computing, 2020.
@@ -66,19 +66,49 @@ class RGNN(torch.nn.Module):
 
         from torcheeg.datasets import SEEDDataset
         from torcheeg.models import RGNN
-        from torcheeg.transforms.pyg import ToG
+        from torcheeg.transforms.graph import ToG
         from torcheeg.datasets.utils import get_positions, get_standard_adjacency
         from torch_geometric.data import DataLoader
 
 
-        dataset = SEEDDataset(root_path='./Preprocessed_EEG',
-                              offline_transform=transforms.BandDifferentialEntropy(),
-                              online_transform=ToG(get_standard_adjacency(SEEDDataset.channels, get_positions(SEEDDataset.channels))),
-                              label_transform=transforms.Compose([
-                                  transforms.Select('emotion'),
-                                  transforms.Lambda(lambda x: int(x) + 1),
-                              ]),
-                              num_worker=8)
+        def preprocess_fn(eeg, baseline=None, **kwargs) -> dict:
+            eeg_transform = transforms.Compose([
+                transforms.BandDifferentialEntropy(),
+            ])
+            return {
+                'eeg': eeg_transform(eeg),
+                'baseline': eeg_transform(baseline) if baseline is not None else None,
+            }
+
+
+        def transform_fn(eeg, baseline=None, **kwargs) -> dict:
+            eeg_transform = transforms.Compose([
+                ToG(get_standard_adjacency(SEEDDataset.channels,
+                    get_positions(SEEDDataset.channels))),
+            ])
+            return {
+                'eeg': eeg_transform(eeg),
+                'baseline': eeg_transform(baseline) if baseline is not None else None,
+            }
+
+
+        def label_fn(info: dict, **kwargs) -> dict:
+            label_transform = transforms.Compose([
+                transforms.Select('emotion'),
+                transforms.Lambda(lambda x: int(x) + 1),
+            ])
+            return {
+                'label': label_transform(info),
+            }
+
+
+        dataset = SEEDDataset(
+            root_path='./Preprocessed_EEG',
+            num_worker=8,
+            offline_transform=preprocess_fn,
+            online_transform=transform_fn,
+            label_transform=label_fn,
+        )
 
         model = RGNN(adj=torch.Tensor(get_standard_adjacency(SEEDDataset.channels, get_positions(SEEDDataset.channels))),
                      in_channels=5,
@@ -89,7 +119,9 @@ class RGNN(torch.nn.Module):
                      dropout=0.7,
                      learn_edge_weights=True)
 
-        x, y = next(iter(DataLoader(dataset, batch_size=64)))
+        batch = next(iter(DataLoader(dataset, batch_size=64)))
+
+        x, y = batch['eeg'], batch['label']
         model(x)
 
     Args:
@@ -101,7 +133,7 @@ class RGNN(torch.nn.Module):
         num_classes (int): The number of classes to predict. (default: :obj:`3`)
         dropout (float): Probability of an element to be zeroed in the dropout layers at the output fully-connected layer. (default: :obj:`0.7`)
         learn_edge_weights (bool): Whether to learn a set of parameters to adjust the adjacency matrix. (default: :obj:`True`)
-    '''
+    """
 
     def __init__(self,
                  adj: Union[torch.Tensor, list],

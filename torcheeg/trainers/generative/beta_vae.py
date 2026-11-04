@@ -154,11 +154,11 @@ class BetaVAETrainer(pl.LightningModule):
         return self.decoder(latent)
 
     def predict_step(self,
-                     batch: Tuple[torch.Tensor],
+                     batch: dict,
                      batch_idx: int,
                      dataloader_idx: int = 0,
                      random: bool = True) -> torch.Tensor:
-        x, _ = batch
+        x = batch['eeg']
         try:
             mu, log_var = self.encoder(x)
             # should return two vectors, one for mu, one for log_var
@@ -173,9 +173,9 @@ class BetaVAETrainer(pl.LightningModule):
             latent = torch.normal(mean=0, std=1, size=latent.shape).type_as(x)
         return self(latent)
 
-    def training_step(self, batch: Tuple[torch.Tensor],
+    def training_step(self, batch: dict,
                       batch_idx: int) -> torch.Tensor:
-        x, _ = batch
+        x = batch['eeg']
 
         try:
             mu, log_var = self.encoder(x)
@@ -234,9 +234,9 @@ class BetaVAETrainer(pl.LightningModule):
         self.train_kld_loss.reset()
 
     @torch.enable_grad()
-    def validation_step(self, batch: Tuple[torch.Tensor],
+    def validation_step(self, batch: dict,
                         batch_idx: int) -> torch.Tensor:
-        x, _ = batch
+        x = batch['eeg']
 
         try:
             mu, log_var = self.encoder(x)
@@ -285,9 +285,9 @@ class BetaVAETrainer(pl.LightningModule):
         self.val_kld_loss.reset()
 
     @torch.enable_grad()
-    def test_step(self, batch: Tuple[torch.Tensor],
+    def test_step(self, batch: dict,
                   batch_idx: int) -> torch.Tensor:
-        x, _ = batch
+        x = batch['eeg']
 
         try:
             mu, log_var = self.encoder(x)
@@ -424,9 +424,9 @@ class CBetaVAETrainer(BetaVAETrainer):
                              accelerator, metrics, metric_extractor,
                              metric_classifier, metric_num_features)
 
-    def training_step(self, batch: Tuple[torch.Tensor],
+    def training_step(self, batch: dict,
                       batch_idx: int) -> torch.Tensor:
-        x, y = batch
+        x, y = batch['eeg'], batch['label']
 
         try:
             mu, log_var = self.encoder(x, y)
@@ -460,9 +460,9 @@ class CBetaVAETrainer(BetaVAETrainer):
         return loss
 
     @torch.enable_grad()
-    def validation_step(self, batch: Tuple[torch.Tensor],
+    def validation_step(self, batch: dict,
                         batch_idx: int) -> torch.Tensor:
-        x, y = batch
+        x, y = batch['eeg'], batch['label']
 
         try:
             mu, log_var = self.encoder(x, y)
@@ -486,9 +486,9 @@ class CBetaVAETrainer(BetaVAETrainer):
         return loss
 
     @torch.enable_grad()
-    def test_step(self, batch: Tuple[torch.Tensor],
+    def test_step(self, batch: dict,
                   batch_idx: int) -> torch.Tensor:
-        x, y = batch
+        x, y = batch['eeg'], batch['label']
 
         try:
             mu, log_var = self.encoder(x, y)
@@ -525,11 +525,11 @@ class CBetaVAETrainer(BetaVAETrainer):
         return self.decoder(latent, y)
 
     def predict_step(self,
-                     batch: Tuple[torch.Tensor],
+                     batch: dict,
                      batch_idx: int,
                      dataloader_idx: int = 0,
                      random: bool = True) -> torch.Tensor:
-        x, y = batch
+        x, y = batch['eeg'], batch['label']
         try:
             mu, log_var = self.encoder(x, y)
             # should return two vectors, one for mu, one for log_var

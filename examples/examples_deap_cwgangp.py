@@ -16,34 +16,57 @@ In this tutorial, we'll walk through how to train a Conditional Wasserstein Gene
 # seconds long, which we divide into three sections and then average to
 # obtain the trial’s baseline signal.
 #
-# During offline preprocessing, we divide each electrode’s EEG signal into
-# 4 sub-bands, calculate the differential entropy for each sub-band as a
-# feature, perform debaselining, and map onto a grid. Finally, the
-# preprocessed EEG signals are saved locally. For online processing, we
-# convert all EEG signals into Tensors, making them suitable for neural
-# network input.
+# Offline preprocessing caches band features. Online processing removes the
+# baseline, maps electrodes to a grid, and converts the result to a tensor.
 #
 
 from torcheeg import transforms
 from torcheeg.datasets import DEAPDataset
 from torcheeg.datasets.utils import get_locations
 
+
+def preprocess_fn(eeg, baseline=None, **kwargs) -> dict:
+    eeg_transform = transforms.Compose([
+        transforms.BandDifferentialEntropy(),
+    ])
+    return {
+        'eeg': eeg_transform(eeg),
+        'baseline': eeg_transform(baseline) if baseline is not None else None,
+    }
+
+
+def transform_fn(eeg, baseline=None, **kwargs) -> dict:
+    if baseline is not None:
+        eeg = transforms.BaselineRemoval(baseline=baseline)(eeg)
+    eeg_transform = transforms.Compose([
+        transforms.ToGrid(get_locations(
+            DEAPDataset.channels, DEAPDataset.grid)),
+        transforms.ToTensor(),
+    ])
+    return {
+        'eeg': eeg_transform(eeg),
+        'baseline': eeg_transform(baseline) if baseline is not None else None,
+    }
+
+
+def label_fn(info: dict, **kwargs) -> dict:
+    label_transform = transforms.Compose([
+        transforms.Select('valence'),
+        transforms.Binary(5.0),
+    ])
+    return {
+        'label': label_transform(info),
+    }
+
+
 dataset = DEAPDataset(
     io_path=f'./examples_deap_cwgangp/deap',
     root_path='./data_preprocessed_python',
-    offline_transform=transforms.Compose([
-        transforms.BandDifferentialEntropy(apply_to_baseline=True),
-        transforms.ToGrid(get_locations(DEAPDataset.channels,
-                          DEAPDataset.grid), apply_to_baseline=True)
-    ]),
-    online_transform=transforms.Compose(
-        [transforms.BaselineRemoval(),
-         transforms.ToTensor()]),
-    label_transform=transforms.Compose([
-        transforms.Select('valence'),
-        transforms.Binary(5.0),
-    ]),
-    num_worker=8)
+    num_worker=8,
+    offline_transform=preprocess_fn,
+    online_transform=transform_fn,
+    label_transform=label_fn,
+)
 
 
 ######################################################################

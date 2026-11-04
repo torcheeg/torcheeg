@@ -23,7 +23,6 @@ class TestRaw(unittest.TestCase):
         mock_eeg = torch.randn(32, 128)
         img = plot_signal(
             mock_eeg, channel_list=DEAPDataset.channels, sampling_rate=128)
-
         self.assertEqual(img.ndim, 3)
         self.assertGreater(np.ptp(img[..., :3]), 0)
 

@@ -32,7 +32,7 @@ class Conv2dWithConstraint(nn.Conv2d):
 
 
 class EEGNet(nn.Module):
-    r'''
+    r"""
     A compact convolutional neural network (EEGNet). For more details, please refer to the following information.
 
     - Paper: Lawhern V J, Solon A J, Waytowich N R, et al. EEGNet: a compact convolutional neural network for EEG-based brain-computer interfaces[J]. Journal of neural engineering, 2018, 15(5): 056013.
@@ -48,15 +48,43 @@ class EEGNet(nn.Module):
         from torcheeg.models import EEGNet
         from torch.utils.data import DataLoader
 
-        dataset = DEAPDataset(root_path='./data_preprocessed_python',
-                              online_transform=transforms.Compose([
-                                  transforms.To2d(),
-                                  transforms.ToTensor(),
-                              ]),
-                              label_transform=transforms.Compose([
-                                  transforms.Select('valence'),
-                                  transforms.Binary(5.0),
-                              ]))
+
+        def preprocess_fn(eeg, baseline=None, **kwargs) -> dict:
+            eeg_transform = transforms.Compose([
+                transforms.To2d(),
+            ])
+            return {
+                'eeg': eeg_transform(eeg),
+                'baseline': eeg_transform(baseline) if baseline is not None else None,
+            }
+
+
+        def transform_fn(eeg, baseline=None, **kwargs) -> dict:
+            eeg_transform = transforms.Compose([
+                transforms.ToTensor(),
+            ])
+            return {
+                'eeg': eeg_transform(eeg),
+                'baseline': eeg_transform(baseline) if baseline is not None else None,
+            }
+
+
+        def label_fn(info: dict, **kwargs) -> dict:
+            label_transform = transforms.Compose([
+                transforms.Select('valence'),
+                transforms.Binary(5.0),
+            ])
+            return {
+                'label': label_transform(info),
+            }
+
+
+        dataset = DEAPDataset(
+            root_path='./data_preprocessed_python',
+            offline_transform=preprocess_fn,
+            online_transform=transform_fn,
+            label_transform=label_fn,
+        )
 
         model = EEGNet(chunk_size=128,
                        num_electrodes=32,
@@ -68,7 +96,9 @@ class EEGNet(nn.Module):
                        D=2,
                        num_classes=2)
 
-        x, y = next(iter(DataLoader(dataset, batch_size=64)))
+        batch = next(iter(DataLoader(dataset, batch_size=64)))
+
+        x, y = batch['eeg'], batch['label']
         model(x)
 
     Temporal convolutions preserve the input time length, including for even
@@ -88,7 +118,7 @@ class EEGNet(nn.Module):
         kernel_1 (int): The filter size of block 1. (default: :obj:`64`)
         kernel_2 (int): The filter size of block 2. (default: :obj:`16`)
         dropout (float): Probability of an element to be zeroed in the dropout layers. (default: :obj:`0.25`)
-    '''
+    """
 
     def __init__(self,
                  chunk_size: int = 151,

@@ -74,7 +74,7 @@ class Transformer(nn.Module):
 
 
 class VanillaTransformer(nn.Module):
-    r'''
+    r"""
     A vanilla version of the transformer adapted on EEG analysis. For more details, please refer to the following information. 
 
     It is worth noting that this model is not designed for EEG analysis, but shows good performance and can serve as a good research start.
@@ -92,26 +92,46 @@ class VanillaTransformer(nn.Module):
         from torcheeg import transforms
         from torch.utils.data import DataLoader
 
-        dataset = DEAPDataset(root_path='./data_preprocessed_python',
-                              online_transform=transforms.Compose([
-                                  transforms.ToTensor(),
-                              ]),
-                              label_transform=transforms.Compose([
-                                  transforms.Select('valence'),
-                                  transforms.Binary(5.0),
-                              ]))
+
+        def transform_fn(eeg, baseline=None, **kwargs) -> dict:
+            eeg_transform = transforms.Compose([
+                transforms.ToTensor(),
+            ])
+            return {
+                'eeg': eeg_transform(eeg),
+                'baseline': eeg_transform(baseline) if baseline is not None else None,
+            }
+
+
+        def label_fn(info: dict, **kwargs) -> dict:
+            label_transform = transforms.Compose([
+                transforms.Select('valence'),
+                transforms.Binary(5.0),
+            ])
+            return {
+                'label': label_transform(info),
+            }
+
+
+        dataset = DEAPDataset(
+            root_path='./data_preprocessed_python',
+            online_transform=transform_fn,
+            label_transform=label_fn,
+        )
 
         model = VanillaTransformer(chunk_size=128,
-                            num_electrodes=32,
-                            t_patch_size=32,
-                            hid_channels=32,
-                            depth=3,
-                            heads=4,
-                            head_channels=64,
-                            mlp_channels=64,
-                            num_classes=2)
+                                   num_electrodes=32,
+                                   t_patch_size=32,
+                                   hid_channels=32,
+                                   depth=3,
+                                   heads=4,
+                                   head_channels=64,
+                                   mlp_channels=64,
+                                   num_classes=2)
 
-        x, y = next(iter(DataLoader(dataset, batch_size=64)))
+        batch = next(iter(DataLoader(dataset, batch_size=64)))
+
+        x, y = batch['eeg'], batch['label']
         model(x)
 
     Args:
@@ -124,7 +144,7 @@ class VanillaTransformer(nn.Module):
         head_channels (int): The dimension of each attention head for each attention layer. (default: :obj:`8`)
         mlp_channels (int): The number of hidden nodes in the fully connected layer of each transformer block. (default: :obj:`64`)
         num_classes (int): The number of classes to predict. (default: :obj:`2`)
-    '''
+    """
 
     def __init__(self,
                  num_electrodes: int = 32,

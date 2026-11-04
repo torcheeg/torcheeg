@@ -17,7 +17,7 @@ def train_test_split_cross_subject(
         label_transform: Callable = None,
         random_state: Union[int, None] = None,
         split_path: Union[None, str] = None) -> Tuple[BaseDataset, BaseDataset]:
-    r'''
+    r"""
     A tool function for cross-validations, to divide the training set and the test set across subjects. It is suitable for experiments with large dataset volume and no need to use k-fold cross-validations. A certain proportion of subjects are sampled as the test dataset, and samples from other subjects are used as training samples. In most literatures, 20% of the subjects are sampled for testing.
 
     :obj:`train_test_split_cross_subject` divides training set and the test set at the dimension of subjects. For example, when :obj:`test_size=0.2`, 80% of subjects are used for training, and 20% of subjects are used for testing. It is more consistent with real applications and can test the generalization of the model across different subjects.
@@ -37,16 +37,44 @@ def train_test_split_cross_subject(
         from torcheeg import transforms
         from torch.utils.data import DataLoader
 
-        dataset = DEAPDataset(root_path='./data_preprocessed_python',
-                              online_transform=transforms.Compose([
-                                  transforms.To2d(),
-                                  transforms.ToTensor()
-                              ]),
-                              label_transform=transforms.Compose([
-                                  transforms.Select(['valence', 'arousal']),
-                                  transforms.Binary(5.0),
-                                  transforms.BinariesToCategory()
-                              ]))
+
+        def preprocess_fn(eeg, baseline=None, **kwargs) -> dict:
+            eeg_transform = transforms.Compose([
+                transforms.To2d(),
+            ])
+            return {
+                'eeg': eeg_transform(eeg),
+                'baseline': eeg_transform(baseline) if baseline is not None else None,
+            }
+
+
+        def transform_fn(eeg, baseline=None, **kwargs) -> dict:
+            eeg_transform = transforms.Compose([
+                transforms.ToTensor(),
+            ])
+            return {
+                'eeg': eeg_transform(eeg),
+                'baseline': eeg_transform(baseline) if baseline is not None else None,
+            }
+
+
+        def label_fn(info: dict, **kwargs) -> dict:
+            label_transform = transforms.Compose([
+                transforms.Select(['valence', 'arousal']),
+                transforms.Binary(5.0),
+                transforms.BinariesToCategory(),
+            ])
+            return {
+                'label': label_transform(info),
+            }
+
+
+        dataset = DEAPDataset(
+            root_path='./data_preprocessed_python',
+            offline_transform=preprocess_fn,
+            online_transform=transform_fn,
+            label_transform=label_fn,
+        )
 
         train_dataset, test_dataset = train_test_split_cross_subject(dataset=dataset)
 
@@ -58,11 +86,11 @@ def train_test_split_cross_subject(
         dataset (BaseDataset): Dataset to be divided.
         test_size (float):  Should be between 0.0 and 1.0 and represent the proportion of the subjects to include in the test split. (default: :obj:`0.2`)
         shuffle (bool): Whether to shuffle the subjects before splitting. (default: :obj:`False`)
-        label_transform (Callable, optional): Function that returns the stratified label for each sample. If set to None, it will not be stratified. (default: :obj:`None`)
+
         random_state (int, optional): When shuffle is :obj:`True`, :obj:`random_state` affects the ordering of the subjects, which controls the randomness of the split. Otherwise, this parameter has no effect. (default: :obj:`None`)
         split_path (str, optional): Directory for saved splits.
             If None, generate a random path. (default: :obj:`None`)
-    '''
+    """
     if split_path is None:
         split_path = get_random_dir_path(dir_prefix='model_selection')
 
@@ -75,7 +103,7 @@ def train_test_split_cross_subject(
             for subject_id in subject_ids:
                 subject_info = info[info['subject_id'] == subject_id]
                 subject_label = subject_info.apply(
-                    lambda info: label_transform(y=info.to_dict())['y'], axis=1).mean()
+                    lambda info: label_transform(info.to_dict()), axis=1).mean()
                 subject_labels.append(subject_label)
 
             train_subject_ids, test_subject_ids = model_selection.train_test_split(
@@ -112,7 +140,7 @@ def train_test_split_cross_subject(
     if label_transform is not None:
         configuration['subject_labels'] = [
             (subject, dataset.info[dataset.info['subject_id'] == subject].apply(
-                lambda row: label_transform(y=row.to_dict())['y'], axis=1).mean())
+                lambda row: label_transform(row.to_dict()), axis=1).mean())
             for subject in pd.unique(dataset.info['subject_id'])
         ]
     ensure_cache(dataset.info, ['subject_id'], split_path, configuration,

@@ -6,7 +6,7 @@ from ..base_transform import EEGTransform
 
 
 class PickElectrode(EEGTransform):
-    r'''
+    r"""
     Select parts of electrode signals based on a given electrode index list.
 
     .. code-block:: python
@@ -22,37 +22,21 @@ class PickElectrode(EEGTransform):
              'F4', 'F8', 'FC6', 'FC2',
              'C4', 'T8', 'CP6', 'CP2',
              'P4', 'P8', 'PO4', 'O2'], DEAPDataset.channels))
-        t(eeg=np.random.randn(32, 128))['eeg'].shape
+        t(np.random.randn(32, 128)).shape
         >>> (28, 128)
 
     Args:
         pick_list (np.ndarray): Selected electrode list. Should consist of integers representing the corresponding electrode indices. :obj:`to_index_list` can be used to obtain an index list when we only know the names of the electrode and not their indices.
-        apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (default: :obj:`False`)
+
 
     .. automethod:: __call__
-    '''
+    """
 
-    def __init__(self, pick_list: List[int], apply_to_baseline: bool = False):
-        super(PickElectrode, self).__init__(
-            apply_to_baseline=apply_to_baseline)
+    def __init__(self, pick_list: List[int]):
+        super(PickElectrode, self).__init__()
         self.pick_list = pick_list
 
-    def __call__(self,
-                 *args,
-                 eeg: np.ndarray,
-                 baseline: Union[np.ndarray, None] = None,
-                 **kwargs) -> Dict[str, np.ndarray]:
-        r'''
-        Args:
-            eeg (np.ndarray): The input EEG signals in shape of [number of electrodes, number of data points].
-            baseline (np.ndarray, optional) : The corresponding baseline signal, if apply_to_baseline is set to True and baseline is passed, the baseline signal will be transformed with the same way as the experimental signal.
-
-        Returns:
-            np.ndarray: The output signals with the shape of [number of picked electrodes, number of data points].
-        '''
-        return super().__call__(*args, eeg=eeg, baseline=baseline, **kwargs)
-
-    def apply(self, eeg: np.ndarray, **kwargs) -> np.ndarray:
+    def __call__(self, eeg: np.ndarray) -> np.ndarray:
         if not (max(self.pick_list) < eeg.shape[0]):
             raise ValueError(
                 f'The index {max(self.pick_list)} of the specified electrode is out of bounds {eeg.shape[0]}.'
@@ -92,7 +76,7 @@ class PickElectrode(EEGTransform):
 
 
 class OrderElectrode(EEGTransform):
-    r'''
+    r"""
     Pick specific electrodes from the input EEG representation.
 
     Args:
@@ -111,12 +95,12 @@ class OrderElectrode(EEGTransform):
         t = transforms.PickTransform(source_electrodes=source_electrodes, 
                                      target_electrodes=target_electrodes,
                                      padding_value=0)
-        t_eeg = t(eeg=fake_eeg)['eeg']
+        t_eeg = t(fake_eeg)
         print(t_eeg.shape)
         >>> (3, 3000)
 
     .. automethod:: __call__
-    '''
+    """
 
     def __init__(self, source_electrodes: List[str], target_electrodes: List[str], padding_value: float = 0):
         super().__init__()
@@ -124,22 +108,7 @@ class OrderElectrode(EEGTransform):
         self.target_electrodes = target_electrodes
         self.padding_value = padding_value
 
-    def __call__(self,
-                 *args,
-                 eeg: np.ndarray,
-                 baseline: Union[np.ndarray, None] = None,
-                 **kwargs) -> Dict[str, np.ndarray]:
-        r'''
-        Args:
-            eeg (np.ndarray): The input EEG signals.
-            baseline (np.ndarray, optional): The corresponding baseline signal, if apply_to_baseline is set to True and baseline is passed, the baseline signal will be transformed with the same way as the experimental signal.
-
-        Returns:
-            Dict[str, np.ndarray]: The transformed results.
-        '''
-        return super().__call__(*args, eeg=eeg, baseline=baseline, **kwargs)
-
-    def apply(self, eeg: np.ndarray, **kwargs) -> np.ndarray:
+    def __call__(self, eeg: np.ndarray) -> np.ndarray:
         if len(eeg.shape) != 2:
             raise ValueError(
                 "Input EEG should be a 2D array with shape (electrodes, time_points)")

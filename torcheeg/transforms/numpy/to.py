@@ -7,7 +7,7 @@ from ..base_transform import EEGTransform
 
 
 class ToChunks(EEGTransform):
-    r'''
+    r"""
     Splits the EEG signal into a specified number of chunks along the temporal dimension.
 
     Args:
@@ -18,32 +18,17 @@ class ToChunks(EEGTransform):
         from torcheeg import transforms
 
         t = transforms.ToChunks(num_chunks=4)
-        t(eeg=np.random.randn(32, 128))['eeg'].shape
+        t(np.random.randn(32, 128)).shape
         >>> (32, 4, 32)
 
     .. automethod:: __call__
-    '''
+    """
 
     def __init__(self, num_chunks: int):
         super().__init__()
         self.num_chunks = num_chunks
 
-    def __call__(self,
-                 *args,
-                 eeg: np.ndarray,
-                 baseline: Union[np.ndarray, None] = None,
-                 **kwargs) -> Dict[str, np.ndarray]:
-        r'''
-        Args:
-            eeg (np.ndarray): The input EEG signals in shape of [number of electrodes, number of data points].
-            baseline (np.ndarray, optional): The corresponding baseline signal, if apply_to_baseline is set to True and baseline is passed, the baseline signal will be transformed with the same way as the experimental signal.
-
-        Returns:
-            np.ndarray: The transformed results with the shape of [number of electrodes, number of chunks, chunk_size].
-        '''
-        return super().__call__(*args, eeg=eeg, baseline=baseline, **kwargs)
-
-    def apply(self, eeg: np.ndarray, **kwargs) -> np.ndarray:
+    def __call__(self, eeg: np.ndarray) -> np.ndarray:
         num_electrodes, num_datapoints = eeg.shape
         chunk_size = num_datapoints // self.num_chunks
 
@@ -59,7 +44,7 @@ class ToChunks(EEGTransform):
 
 
 class To2d(EEGTransform):
-    r'''
+    r"""
     Taking the electrode index as the row index and the temporal index as the column index, a two-dimensional EEG signal representation with the size of [number of electrodes, number of data points] is formed. While PyTorch performs convolution on the 2d tensor, an additional channel dimension is required, thus we append an additional dimension.
 
     .. code-block:: python
@@ -67,33 +52,18 @@ class To2d(EEGTransform):
         from torcheeg import transforms
 
         t = transforms.To2d()
-        t(eeg=np.random.randn(32, 128))['eeg'].shape
+        t(np.random.randn(32, 128)).shape
         >>> (1, 32, 128)
 
     .. automethod:: __call__
-    '''
+    """
 
-    def __call__(self,
-                 *args,
-                 eeg: np.ndarray,
-                 baseline: Union[np.ndarray, None] = None,
-                 **kwargs) -> Dict[str, np.ndarray]:
-        r'''
-        Args:
-            eeg (np.ndarray): The input EEG signals in shape of [number of electrodes, number of data points].
-            baseline (np.ndarray, optional) : The corresponding baseline signal, if apply_to_baseline is set to True and baseline is passed, the baseline signal will be transformed with the same way as the experimental signal.
-
-        Returns:
-            np.ndarray: The transformed results with the shape of [1, number of electrodes, number of data points].
-        '''
-        return super().__call__(*args, eeg=eeg, baseline=baseline, **kwargs)
-
-    def apply(self, eeg: np.ndarray, **kwargs) -> np.ndarray:
+    def __call__(self, eeg: np.ndarray) -> np.ndarray:
         return eeg[np.newaxis, ...]
 
 
 class ToGrid(EEGTransform):
-    r'''
+    r"""
     A transform method to project the EEG signals of different channels onto the grid according to the electrode positions to form a 3D EEG signal representation with the size of [number of data points, width of grid, height of grid]. For the electrode position information, please refer to constants grouped by dataset:
 
     - get_locations(DEAPDataset.channels, DEAPDataset.grid)
@@ -108,53 +78,33 @@ class ToGrid(EEGTransform):
         from torcheeg.datasets.utils import get_locations
 
         t = transforms.ToGrid(get_locations(DEAPDataset.channels, DEAPDataset.grid))
-        t(eeg=np.random.randn(32, 128))['eeg'].shape
+        t(np.random.randn(32, 128)).shape
         >>> (128, 9, 9)
 
     Args:
         channel_location_dict (dict): Electrode location information. Represented in dictionary form, where :obj:`key` corresponds to the electrode name and :obj:`value` corresponds to the row index and column index of the electrode on the grid.
-        apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (default: :obj:`False`)
+
 
     .. automethod:: __call__
     .. automethod:: reverse
-    '''
+    """
 
-    def __init__(self,
-                 channel_location_dict: Dict[str, Tuple[int, int]],
-                 apply_to_baseline: bool = False):
-        super(ToGrid, self).__init__(apply_to_baseline=apply_to_baseline)
-        self.channel_location_dict = {
-            name: tuple(location) for name, location in channel_location_dict.items()
-        }
+    def __init__(self, channel_location_dict: Dict[str, Tuple[int, int]]):
+        super(ToGrid, self).__init__()
+        self.channel_location_dict = {name: tuple(
+            location) for name, location in channel_location_dict.items()}
         positions = list(self.channel_location_dict.values())
         for row, column in positions:
-            if any(isinstance(value, (bool, np.bool_))
-                   or not isinstance(value, (int, np.integer)) or value < 0
-                   for value in (row, column)):
+            if any((isinstance(value, (bool, np.bool_)) or not isinstance(value, (int, np.integer)) or value < 0 for value in (row, column))):
                 raise ValueError(
                     'ToGrid positions must be nonnegative integer grid indices.')
         if len(set(positions)) != len(positions):
             raise ValueError(
                 'ToGrid electrodes must have distinct grid positions.')
-        self.height = max(row for row, _ in positions) + 1
-        self.width = max(column for _, column in positions) + 1
+        self.height = max((row for row, _ in positions)) + 1
+        self.width = max((column for _, column in positions)) + 1
 
-    def __call__(self,
-                 *args,
-                 eeg: np.ndarray,
-                 baseline: Union[np.ndarray, None] = None,
-                 **kwargs) -> Dict[str, np.ndarray]:
-        r'''
-        Args:
-            eeg (np.ndarray): The input EEG signals in shape of [number of electrodes, number of data points].
-            baseline (np.ndarray, optional) : The corresponding baseline signal, if apply_to_baseline is set to True and baseline is passed, the baseline signal will be transformed with the same way as the experimental signal.
-
-        Returns:
-            np.ndarray: The projected results with the shape of [number of data points, width of grid, height of grid].
-        '''
-        return super().__call__(*args, eeg=eeg, baseline=baseline, **kwargs)
-
-    def apply(self, eeg: np.ndarray, **kwargs) -> np.ndarray:
+    def __call__(self, eeg: np.ndarray) -> np.ndarray:
         if eeg.ndim != 2 or eeg.shape[0] != len(self.channel_location_dict):
             raise ValueError(
                 'ToGrid requires [electrodes, time points] with one row per channel mapping.')
@@ -168,7 +118,7 @@ class ToGrid(EEGTransform):
         # timestep x 9 x 9
         return outputs
 
-    def reverse(self, eeg: np.ndarray, **kwargs) -> Dict[str, np.ndarray]:
+    def reverse(self, eeg: np.ndarray) -> np.ndarray:
         r'''
         The inverse operation of the converter is used to take out the electrodes on the grid and arrange them in the original order.
         Args:
@@ -188,9 +138,7 @@ class ToGrid(EEGTransform):
         for i, (x, y) in enumerate(self.channel_location_dict.values()):
             outputs[i] = eeg[x][y]
         # num_electrodes x timestep
-        return {
-            'eeg': outputs
-        }
+        return outputs
 
     @property
     def repr_body(self) -> Dict:
@@ -198,7 +146,7 @@ class ToGrid(EEGTransform):
 
 
 class ToInterpolatedGrid(EEGTransform):
-    r'''
+    r"""
     A transform method to project the EEG signals of different channels onto the grid according to the electrode positions to form a 3D EEG signal representation with the size of [number of data points, width of grid, height of grid]. For the electrode position information, please refer to constants grouped by dataset:
 
     - get_locations(DEAPDataset.channels, DEAPDataset.grid)
@@ -213,60 +161,34 @@ class ToInterpolatedGrid(EEGTransform):
         from torcheeg.datasets.utils import get_locations
 
         t = ToInterpolatedGrid(get_locations(DEAPDataset.channels, DEAPDataset.grid))
-        t(eeg=np.random.randn(32, 128))['eeg'].shape
+        t(np.random.randn(32, 128)).shape
         >>> (128, 9, 9)
 
     Especially, missing values on the grid are supplemented using cubic interpolation
 
     Args:
         channel_location_dict (dict): Electrode location information. Represented in dictionary form, where :obj:`key` corresponds to the electrode name and :obj:`value` corresponds to the row index and column index of the electrode on the grid.
-        apply_to_baseline: (bool): Whether to act on the baseline signal at the same time, if the baseline is passed in when calling. (default: :obj:`False`)
+
 
     .. automethod:: __call__
     .. automethod:: reverse
-    '''
+    """
 
-    def __init__(self,
-                 channel_location_dict: Dict[str, Tuple[int, int]],
-                 apply_to_baseline: bool = False):
-        super(ToInterpolatedGrid,
-              self).__init__(apply_to_baseline=apply_to_baseline)
+    def __init__(self, channel_location_dict: Dict[str, Tuple[int, int]]):
+        super(ToInterpolatedGrid, self).__init__()
         self.channel_location_dict = channel_location_dict
         self.location_array = np.array(list(channel_location_dict.values()))
-
         loc_x_list = []
         loc_y_list = []
         for _, (loc_x, loc_y) in channel_location_dict.items():
             loc_x_list.append(loc_x)
             loc_y_list.append(loc_y)
-
         self.width = max(loc_x_list) + 1
         self.height = max(loc_y_list) + 1
+        self.grid_x, self.grid_y = np.mgrid[min(self.location_array[:, 0]):max(
+            self.location_array[:, 0]):self.width * 1j, min(self.location_array[:, 1]):max(self.location_array[:, 1]):self.height * 1j]
 
-        self.grid_x, self.grid_y = np.mgrid[
-            min(self.location_array[:, 0]):max(self.location_array[:, 0]
-                                               ):self.width * 1j,
-            min(self.location_array[:,
-                                    1]):max(self.location_array[:,
-                                                                1]):self.height *
-            1j, ]
-
-    def __call__(self,
-                 *args,
-                 eeg: np.ndarray,
-                 baseline: Union[np.ndarray, None] = None,
-                 **kwargs) -> Dict[str, np.ndarray]:
-        r'''
-        Args:
-            eeg (np.ndarray): The input EEG signals in shape of [number of electrodes, number of data points].
-            baseline (np.ndarray, optional) : The corresponding baseline signal, if apply_to_baseline is set to True and baseline is passed, the baseline signal will be transformed with the same way as the experimental signal.
-
-        Returns:
-            np.ndarray: The projected results with the shape of [number of data points, width of grid, height of grid].
-        '''
-        return super().__call__(*args, eeg=eeg, baseline=baseline, **kwargs)
-
-    def apply(self, eeg: np.ndarray, **kwargs) -> np.ndarray:
+    def __call__(self, eeg: np.ndarray) -> np.ndarray:
         # channel eeg timestep
         eeg = eeg.transpose(1, 0)
         # timestep eeg channel
@@ -298,9 +220,7 @@ class ToInterpolatedGrid(EEGTransform):
         for i, (x, y) in enumerate(self.channel_location_dict.values()):
             outputs[i] = eeg[x][y]
         # num_electrodes x timestep
-        return {
-            'eeg': outputs
-        }
+        return outputs
 
     @property
     def repr_body(self) -> Dict:

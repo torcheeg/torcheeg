@@ -16,12 +16,9 @@ class TestSplitPerSubjectGroupbyTrial(unittest.TestCase):
 
     def test_train_test_split_per_subject_groupby_trial(self):
         dataset = _make_dataset()
-
         split_path = self._split_path
-
         train_dataset, test_dataset = train_test_split_per_subject_groupby_trial(
             dataset=dataset, split_path=split_path, subject=0)
-
         self.assertEqual(len(train_dataset), 20)
         self.assertEqual(len(test_dataset), 5)
 

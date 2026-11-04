@@ -21,10 +21,9 @@ class TestGraph(unittest.TestCase):
     def test_plot_graph(self):
         mock_eeg = np.random.randn(32, 128)
         mock_g = ToG(get_adjacency(DEAPDataset.channels,
-                     DEAPDataset.adjacency))(eeg=mock_eeg)['eeg']
+                     DEAPDataset.adjacency))(mock_eeg)
         img = plot_graph(mock_g, get_locations(
             DEAPDataset.channels, DEAPDataset.grid))
-
         self.assertEqual(img.ndim, 3)
         self.assertGreater(np.ptp(img[..., :3]), 0)
 

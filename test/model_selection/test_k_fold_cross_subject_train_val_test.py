@@ -26,9 +26,7 @@ class TestKFoldCrossSubjectTrainValTest(unittest.TestCase):
     def _make_splitter(self, split_path=None, **overrides):
         parameters = dict(self._parameters)
         parameters.update(overrides)
-        return self._splitter_class(
-            split_path=self._split_path if split_path is None else split_path,
-            **parameters)
+        return self._splitter_class(split_path=self._split_path if split_path is None else split_path, **parameters)
 
     def _assert_partition(self, dataset, folds):
         self.assertEqual(len(folds), self._fold_count)
@@ -39,19 +37,19 @@ class TestKFoldCrossSubjectTrainValTest(unittest.TestCase):
             for first, second in ((0, 1), (0, 2), (1, 2)):
                 self.assertFalse(clips[first] & clips[second])
                 if self._group_column is not None:
-                    self.assertFalse(
-                        set(fold[first].info[self._group_column])
-                        & set(fold[second].info[self._group_column]))
+                    self.assertFalse(set(fold[first].info[self._group_column]) & set(
+                        fold[second].info[self._group_column]))
             for subset in fold:
                 self.assertGreater(len(subset), 0)
                 for index in range(len(subset)):
-                    signal, info = subset[index]
+                    signal = subset[index]['eeg']
+                    info = subset.info.iloc[index]
                     self.assertEqual(signal[0], int(info['clip_id']))
 
     def test_k_fold_cross_subject_train_val_test(self):
         folds = list(self._make_splitter().split(_make_dataset()))
         self.assertEqual(len(folds), 5)
-        validation_subjects, test_subjects = [], []
+        validation_subjects, test_subjects = ([], [])
         for train, val, test in folds:
             self.assertEqual([len(train), len(val), len(test)], [75, 25, 25])
             validation_subjects.extend(val.info['subject_id'].unique())
@@ -69,8 +67,7 @@ class TestKFoldCrossSubjectTrainValTest(unittest.TestCase):
 
     def test_invalid_fold_counts_are_rejected(self):
         for count in (0, 1, 2, 6, 3.5, True):
-            with self.subTest(count=count), self.assertRaises(
-                    TypeError if isinstance(count, (bool, float)) else ValueError):
+            with self.subTest(count=count), self.assertRaises(TypeError if isinstance(count, (bool, float)) else ValueError):
                 self._make_splitter(n_folds=count)
 
     def test_repeated_or_missing_subject_ids_are_rejected(self):
@@ -82,10 +79,8 @@ class TestKFoldCrossSubjectTrainValTest(unittest.TestCase):
         for subjects in ([0, 1, 2, 3, 99], [0, 1, 2]):
             with tempfile.TemporaryDirectory() as path:
                 with self.assertRaisesRegex(ValueError, 'all_subjects'):
-                    list(
-                        self._make_splitter(os.path.join(path, 'split'),
-                                            all_subjects=subjects,
-                                            n_folds=3).split(_make_dataset()))
+                    list(self._make_splitter(os.path.join(path, 'split'),
+                         all_subjects=subjects, n_folds=3).split(_make_dataset()))
 
     def test_seeded_folds_are_reproducible_without_changing_global_rng(self):
         dataset = _make_dataset()
@@ -97,8 +92,8 @@ class TestKFoldCrossSubjectTrainValTest(unittest.TestCase):
         np.testing.assert_array_equal(before[1], after[1])
         self.assertEqual(before[2:], after[2:])
         with tempfile.TemporaryDirectory() as path:
-            repeated = list(
-                self._make_splitter(os.path.join(path, 'split')).split(dataset))
+            repeated = list(self._make_splitter(
+                os.path.join(path, 'split')).split(dataset))
         for a, b in zip(first, repeated):
             for x, y in zip(a, b):
                 self.assertEqual(
@@ -118,17 +113,7 @@ class TestKFoldCrossSubjectTrainValTest(unittest.TestCase):
         self.assertEqual(set(folds[0][0].info['subject_id']), {2})
 
     def test_invalid_shuffle_and_random_state_are_rejected(self):
-        for parameters, error in (({
-                'shuffle': 'False'
-        }, TypeError), ({
-                'random_state': True
-        }, TypeError), ({
-                'random_state': -1
-        }, ValueError), ({
-                'random_state': 2**32
-        }, ValueError), ({
-                'random_state': 0.5
-        }, TypeError)):
+        for parameters, error in (({'shuffle': 'False'}, TypeError), ({'random_state': True}, TypeError), ({'random_state': -1}, ValueError), ({'random_state': 2 ** 32}, ValueError), ({'random_state': 0.5}, TypeError)):
             with self.subTest(parameters=parameters), self.assertRaises(error):
                 self._make_splitter(**parameters)
 

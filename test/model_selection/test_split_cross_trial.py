@@ -16,12 +16,9 @@ class TestSplitCrossTrial(unittest.TestCase):
 
     def test_train_test_split_cross_trial(self):
         dataset = _make_dataset()
-
         split_path = self._split_path
-
         train_dataset, test_dataset = train_test_split_cross_trial(
             dataset=dataset, split_path=split_path, test_size=0.2)
-
         self.assertEqual(len(train_dataset), 100)
         self.assertEqual(len(test_dataset), 25)
 

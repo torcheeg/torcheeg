@@ -16,10 +16,8 @@ class TestLeaveOneSubjectOut(unittest.TestCase):
 
     def test_leave_one_subject_out(self):
         dataset = _make_dataset()
-
         split_path = self._split_path
         k_fold = LeaveOneSubjectOut(split_path=split_path)
-
         split_num = 0
         for train_dataset, test_dataset in k_fold.split(dataset):
             self.assertEqual(len(train_dataset), 100)

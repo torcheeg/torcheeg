@@ -26,15 +26,9 @@ from torcheeg.model_selection import KFoldPerSubjectGroupbyTrial
 from torcheeg.models import DARNet
 from torcheeg.trainers import ClassifierTrainer
 
-dataset = DTUProcessedDataset(io_path=f'./.torcheeg/dtu',
-                              root_path='./DATA_preproc',
-                              label_transform=transforms.Compose([
-                                  transforms.Select('attended_speaker'),
-                                  transforms.Lambda(lambd=lambda x: x - 1)
-                              ]),
-                              chunk_size=64,
-                              overlap=32,
-                              num_worker=4)
+dataset = DTUProcessedDataset(
+    io_path='./.torcheeg/dtu', root_path='./DATA_preproc',
+    chunk_size=64, overlap=32, num_worker=4)
 
 ######################################################################
 # Step 2: Divide the Training and Test samples in the Dataset
@@ -65,35 +59,43 @@ for i, (train_dataset, val_dataset) in enumerate(k_fold.split(dataset)):
         mean_accuracy = np.mean(current_subject_metrics)
         current_subject_metrics = []
 
-    train_dataset.online_transform = None
-    val_dataset.online_transform = None
-
     csp = CSP(n_components=64, reg=None, log=None, cov_est='concat',
               transform_into='csp_space', norm_trace=True)
     X = []
     y = []
     for sample in train_dataset:
-        X.append(sample[0])
-        y.append(sample[1])
+        X.append(sample['eeg'])
+        y.append(sample['info']['attended_speaker'] - 1)
     csp.fit(X, y)
 
-    def csp_transform(eeg: np.ndarray) -> np.ndarray:
-        eeg = np.expand_dims(eeg, axis=0)
-        eeg = csp.transform(eeg)
-        eeg = np.squeeze(eeg, axis=0).astype(np.float32)
-        return eeg
+    def transform_fn(eeg, baseline=None, **kwargs) -> dict:
+        eeg_transform = transforms.Compose([
+            transforms.Lambda(lambda eeg: csp.transform(
+                eeg[None])[0].astype(np.float32)),
+            transforms.ToTensor(),
+        ])
+        return {
+            'eeg': eeg_transform(eeg),
+            'baseline': eeg_transform(baseline) if baseline is not None else None,
+        }
 
-    train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True)
-    val_loader = DataLoader(val_dataset, batch_size=64, shuffle=False)
+    def label_fn(info: dict, **kwargs) -> dict:
+        label_transform = transforms.Compose([
+            transforms.Select('attended_speaker'),
+            transforms.Lambda(lambda label: label - 1),
+        ])
+        return {
+            'label': label_transform(info),
+        }
 
-    train_loader.dataset.online_transform = transforms.Compose([
-        transforms.Lambda(lambd=csp_transform),
-        transforms.ToTensor(),
-    ])
-    val_loader.dataset.online_transform = transforms.Compose([
-        transforms.Lambda(lambd=csp_transform),
-        transforms.ToTensor(),
-    ])
+    train_dataset.transform = transform_fn
+    val_dataset.transform = transform_fn
+    train_dataset.label_transform = label_fn
+    val_dataset.label_transform = label_fn
+    train_loader = DataLoader(train_dataset,
+                              batch_size=64, shuffle=True)
+    val_loader = DataLoader(val_dataset,
+                            batch_size=64, shuffle=False)
 
     model = DARNet(num_electrodes=64,
                    sampling_rate=64,

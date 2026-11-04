@@ -6,7 +6,7 @@ from ..base_transform import EEGTransform
 
 
 class RearrangeElectrode(EEGTransform):
-    r'''
+    r"""
     Select parts of electrode signals based on a given electrode index list.
 
     .. code-block:: python
@@ -18,7 +18,7 @@ class RearrangeElectrode(EEGTransform):
             target=['F3', 'F7', 'FP1', 'AF2'],
             missing='mean'
         )
-        t(eeg=np.random.randn(3, 128))['eeg'].shape
+        t(np.random.randn(3, 128)).shape
         >>> (4, 128)
 
     Args:
@@ -27,41 +27,18 @@ class RearrangeElectrode(EEGTransform):
         missing (str): The method to deal with missing electrodes. (default: :obj:`'random'`)
 
     .. automethod:: __call__
-    '''
+    """
 
-    def __init__(self,
-                 source: List[str],
-                 target: List[str],
-                 missing: str = 'mean',
-                 apply_to_baseline: bool = False):
-        super(RearrangeElectrode,
-              self).__init__(apply_to_baseline=apply_to_baseline)
+    def __init__(self, source: List[str], target: List[str], missing: str = 'mean'):
+        super(RearrangeElectrode, self).__init__()
         self.source = source
         self.target = target
-
-        if not (missing in ['random', 'zero', 'mean']):
+        if not missing in ['random', 'zero', 'mean']:
             raise ValueError(
-                f'Invalid missing method {missing}, should be one of [random, zero, mean].'
-            )
-
+                f'Invalid missing method {missing}, should be one of [random, zero, mean].')
         self.missing = missing
 
-    def __call__(self,
-                 *args,
-                 eeg: np.ndarray,
-                 baseline: Union[np.ndarray, None] = None,
-                 **kwargs) -> Dict[str, np.ndarray]:
-        r'''
-        Args:
-            eeg (np.ndarray): The input EEG signals in shape of [number of electrodes, number of data points].
-            baseline (np.ndarray, optional) : The corresponding baseline signal, if apply_to_baseline is set to True and baseline is passed, the baseline signal will be transformed with the same way as the experimental signal.
-
-        Returns:
-            np.ndarray: The output signals with the shape of [number of picked electrodes, number of data points].
-        '''
-        return super().__call__(*args, eeg=eeg, baseline=baseline, **kwargs)
-
-    def apply(self, eeg: np.ndarray, **kwargs) -> np.ndarray:
+    def __call__(self, eeg: np.ndarray) -> np.ndarray:
         r'''
         Args:
             eeg (np.ndarray): The input EEG signals in shape of [number of electrodes, number of data points].

@@ -12,7 +12,7 @@ from .utils import create_subset, read_indices, write_indices
 
 
 class KFoldCrossSubject(BaseModelSelection):
-    r'''
+    r"""
     A tool class for k-fold cross-validations, to divide the training set and the test set. One of the most commonly used data partitioning methods, where the data set is divided into k subsets of subjects, with one subset subjects being retained as the test set and the remaining k-1 subset subjects being used as training data. In most of the literature, K is chosen as 5 or 10 according to the size of the data set.
 
     .. image:: _static/splits/KFoldCrossSubject.svg
@@ -30,16 +30,45 @@ class KFoldCrossSubject(BaseModelSelection):
         from torch.utils.data import DataLoader
 
         cv = KFoldCrossSubject(n_splits=5, shuffle=True)
-        dataset = DEAPDataset(root_path='./data_preprocessed_python',
-                              online_transform=transforms.Compose([
-                                  transforms.To2d(),
-                                  transforms.ToTensor()
-                              ]),
-                              label_transform=transforms.Compose([
-                                  transforms.Select(['valence', 'arousal']),
-                                  transforms.Binary(5.0),
-                                  transforms.BinariesToCategory()
-                              ]))
+
+
+        def preprocess_fn(eeg, baseline=None, **kwargs) -> dict:
+            eeg_transform = transforms.Compose([
+                transforms.To2d(),
+            ])
+            return {
+                'eeg': eeg_transform(eeg),
+                'baseline': eeg_transform(baseline) if baseline is not None else None,
+            }
+
+
+        def transform_fn(eeg, baseline=None, **kwargs) -> dict:
+            eeg_transform = transforms.Compose([
+                transforms.ToTensor(),
+            ])
+            return {
+                'eeg': eeg_transform(eeg),
+                'baseline': eeg_transform(baseline) if baseline is not None else None,
+            }
+
+
+        def label_fn(info: dict, **kwargs) -> dict:
+            label_transform = transforms.Compose([
+                transforms.Select(['valence', 'arousal']),
+                transforms.Binary(5.0),
+                transforms.BinariesToCategory(),
+            ])
+            return {
+                'label': label_transform(info),
+            }
+
+
+        dataset = DEAPDataset(
+            root_path='./data_preprocessed_python',
+            offline_transform=preprocess_fn,
+            online_transform=transform_fn,
+            label_transform=label_fn,
+        )
 
         for train_dataset, test_dataset in cv.split(dataset):
             train_loader = DataLoader(train_dataset)
@@ -49,11 +78,11 @@ class KFoldCrossSubject(BaseModelSelection):
     Args:
         n_splits (int): Number of folds. Must be at least 2. (default: :obj:`5`)
         shuffle (bool): Whether to shuffle the data before splitting into batches. Note that samples within each split will not be shuffled. (default: :obj:`False`)
-        label_transform (Callable, optional): Function that returns the stratified label for each sample. If set to None, it will not be stratified. (default: :obj:`None`)
+
         random_state (int, optional): When shuffle is :obj:`True`, :obj:`random_state` affects the ordering of the indices, which controls the randomness of each fold. If shuffle is :obj:`False`, this parameter has no effect. (default: :obj:`None`)
         split_path (str, optional): Directory for saved splits.
             If None, generate a random path. (default: :obj:`None`)
-    '''
+    """
 
     def __init__(self,
                  n_splits: int = 5,
@@ -87,7 +116,7 @@ class KFoldCrossSubject(BaseModelSelection):
             for subject_id in subject_ids:
                 subject_info = info[info['subject_id'] == subject_id]
                 subject_label = subject_info.apply(
-                    lambda info: self.label_transform(y=info.to_dict())['y'],
+                    lambda info: self.label_transform(info.to_dict()),
                     axis=1).mean()
                 subject_labels.append(subject_label)
             enumerater = enumerate(
@@ -135,7 +164,7 @@ class KFoldCrossSubject(BaseModelSelection):
         if self.label_transform is not None:
             configuration['subject_labels'] = [
                 (subject, dataset.info[dataset.info['subject_id'] == subject].apply(
-                    lambda row: self.label_transform(y=row.to_dict())['y'],
+                    lambda row: self.label_transform(row.to_dict()),
                     axis=1).mean()) for subject in pd.unique(dataset.info['subject_id'])
             ]
         self._prepare(dataset, ['subject_id'], configuration=configuration)

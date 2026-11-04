@@ -10,7 +10,7 @@ _pyg = _LazyLoader(
 
 
 class GIN(nn.Module):
-    r'''
+    r"""
     A simple but effective graph isomorphism network (GIN) structure from the book of Zhang et al. For more details, please refer to the following information.
 
     - Book: Zhang X, Yao L. Deep Learning for EEG-Based Brain-Computer Interfaces: Representations, Algorithms and Applications[M]. 2021.
@@ -23,30 +23,63 @@ class GIN(nn.Module):
 
         from torcheeg.datasets import DEAPDataset
         from torcheeg import transforms
-        from torcheeg.transforms.pyg import ToG
+        from torcheeg.transforms.graph import ToG
         from torcheeg.datasets import SEEDDataset
         from torcheeg.datasets.utils import get_positions, get_standard_adjacency
         from torcheeg.models import GIN
         from torch_geometric.data import DataLoader
 
-        dataset = DEAPDataset(root_path='./data_preprocessed_python',
-                              offline_transform=transforms.BandDifferentialEntropy(),
-                              online_transform=ToG(get_standard_adjacency(SEEDDataset.channels, get_positions(SEEDDataset.channels))),
-                              label_transform=transforms.Compose([
-                                  transforms.Select('valence'),
-                                  transforms.Binary(5.0),
-                              ]))
+
+        def preprocess_fn(eeg, baseline=None, **kwargs) -> dict:
+            eeg_transform = transforms.Compose([
+                transforms.BandDifferentialEntropy(),
+            ])
+            return {
+                'eeg': eeg_transform(eeg),
+                'baseline': eeg_transform(baseline) if baseline is not None else None,
+            }
+
+
+        def transform_fn(eeg, baseline=None, **kwargs) -> dict:
+            eeg_transform = transforms.Compose([
+                ToG(get_standard_adjacency(SEEDDataset.channels,
+                    get_positions(SEEDDataset.channels))),
+            ])
+            return {
+                'eeg': eeg_transform(eeg),
+                'baseline': eeg_transform(baseline) if baseline is not None else None,
+            }
+
+
+        def label_fn(info: dict, **kwargs) -> dict:
+            label_transform = transforms.Compose([
+                transforms.Select('valence'),
+                transforms.Binary(5.0),
+            ])
+            return {
+                'label': label_transform(info),
+            }
+
+
+        dataset = DEAPDataset(
+            root_path='./data_preprocessed_python',
+            offline_transform=preprocess_fn,
+            online_transform=transform_fn,
+            label_transform=label_fn,
+        )
 
         model = GIN(in_channels=4, hid_channels=64, num_classes=2)
 
-        x, y = next(iter(DataLoader(dataset, batch_size=64)))
+        batch = next(iter(DataLoader(dataset, batch_size=64)))
+
+        x, y = batch['eeg'], batch['label']
         model(x)
 
     Args:
         in_channels (int): The feature dimension of each electrode. (default: :obj:`4`)
         hid_channels (int): The number of hidden nodes in the GRU layers and the fully connected layer. (default: :obj:`64`)
         num_classes (int): The number of classes to predict. (default: :obj:`2`)
-    '''
+    """
 
     def __init__(self,
                  in_channels: int = 4,

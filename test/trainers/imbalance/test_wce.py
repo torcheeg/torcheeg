@@ -18,7 +18,7 @@ class _DummyDataset(Dataset):
         return self.length
 
     def __getitem__(self, i) -> int:
-        return torch.randn(120), random.randint(0, 1)
+        return {'eeg': torch.randn(120), 'label': random.randint(0, 1)}
 
 
 class _DummyModel(nn.Module):
@@ -45,39 +45,25 @@ class TestWCELossTrainer(unittest.TestCase):
         train_dataset = _DummyDataset()
         val_dataset = _DummyDataset()
         test_dataset = _DummyDataset()
-
         train_loader = DataLoader(train_dataset, batch_size=1)
         val_loader = DataLoader(val_dataset, batch_size=1)
         test_loader = DataLoader(test_dataset, batch_size=1)
-
         model = _DummyModel()
-
-        trainer = WCELossTrainer(
-            model,
-            devices=1,
-            class_frequency=train_loader,
-            accelerator='cpu',
-            num_classes=2,
-            metrics=['f1score'])
+        trainer = WCELossTrainer(model, devices=1, class_frequency=train_loader,
+                                 accelerator='cpu', num_classes=2, metrics=['f1score'])
         trainer.fit(train_loader, val_loader, max_epochs=1, max_steps=1)
         self.assertGreater(trainer.trainer.global_step, 0)
         self.assertTrue(trainer.trainer.logged_metrics)
-        self.assertTrue(all(torch.isfinite(torch.as_tensor(value)).all()
-                            for value in trainer.trainer.logged_metrics.values()))
+        self.assertTrue(all((torch.isfinite(torch.as_tensor(value)).all()
+                        for value in trainer.trainer.logged_metrics.values())))
         trainer.test_step(next(iter(test_loader)), batch_idx=0)
-
-        trainer = WCELossTrainer(
-            model,
-            class_frequency=[10, 20],
-            devices=1,
-            accelerator='cpu',
-            num_classes=2,
-            metrics=['f1score'])
+        trainer = WCELossTrainer(model, class_frequency=[
+                                 10, 20], devices=1, accelerator='cpu', num_classes=2, metrics=['f1score'])
         trainer.fit(train_loader, val_loader, max_epochs=1, max_steps=1)
         self.assertGreater(trainer.trainer.global_step, 0)
         self.assertTrue(trainer.trainer.logged_metrics)
-        self.assertTrue(all(torch.isfinite(torch.as_tensor(value)).all()
-                            for value in trainer.trainer.logged_metrics.values()))
+        self.assertTrue(all((torch.isfinite(torch.as_tensor(value)).all()
+                        for value in trainer.trainer.logged_metrics.values())))
         trainer.test_step(next(iter(test_loader)), batch_idx=0)
 
 

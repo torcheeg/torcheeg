@@ -41,27 +41,49 @@ pred = model(eeg)
 from torcheeg import transforms
 from torcheeg.datasets import DEAPDataset
 
-dataset = DEAPDataset(io_path=f'./deap',
-                      root_path='./data_preprocessed_python',
-                      chunk_size=512,
-                      num_baseline=1,
-                      baseline_chunk_size=512,
-                      offline_transform=transforms.Compose([
-                          transforms.PickElectrode(transforms.PickElectrode.to_index_list(
-                              ['FP1', 'AF3', 'F3', 'F7',
-                               'FC5', 'FC1', 'C3', 'T7',
-                               'CP5', 'CP1', 'P3', 'P7',
-                               'PO3', 'O1', 'FP2', 'AF4',
-                               'F4', 'F8', 'FC6', 'FC2',
-                               'C4', 'T8', 'CP6', 'CP2',
-                               'P4', 'P8', 'PO4', 'O2'], DEAPDataset.channels)),
-                          transforms.To2d()
-                      ]),
-                      online_transform=transforms.ToTensor(),
-                      label_transform=transforms.Compose([
-                          transforms.Select('valence'),
-                          transforms.Binary(5.0),
-                      ]))
+
+def preprocess_fn(eeg, baseline=None, **kwargs) -> dict:
+    eeg_transform = transforms.Compose([
+        transforms.PickElectrode(transforms.PickElectrode.to_index_list(['FP1', 'AF3', 'F3', 'F7', 'FC5', 'FC1', 'C3', 'T7', 'CP5', 'CP1', 'P3',
+                                 'P7', 'PO3', 'O1', 'FP2', 'AF4', 'F4', 'F8', 'FC6', 'FC2', 'C4', 'T8', 'CP6', 'CP2', 'P4', 'P8', 'PO4', 'O2'], DEAPDataset.channels)),
+        transforms.To2d(),
+    ])
+    return {
+        'eeg': eeg_transform(eeg),
+        'baseline': eeg_transform(baseline) if baseline is not None else None,
+    }
+
+
+def transform_fn(eeg, baseline=None, **kwargs) -> dict:
+    eeg_transform = transforms.Compose([
+        transforms.ToTensor(),
+    ])
+    return {
+        'eeg': eeg_transform(eeg),
+        'baseline': eeg_transform(baseline) if baseline is not None else None,
+    }
+
+
+def label_fn(info: dict, **kwargs) -> dict:
+    label_transform = transforms.Compose([
+        transforms.Select('valence'),
+        transforms.Binary(5.0),
+    ])
+    return {
+        'label': label_transform(info),
+    }
+
+
+dataset = DEAPDataset(
+    io_path=f'./deap',
+    root_path='./data_preprocessed_python',
+    chunk_size=512,
+    num_baseline=1,
+    baseline_chunk_size=512,
+    offline_transform=preprocess_fn,
+    online_transform=transform_fn,
+    label_transform=label_fn,
+)
 
 model = TSCeption(num_classes=2,
                   num_electrodes=28,
@@ -70,7 +92,7 @@ model = TSCeption(num_classes=2,
                   num_S=15,
                   hid_channels=32,
                   dropout=0.5)
-x = dataset[0][0]
+x = dataset[0]['eeg']
 x = torch.unsqueeze(x, dim=0)
 print(model(x))
 
@@ -132,21 +154,49 @@ from torcheeg import transforms
 from torcheeg.datasets import BCICIV2aDataset
 from torcheeg.models import ATCNet
 
-dataset = BCICIV2aDataset(io_path=f'./bciciv_2a',
-                          root_path='./BCICIV_2a_mat',
-                          online_transform=transforms.Compose([
-                              transforms.To2d(),
-                              transforms.ToTensor()
-                          ]),
-                          label_transform=transforms.Compose([
-                              transforms.Select('label'),
-                              transforms.Lambda(lambda x: x - 1)
-                          ]))
+
+def preprocess_fn(eeg, baseline=None, **kwargs) -> dict:
+    eeg_transform = transforms.Compose([
+        transforms.To2d(),
+    ])
+    return {
+        'eeg': eeg_transform(eeg),
+        'baseline': eeg_transform(baseline) if baseline is not None else None,
+    }
+
+
+def transform_fn(eeg, baseline=None, **kwargs) -> dict:
+    eeg_transform = transforms.Compose([
+        transforms.ToTensor(),
+    ])
+    return {
+        'eeg': eeg_transform(eeg),
+        'baseline': eeg_transform(baseline) if baseline is not None else None,
+    }
+
+
+def label_fn(info: dict, **kwargs) -> dict:
+    label_transform = transforms.Compose([
+        transforms.Select('label'),
+        transforms.Lambda(lambda x: x - 1),
+    ])
+    return {
+        'label': label_transform(info),
+    }
+
+
+dataset = BCICIV2aDataset(
+    io_path=f'./bciciv_2a',
+    root_path='./BCICIV_2a_mat',
+    offline_transform=preprocess_fn,
+    online_transform=transform_fn,
+    label_transform=label_fn,
+)
 model = ATCNet(num_classes=4,
                num_windows=3,
                num_electrodes=22,
                chunk_size=1750)
-x = dataset[0][0]
+x = dataset[0]['eeg']
 x = torch.unsqueeze(x, dim=0)
 pred = model(x)
 

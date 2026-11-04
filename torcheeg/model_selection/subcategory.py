@@ -13,7 +13,7 @@ from .utils import create_subset, read_indices, write_indices
 
 
 class Subcategory(BaseModelSelection):
-    r'''
+    r"""
     A tool class for separating out subsets of specified categories, often used to extract data for a certain type of paradigm, or for a certain type of task. Each subset in the formed subset list contains only one type of data.
 
     Common usage:
@@ -26,14 +26,44 @@ class Subcategory(BaseModelSelection):
         from torch.utils.data import DataLoader
 
         cv = Subcategory()
-        dataset = M3CVDataset(root_path='./aistudio',
-                              online_transform=transforms.Compose(
-                                  [transforms.To2d(),
-                                   transforms.ToTensor()]),
-                              label_transform=transforms.Compose([
-                                  transforms.Select('subject_id'),
-                                  transforms.StringToInt()
-                              ]))
+
+
+        def preprocess_fn(eeg, baseline=None, **kwargs) -> dict:
+            eeg_transform = transforms.Compose([
+                transforms.To2d(),
+            ])
+            return {
+                'eeg': eeg_transform(eeg),
+                'baseline': eeg_transform(baseline) if baseline is not None else None,
+            }
+
+
+        def transform_fn(eeg, baseline=None, **kwargs) -> dict:
+            eeg_transform = transforms.Compose([
+                transforms.ToTensor(),
+            ])
+            return {
+                'eeg': eeg_transform(eeg),
+                'baseline': eeg_transform(baseline) if baseline is not None else None,
+            }
+
+
+        def label_fn(info: dict, **kwargs) -> dict:
+            label_transform = transforms.Compose([
+                transforms.Select('subject_id'),
+                transforms.StringToInt(),
+            ])
+            return {
+                'label': label_transform(info),
+            }
+
+
+        dataset = M3CVDataset(
+            root_path='./aistudio',
+            offline_transform=preprocess_fn,
+            online_transform=transform_fn,
+            label_transform=label_fn,
+        )
         for subdataset in cv.split(dataset):
             loader = DataLoader(subdataset)
             ...
@@ -43,16 +73,47 @@ class Subcategory(BaseModelSelection):
     .. code-block:: python
 
         cv = Subcategory()
-        dataset = M3CVDataset(root_path='./aistudio',
-                              online_transform=transforms.Compose(
-                                  [transforms.To2d(),
-                                   transforms.ToTensor()]),
-                              label_transform=transforms.Compose([
-                                  transforms.Select('subject_id'),
-                                  transforms.StringToInt()
-                              ]))
+
+
+        def preprocess_fn(eeg, baseline=None, **kwargs) -> dict:
+            eeg_transform = transforms.Compose([
+                transforms.To2d(),
+            ])
+            return {
+                'eeg': eeg_transform(eeg),
+                'baseline': eeg_transform(baseline) if baseline is not None else None,
+            }
+
+
+        def transform_fn(eeg, baseline=None, **kwargs) -> dict:
+            eeg_transform = transforms.Compose([
+                transforms.ToTensor(),
+            ])
+            return {
+                'eeg': eeg_transform(eeg),
+                'baseline': eeg_transform(baseline) if baseline is not None else None,
+            }
+
+
+        def label_fn(info: dict, **kwargs) -> dict:
+            label_transform = transforms.Compose([
+                transforms.Select('subject_id'),
+                transforms.StringToInt(),
+            ])
+            return {
+                'label': label_transform(info),
+            }
+
+
+        dataset = M3CVDataset(
+            root_path='./aistudio',
+            offline_transform=preprocess_fn,
+            online_transform=transform_fn,
+            label_transform=label_fn,
+        )
         for i, subdataset in enumerate(cv.split(dataset)):
-            train_dataset, test_dataset = train_test_split(dataset=subdataset, split_path=f'./split{i}')
+            train_dataset, test_dataset = train_test_split(
+                dataset=subdataset, split_path=f'./split{i}')
 
             train_loader = DataLoader(train_dataset)
             test_loader = DataLoader(test_dataset)
@@ -63,26 +124,86 @@ class Subcategory(BaseModelSelection):
     .. code-block:: python
 
         train_cv = Subcategory()
-        train_dataset = M3CVDataset(root_path='./aistudio',
-                                    online_transform=transforms.Compose(
-                                        [transforms.To2d(),
-                                         transforms.ToTensor()]),
-                                    label_transform=transforms.Compose([
-                                        transforms.Select('subject_id'),
-                                        transforms.StringToInt()
-                                    ]))
+
+
+        def preprocess_fn(eeg, baseline=None, **kwargs) -> dict:
+            eeg_transform = transforms.Compose([
+                transforms.To2d(),
+            ])
+            return {
+                'eeg': eeg_transform(eeg),
+                'baseline': eeg_transform(baseline) if baseline is not None else None,
+            }
+
+
+        def transform_fn(eeg, baseline=None, **kwargs) -> dict:
+            eeg_transform = transforms.Compose([
+                transforms.ToTensor(),
+            ])
+            return {
+                'eeg': eeg_transform(eeg),
+                'baseline': eeg_transform(baseline) if baseline is not None else None,
+            }
+
+
+        def label_fn(info: dict, **kwargs) -> dict:
+            label_transform = transforms.Compose([
+                transforms.Select('subject_id'),
+                transforms.StringToInt(),
+            ])
+            return {
+                'label': label_transform(info),
+            }
+
+
+        train_dataset = M3CVDataset(
+            root_path='./aistudio',
+            offline_transform=preprocess_fn,
+            online_transform=transform_fn,
+            label_transform=label_fn,
+        )
 
         val_cv = Subcategory()
-        val_dataset = M3CVDataset(root_path='./aistudio',
-                                  subset='Calibration',
-                                  num_channel=65,
-                                  online_transform=transforms.Compose(
-                                      [transforms.To2d(),
-                                       transforms.ToTensor()]),
-                                  label_transform=transforms.Compose([
-                                      transforms.Select('subject_id'),
-                                      transforms.StringToInt()
-                                  ]))
+
+
+        def preprocess_fn(eeg, baseline=None, **kwargs) -> dict:
+            eeg_transform = transforms.Compose([
+                transforms.To2d(),
+            ])
+            return {
+                'eeg': eeg_transform(eeg),
+                'baseline': eeg_transform(baseline) if baseline is not None else None,
+            }
+
+
+        def transform_fn(eeg, baseline=None, **kwargs) -> dict:
+            eeg_transform = transforms.Compose([
+                transforms.ToTensor(),
+            ])
+            return {
+                'eeg': eeg_transform(eeg),
+                'baseline': eeg_transform(baseline) if baseline is not None else None,
+            }
+
+
+        def label_fn(info: dict, **kwargs) -> dict:
+            label_transform = transforms.Compose([
+                transforms.Select('subject_id'),
+                transforms.StringToInt(),
+            ])
+            return {
+                'label': label_transform(info),
+            }
+
+
+        val_dataset = M3CVDataset(
+            root_path='./aistudio',
+            subset='Calibration',
+            num_channel=65,
+            offline_transform=preprocess_fn,
+            online_transform=transform_fn,
+            label_transform=label_fn,
+        )
 
         for train_dataset, val_dataset in zip(train_cv.split(train_dataset), val_cv.split(val_dataset)):
             train_loader = DataLoader(train_dataset)
@@ -93,7 +214,7 @@ class Subcategory(BaseModelSelection):
         criteria (str): The classification criteria according to which we extract subsets of data for the including categories. (default: :obj:`'task'`)
         split_path (str, optional): Directory for saved splits.
             If None, generate a random path. (default: :obj:`None`)
-    '''
+    """
 
     def __init__(self,
                  criteria: str = 'task',

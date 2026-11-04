@@ -3,7 +3,7 @@ import torch.nn as nn
 
 
 class TSCeption(nn.Module):
-    r'''
+    r"""
     TSCeption. For more details, please refer to the following information.
 
     - Paper: Ding Y, Robinson N, Zhang S, et al. Tsception: Capturing temporal dynamics and spatial asymmetry from EEG for emotion recognition[J]. arXiv preprint arXiv:2104.02935, 2021.
@@ -19,26 +19,48 @@ class TSCeption(nn.Module):
         from torcheeg.models import TSCeption
         from torch.utils.data import DataLoader
 
-        dataset = DEAPDataset(root_path='./data_preprocessed_python',
-                              chunk_size=512,
-                              num_baseline=1,
-                              baseline_chunk_size=512,
-                              offline_transform=transforms.Compose([
-                                  transforms.PickElectrode(PickElectrode.to_index_list(
-                                  ['FP1', 'AF3', 'F3', 'F7',
-                                  'FC5', 'FC1', 'C3', 'T7',
-                                  'CP5', 'CP1', 'P3', 'P7',
-                                  'PO3','O1', 'FP2', 'AF4',
-                                  'F4', 'F8', 'FC6', 'FC2',
-                                  'C4', 'T8', 'CP6', 'CP2',
-                                  'P4', 'P8', 'PO4', 'O2'], DEAPDataset.channels)),
-                                  transforms.To2d()
-                              ]),
-                              online_transform=transforms.ToTensor(),
-                              label_transform=transforms.Compose([
-                                  transforms.Select('valence'),
-                                  transforms.Binary(5.0),
-                              ]))
+
+        def preprocess_fn(eeg, baseline=None, **kwargs) -> dict:
+            eeg_transform = transforms.Compose([
+                transforms.PickElectrode(PickElectrode.to_index_list(['FP1', 'AF3', 'F3', 'F7', 'FC5', 'FC1', 'C3', 'T7', 'CP5', 'CP1', 'P3', 'P7',
+                                         'PO3', 'O1', 'FP2', 'AF4', 'F4', 'F8', 'FC6', 'FC2', 'C4', 'T8', 'CP6', 'CP2', 'P4', 'P8', 'PO4', 'O2'], DEAPDataset.channels)),
+                transforms.To2d(),
+            ])
+            return {
+                'eeg': eeg_transform(eeg),
+                'baseline': eeg_transform(baseline) if baseline is not None else None,
+            }
+
+
+        def transform_fn(eeg, baseline=None, **kwargs) -> dict:
+            eeg_transform = transforms.Compose([
+                transforms.ToTensor(),
+            ])
+            return {
+                'eeg': eeg_transform(eeg),
+                'baseline': eeg_transform(baseline) if baseline is not None else None,
+            }
+
+
+        def label_fn(info: dict, **kwargs) -> dict:
+            label_transform = transforms.Compose([
+                transforms.Select('valence'),
+                transforms.Binary(5.0),
+            ])
+            return {
+                'label': label_transform(info),
+            }
+
+
+        dataset = DEAPDataset(
+            root_path='./data_preprocessed_python',
+            chunk_size=512,
+            num_baseline=1,
+            baseline_chunk_size=512,
+            offline_transform=preprocess_fn,
+            online_transform=transform_fn,
+            label_transform=label_fn,
+        )
 
         model = TSCeption(num_classes=2,
                           num_electrodes=28,
@@ -48,7 +70,9 @@ class TSCeption(nn.Module):
                           hid_channels=32,
                           dropout=0.5)
 
-        x, y = next(iter(DataLoader(dataset, batch_size=64)))
+        batch = next(iter(DataLoader(dataset, batch_size=64)))
+
+        x, y = batch['eeg'], batch['label']
         model(x)
 
     Args:
@@ -60,7 +84,7 @@ class TSCeption(nn.Module):
         num_classes (int): The number of classes to predict. (default: :obj:`2`)
         sampling_rate (int): The sampling rate of the EEG signals, i.e., :math:`f_s` in the paper. (default: :obj:`128`)
         dropout (float): Probability of an element to be zeroed in the dropout layers. (default: :obj:`0.5`)
-    '''
+    """
 
     def __init__(self,
                  num_electrodes: int = 28,

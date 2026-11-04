@@ -1,1 +1,1 @@
-from .moabb_dataset import MOABBDataset
+from .moabb_dataset import MOABBData, MOABBDataset

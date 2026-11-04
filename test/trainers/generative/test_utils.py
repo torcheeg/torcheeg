@@ -10,6 +10,7 @@ from torcheeg.trainers.generative.utils import FrechetInceptionDistance
 
 
 class _EEGFeatureExtractor(nn.Module):
+
     def __init__(self):
         super().__init__()
         self.calls = 0
@@ -20,15 +21,16 @@ class _EEGFeatureExtractor(nn.Module):
 
 
 class TestGenerativeMetrics(unittest.TestCase):
+
     def setUp(self):
         self.addCleanup(torch.set_rng_state, torch.get_rng_state())
         torch.manual_seed(0)
         self.addCleanup(np.random.set_state, np.random.get_state())
         np.random.seed(0)
-        self.real = torch.tensor(
-            [[0., 0.], [2., 0.], [0., 2.], [2., 2.]], dtype=torch.float64)
-        self.fake = torch.tensor(
-            [[1., 0.], [4., 0.], [1., 1.], [4., 1.]], dtype=torch.float64)
+        self.real = torch.tensor([[0.0, 0.0], [2.0, 0.0], [0.0, 2.0], [
+                                 2.0, 2.0]], dtype=torch.float64)
+        self.fake = torch.tensor([[1.0, 0.0], [4.0, 0.0], [1.0, 1.0], [
+                                 4.0, 1.0]], dtype=torch.float64)
 
     def _make_metric(self, **kwargs):
         return FrechetInceptionDistance(nn.Identity(), 2, **kwargs)
@@ -48,9 +50,9 @@ class TestGenerativeMetrics(unittest.TestCase):
         metric = self._make_metric()
         metric.update(self.real, real=True)
         metric.update(self.fake, real=False)
-        real, fake = self.real.numpy(), self.fake.numpy()
-        cov_real, cov_fake = np.cov(
-            real, rowvar=False), np.cov(fake, rowvar=False)
+        real, fake = (self.real.numpy(), self.fake.numpy())
+        cov_real, cov_fake = (np.cov(real, rowvar=False),
+                              np.cov(fake, rowvar=False))
         expected = np.square(real.mean(axis=0) - fake.mean(axis=0)).sum()
         expected += np.trace(cov_real + cov_fake - 2 *
                              sqrtm(cov_real @ cov_fake).real)
@@ -60,10 +62,10 @@ class TestGenerativeMetrics(unittest.TestCase):
         metric = self._make_metric()
         metric.update(self.real, real=True)
         metric.update(self.real, real=False)
-        self.assertAlmostEqual(metric.compute().item(), 0., places=10)
+        self.assertAlmostEqual(metric.compute().item(), 0.0, places=10)
 
     def test_batch_accumulation_matches_single_update(self):
-        full, batched = self._make_metric(), self._make_metric()
+        full, batched = (self._make_metric(), self._make_metric())
         for samples, real in ((self.real, True), (self.fake, False)):
             full.update(samples, real=real)
             for batch in samples.split(2):

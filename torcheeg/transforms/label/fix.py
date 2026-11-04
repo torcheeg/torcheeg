@@ -4,7 +4,7 @@ from ..base_transform import LabelTransform
 
 
 class FixCategory(LabelTransform):
-    r'''
+    r"""
     Returns a pre-set label for all samples, usually used to supplement the dataset with new categories.
 
     .. code-block:: python
@@ -12,7 +12,7 @@ class FixCategory(LabelTransform):
         from torcheeg import transforms
 
         t = transforms.FixCategory(value=0)
-        t(y=3)['y']
+        t(3)
         >>> 0
 
     :obj:`FixCategory` allows multiple values to be selected and returned as a list. Suitable for multi-classification tasks or multi-task learning.
@@ -22,30 +22,20 @@ class FixCategory(LabelTransform):
         from torcheeg import transforms
 
         t = transforms.FixCategory(value=[0, 1])
-        t(y=[1, 2])['y']
+        t([1, 2])
         >>> [0, 1]
 
     Args:
         value (str or list): The pre-set label.
 
     .. automethod:: __call__
-    '''
+    """
 
     def __init__(self, value: Union[int, str, List]):
         super(FixCategory, self).__init__()
         self.value = value
 
-    def __call__(self, *args, y: Dict, **kwargs) -> Union[int, float, List]:
-        r'''
-        Args:
-            y (any): A label or label list describing the EEG signal samples.
-
-        Returns:
-            any: FixCategoryeded value pre-set by `value`.
-        '''
-        return super().__call__(*args, y=y, **kwargs)
-
-    def apply(self, y: Dict, **kwargs) -> Union[int, float, List]:
+    def __call__(self, y: Dict) -> Union[int, float, List]:
         return self.value
 
     @property

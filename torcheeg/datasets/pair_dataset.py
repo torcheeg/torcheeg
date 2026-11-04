@@ -7,7 +7,7 @@ from torch.utils.data import Dataset
 from .base_dataset import BaseDataset
 
 
-class PairDataset(Dataset):
+class PairDataset(BaseDataset):
     r'''
     A dataset class for pairing multiple datasets. This class combines multiple datasets based on a specified join key and join type. It is particularly useful for constructing multimodal datasets, such as merging dataset A and dataset B to simultaneously access both modalities for the same subject during training.
 
@@ -26,6 +26,7 @@ class PairDataset(Dataset):
         dataset[0]
 
     Args:
+        transform (Callable, optional): Sample transform applied on each read. (default: :obj:`None`)
         datasets (List[BaseDataset]): A list of datasets to be paired. Each dataset should inherit from BaseDataset.
         join_key (str): The key used to join the datasets. This should be a column name present in all datasets' info DataFrames. Common join keys could be 'subject_id', 'trial_id', 'clip_id', etc. (default: :obj:`'subject_id'`)
         join_type (str): The type of join to perform. Valid options are:
@@ -46,7 +47,13 @@ class PairDataset(Dataset):
                  join_key: str = 'subject_id',
                  join_type: str = 'inner',
                  pair_info_fn: Optional[Callable] = None,
-                 distinct_key: Optional[str] = None):
+                 distinct_key: Optional[str] = None, transform=None, label_transform=None):
+        if transform is not None and not callable(transform):
+            raise TypeError('transform must be callable.')
+        self.transform = transform
+        if label_transform is not None and not callable(label_transform):
+            raise TypeError('label_transform must be callable.')
+        self.label_transform = label_transform
         self.datasets = datasets
 
         if pair_info_fn is None:
@@ -84,26 +91,28 @@ class PairDataset(Dataset):
             new_info = new_info.reset_index(drop=True)
             self.info = new_info
 
-    def __getitem__(self, index: int) -> Tuple[Any, ...]:
+    def _read_sample(self, index):
         info = self.info.iloc[index].to_dict()
-
-        # Retrieve the signals and labels from all datasets
-        signals = []
-        labels = []
-        for i, dataset in enumerate(self.datasets):
-            index_i = info[f'index_{i}']
-            signal, label = dataset[index_i]
-            signals.append(signal)
-            labels.append(label)
-
-        return (*signals, *labels)
-
-    def get_labels(self) -> List:
-        labels = []
-        for i in range(len(self)):
-            *_, label = self.__getitem__(i)
-            labels.append(label)
-        return labels
+        samples = [None if pd.isna(info[f'index_{i}']) else dataset[int(info[f'index_{i}'])]
+                   for i, dataset in enumerate(self.datasets)]
+        metadata = {name: value for name, value in info.items()
+                    if name not in self._STORAGE_COLUMNS and not name.startswith('index_')}
+        metadata['sources'] = [None if sample is None else sample.get(
+            'info', {}) for sample in samples]
+        result = {'eeg': tuple(None if sample is None else sample['eeg'] for sample in samples),
+                  'info': metadata}
+        if all(sample is not None and 'baseline' in sample for sample in samples):
+            result['baseline'] = tuple(sample['baseline']
+                                       for sample in samples)
+        return result
 
     def __len__(self):
         return len(self.info)
+
+    def close(self):
+        for dataset in self.datasets:
+            dataset.close()
+
+    @property
+    def repr_body(self):
+        return {'datasets': self.datasets}

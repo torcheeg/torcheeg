@@ -16,10 +16,8 @@ class TestKFoldPerSubjectGroupbyTrial(unittest.TestCase):
 
     def test_k_fold_per_subject_groupby_trial(self):
         dataset = _make_dataset()
-
         split_path = self._split_path
         k_fold = KFoldPerSubjectGroupbyTrial(split_path=split_path, n_splits=5)
-
         split_num = 0
         for train_dataset, test_dataset in k_fold.split(dataset):
             self.assertEqual(len(train_dataset), 20)

@@ -16,10 +16,8 @@ class TestKFoldCrossTrial(unittest.TestCase):
 
     def test_k_fold_cross_trial(self):
         dataset = _make_dataset()
-
         split_path = self._split_path
         k_fold = KFoldCrossTrial(split_path=split_path, n_splits=5)
-
         split_num = 0
         train_dataset_len = [100, 100, 100, 100, 100]
         test_dataset_len = [25, 25, 25, 25, 25]
@@ -36,8 +34,8 @@ class TestKFoldCrossTrial(unittest.TestCase):
             dict(enumerate(trials)))
         splitter = KFoldCrossTrial(n_splits=5, split_path=self._split_path)
         folds = list(splitter.split(dataset))
-        self.assertEqual([test.info['trial_id'].unique().tolist() for _, test in folds],
-                         [[trial] for trial in trials])
+        self.assertEqual([test.info['trial_id'].unique().tolist()
+                         for _, test in folds], [[trial] for trial in trials])
 
 
 if __name__ == '__main__':

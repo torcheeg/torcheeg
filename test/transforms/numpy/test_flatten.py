@@ -13,9 +13,9 @@ class TestFlattenTransforms(unittest.TestCase):
 
     def test_flatten(self):
         eeg = np.random.randn(62, 5)
-        transformed_eeg = Flatten()(eeg=eeg)
-        self.assertEqual(transformed_eeg['eeg'].shape, (310,))
-        np.testing.assert_array_equal(transformed_eeg['eeg'], eeg.ravel())
+        transformed_eeg = Flatten()(eeg)
+        self.assertEqual(transformed_eeg.shape, (310,))
+        np.testing.assert_array_equal(transformed_eeg, eeg.ravel())
 
 
 if __name__ == '__main__':

@@ -18,7 +18,7 @@ class _DummyDataset(Dataset):
         return self.length
 
     def __getitem__(self, i) -> int:
-        return torch.randn(120), random.randint(0, 1)
+        return {'eeg': torch.randn(120), 'label': random.randint(0, 1)}
 
 
 class _DummyEncoder(nn.Module):
@@ -31,7 +31,7 @@ class _DummyEncoder(nn.Module):
         self.fc_var = nn.Linear(in_channels, out_channels)
 
     def forward(self, x, *args, **kwargs):
-        return self.fc_mu(x), self.fc_var(x)
+        return (self.fc_mu(x), self.fc_var(x))
 
 
 class _DummyModel(nn.Module):
@@ -58,66 +58,50 @@ class TestBetaVAETrainer(unittest.TestCase):
         train_dataset = _DummyDataset()
         val_dataset = _DummyDataset()
         test_dataset = _DummyDataset()
-
         train_loader = DataLoader(train_dataset, batch_size=64)
         val_loader = DataLoader(val_dataset, batch_size=64)
         test_loader = DataLoader(test_dataset, batch_size=64)
-
         encoder = _DummyEncoder(120, 60)
         decoder = _DummyModel(60, 120)
-
         trainer = BetaVAETrainer(encoder, decoder)
         trainer.fit(train_loader, val_loader, max_epochs=1, max_steps=1)
         self.assertGreater(trainer.trainer.global_step, 0)
         self.assertTrue(trainer.trainer.logged_metrics)
-        self.assertTrue(all(torch.isfinite(torch.as_tensor(value)).all()
-                            for value in trainer.trainer.logged_metrics.values()))
+        self.assertTrue(all((torch.isfinite(torch.as_tensor(value)).all()
+                        for value in trainer.trainer.logged_metrics.values())))
         trainer.test_step(next(iter(test_loader)), batch_idx=0)
-
-        trainer = BetaVAETrainer(encoder,
-                                 decoder,
-                                 metrics=["is", "fid"],
-                                 metric_extractor=_DummyModel(120, 10),
-                                 metric_classifier=_DummyModel(120, 1),
-                                 metric_num_features=10)
+        trainer = BetaVAETrainer(encoder, decoder, metrics=['is', 'fid'], metric_extractor=_DummyModel(
+            120, 10), metric_classifier=_DummyModel(120, 1), metric_num_features=10)
         trainer.fit(train_loader, val_loader, max_epochs=1, max_steps=1)
         self.assertGreater(trainer.trainer.global_step, 0)
         self.assertTrue(trainer.trainer.logged_metrics)
-        self.assertTrue(all(torch.isfinite(torch.as_tensor(value)).all()
-                            for value in trainer.trainer.logged_metrics.values()))
+        self.assertTrue(all((torch.isfinite(torch.as_tensor(value)).all()
+                        for value in trainer.trainer.logged_metrics.values())))
         trainer.test(test_loader)
 
     def test_cbeta_vae_fit_runs_optimization_and_reports_finite_metrics(self):
         train_dataset = _DummyDataset()
         val_dataset = _DummyDataset()
         test_dataset = _DummyDataset()
-
         train_loader = DataLoader(train_dataset, batch_size=64)
         val_loader = DataLoader(val_dataset, batch_size=64)
         test_loader = DataLoader(test_dataset, batch_size=64)
-
         encoder = _DummyEncoder(120, 60)
         decoder = _DummyModel(60, 120)
-
         trainer = CBetaVAETrainer(encoder, decoder)
         trainer.fit(train_loader, val_loader, max_epochs=1, max_steps=1)
         self.assertGreater(trainer.trainer.global_step, 0)
         self.assertTrue(trainer.trainer.logged_metrics)
-        self.assertTrue(all(torch.isfinite(torch.as_tensor(value)).all()
-                            for value in trainer.trainer.logged_metrics.values()))
+        self.assertTrue(all((torch.isfinite(torch.as_tensor(value)).all()
+                        for value in trainer.trainer.logged_metrics.values())))
         trainer.test_step(next(iter(test_loader)), batch_idx=0)
-
-        trainer = CBetaVAETrainer(encoder,
-                                  decoder,
-                                  metrics=["is", "fid"],
-                                  metric_extractor=_DummyModel(120, 10),
-                                  metric_classifier=_DummyModel(120, 1),
-                                  metric_num_features=10)
+        trainer = CBetaVAETrainer(encoder, decoder, metrics=['is', 'fid'], metric_extractor=_DummyModel(
+            120, 10), metric_classifier=_DummyModel(120, 1), metric_num_features=10)
         trainer.fit(train_loader, val_loader, max_epochs=1, max_steps=1)
         self.assertGreater(trainer.trainer.global_step, 0)
         self.assertTrue(trainer.trainer.logged_metrics)
-        self.assertTrue(all(torch.isfinite(torch.as_tensor(value)).all()
-                            for value in trainer.trainer.logged_metrics.values()))
+        self.assertTrue(all((torch.isfinite(torch.as_tensor(value)).all()
+                        for value in trainer.trainer.logged_metrics.values())))
         trainer.test_step(next(iter(test_loader)), batch_idx=0)
 
 

@@ -17,7 +17,7 @@ def train_test_split_per_subject_cross_trial(
         shuffle: bool = False,
         random_state: Union[int, None] = None,
         split_path: Union[None, str] = None) -> Tuple[BaseDataset, BaseDataset]:
-    r'''
+    r"""
     A tool function for cross-validations, to divide the training set and the test set. It is suitable for subject dependent experiments with large dataset volume and no need to use k-fold cross-validations. For the first step, the EEG signal samples of the specified user are selected. Then, parts of trials are sampled according to a certain proportion as the test dataset, and samples from other trials are used as training samples. In most literatures, 20% of the data are sampled for testing.
 
     .. image:: _static/splits/train_test_split_per_subject_cross_trial.svg
@@ -34,18 +34,37 @@ def train_test_split_per_subject_cross_trial(
         from torcheeg import transforms
         from torch.utils.data import DataLoader
 
-        dataset = DEAPDataset(root_path='./data_preprocessed_python',
-                              online_transform=transforms.Compose([
-                                  transforms.ToTensor(),
-                                  transforms.To2d()
-                              ]),
-                              label_transform=transforms.Compose([
-                                  transforms.Select(['valence', 'arousal']),
-                                  transforms.Binary(5.0),
-                                  transforms.BinariesToCategory()
-                              ]))
 
-        train_dataset, test_dataset = train_test_split_per_subject_cross_trial(dataset=dataset)
+        def transform_fn(eeg, baseline=None, **kwargs) -> dict:
+            eeg_transform = transforms.Compose([
+                transforms.ToTensor(),
+                transforms.To2d(),
+            ])
+            return {
+                'eeg': eeg_transform(eeg),
+                'baseline': eeg_transform(baseline) if baseline is not None else None,
+            }
+
+
+        def label_fn(info: dict, **kwargs) -> dict:
+            label_transform = transforms.Compose([
+                transforms.Select(['valence', 'arousal']),
+                transforms.Binary(5.0),
+                transforms.BinariesToCategory(),
+            ])
+            return {
+                'label': label_transform(info),
+            }
+
+
+        dataset = DEAPDataset(
+            root_path='./data_preprocessed_python',
+            online_transform=transform_fn,
+            label_transform=label_fn,
+        )
+
+        train_dataset, test_dataset = train_test_split_per_subject_cross_trial(
+            dataset=dataset)
 
         train_loader = DataLoader(train_dataset)
         test_loader = DataLoader(test_dataset)
@@ -59,7 +78,7 @@ def train_test_split_per_subject_cross_trial(
         random_state (int, optional): When shuffle is :obj:`True`, :obj:`random_state` affects the ordering of the indices, which controls the randomness of each fold. Otherwise, this parameter has no effect. (default: :obj:`None`)
         split_path (str, optional): Directory for saved splits.
             If None, generate a random path. (default: :obj:`None`)
-    '''
+    """
     if split_path is None:
         split_path = get_random_dir_path(dir_prefix='model_selection')
 

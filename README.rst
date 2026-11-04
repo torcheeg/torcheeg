@@ -258,38 +258,52 @@ e.g. ``./tmp_in/data_preprocessed_python``.
 
    from torcheeg.datasets.utils import get_locations
 
-   dataset = DEAPDataset(
-       io_path=f'./tmp_out/examples_pipeline/deap',
-       root_path='./tmp_in/data_preprocessed_python',
-       offline_transform=transforms.Compose([
-           transforms.BandDifferentialEntropy(apply_to_baseline=True),
-           transforms.ToGrid(get_locations(DEAPDataset.channels, DEAPDataset.grid), apply_to_baseline=True)
-       ]),
-       online_transform=transforms.Compose(
-           [transforms.BaselineRemoval(),
-            transforms.ToTensor()]),
-       label_transform=transforms.Compose([
+   def preprocess_fn(eeg, baseline=None, **kwargs) -> dict:
+       eeg_transform = transforms.Compose([
+           transforms.BandDifferentialEntropy(),
+       ])
+       return {
+           'eeg': eeg_transform(eeg),
+           'baseline': eeg_transform(baseline) if baseline is not None else None,
+       }
+
+
+   def transform_fn(eeg, baseline=None, **kwargs) -> dict:
+       if baseline is not None:
+           eeg = transforms.BaselineRemoval(baseline=baseline)(eeg)
+       eeg_transform = transforms.Compose([
+           transforms.ToGrid(get_locations(DEAPDataset.channels, DEAPDataset.grid)),
+           transforms.ToTensor(),
+       ])
+       return {
+           'eeg': eeg_transform(eeg),
+           'baseline': eeg_transform(baseline) if baseline is not None else None,
+       }
+
+
+   def label_fn(info: dict, **kwargs) -> dict:
+       label_transform = transforms.Compose([
            transforms.Select('valence'),
            transforms.Binary(5.0),
-       ]),
-       num_worker=8)
+       ])
+       return {
+           'label': label_transform(info),
+       }
 
-The ``DEAPDataset`` API further contains three parameters:
-``online_transform``, ``offline_transform``, and ``label_transform``,
-which are used to modify samples and labels, respectively.
+   dataset = DEAPDataset(
+       io_path='./tmp_out/examples_pipeline/deap',
+       root_path='./tmp_in/data_preprocessed_python',
+       num_worker=4,
+       offline_transform=preprocess_fn,
+       online_transform=transform_fn,
+       label_transform=label_fn,
+   )
 
-Here, ``offline_transform`` will only be called once when the dataset is
-initialized to preprocess all samples in the dataset, and the processed
-dataset will be stored in ``io_path`` to avoid time-consuming repeated
-transformations in subsequent use. If offline preprocessing is a
-computationally intensive operation, we also recommend setting multi-CPU
-parallelism for offline_transform, e.g., set ``num_worker`` to 4.
-
-``online_transform`` is used to transform samples on the fly. Please use
-``online_transform`` if you don’t want to wait for the preprocessing of
-the entire dataset (suitable for scenarios where new ``transform``
-algorithms are designed) or expect data transformation with randomness
-each time a sample is indexed.
+``offline_transform`` computes EEG and baseline features before caching.
+``online_transform`` processes them on each read. ``label_transform``
+constructs labels from ``info``. The Dataset combines the results into a
+dictionary for DataLoader; fields whose value is None are omitted.
+``num_worker`` controls offline processing workers.
 
 Next, we need to divide the dataset into a training set and a test set.
 In the field of EEG analysis, commonly used data partitioning methods

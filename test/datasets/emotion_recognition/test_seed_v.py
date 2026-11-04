@@ -1,6 +1,7 @@
 import os
 import unittest
-from test.datasets.test_base_dataset import _assert_memory_dataset
+from test.datasets.test_cached_dataset import (_assert_memory_dataset,
+                                               _process_fake)
 
 import numpy as np
 
@@ -14,38 +15,31 @@ class TestSEEDVDataset(unittest.TestCase):
         np.random.seed(0)
 
     def test_seed_v_dataset(self):
-        kwargs = {
-            'record': 'fake_record',
-        }
-        kwargs.update(SEEDVDataset.fake_record(**kwargs))
-        item = next(SEEDVDataset.process_record(**kwargs))
-
+        kwargs = {'record': 'fake_record'}
+        kwargs.update(SEEDVDataset.data_class.fake_record(**kwargs))
+        item = next(_process_fake(SEEDVDataset, **kwargs))
         self.assertEqual(item['eeg'].shape, (62, 800))
         self.assertEqual(item['info']['date'], 20180507)
         self.assertIsInstance(item['info']['date'], int)
 
     def test_seed_v_metadata_from_record_names(self):
         samples = np.zeros((62, 40000))
-        cases = [
-            ('10_1_20180507.cnt', 10, 1, 20180507, 4),
-            (os.path.join('nested', '01_2_20180607.cnt'), 1, 2, 20180607, 2),
-            ('2_3_20180707.CNT', 2, 3, 20180707, 2),
-        ]
+        cases = [('10_1_20180507.cnt', 10, 1, 20180507, 4), (os.path.join(
+            'nested', '01_2_20180607.cnt'), 1, 2, 20180607, 2), ('2_3_20180707.CNT', 2, 3, 20180707, 2)]
         for record, subject_id, session_id, date, emotion in cases:
             with self.subTest(record=record):
-                item = next(SEEDVDataset.process_record(record, samples))
+                item = next(_process_fake(SEEDVDataset, record, samples))
                 info = item['info']
-                for name, expected in (('subject_id', subject_id),
-                                       ('session_id', session_id), ('date', date)):
+                for name, expected in (('subject_id', subject_id), ('session_id', session_id), ('date', date)):
                     self.assertEqual(info[name], expected)
                     self.assertIsInstance(info[name], int)
                 self.assertEqual(info['emotion'], emotion)
-                self.assertEqual(
-                    info['clip_id'], os.path.basename(record) + '_0')
+                self.assertNotIn('clip_id', info)
                 self.assertEqual(item['eeg'].shape, (62, 800))
 
 
 class TestFakeRecordMetadata(unittest.TestCase):
+
     def setUp(self):
         self.addCleanup(np.random.set_state, np.random.get_state())
         np.random.seed(0)
@@ -54,11 +48,12 @@ class TestFakeRecordMetadata(unittest.TestCase):
         for dataset_class in (SEEDVDataset,):
             with self.subTest(dataset=dataset_class.__name__):
                 kwargs = {'record': 'fake_record'}
-                kwargs.update(dataset_class.fake_record(**kwargs))
-                sample = next(item for item in dataset_class.process_record(**kwargs)
-                              if 'info' in item)
-                self.assertIsInstance(sample['key'], str)
-                self.assertEqual(sample['info']['clip_id'], sample['key'])
+                kwargs.update(dataset_class.data_class.fake_record(**kwargs))
+                sample = next((item for item in _process_fake(
+                    dataset_class, **kwargs) if 'info' in item))
+                self.assertIsInstance(sample['info'], dict)
+                self.assertNotIn('key', sample)
+                self.assertNotIn('clip_id', sample['info'])
                 self.assertGreater(sample['eeg'].size, 0)
                 self.assertTrue(np.isfinite(sample['eeg']).all())
 

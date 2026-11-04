@@ -1,125 +1,67 @@
 """
-Introduction to the transforms Module
-=====================================
+Transform arrays and samples
+============================
 
-Welcome to the guide on TorchEEG's ``transforms`` Module! This module provides you with toolset designed for the transformation and preprocessing of EEG signals and related metadata.
-
-EEG transforms concentrate on EEG preprocessing, feature extraction,
-data conversion, and data augmentation for deep learning models. They
-typically accept various parameters for instantiation, and the
-instantiated transformers can be used as functions to process EEG
-signals. They accept 'eeg' and 'baseline' as keyword arguments and
-return a dictionary, in which 'eeg' corresponds to the processed EEG
-signal, while 'baseline' corresponds to the processed baseline signal.
-
+Array transforms use positional input. Sample functions choose which fields to
+transform; Compose applies functions in order.
 """
 
 import numpy as np
 
 from torcheeg import transforms
-from torcheeg.datasets import DEAPDataset
-from torcheeg.datasets.utils import get_locations
+from torcheeg.datasets import MemoryDataset
 
-t = transforms.ToGrid(get_locations(DEAPDataset.channels, DEAPDataset.grid))
-eeg = t(eeg=np.random.randn(32, 128))['eeg']
-print(eeg.shape)
-
-eeg = t(eeg=np.random.randn(32, 128), baseline=np.random.randn(32, 128))['eeg']
-print(eeg.shape)
-
-######################################################################
-# When it comes to preprocessing, EEG transforms aid in the elimination of
-# noise from EEG signals. A prime example of this is the BaselineRemoval,
-# which employs the baseline signal prior to the stimulus to remove
-# stimulus-independent fluctuations from the processed signal.
-#
-
-t = transforms.BaselineRemoval()
-
-eeg = t(eeg=np.random.randn(32, 128), baseline=np.random.randn(32, 128))['eeg']
-print(eeg.shape)
-
-######################################################################
-# For feature extraction, EEG transforms take charge of creating
-# emotion-discriminative features usually employed in emotion recognition.
-# One such example is the BandDifferentialEntropy, which gauges the
-# differential entropy of the frequency subbands within the EEG signal.
-#
-
-eeg = np.random.randn(32, 128)
-transformed_eeg = transforms.BandDifferentialEntropy()(eeg=eeg)['eeg']
-
-######################################################################
-# In terms of data conversion, EEG transforms play a pivotal role in
-# shaping EEG signals into time series, 3D grids, or graph networks.
-# Examples of these include ToGrid, ToInterpolatedGrid, ToG, and
-# ToDynamicG.
-#
-
-from torcheeg.datasets import DEAPDataset
-from torcheeg.datasets.utils import get_adjacency
-from torcheeg.transforms.graph import ToG
-
-eeg = np.random.randn(32, 128)
-transformed_eeg = ToG(get_adjacency(DEAPDataset.channels,
-                      DEAPDataset.adjacency))(eeg=eeg)['eeg']
-print(transformed_eeg)
-
-######################################################################
-# Regarding data augmentation, transforms such as RandomMask apply random
-# transformations to the EEG signals, effectively augmenting the data
-# volume.
-#
-
-import torch
-
-eeg = torch.randn(32, 128)
-transformed_eeg = transforms.RandomMask(p=1.0)(eeg=eeg)['eeg']
-print(transformed_eeg.shape)
-
-######################################################################
-# Metadata transforms interact with the metadata associated with EEG
-# signals, generating ancillary information or labels needed for models.
-# An example is Binary, which transforms continuous emotional valence or
-# arousal into binary labels.
-#
-
-info = {'valence': 4.5, 'arousal': 5.5, 'subject_id': 7}
-transformed_label = transforms.Select(key='valence')(y=info)['y']
-print(transformed_label)
-
-transformed_label = transforms.Binary(threshold=5.0)(y=transformed_label)['y']
-print(transformed_label)
-
-######################################################################
-# Process transforms bring several transformers together, crafting the
-# overall processes. For instance, Compose allows the output of one
-# transformation to be the input of the next, thus chaining multiple
-# transforms together.
-#
-
-from torcheeg import transforms
-
-t = transforms.Compose([
+# Transform an array.
+eeg = np.random.default_rng(0).normal(size=(32, 128))
+features = transforms.Compose([
     transforms.BandDifferentialEntropy(),
-    transforms.ToGrid(get_locations(DEAPDataset.channels, DEAPDataset.grid))
-])
-eeg = t(eeg=np.random.randn(32, 128))['eeg']
-print(eeg.shape)
+    transforms.ToTensor(),
+])(eeg)
+print(features.shape)
 
-######################################################################
-# It's worth noting that unless specifically required, transformers before
-# BaselineRemoval should be set with apply_to_baseline=True, to ensure the
-# baseline signal and the experiment signal undergo the same
-# transformations. Of course, you don't need to do this if BaselineRemoval
-# is not needed.
-#
+# Bind a baseline explicitly.
+baseline = np.zeros_like(eeg)
+corrected = transforms.BaselineRemoval(baseline=baseline)(eeg)
 
-t = transforms.Compose([
-    transforms.BandDifferentialEntropy(apply_to_baseline=True),
-    transforms.ToGrid(get_locations(DEAPDataset.channels,
-                      DEAPDataset.grid), apply_to_baseline=True),
-    transforms.BaselineRemoval()
-])
-eeg = t(eeg=np.random.randn(32, 128), baseline=np.random.randn(32, 128))['eeg']
-print(eeg.shape)
+# Define separate signal and label callbacks.
+
+
+def preprocess_fn(eeg, baseline=None, **kwargs) -> dict:
+    eeg_transform = transforms.Compose([
+        transforms.BandDifferentialEntropy(),
+    ])
+    return {
+        'eeg': eeg_transform(eeg),
+        'baseline': eeg_transform(baseline) if baseline is not None else None,
+    }
+
+
+def transform_fn(eeg, baseline=None, **kwargs) -> dict:
+    if baseline is not None:
+        eeg = transforms.BaselineRemoval(baseline=baseline)(eeg)
+    eeg_transform = transforms.Compose([
+        transforms.ToTensor(),
+    ])
+    return {
+        'eeg': eeg_transform(eeg),
+        'baseline': eeg_transform(baseline) if baseline is not None else None,
+    }
+
+
+def label_fn(info: dict, **kwargs) -> dict:
+    label_transform = transforms.Compose([
+        transforms.Select('label'),
+    ])
+    return {
+        'label': label_transform(info),
+    }
+
+
+dataset = MemoryDataset(
+    transform=transform_fn,
+    label_transform=label_fn,
+)
+dataset.append({**preprocess_fn(eeg, baseline=eeg * 0.5),
+                'info': {'label': 1}})
+print(dataset[0]['eeg'].shape)
+print(dataset[0]['label'])

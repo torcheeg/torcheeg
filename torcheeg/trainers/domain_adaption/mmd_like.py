@@ -146,9 +146,11 @@ class _MMDLikeTrainer(ClassifierTrainer):
             + self.__class__.__name__
         )
 
-    def training_step(self, batch: Tuple[torch.Tensor],
+    def training_step(self, batch: dict,
                       batch_idx: int) -> torch.Tensor:
-        (x_source, y_source), (x_target, _) = batch
+        source, target = batch
+        x_source, y_source = source['eeg'], source['label']
+        x_target = target['eeg']
 
         x_source_feat = self.extractor(x_source)
         y_source_pred = self.classifier(x_source_feat)

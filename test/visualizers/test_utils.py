@@ -7,6 +7,7 @@ from torcheeg.visualizers.utils import _plot_to_image
 
 
 class TestPlotToImage(unittest.TestCase):
+
     def test_figure_is_converted_to_a_readable_image(self):
         figure, axes = plt.subplots(figsize=(2, 1))
         self.addCleanup(plt.close, figure)

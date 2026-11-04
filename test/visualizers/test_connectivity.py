@@ -23,13 +23,8 @@ class TestConnectivity(unittest.TestCase):
 
     def test_plot_adj_connectivity(self):
         mock_adj = torch.randn(62, 62)
-        img = plot_adj_connectivity(mock_adj,
-                                    SEEDDataset.channels,
-                                    get_regions(SEEDDataset.channels,
-                                                GENERAL_REGION_LIST),
-                                    num_connectivity=60,
-                                    linewidth=1.5)
-
+        img = plot_adj_connectivity(mock_adj, SEEDDataset.channels, get_regions(
+            SEEDDataset.channels, GENERAL_REGION_LIST), num_connectivity=60, linewidth=1.5)
         self.assertEqual(img.ndim, 3)
         self.assertGreater(np.ptp(img[..., :3]), 0)
 

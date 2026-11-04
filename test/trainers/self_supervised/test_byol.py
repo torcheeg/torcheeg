@@ -18,7 +18,7 @@ class _DummyDataset(Dataset):
         return self.length
 
     def __getitem__(self, i) -> int:
-        return (torch.randn(120), torch.randn(120)), random.randint(0, 1)
+        return {'eeg': (torch.randn(120), torch.randn(120)), 'label': random.randint(0, 1)}
 
 
 class _DummyModel(nn.Module):
@@ -44,18 +44,15 @@ class TestBYOLTrainer(unittest.TestCase):
     def test_byol_fit_runs_optimization_and_reports_finite_metrics(self):
         train_dataset = _DummyDataset()
         val_dataset = _DummyDataset()
-
         train_loader = DataLoader(train_dataset, batch_size=2)
         val_loader = DataLoader(val_dataset, batch_size=2)
-
         model = _DummyModel()
-
         trainer = BYOLTrainer(model, extract_channels=10)
         trainer.fit(train_loader, val_loader, max_epochs=1, max_steps=1)
         self.assertGreater(trainer.trainer.global_step, 0)
         self.assertTrue(trainer.trainer.logged_metrics)
-        self.assertTrue(all(torch.isfinite(torch.as_tensor(value)).all()
-                            for value in trainer.trainer.logged_metrics.values()))
+        self.assertTrue(all((torch.isfinite(torch.as_tensor(value)).all()
+                        for value in trainer.trainer.logged_metrics.values())))
 
 
 if __name__ == '__main__':

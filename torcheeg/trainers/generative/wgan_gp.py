@@ -181,19 +181,19 @@ class WGANGPTrainer(pl.LightningModule):
         return self.generator(latent)
 
     def predict_step(self,
-                     batch: Tuple[torch.Tensor],
+                     batch: dict,
                      batch_idx: int,
                      dataloader_idx: int = 0):
-        x, _ = batch
+        x = batch['eeg']
         latent = torch.normal(mean=0,
                               std=1,
                               size=(x.shape[0], self.latent_channels))
         latent = latent.type_as(x)
         return self(latent)
 
-    def training_step(self, batch: Tuple[torch.Tensor],
+    def training_step(self, batch: dict,
                       batch_idx: int) -> torch.Tensor:
-        x, _ = batch
+        x = batch['eeg']
         generator_optimizer, discriminator_optimizer = self.optimizers()
 
         latent = torch.normal(mean=0,
@@ -265,9 +265,9 @@ class WGANGPTrainer(pl.LightningModule):
         self.train_d_loss.reset()
 
     @torch.enable_grad()
-    def validation_step(self, batch: Tuple[torch.Tensor],
+    def validation_step(self, batch: dict,
                         batch_idx: int) -> torch.Tensor:
-        x, _ = batch
+        x = batch['eeg']
 
         latent = torch.normal(mean=0,
                               std=1,
@@ -314,9 +314,9 @@ class WGANGPTrainer(pl.LightningModule):
         self.val_d_loss.reset()
 
     @torch.enable_grad()
-    def test_step(self, batch: Tuple[torch.Tensor],
+    def test_step(self, batch: dict,
                   batch_idx: int) -> torch.Tensor:
-        x, _ = batch
+        x = batch['eeg']
 
         latent = torch.normal(mean=0,
                               std=1,
@@ -432,9 +432,9 @@ class CWGANGPTrainer(WGANGPTrainer):
     .. automethod:: test
     '''
 
-    def training_step(self, batch: Tuple[torch.Tensor],
+    def training_step(self, batch: dict,
                       batch_idx: int) -> torch.Tensor:
-        x, y = batch
+        x, y = batch['eeg'], batch['label']
         generator_optimizer, discriminator_optimizer = self.optimizers()
 
         latent = torch.normal(mean=0,
@@ -481,9 +481,9 @@ class CWGANGPTrainer(WGANGPTrainer):
                  on_step=True)
 
     @torch.enable_grad()
-    def validation_step(self, batch: Tuple[torch.Tensor],
+    def validation_step(self, batch: dict,
                         batch_idx: int) -> torch.Tensor:
-        x, y = batch
+        x, y = batch['eeg'], batch['label']
 
         latent = torch.normal(mean=0,
                               std=1,
@@ -505,9 +505,9 @@ class CWGANGPTrainer(WGANGPTrainer):
         return g_loss, d_loss
 
     @torch.enable_grad()
-    def test_step(self, batch: Tuple[torch.Tensor],
+    def test_step(self, batch: dict,
                   batch_idx: int) -> torch.Tensor:
-        x, y = batch
+        x, y = batch['eeg'], batch['label']
 
         latent = torch.normal(mean=0,
                               std=1,
@@ -539,10 +539,10 @@ class CWGANGPTrainer(WGANGPTrainer):
         return self.generator(latent, y)
 
     def predict_step(self,
-                     batch: Tuple[torch.Tensor],
+                     batch: dict,
                      batch_idx: int,
                      dataloader_idx: int = 0):
-        x, y = batch
+        x, y = batch['eeg'], batch['label']
         latent = torch.normal(mean=0,
                               std=1,
                               size=(x.shape[0], self.latent_channels))

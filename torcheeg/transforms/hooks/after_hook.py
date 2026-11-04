@@ -10,46 +10,12 @@ def after_hook_normalize(
     r'''
     A common hook function used to normalize the signal of the whole trial/session/subject after dividing it into chunks and transforming the divided chunks.
 
-    It is used as follows:
-
     .. code-block:: python
 
-        from torcheeg.datasets import DEAPDataset
+        import numpy as np
         from torcheeg.transforms import after_hook_normalize
 
-        dataset = DEAPDataset(root_path='./data_preprocessed_python',
-                              offline_transform=transforms.Compose([
-                                  transforms.BandDifferentialEntropy(),
-                                  transforms.ToGrid(get_locations(DEAPDataset.channels, DEAPDataset.grid))
-                              ]),
-                              online_transform=transforms.ToTensor(),
-                              after_trial=after_hook_normalize,
-                              num_worker=4,
-                              label_transform=transforms.Compose([
-                                  transforms.Select('valence'),
-                                  transforms.Binary(5.0),
-                              ]))
-
-    If you want to pass in parameters, use partial to generate a new function:
-
-    .. code-block:: python
-
-        from functools import partial
-        from torcheeg.datasets import DEAPDataset
-        from torcheeg.transforms import after_hook_normalize
-
-        DEAPDataset(root_path='./data_preprocessed_python',
-                              offline_transform=transforms.Compose([
-                                  transforms.BandDifferentialEntropy(),
-                                  transforms.ToGrid(get_locations(DEAPDataset.channels, DEAPDataset.grid))
-                              ]),
-                              online_transform=transforms.ToTensor(),
-                              after_trial=partial(after_hook_normalize, eps=1e-5),
-                              num_worker=4,
-                              label_transform=transforms.Compose([
-                                  transforms.Select('valence'),
-                                  transforms.Binary(5.0),
-                              ]))
+        result = after_hook_normalize([np.zeros((2, 4)), np.ones((2, 4))])
 
     Args:
         data (list): A list of :obj:`np.ndarray` or :obj:`torch.Tensor`, one of which corresponds to an EEG signal in trial.
@@ -76,7 +42,7 @@ def after_hook_normalize(
         return [sample for sample in data]
     else:
         raise ValueError(
-            'The after_hook_normalize only supports np.ndarray and torch.Tensor. Please make sure the outputs of offline_transform ({}) are np.ndarray or torch.Tensor.'
+            'The after_hook_normalize only supports np.ndarray and torch.Tensor. Please make sure the input samples ({}) are np.ndarray or torch.Tensor.'
             .format(type(data[0])))
 
 
@@ -87,45 +53,12 @@ def after_hook_running_norm(
     r'''
     A common hook function used to normalize the signal of the whole trial/session/subject after dividing it into chunks and transforming the divided chunks.
 
-    It is used as follows:
-
     .. code-block:: python
 
-        from torcheeg.datasets import DEAPDataset
-        from torcheeg.transforms import after_hook_running_norm
-        from torcheeg.datasets.utils import get_locations
-
-        dataset = DEAPDataset(root_path='./data_preprocessed_python',
-                              offline_transform=transforms.Compose([
-                                  transforms.BandDifferentialEntropy(),
-                                  transforms.ToGrid(get_locations(DEAPDataset.channels, DEAPDataset.grid))
-                              ]),
-                              online_transform=transforms.ToTensor(),
-                              after_trial=after_hook_running_norm,
-                              label_transform=transforms.Compose([
-                                  transforms.Select('valence'),
-                                  transforms.Binary(5.0),
-                              ]))
-
-    If you want to pass in parameters, use partial to generate a new function:
-
-    .. code-block:: python
-
-        from functools import partial
-        from torcheeg.datasets import DEAPDataset
+        import numpy as np
         from torcheeg.transforms import after_hook_running_norm
 
-        dataset = DEAPDataset(root_path='./data_preprocessed_python',
-                              offline_transform=transforms.Compose([
-                                  transforms.BandDifferentialEntropy(),
-                                  transforms.ToGrid(get_locations(DEAPDataset.channels, DEAPDataset.grid))
-                              ]),
-                              online_transform=transforms.ToTensor(),
-                              after_trial=partial(after_hook_running_norm, decay_rate=0.9, eps=1e-6),
-                              label_transform=transforms.Compose([
-                                  transforms.Select('valence'),
-                                  transforms.Binary(5.0),
-                              ]))
+        result = after_hook_running_norm([np.zeros((2, 4)), np.ones((2, 4))])
 
     Args:
         data (list): A list of :obj:`np.ndarray` or :obj:`torch.Tensor`, one of which corresponds to an EEG signal in trial.
@@ -165,7 +98,7 @@ def after_hook_running_norm(
         return [sample for sample in data]
     else:
         raise ValueError(
-            'The after_hook_running_norm only supports np.ndarray and torch.Tensor. Please make sure the outputs of offline_transform ({}) are np.ndarray or torch.Tensor.'
+            'The after_hook_running_norm only supports np.ndarray and torch.Tensor. Please make sure the input samples ({}) are np.ndarray or torch.Tensor.'
             .format(type(data[0])))
 
 
@@ -179,44 +112,12 @@ def after_hook_linear_dynamical_system(
     r'''
     A common hook function used to normalize the signal of the whole trial/session/subject after dividing it into chunks and transforming the divided chunks.
 
-    It is used as follows:
-
     .. code-block:: python
 
-        from torcheeg.datasets import DEAPDataset
+        import numpy as np
         from torcheeg.transforms import after_hook_linear_dynamical_system
 
-        dataset = DEAPDataset(root_path='./data_preprocessed_python',
-                              offline_transform=transforms.Compose([
-                                  transforms.BandDifferentialEntropy(),
-                                  transforms.ToGrid(get_locations(DEAPDataset.channels, DEAPDataset.grid))
-                              ]),
-                              online_transform=transforms.ToTensor(),
-                              after_trial=after_hook_linear_dynamical_system,
-                              label_transform=transforms.Compose([
-                                  transforms.Select('valence'),
-                                  transforms.Binary(5.0),
-                              ]))
-
-    If you want to pass in parameters, use partial to generate a new function:
-
-    .. code-block:: python
-
-        from functools import partial
-        from torcheeg.datasets import DEAPDataset
-        from torcheeg.transforms import after_hook_linear_dynamical_system
-
-        dataset = DEAPDataset(root_path='./data_preprocessed_python',
-                              offline_transform=transforms.Compose([
-                                  transforms.BandDifferentialEntropy(),
-                                  transforms.ToGrid(get_locations(DEAPDataset.channels, DEAPDataset.grid))
-                              ]),
-                              online_transform=transforms.ToTensor(),
-                              after_trial=partial(after_hook_linear_dynamical_system, V0=0.01, A=1, T=0.0001, C=1, sigma=1),
-                              label_transform=transforms.Compose([
-                                  transforms.Select('valence'),
-                                  transforms.Binary(5.0),
-                              ]))
+        result = after_hook_linear_dynamical_system([np.zeros((2, 4)), np.ones((2, 4))])
 
     Args:
         data (list): A list of :obj:`np.ndarray` or :obj:`torch.Tensor`, one of which corresponds to an EEG signal in trial.
@@ -290,5 +191,5 @@ def after_hook_linear_dynamical_system(
 
     else:
         raise ValueError(
-            'The after_hook_linear_dynamical_system only supports np.ndarray and torch.Tensor. Please make sure the outputs of offline_transform ({}) are np.ndarray or torch.Tensor.'
+            'The after_hook_linear_dynamical_system only supports np.ndarray and torch.Tensor. Please make sure the input samples ({}) are np.ndarray or torch.Tensor.'
             .format(type(data[0])))
