@@ -55,7 +55,7 @@ class TestPairDataset(unittest.TestCase):
             np.testing.assert_array_equal(
                 selected[index]['eeg'], combined[original]['eeg'])
         view = PairDataset([first, second], join_key='subject_id',
-                           transform=lambda sample: {**sample, 'marker': True})[[2, 0, 2]]
+                           transform=lambda eeg, **kwargs: {'eeg': eeg, 'marker': True})[[2, 0, 2]]
         self.assertTrue(view[0]['marker'])
         self.assertNotIn('marker', selected[0])
         self.assertIn('PairDataset', repr(combined))

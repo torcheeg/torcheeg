@@ -271,28 +271,35 @@ class MAHNOBDataset(CachedDataset):
         from torcheeg.datasets.utils import get_locations
 
 
-        def preprocess_fn(sample: dict) -> dict:
+        def preprocess_fn(eeg, baseline=None, **kwargs) -> dict:
             eeg_transform = transforms.Compose([
                 transforms.BandDifferentialEntropy(),
-                transforms.ToGrid(get_locations(MAHNOBDataset.channels, MAHNOBDataset.grid)),
+                transforms.ToGrid(get_locations(
+                    MAHNOBDataset.channels, MAHNOBDataset.grid)),
             ])
             return {
-                **sample,
-                'eeg': eeg_transform(sample['eeg']),
+                'eeg': eeg_transform(eeg),
+                'baseline': eeg_transform(baseline) if baseline is not None else None,
             }
 
 
-        def transform_fn(sample: dict) -> dict:
+        def transform_fn(eeg, baseline=None, **kwargs) -> dict:
             eeg_transform = transforms.Compose([
                 transforms.ToTensor(),
             ])
+            return {
+                'eeg': eeg_transform(eeg),
+                'baseline': eeg_transform(baseline) if baseline is not None else None,
+            }
+
+
+        def label_fn(info: dict, **kwargs) -> dict:
             label_transform = transforms.Compose([
                 transforms.Select('feltVlnc'),
                 transforms.Binary(5.0),
             ])
             return {
-                'eeg': eeg_transform(sample['eeg']),
-                'label': label_transform(sample['info']),
+                'label': label_transform(info),
             }
 
 
@@ -300,6 +307,7 @@ class MAHNOBDataset(CachedDataset):
             root_path='./Sessions',
             offline_transform=preprocess_fn,
             online_transform=transform_fn,
+            label_transform=label_fn,
         )
         print(dataset[0])
 
@@ -311,28 +319,34 @@ class MAHNOBDataset(CachedDataset):
         from torcheeg import transforms
 
 
-        def preprocess_fn(sample: dict) -> dict:
+        def preprocess_fn(eeg, baseline=None, **kwargs) -> dict:
             eeg_transform = transforms.Compose([
                 transforms.To2d(),
             ])
             return {
-                **sample,
-                'eeg': eeg_transform(sample['eeg']),
+                'eeg': eeg_transform(eeg),
+                'baseline': eeg_transform(baseline) if baseline is not None else None,
             }
 
 
-        def transform_fn(sample: dict) -> dict:
+        def transform_fn(eeg, baseline=None, **kwargs) -> dict:
             eeg_transform = transforms.Compose([
                 transforms.ToTensor(),
             ])
+            return {
+                'eeg': eeg_transform(eeg),
+                'baseline': eeg_transform(baseline) if baseline is not None else None,
+            }
+
+
+        def label_fn(info: dict, **kwargs) -> dict:
             label_transform = transforms.Compose([
                 transforms.Select(['feltVlnc', 'feltArsl']),
                 transforms.Binary(5.0),
                 transforms.BinariesToCategory(),
             ])
             return {
-                'eeg': eeg_transform(sample['eeg']),
-                'label': label_transform(sample['info']),
+                'label': label_transform(info),
             }
 
 
@@ -340,6 +354,7 @@ class MAHNOBDataset(CachedDataset):
             root_path='./Sessions',
             offline_transform=preprocess_fn,
             online_transform=transform_fn,
+            label_transform=label_fn,
         )
         print(dataset[0])
 
@@ -353,23 +368,30 @@ class MAHNOBDataset(CachedDataset):
         from torcheeg.transforms.graph import ToG
 
 
-        def transform_fn(sample: dict) -> dict:
+        def transform_fn(eeg, baseline=None, **kwargs) -> dict:
             eeg_transform = transforms.Compose([
                 ToG(get_adjacency(MAHNOBDataset.channels, MAHNOBDataset.adjacency)),
             ])
+            return {
+                'eeg': eeg_transform(eeg),
+                'baseline': eeg_transform(baseline) if baseline is not None else None,
+            }
+
+
+        def label_fn(info: dict, **kwargs) -> dict:
             label_transform = transforms.Compose([
                 transforms.Select('feltArsl'),
                 transforms.Binary(5.0),
             ])
             return {
-                'eeg': eeg_transform(sample['eeg']),
-                'label': label_transform(sample['info']),
+                'label': label_transform(info),
             }
 
 
         dataset = MAHNOBDataset(
             root_path='./Sessions',
             online_transform=transform_fn,
+            label_transform=label_fn,
         )
         print(dataset[0])
 
@@ -385,8 +407,9 @@ class MAHNOBDataset(CachedDataset):
 
 
 
-        offline_transform (Callable, optional): Sample dictionary transform applied before storage. (default: :obj:`None`)
-        online_transform (Callable, optional): Sample transform applied on each read. (default: :obj:`None`)
+        offline_transform (Callable, optional): EEG transform applied before storage; returns a dictionary containing eeg. (default: :obj:`None`)
+        online_transform (Callable, optional): EEG transform applied on each read. (default: :obj:`None`)
+        label_transform (Callable, optional): Transform info into a dictionary containing label on each read. (default: :obj:`None`)
         io_path (str): The path to generated unified data IO, cached as an intermediate result. If set to None, a random path will be generated. (default: :obj:`None`)
         io_size (int): Maximum size database may grow to; used to size the memory mapping. If database grows larger than ``map_size``, an exception will be raised and the user must close and reopen. (default: :obj:`1048576`)
         io_mode (str): Storage mode of EEG signal. When io_mode is set to :obj:`lmdb`, TorchEEG provides an efficient database (LMDB) for storing EEG signals. LMDB may not perform well on limited operating systems, where a file system based EEG signal storage is also provided. When io_mode is set to :obj:`pickle`, pickle-based persistence files are used. When io_mode is set to :obj:`memory`, memory are used. (default: :obj:`lmdb`)
@@ -402,14 +425,14 @@ class MAHNOBDataset(CachedDataset):
 
     adjacency = MAHNOBData.adjacency
 
-    def __init__(self, root_path: str = './Sessions', chunk_size: int = 128, sampling_rate: int = 128, overlap: int = 0, num_channel: int = 32, num_baseline: int = 30, baseline_chunk_size: int = 128, num_trial_sample: int = 30, offline_transform: Union[None, Callable] = None, online_transform: Union[None, Callable] = None, io_path: Union[None, str] = None, io_size: int = 1048576, io_mode: str = 'lmdb', num_worker: int = 0, verbose: bool = True):
+    def __init__(self, root_path: str = './Sessions', chunk_size: int = 128, sampling_rate: int = 128, overlap: int = 0, num_channel: int = 32, num_baseline: int = 30, baseline_chunk_size: int = 128, num_trial_sample: int = 30, offline_transform: Union[None, Callable] = None, online_transform: Union[None, Callable] = None, label_transform: Union[None, Callable] = None, io_path: Union[None, str] = None, io_size: int = 1048576, io_mode: str = 'lmdb', num_worker: int = 0, verbose: bool = True):
         if io_path is None:
             io_path = get_random_dir_path(dir_prefix='datasets')
         params = {'root_path': root_path, 'chunk_size': chunk_size, 'sampling_rate': sampling_rate, 'overlap': overlap, 'num_channel': num_channel, 'num_baseline': num_baseline, 'baseline_chunk_size':
-                  baseline_chunk_size, 'num_trial_sample': num_trial_sample, 'offline_transform': offline_transform, 'online_transform': online_transform, 'io_path': io_path, 'io_size': io_size, 'io_mode': io_mode, 'num_worker': num_worker, 'verbose': verbose}
+                  baseline_chunk_size, 'num_trial_sample': num_trial_sample, 'offline_transform': offline_transform, 'online_transform': online_transform, 'label_transform': label_transform, 'io_path': io_path, 'io_size': io_size, 'io_mode': io_mode, 'num_worker': num_worker, 'verbose': verbose}
         super().__init__(**params)
         self.__dict__.update(params)
 
     @property
     def repr_body(self) -> Dict:
-        return dict(super().repr_body, **{'root_path': self.root_path, 'chunk_size': self.chunk_size, 'sampling_rate': self.sampling_rate, 'overlap': self.overlap, 'num_channel': self.num_channel, 'num_baseline': self.num_baseline, 'baseline_chunk_size': self.baseline_chunk_size, 'num_trial_sample': self.num_trial_sample, 'offline_transform': self.offline_transform, 'online_transform': self.online_transform, 'num_worker': self.num_worker, 'verbose': self.verbose, 'io_size': self.io_size})
+        return dict(super().repr_body, **{'root_path': self.root_path, 'chunk_size': self.chunk_size, 'sampling_rate': self.sampling_rate, 'overlap': self.overlap, 'num_channel': self.num_channel, 'num_baseline': self.num_baseline, 'baseline_chunk_size': self.baseline_chunk_size, 'num_trial_sample': self.num_trial_sample, 'offline_transform': self.offline_transform, 'online_transform': self.online_transform, 'label_transform': self.label_transform, 'num_worker': self.num_worker, 'verbose': self.verbose, 'io_size': self.io_size})

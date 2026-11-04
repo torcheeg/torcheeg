@@ -67,8 +67,8 @@ class TestDEAPData(unittest.TestCase):
         from torcheeg.io import MemoryEEGIO, MemoryInfoIO
         from torcheeg.runners import SequentialRunner
 
-        def increment(sample):
-            return {**sample, 'eeg': sample['eeg'] + 1, 'baseline': sample['baseline'] + 1}
+        def increment(eeg, baseline=None, **kwargs):
+            return {'eeg': eeg + 1, 'baseline': baseline + 1}
         with tempfile.TemporaryDirectory() as root:
             samples = np.arange(2 * 16).reshape(1, 2, 16).astype(np.float32)
             labels = np.array([[1, 2, 3, 4]])

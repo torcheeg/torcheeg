@@ -16,7 +16,7 @@ class CachedDataset(IODataset):
 
     def __init__(self, io_path=None, io_size=1048576, io_mode='lmdb',
                  num_worker=0, verbose=True, offline_transform=None,
-                 online_transform=None, **configuration):
+                 online_transform=None, label_transform=None, **configuration):
         if self.data_class is None:
             raise NotImplementedError(
                 'Attribute data_class is not implemented in class ' + self.__class__.__name__)
@@ -31,7 +31,8 @@ class CachedDataset(IODataset):
         self.num_worker = num_worker
         self.verbose = verbose
         for name, transform in (('offline_transform', offline_transform),
-                                ('online_transform', online_transform)):
+                                ('online_transform', online_transform),
+                                ('label_transform', label_transform)):
             if transform is not None and not callable(transform):
                 raise TypeError(name + ' must be callable.')
         if 'transform' in configuration:
@@ -61,4 +62,4 @@ class CachedDataset(IODataset):
                 num_worker=num_worker).iterate(self.data, records))
 
         ensure_cache(eeg, info, fingerprint, build)
-        super().__init__(eeg, info, transform=online_transform)
+        super().__init__(eeg, info, transform=online_transform, label_transform=label_transform)

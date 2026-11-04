@@ -258,30 +258,36 @@ e.g. ``./tmp_in/data_preprocessed_python``.
 
    from torcheeg.datasets.utils import get_locations
 
-   def preprocess_fn(sample: dict) -> dict:
+   def preprocess_fn(eeg, baseline=None, **kwargs) -> dict:
        eeg_transform = transforms.Compose([
            transforms.BandDifferentialEntropy(),
        ])
        return {
-           **sample,
-           'eeg': eeg_transform(sample['eeg']),
-           'baseline': eeg_transform(sample['baseline']),
+           'eeg': eeg_transform(eeg),
+           'baseline': eeg_transform(baseline) if baseline is not None else None,
        }
 
 
-   def transform_fn(sample: dict) -> dict:
+   def transform_fn(eeg, baseline=None, **kwargs) -> dict:
+       if baseline is not None:
+           eeg = transforms.BaselineRemoval(baseline=baseline)(eeg)
        eeg_transform = transforms.Compose([
-           transforms.BaselineRemoval(baseline=sample['baseline']),
            transforms.ToGrid(get_locations(DEAPDataset.channels, DEAPDataset.grid)),
            transforms.ToTensor(),
        ])
+       return {
+           'eeg': eeg_transform(eeg),
+           'baseline': eeg_transform(baseline) if baseline is not None else None,
+       }
+
+
+   def label_fn(info: dict, **kwargs) -> dict:
        label_transform = transforms.Compose([
            transforms.Select('valence'),
            transforms.Binary(5.0),
        ])
        return {
-           'eeg': eeg_transform(sample['eeg']),
-           'label': label_transform(sample['info']),
+           'label': label_transform(info),
        }
 
    dataset = DEAPDataset(
@@ -290,12 +296,14 @@ e.g. ``./tmp_in/data_preprocessed_python``.
        num_worker=4,
        offline_transform=preprocess_fn,
        online_transform=transform_fn,
+       label_transform=label_fn,
    )
 
-``offline_transform`` computes features when creating the cache.
-``online_transform`` prepares each sample when it is read, returning
-``eeg`` and ``label`` for training. Labels are constructed inside
-the online function. ``num_worker`` controls offline processing workers.
+``offline_transform`` computes EEG and baseline features before caching.
+``online_transform`` processes them on each read. ``label_transform``
+constructs labels from ``info``. The Dataset combines the results into a
+dictionary for DataLoader; fields whose value is None are omitted.
+``num_worker`` controls offline processing workers.
 
 Next, we need to divide the dataset into a training set and a test set.
 In the field of EEG analysis, commonly used data partitioning methods

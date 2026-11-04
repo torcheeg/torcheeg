@@ -123,28 +123,34 @@ class ArjunViT(nn.Module):
         from torch.utils.data import DataLoader
 
 
-        def preprocess_fn(sample: dict) -> dict:
+        def preprocess_fn(eeg, baseline=None, **kwargs) -> dict:
             eeg_transform = transforms.Compose([
                 transforms.MeanStdNormalize(),
                 transforms.To2d(),
             ])
             return {
-                **sample,
-                'eeg': eeg_transform(sample['eeg']),
+                'eeg': eeg_transform(eeg),
+                'baseline': eeg_transform(baseline) if baseline is not None else None,
             }
 
 
-        def transform_fn(sample: dict) -> dict:
+        def transform_fn(eeg, baseline=None, **kwargs) -> dict:
             eeg_transform = transforms.Compose([
                 transforms.ToTensor(),
             ])
+            return {
+                'eeg': eeg_transform(eeg),
+                'baseline': eeg_transform(baseline) if baseline is not None else None,
+            }
+
+
+        def label_fn(info: dict, **kwargs) -> dict:
             label_transform = transforms.Compose([
                 transforms.Select('valence'),
                 transforms.Binary(5.0),
             ])
             return {
-                'eeg': eeg_transform(sample['eeg']),
-                'label': label_transform(sample['info']),
+                'label': label_transform(info),
             }
 
 
@@ -152,6 +158,7 @@ class ArjunViT(nn.Module):
             root_path='./data_preprocessed_python',
             offline_transform=preprocess_fn,
             online_transform=transform_fn,
+            label_transform=label_fn,
         )
 
         model = ArjunViT(chunk_size=128,

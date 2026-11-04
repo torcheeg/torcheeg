@@ -12,23 +12,37 @@ from torcheeg.io import CSVInfoIO, MemoryEEGIO, MemoryInfoIO, NumpyEEGIO
 from torcheeg.transforms import Compose
 
 
-def add_one(sample):
-    sample['eeg'] += 1
-    return sample
+def add_one(eeg, baseline=None, **kwargs):
+    eeg += 1
+    return {'eeg': eeg}
 
 
-def double(sample):
-    return {**sample, 'eeg': sample['eeg'] * 2}
+def increment_array(eeg):
+    return eeg + 1
 
 
-def prepare_training(sample):
-    return {'eeg': sample['eeg'], 'label': sample['info']['label']}
+def double_array(eeg):
+    return eeg * 2
+
+
+def compose_signals(eeg, baseline=None, **kwargs):
+    transform = Compose([increment_array, Compose([double_array])])
+    return {'eeg': transform(eeg), 'baseline': None}
+
+
+def prepare_label(info, **kwargs):
+    return {'label': info['label']}
+
+
+def drop_baseline(eeg, baseline=None, **kwargs):
+    return {'eeg': eeg, 'baseline': None}
 
 
 class TestIODataset(unittest.TestCase):
 
-    def make_dataset(self, transform=None):
-        dataset = IODataset(MemoryEEGIO(), MemoryInfoIO(), transform=transform)
+    def make_dataset(self, transform=None, label_transform=None):
+        dataset = IODataset(MemoryEEGIO(), MemoryInfoIO(
+        ), transform=transform, label_transform=label_transform)
         for index in range(3):
             sample = {'eeg': np.full((2, 4), index, dtype=np.float32), 'info': {
                 'subject_id': f'{index:03}', 'label': index}}
@@ -81,17 +95,15 @@ class TestIODataset(unittest.TestCase):
     def test_transform_composition_selection_and_serialization(self):
         dataset = self.make_dataset()
         chain = IODataset(dataset.eeg_io, dataset.info_io,
-                          transform=Compose([add_one, double]))
+                          transform=compose_signals)
         composed = IODataset(dataset.eeg_io, dataset.info_io,
-                             transform=Compose([add_one, Compose([double])]))
+                             transform=compose_signals)
         for index in range(3):
             np.testing.assert_array_equal(
                 chain[index]['eeg'], composed[index]['eeg'])
             np.testing.assert_array_equal(
                 chain[index]['eeg'], np.full((2, 4), 2 * (index + 1)))
         np.testing.assert_array_equal(dataset[0]['eeg'], np.zeros((2, 4)))
-        self.assertEqual(len(chain.transform.transforms), 2)
-        self.assertEqual(len(composed.transform.transforms), 2)
         np.testing.assert_array_equal(chain[[2, 0]][0]['eeg'], chain[2]['eeg'])
         restored = pickle.loads(pickle.dumps(chain))
         np.testing.assert_array_equal(restored[0]['eeg'], chain[0]['eeg'])
@@ -148,7 +160,8 @@ class TestIODataset(unittest.TestCase):
             reopened.close()
 
     def test_training_batch_is_dictionary(self):
-        dataset = self.make_dataset(transform=prepare_training)
+        dataset = self.make_dataset(
+            transform=drop_baseline, label_transform=prepare_label)
         batch = next(iter(DataLoader(dataset, batch_size=2, num_workers=0)))
         self.assertEqual(set(batch), {'eeg', 'label'})
         self.assertEqual(tuple(batch['eeg'].shape), (2, 2, 4))
@@ -156,7 +169,8 @@ class TestIODataset(unittest.TestCase):
 
     def test_spawned_loader_and_cpu_training(self):
         import torch
-        dataset = self.make_dataset(transform=prepare_training)
+        dataset = self.make_dataset(
+            transform=drop_baseline, label_transform=prepare_label)
         loader = DataLoader(dataset, batch_size=2,
                             num_workers=1, multiprocessing_context='spawn')
         batches = list(loader)
@@ -178,4 +192,63 @@ class TestIODataset(unittest.TestCase):
             IODataset(dataset.eeg_io, dataset.info_io, transform=1)
         with self.assertRaises(TypeError):
             IODataset(dataset.eeg_io, dataset.info_io,
-                      transform=lambda sample: sample['eeg'])[0]
+                      transform=lambda eeg, **kwargs: eeg)[0]
+
+    def test_none_baseline_is_not_stored_and_collates_without_custom_loader(self):
+        calls = []
+
+        def signal(eeg, baseline=None, **kwargs):
+            calls.append(baseline)
+            return {'eeg': eeg + 1, 'baseline': None, 'unused': None}
+
+        dataset = IODataset(MemoryEEGIO(), MemoryInfoIO(),
+                            transform=signal, label_transform=prepare_label)
+        dataset.extend({'eeg': np.zeros((2, 4)), 'baseline': None,
+                        'info': {'label': i}} for i in range(2))
+        self.assertEqual(len(dataset.eeg_io), 2)
+        self.assertNotIn('baseline_id', dataset.info)
+        batch = next(iter(DataLoader(dataset, batch_size=2)))
+        self.assertEqual(set(batch), {'eeg', 'label'})
+        self.assertEqual(calls, [None, None])
+        np.testing.assert_array_equal(batch['eeg'].numpy(), np.ones((2, 2, 4)))
+
+    def test_baseline_roundtrip_removal_and_extra_batch_fields(self):
+        from torcheeg.transforms import BaselineRemoval, ToTensor
+
+        def signal(eeg, baseline=None, **kwargs):
+            eeg = BaselineRemoval(baseline)(eeg)
+            return {'eeg': ToTensor()(eeg), 'baseline': ToTensor()(baseline),
+                    'quality': 0.5}
+
+        def label(info, **kwargs):
+            return {'label': info['label'], 'weight': 1.0}
+
+        dataset = IODataset(MemoryEEGIO(), MemoryInfoIO(),
+                            transform=signal, label_transform=label)
+        dataset.extend({'eeg': np.full((2, 4), 3), 'baseline': np.ones((2, 4)),
+                        'info': {'label': i}} for i in range(2))
+        batch = next(iter(DataLoader(dataset, batch_size=2)))
+        self.assertEqual(
+            set(batch), {'eeg', 'baseline', 'label', 'quality', 'weight'})
+        np.testing.assert_array_equal(
+            batch['eeg'].numpy(), np.full((2, 2, 4), 2))
+        np.testing.assert_array_equal(
+            batch['baseline'].numpy(), np.ones((2, 2, 4)))
+        self.assertEqual(batch['label'].tolist(), [0, 1])
+        raw = IODataset(dataset.eeg_io, dataset.info_io)
+        np.testing.assert_array_equal(raw[0]['eeg'], np.full((2, 4), 3))
+        np.testing.assert_array_equal(raw[0]['baseline'], np.ones((2, 4)))
+        dropped = IODataset(dataset.eeg_io, dataset.info_io,
+                            transform=drop_baseline, label_transform=label)
+        self.assertNotIn('baseline', next(
+            iter(DataLoader(dropped, batch_size=2))))
+
+    def test_transform_results_require_their_named_field(self):
+        raw = self.make_dataset()
+        for name, key in (('transform', 'eeg'), ('label_transform', 'label')):
+            for result, error in (([], TypeError), ({}, ValueError), ({key: None}, ValueError)):
+                with self.subTest(name=name, result=result), self.assertRaises(error):
+                    IODataset(raw.eeg_io, raw.info_io,
+                              **{name: lambda value, **kwargs: result})[0]
+            with self.assertRaises(TypeError):
+                IODataset(raw.eeg_io, raw.info_io, **{name: 1})

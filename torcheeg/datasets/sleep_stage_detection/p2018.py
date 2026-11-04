@@ -189,27 +189,34 @@ class P2018Dataset(CachedDataset):
 
     .. code-block:: python
 
-        def preprocess_fn(sample: dict) -> dict:
+        def preprocess_fn(eeg, baseline=None, **kwargs) -> dict:
             eeg_transform = transforms.Compose([
                 transforms.MeanStdNormalize(),
             ])
             return {
-                **sample,
-                'eeg': eeg_transform(sample['eeg']),
+                'eeg': eeg_transform(eeg),
+                'baseline': eeg_transform(baseline) if baseline is not None else None,
             }
 
 
-        def transform_fn(sample: dict) -> dict:
+        def transform_fn(eeg, baseline=None, **kwargs) -> dict:
             eeg_transform = transforms.Compose([
                 transforms.ToTensor(),
             ])
+            return {
+                'eeg': eeg_transform(eeg),
+                'baseline': eeg_transform(baseline) if baseline is not None else None,
+            }
+
+
+        def label_fn(info: dict, **kwargs) -> dict:
             label_transform = transforms.Compose([
                 transforms.Select('label'),
-                transforms.Mapping({'Sleep stage W': 0, 'Sleep stage N1': 1, 'Sleep stage N2': 2, 'Sleep stage N3': 3, 'Sleep stage R': 4, 'Lights off@@EEG F4-A1': 0}),
+                transforms.Mapping({'Sleep stage W': 0, 'Sleep stage N1': 1, 'Sleep stage N2': 2,
+                                   'Sleep stage N3': 3, 'Sleep stage R': 4, 'Lights off@@EEG F4-A1': 0}),
             ])
             return {
-                'eeg': eeg_transform(sample['eeg']),
-                'label': label_transform(sample['info']),
+                'label': label_transform(info),
             }
 
 
@@ -219,6 +226,7 @@ class P2018Dataset(CachedDataset):
             channels=['F3-M2', 'F4-M1', 'C3-M2', 'C4-M1', 'O1-M2', 'O2-M1'],
             offline_transform=preprocess_fn,
             online_transform=transform_fn,
+            label_transform=label_fn,
         )
         print(dataset[0])
 
@@ -231,8 +239,9 @@ class P2018Dataset(CachedDataset):
 
 
 
-        offline_transform (Callable, optional): Sample dictionary transform applied before storage. (default: :obj:`None`)
-        online_transform (Callable, optional): Sample transform applied on each read. (default: :obj:`None`)
+        offline_transform (Callable, optional): EEG transform applied before storage; returns a dictionary containing eeg. (default: :obj:`None`)
+        online_transform (Callable, optional): EEG transform applied on each read. (default: :obj:`None`)
+        label_transform (Callable, optional): Transform info into a dictionary containing label on each read. (default: :obj:`None`)
         io_path (str, optional): The path to generated unified data IO, cached as an intermediate result. If set to None, a random path will be generated. (default: :obj:`None`)
         io_size (int): Maximum size database may grow to; used to size the memory mapping. If database grows larger than ``map_size``, an exception will be raised and the user must close and reopen. (default: :obj:`1048576`)
         io_mode (str): Storage mode of EEG signal. When io_mode is set to :obj:`lmdb`, TorchEEG provides an efficient database (LMDB) for storing EEG signals. When io_mode is set to :obj:`pickle`, pickle-based persistence files are used. When io_mode is set to :obj:`memory`, memory are used. (default: :obj:`lmdb`)
@@ -246,15 +255,15 @@ class P2018Dataset(CachedDataset):
 
     grid = P2018Data.grid
 
-    def __init__(self, root_path: str = './P2018/training/', channels: List = ['F3-M2', 'F4-M1', 'C3-M2', 'C4-M1', 'O1-M2', 'O2-M1'], l_freq: float = 0.5, h_freq: float = 30, sfreq: int = 100, offline_transform: Union[None, Callable] = None, online_transform: Union[None, Callable] = None, io_path: Union[None, str] = None, io_size: int = 1048576, io_mode: str = 'lmdb', num_worker: int = 0, verbose: bool = True, **kwargs):
+    def __init__(self, root_path: str = './P2018/training/', channels: List = ['F3-M2', 'F4-M1', 'C3-M2', 'C4-M1', 'O1-M2', 'O2-M1'], l_freq: float = 0.5, h_freq: float = 30, sfreq: int = 100, offline_transform: Union[None, Callable] = None, online_transform: Union[None, Callable] = None, label_transform: Union[None, Callable] = None, io_path: Union[None, str] = None, io_size: int = 1048576, io_mode: str = 'lmdb', num_worker: int = 0, verbose: bool = True, **kwargs):
         if io_path is None:
             io_path = get_random_dir_path(dir_prefix='datasets')
         params = {'root_path': root_path, 'channels': channels, 'l_freq': l_freq, 'h_freq': h_freq, 'sfreq': sfreq,
-                  'offline_transform': offline_transform, 'online_transform': online_transform, 'io_path': io_path, 'io_size': io_size, 'io_mode': io_mode, 'num_worker': num_worker, 'verbose': verbose}
+                  'offline_transform': offline_transform, 'online_transform': online_transform, 'label_transform': label_transform, 'io_path': io_path, 'io_size': io_size, 'io_mode': io_mode, 'num_worker': num_worker, 'verbose': verbose}
         params.update(kwargs)
         super().__init__(**params)
         self.__dict__.update(params)
 
     @property
     def repr_body(self) -> Dict:
-        return dict(super().repr_body, **{'offline_transform': self.offline_transform, 'online_transform': self.online_transform, 'num_worker': self.num_worker, 'verbose': self.verbose, 'io_size': self.io_size})
+        return dict(super().repr_body, **{'offline_transform': self.offline_transform, 'online_transform': self.online_transform, 'label_transform': self.label_transform, 'num_worker': self.num_worker, 'verbose': self.verbose, 'io_size': self.io_size})

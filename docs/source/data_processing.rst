@@ -60,8 +60,9 @@ Offline and online transforms
 -----------------------------
 
 Transforms are callables with one typed input and one typed output. Constructor
-arguments supply configuration or auxiliary data, such as a baseline. Sample
-functions choose which fields to transform.
+arguments supply configuration or auxiliary data, such as a baseline. EEG callbacks receive ``eeg, baseline=None, **kwargs`` and return a dictionary
+containing ``eeg``. Label callbacks receive ``info, **kwargs`` and return a
+dictionary containing ``label``.
 
 .. code-block:: python
 
@@ -69,30 +70,35 @@ functions choose which fields to transform.
     from torcheeg.datasets import DEAPDataset
     from torcheeg.datasets.utils import get_locations
 
-    def preprocess_fn(sample: dict) -> dict:
+    def preprocess_fn(eeg, baseline=None, **kwargs) -> dict:
         eeg_transform = transforms.Compose([
             transforms.BandDifferentialEntropy(),
-            transforms.ToGrid(
-                get_locations(DEAPDataset.channels, DEAPDataset.grid)),
+            transforms.ToGrid(get_locations(DEAPDataset.channels, DEAPDataset.grid)),
         ])
         return {
-            **sample,
-            "eeg": eeg_transform(sample["eeg"]),
-            "baseline": eeg_transform(sample["baseline"]),
+            'eeg': eeg_transform(eeg),
+            'baseline': eeg_transform(baseline) if baseline is not None else None,
         }
 
-    def transform_fn(sample: dict) -> dict:
+    def transform_fn(eeg, baseline=None, **kwargs) -> dict:
+        if baseline is not None:
+            eeg = transforms.BaselineRemoval(baseline=baseline)(eeg)
         eeg_transform = transforms.Compose([
-            transforms.BaselineRemoval(baseline=sample["baseline"]),
             transforms.ToTensor(),
         ])
+        return {
+            'eeg': eeg_transform(eeg),
+            'baseline': eeg_transform(baseline) if baseline is not None else None,
+        }
+
+
+    def label_fn(info: dict, **kwargs) -> dict:
         label_transform = transforms.Compose([
-            transforms.Select("valence"),
+            transforms.Select('valence'),
             transforms.Binary(5.0),
         ])
         return {
-            "eeg": eeg_transform(sample["eeg"]),
-            "label": label_transform(sample["info"]),
+            'label': label_transform(info),
         }
 
 Data's ``transform`` runs on each generated sample before storage.
@@ -109,6 +115,7 @@ IODataset's ``transform`` runs on each sample read from storage.
             eeg_io=LMDBEEGIO('./cache/deap/eeg'),
             info_io=CSVInfoIO('./cache/deap/info.csv'),
             transform=transform_fn,
+            label_transform=label_fn,
         )
         dataset.extend(MultiprocessRunner(num_worker=4)(data))
         return dataset
@@ -119,11 +126,20 @@ IODataset's ``transform`` runs on each sample read from storage.
 The runner processes and stores samples incrementally. Data construction does
 not start preprocessing; the runner consumes it. ``append`` and ``extend`` write
 samples without applying the Dataset's online transform. Stored samples contain
-``eeg``, ``info`` and optionally ``baseline``. The online function returns the
-training fields; DataLoader preserves their names in batches.
+``eeg``, ``info`` and optionally ``baseline``. The Dataset combines online EEG and label results for DataLoader. Without a
+label callback, samples retain ``info``; with one, its returned fields replace
+``info`` in the sample. Metadata remains accessible through ``dataset.info``.
 
-To combine sample functions, pass ``transforms.Compose([f, g])`` as the transform.
-The output of ``f`` becomes the input of ``g``. Selections preserve the transform.
+Use ``transforms.Compose`` inside callbacks to combine array or label operations.
+Selections preserve the configured callbacks.
+
+Both EEG callbacks are called once, with ``baseline=None`` when no baseline is
+available. They return field updates: omitted fields retain their values, while
+an explicit ``None`` removes a field. Baselines set to None are not stored; reads
+pass None to the online callback. Final samples omit None-valued fields so the
+default DataLoader can batch them. Signal callbacks must return a nonmissing
+``eeg``; label callbacks must return a nonmissing ``label``. Extra output fields
+are preserved online; standard trainers consume only ``eeg`` and ``label``.
 
 Dataset shortcuts
 -----------------
@@ -137,13 +153,13 @@ Dataset-specific constructors compose their Data class, runner and cache:
         io_path='./cache/deap',
         offline_transform=preprocess_fn,
         online_transform=transform_fn,
+        label_transform=label_fn,
         num_worker=4,
     )
 
 ``offline_transform`` runs before storage when creating the cache.
-``online_transform`` runs on every read. Both parameters accept a callable or
-a ``Compose`` pipeline. Label processing stays inside the user's function.
-Changing the online function reuses the same cache. Changing the offline
+``online_transform`` and ``label_transform`` run on every read.
+Changing either online callback reuses the same cache. Changing the offline
 function requires a new cache path. ``num_worker`` controls preprocessing;
 PyTorch DataLoader's ``num_workers`` controls parallel training reads.
 

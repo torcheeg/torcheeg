@@ -104,27 +104,34 @@ class DGCNN(nn.Module):
         from torcheeg import transforms
 
 
-        def preprocess_fn(sample: dict) -> dict:
+        def preprocess_fn(eeg, baseline=None, **kwargs) -> dict:
             eeg_transform = transforms.Compose([
-                transforms.BandDifferentialEntropy(band_dict={'delta': [1, 4], 'theta': [4, 8], 'alpha': [8, 14], 'beta': [14, 31], 'gamma': [31, 49]}),
+                transforms.BandDifferentialEntropy(band_dict={'delta': [1, 4], 'theta': [
+                                                   4, 8], 'alpha': [8, 14], 'beta': [14, 31], 'gamma': [31, 49]}),
             ])
             return {
-                **sample,
-                'eeg': eeg_transform(sample['eeg']),
+                'eeg': eeg_transform(eeg),
+                'baseline': eeg_transform(baseline) if baseline is not None else None,
             }
 
 
-        def transform_fn(sample: dict) -> dict:
+        def transform_fn(eeg, baseline=None, **kwargs) -> dict:
             eeg_transform = transforms.Compose([
                 transforms.ToTensor(),
             ])
+            return {
+                'eeg': eeg_transform(eeg),
+                'baseline': eeg_transform(baseline) if baseline is not None else None,
+            }
+
+
+        def label_fn(info: dict, **kwargs) -> dict:
             label_transform = transforms.Compose([
                 transforms.Select('emotion'),
                 transforms.Lambda(lambda x: x + 1),
             ])
             return {
-                'eeg': eeg_transform(sample['eeg']),
-                'label': label_transform(sample['info']),
+                'label': label_transform(info),
             }
 
 
@@ -132,6 +139,7 @@ class DGCNN(nn.Module):
             root_path='./Preprocessed_EEG',
             offline_transform=preprocess_fn,
             online_transform=transform_fn,
+            label_transform=label_fn,
         )
 
         model = DGCNN(in_channels=5, num_electrodes=62,

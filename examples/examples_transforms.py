@@ -23,36 +23,45 @@ print(features.shape)
 baseline = np.zeros_like(eeg)
 corrected = transforms.BaselineRemoval(baseline=baseline)(eeg)
 
-# Prepare a complete training sample in one function.
+# Define separate signal and label callbacks.
 
 
-def preprocess_fn(sample: dict) -> dict:
+def preprocess_fn(eeg, baseline=None, **kwargs) -> dict:
     eeg_transform = transforms.Compose([
         transforms.BandDifferentialEntropy(),
     ])
     return {
-        **sample,
-        'eeg': eeg_transform(sample['eeg']),
-        'baseline': eeg_transform(sample['baseline']),
+        'eeg': eeg_transform(eeg),
+        'baseline': eeg_transform(baseline) if baseline is not None else None,
     }
 
 
-def transform_fn(sample: dict) -> dict:
+def transform_fn(eeg, baseline=None, **kwargs) -> dict:
+    if baseline is not None:
+        eeg = transforms.BaselineRemoval(baseline=baseline)(eeg)
     eeg_transform = transforms.Compose([
-        transforms.BaselineRemoval(baseline=sample['baseline']),
         transforms.ToTensor(),
     ])
+    return {
+        'eeg': eeg_transform(eeg),
+        'baseline': eeg_transform(baseline) if baseline is not None else None,
+    }
+
+
+def label_fn(info: dict, **kwargs) -> dict:
     label_transform = transforms.Compose([
         transforms.Select('label'),
     ])
     return {
-        'eeg': eeg_transform(sample['eeg']),
-        'label': label_transform(sample['info']),
+        'label': label_transform(info),
     }
 
 
-dataset = MemoryDataset(transform=transform_fn)
-dataset.append(preprocess_fn(
-    {'eeg': eeg, 'baseline': eeg * 0.5, 'info': {'label': 1}}))
+dataset = MemoryDataset(
+    transform=transform_fn,
+    label_transform=label_fn,
+)
+dataset.append({**preprocess_fn(eeg, baseline=eeg * 0.5),
+                'info': {'label': 1}})
 print(dataset[0]['eeg'].shape)
 print(dataset[0]['label'])

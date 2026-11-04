@@ -21,23 +21,30 @@ class LSTM(nn.Module):
         from torch.utils.data import DataLoader
 
 
-        def transform_fn(sample: dict) -> dict:
+        def transform_fn(eeg, baseline=None, **kwargs) -> dict:
             eeg_transform = transforms.Compose([
                 transforms.ToTensor(),
             ])
+            return {
+                'eeg': eeg_transform(eeg),
+                'baseline': eeg_transform(baseline) if baseline is not None else None,
+            }
+
+
+        def label_fn(info: dict, **kwargs) -> dict:
             label_transform = transforms.Compose([
                 transforms.Select('valence'),
                 transforms.Binary(5.0),
             ])
             return {
-                'eeg': eeg_transform(sample['eeg']),
-                'label': label_transform(sample['info']),
+                'label': label_transform(info),
             }
 
 
         dataset = DEAPDataset(
             root_path='./data_preprocessed_python',
             online_transform=transform_fn,
+            label_transform=label_fn,
         )
 
         model = LSTM(num_electrodes=32, hid_channels=64, num_classes=2)

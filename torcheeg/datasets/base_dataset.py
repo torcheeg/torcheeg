@@ -27,7 +27,7 @@ class BaseDataset(Dataset):
     adjacency = _RequiredMetadata()
     _STORAGE_COLUMNS = frozenset(('_record_id', 'clip_id', 'baseline_id'))
 
-    def __init__(self, eeg_io, info_io, transform=None):
+    def __init__(self, eeg_io, info_io, transform=None, label_transform=None):
         if not isinstance(eeg_io, BaseEEGIO):
             raise TypeError('eeg_io must be a BaseEEGIO.')
         if not isinstance(info_io, BaseInfoIO):
@@ -38,6 +38,9 @@ class BaseDataset(Dataset):
         if transform is not None and not callable(transform):
             raise TypeError('transform must be callable.')
         self.transform = transform
+        if label_transform is not None and not callable(label_transform):
+            raise TypeError('label_transform must be callable.')
+        self.label_transform = label_transform
         self._is_view = False
 
     @property
@@ -65,21 +68,23 @@ class BaseDataset(Dataset):
             raise TypeError('sample must be a dictionary.')
         if not {'eeg', 'info'} <= sample.keys():
             raise ValueError('sample must contain eeg and info.')
+        if sample['eeg'] is None:
+            raise ValueError('Stored EEG must not be None.')
+        sample = {key: value for key,
+                  value in sample.items() if value is not None}
         if set(sample) - {'eeg', 'baseline', 'info'}:
             raise ValueError(
                 'Stored samples support eeg, info and optional baseline.')
-        if not isinstance(sample['info'], dict):
+        if not isinstance(sample.get('info'), dict):
             raise TypeError('sample info must be a dictionary.')
         if self._STORAGE_COLUMNS.intersection(sample['info']):
             raise ValueError(
                 'Sample metadata must not contain storage identifiers.')
-        if sample['eeg'] is None or ('baseline' in sample and sample['baseline'] is None):
-            raise ValueError('Stored signals must not be None.')
         info = deepcopy(sample['info'])
         record = uuid4().hex
         self.eeg_io.write_eeg(deepcopy(sample['eeg']), 'eeg', record=record)
         info.update(_record_id=record, clip_id='eeg')
-        if 'baseline' in sample:
+        if sample.get('baseline') is not None:
             self.eeg_io.write_eeg(
                 deepcopy(sample['baseline']), 'baseline', record=record)
             info['baseline_id'] = 'baseline'
@@ -103,11 +108,27 @@ class BaseDataset(Dataset):
         if isinstance(index, numbers.Integral):
             sample = self._read_sample(int(index))
             if self.transform is not None:
-                sample = self.transform(sample)
-                if not isinstance(sample, dict):
+                inputs = dict(sample)
+                eeg = inputs.pop('eeg')
+                inputs.setdefault('baseline', None)
+                result = self.transform(eeg, **inputs)
+                if not isinstance(result, dict):
+                    raise TypeError('transform must return a dictionary.')
+                if 'eeg' not in result or result['eeg'] is None:
+                    raise ValueError(
+                        'transform must return a nonmissing eeg field.')
+                sample.update(result)
+            if self.label_transform is not None:
+                info = sample.pop('info')
+                result = self.label_transform(info, **sample)
+                if not isinstance(result, dict):
                     raise TypeError(
-                        'A sample transform must return a dictionary.')
-            return sample
+                        'label_transform must return a dictionary.')
+                if 'label' not in result or result['label'] is None:
+                    raise ValueError(
+                        'label_transform must return a nonmissing label field.')
+                sample.update(result)
+            return {key: value for key, value in sample.items() if value is not None}
         if isinstance(index, slice):
             rows = self.info.iloc[index]
         else:

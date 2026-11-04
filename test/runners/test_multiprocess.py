@@ -22,8 +22,8 @@ class _LargeRecordData(_WindowData):
         raise ValueError('failure after first sample')
 
 
-def _increment_sample(sample):
-    return {**sample, 'eeg': sample['eeg'] + 1}
+def _increment_sample(eeg, **kwargs):
+    return {'eeg': eeg + 1}
 
 
 class TestMultiprocessRunner(unittest.TestCase):

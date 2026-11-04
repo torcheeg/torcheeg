@@ -20,28 +20,35 @@ class TSCeption(nn.Module):
         from torch.utils.data import DataLoader
 
 
-        def preprocess_fn(sample: dict) -> dict:
+        def preprocess_fn(eeg, baseline=None, **kwargs) -> dict:
             eeg_transform = transforms.Compose([
-                transforms.PickElectrode(PickElectrode.to_index_list(['FP1', 'AF3', 'F3', 'F7', 'FC5', 'FC1', 'C3', 'T7', 'CP5', 'CP1', 'P3', 'P7', 'PO3', 'O1', 'FP2', 'AF4', 'F4', 'F8', 'FC6', 'FC2', 'C4', 'T8', 'CP6', 'CP2', 'P4', 'P8', 'PO4', 'O2'], DEAPDataset.channels)),
+                transforms.PickElectrode(PickElectrode.to_index_list(['FP1', 'AF3', 'F3', 'F7', 'FC5', 'FC1', 'C3', 'T7', 'CP5', 'CP1', 'P3', 'P7',
+                                         'PO3', 'O1', 'FP2', 'AF4', 'F4', 'F8', 'FC6', 'FC2', 'C4', 'T8', 'CP6', 'CP2', 'P4', 'P8', 'PO4', 'O2'], DEAPDataset.channels)),
                 transforms.To2d(),
             ])
             return {
-                **sample,
-                'eeg': eeg_transform(sample['eeg']),
+                'eeg': eeg_transform(eeg),
+                'baseline': eeg_transform(baseline) if baseline is not None else None,
             }
 
 
-        def transform_fn(sample: dict) -> dict:
+        def transform_fn(eeg, baseline=None, **kwargs) -> dict:
             eeg_transform = transforms.Compose([
                 transforms.ToTensor(),
             ])
+            return {
+                'eeg': eeg_transform(eeg),
+                'baseline': eeg_transform(baseline) if baseline is not None else None,
+            }
+
+
+        def label_fn(info: dict, **kwargs) -> dict:
             label_transform = transforms.Compose([
                 transforms.Select('valence'),
                 transforms.Binary(5.0),
             ])
             return {
-                'eeg': eeg_transform(sample['eeg']),
-                'label': label_transform(sample['info']),
+                'label': label_transform(info),
             }
 
 
@@ -52,6 +59,7 @@ class TSCeption(nn.Module):
             baseline_chunk_size=512,
             offline_transform=preprocess_fn,
             online_transform=transform_fn,
+            label_transform=label_fn,
         )
 
         model = TSCeption(num_classes=2,

@@ -68,23 +68,30 @@ for i, (train_dataset, val_dataset) in enumerate(k_fold.split(dataset)):
         y.append(sample['info']['attended_speaker'] - 1)
     csp.fit(X, y)
 
-    def transform_fn(sample: dict) -> dict:
+    def transform_fn(eeg, baseline=None, **kwargs) -> dict:
         eeg_transform = transforms.Compose([
             transforms.Lambda(lambda eeg: csp.transform(
                 eeg[None])[0].astype(np.float32)),
             transforms.ToTensor(),
         ])
+        return {
+            'eeg': eeg_transform(eeg),
+            'baseline': eeg_transform(baseline) if baseline is not None else None,
+        }
+
+    def label_fn(info: dict, **kwargs) -> dict:
         label_transform = transforms.Compose([
             transforms.Select('attended_speaker'),
             transforms.Lambda(lambda label: label - 1),
         ])
         return {
-            'eeg': eeg_transform(sample['eeg']),
-            'label': label_transform(sample['info']),
+            'label': label_transform(info),
         }
 
     train_dataset.transform = transform_fn
     val_dataset.transform = transform_fn
+    train_dataset.label_transform = label_fn
+    val_dataset.label_transform = label_fn
     train_loader = DataLoader(train_dataset,
                               batch_size=64, shuffle=True)
     val_loader = DataLoader(val_dataset,

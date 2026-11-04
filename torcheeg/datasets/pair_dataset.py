@@ -47,10 +47,13 @@ class PairDataset(BaseDataset):
                  join_key: str = 'subject_id',
                  join_type: str = 'inner',
                  pair_info_fn: Optional[Callable] = None,
-                 distinct_key: Optional[str] = None, transform=None):
+                 distinct_key: Optional[str] = None, transform=None, label_transform=None):
         if transform is not None and not callable(transform):
             raise TypeError('transform must be callable.')
         self.transform = transform
+        if label_transform is not None and not callable(label_transform):
+            raise TypeError('label_transform must be callable.')
+        self.label_transform = label_transform
         self.datasets = datasets
 
         if pair_info_fn is None:

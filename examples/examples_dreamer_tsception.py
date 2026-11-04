@@ -23,20 +23,27 @@ from torcheeg import transforms
 from torcheeg.datasets import DREAMERDataset
 
 
-def transform_fn(sample: dict) -> dict:
+def transform_fn(eeg, baseline=None, **kwargs) -> dict:
+    if baseline is not None:
+        eeg = transforms.BaselineRemoval(baseline=baseline)(eeg)
     eeg_transform = transforms.Compose([
-        transforms.BaselineRemoval(baseline=sample['baseline']),
         transforms.MeanStdNormalize(),
         transforms.To2d(),
         transforms.ToTensor(),
     ])
+    return {
+        'eeg': eeg_transform(eeg),
+        'baseline': eeg_transform(baseline) if baseline is not None else None,
+    }
+
+
+def label_fn(info: dict, **kwargs) -> dict:
     label_transform = transforms.Compose([
         transforms.Select('valence'),
         transforms.Binary(3.0),
     ])
     return {
-        'eeg': eeg_transform(sample['eeg']),
-        'label': label_transform(sample['info']),
+        'label': label_transform(info),
     }
 
 
@@ -48,6 +55,7 @@ dataset = DREAMERDataset(
     num_baseline=61,
     num_worker=4,
     online_transform=transform_fn,
+    label_transform=label_fn,
 )
 
 ######################################################################

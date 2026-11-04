@@ -32,25 +32,32 @@ class LeaveOneSubjectOut(BaseModelSelection):
         cv = LeaveOneSubjectOut()
 
 
-        def transform_fn(sample: dict) -> dict:
+        def transform_fn(eeg, baseline=None, **kwargs) -> dict:
             eeg_transform = transforms.Compose([
                 transforms.ToTensor(),
                 transforms.To2d(),
             ])
+            return {
+                'eeg': eeg_transform(eeg),
+                'baseline': eeg_transform(baseline) if baseline is not None else None,
+            }
+
+
+        def label_fn(info: dict, **kwargs) -> dict:
             label_transform = transforms.Compose([
                 transforms.Select(['valence', 'arousal']),
                 transforms.Binary(5.0),
                 transforms.BinariesToCategory(),
             ])
             return {
-                'eeg': eeg_transform(sample['eeg']),
-                'label': label_transform(sample['info']),
+                'label': label_transform(info),
             }
 
 
         dataset = DEAPDataset(
             root_path='./data_preprocessed_python',
             online_transform=transform_fn,
+            label_transform=label_fn,
         )
 
         for train_dataset, test_dataset in cv.split(dataset):

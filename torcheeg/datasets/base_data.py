@@ -2,7 +2,7 @@ class BaseData:
     """Define record discovery, reading and sample preprocessing.
 
     Args:
-        transform (Callable, optional): Transform each generated sample before storage.
+        transform (Callable, optional): Transform eeg and optional baseline before storage; return a dictionary containing eeg.
         **configuration: Arguments passed to record discovery and processing.
     """
 
@@ -30,7 +30,16 @@ class BaseData:
             if sample is None:
                 continue
             if self.transform is not None:
-                sample = self.transform(sample)
+                inputs = dict(sample)
+                eeg = inputs.pop('eeg')
+                inputs.setdefault('baseline', None)
+                result = self.transform(eeg, **inputs)
+                if not isinstance(result, dict):
+                    raise TypeError('transform must return a dictionary.')
+                if 'eeg' not in result or result['eeg'] is None:
+                    raise ValueError(
+                        'transform must return a nonmissing eeg field.')
+                sample = {**sample, **result}
             yield sample
 
     def set_records(self, **kwargs):

@@ -18,7 +18,8 @@ class _DummyClassificationDataset(Dataset):
         return self.length
 
     def __getitem__(self, i) -> int:
-        return {'eeg': torch.randn(120), 'label': random.choice([0, 1])}
+        return {'eeg': torch.randn(120), 'label': random.choice([0, 1]),
+                'baseline': torch.zeros(120), 'quality': 1.0}
 
 
 class _DummyModel(nn.Module):

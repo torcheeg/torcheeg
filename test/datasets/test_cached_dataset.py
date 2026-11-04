@@ -35,16 +35,16 @@ def _assert_memory_dataset(test_case, dataset_class, **configuration):
     def one_sample(self, **kwargs):
         yield expected
 
-    def increment(sample):
-        return {**sample, 'eeg': sample['eeg'] + 1}
+    def increment(eeg, baseline=None, **kwargs):
+        return {'eeg': eeg + 1}
     with patch.object(data_class, 'set_records', return_value=[record]), patch.object(data_class, 'read_record', return_value=payload), patch.object(data_class, 'process_record', one_sample):
         dataset = dataset_class(
             io_mode='memory', verbose=False, offline_transform=increment,
-            online_transform=lambda sample: {**sample, 'eeg': sample['eeg'] * 2}, **configuration)
+            online_transform=lambda eeg, **kwargs: {'eeg': eeg * 2}, **configuration)
     test_case.assertEqual(len(dataset), 1)
     np.testing.assert_array_equal(dataset[0]['eeg'], (expected['eeg'] + 1) * 2)
     changed = copy(dataset)
-    changed.transform = lambda sample: {**sample, 'eeg': sample['eeg'] + 3}
+    changed.transform = lambda eeg, **kwargs: {'eeg': eeg + 3}
     np.testing.assert_array_equal(
         changed[0]['eeg'], expected['eeg'] + 1 + 3)
     test_case.assertNotIn('clip_id', dataset[0]['info'])
@@ -81,7 +81,7 @@ class TestCachedDataset(unittest.TestCase):
             config = self.make_source(directory)
             path = os.path.join(directory, 'cache')
 
-            def fail(sample):
+            def fail(eeg, **kwargs):
                 raise RuntimeError('deliberate failure')
             with self.assertRaisesRegex(RuntimeError, 'deliberate failure'):
                 DEAPDataset(**config, io_path=path, offline_transform=fail)
@@ -92,21 +92,24 @@ class TestCachedDataset(unittest.TestCase):
             dataset.close()
 
     def test_online_transform_runs_on_each_read_and_reuses_offline_cache(self):
-        def offline(sample):
-            return {**sample, 'eeg': sample['eeg'] + 10}
+        def offline(eeg, **kwargs):
+            return {'eeg': eeg + 10}
 
         calls = []
 
-        def online(sample):
-            calls.append(sample['info']['valence'])
-            sample['eeg'] *= 2
-            return {'eeg': sample['eeg'], 'label': sample['info']['valence']}
+        def online(eeg, baseline=None, **kwargs):
+            calls.append(1)
+            eeg *= 2
+            return {'eeg': eeg, 'baseline': None}
+
+        def label(info, **kwargs):
+            return {'label': info['valence']}
 
         with tempfile.TemporaryDirectory() as directory:
             config = self.make_source(directory)
             path = os.path.join(directory, 'cache')
             dataset = DEAPDataset(**config, io_path=path,
-                                  offline_transform=offline, online_transform=online)
+                                  offline_transform=offline, online_transform=online, label_transform=label)
             self.assertEqual(calls, [])
             first = dataset[0]
             np.testing.assert_array_equal(dataset[0]['eeg'], first['eeg'])
@@ -124,6 +127,33 @@ class TestCachedDataset(unittest.TestCase):
                 DEAPDataset(**config, io_path=path)
 
     def test_stage_transforms_must_be_callable(self):
-        for name in ('offline_transform', 'online_transform'):
+        for name in ('offline_transform', 'online_transform', 'label_transform'):
             with self.subTest(name=name), self.assertRaisesRegex(TypeError, name):
                 DEAPDataset(io_mode='memory', **{name: 1})
+
+    def test_offline_baseline_removal_is_persisted_as_absence(self):
+        def offline(eeg, baseline=None, **kwargs):
+            return {'eeg': eeg - baseline, 'baseline': None}
+
+        seen = []
+
+        def online(eeg, baseline=None, **kwargs):
+            seen.append(baseline)
+            return {'eeg': eeg, 'baseline': baseline}
+
+        with tempfile.TemporaryDirectory() as directory:
+            config = self.make_source(directory)
+            path = os.path.join(directory, 'cache')
+            dataset = DEAPDataset(**config, io_path=path,
+                                  offline_transform=offline)
+            self.assertNotIn('baseline_id', dataset.info)
+            expected = dataset[0]['eeg']
+            dataset.close()
+            dataset = DEAPDataset(**config, io_path=path, offline_transform=offline,
+                                  online_transform=online,
+                                  label_transform=lambda info, **kwargs: {'label': info['valence']})
+            sample = dataset[0]
+            self.assertEqual(seen, [None])
+            self.assertEqual(set(sample), {'eeg', 'label'})
+            np.testing.assert_array_equal(sample['eeg'], expected)
+            dataset.close()

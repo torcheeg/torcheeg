@@ -40,21 +40,25 @@ class TestBaseData(unittest.TestCase):
         self.assertEqual(list(StaticData().iter_record('record')), [
                          {'eeg': 'record', 'info': {'record': 'record'}}])
 
-    def test_transform_composition_preserves_source_configuration(self):
-        def increment(sample):
-            return {**sample, 'eeg': sample['eeg'] + 1}
+    def test_signal_transform_preserves_metadata_and_handles_missing_baseline(self):
+        calls = []
 
-        def double(sample):
-            return {**sample, 'eeg': sample['eeg'] * 2}
+        def transform(eeg, baseline=None, **kwargs):
+            calls.append(baseline)
+            operations = Compose([lambda x: x + 1, lambda x: x * 2])
+            return {'eeg': operations(eeg), 'baseline': None}
 
-        data = _WindowData()
-        first = _WindowData(transform=increment)
-        chained = _WindowData(transform=Compose([increment, double]))
-        composed = _WindowData(transform=Compose(
-            [increment, Compose([double])]))
-        np.testing.assert_array_equal(next(data.iter_record(0))['eeg'], 0)
-        np.testing.assert_array_equal(next(first.iter_record(0))['eeg'], 1)
-        np.testing.assert_array_equal(next(chained.iter_record(0))['eeg'], 2)
-        np.testing.assert_array_equal(next(composed.iter_record(0))['eeg'], 2)
+        data = _WindowData(transform=transform)
+        result = next(data.iter_record(0))
+        np.testing.assert_array_equal(result['eeg'], 2)
+        self.assertEqual(result['info'], {'subject_id': '000', 'index': 0})
+        self.assertEqual(calls, [None])
+        self.assertIsNone(result['baseline'])
         with self.assertRaises(TypeError):
             _WindowData(transform=1)
+
+    def test_signal_transform_requires_an_eeg_dictionary(self):
+        for result, error in (([], TypeError), ({}, ValueError), ({'eeg': None}, ValueError)):
+            with self.subTest(result=result), self.assertRaises(error):
+                next(_WindowData(transform=lambda eeg,
+                     **kwargs: result).iter_record(0))

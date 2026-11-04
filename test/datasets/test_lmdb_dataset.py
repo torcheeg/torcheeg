@@ -25,7 +25,7 @@ class TestLMDBDataset(unittest.TestCase):
 
     def test_selected_view_reads_in_worker_after_parent_close(self):
         import multiprocessing
-        from test.datasets.test_io_dataset import prepare_training
+        from test.datasets.test_io_dataset import prepare_label
 
         from torch.utils.data import DataLoader
 
@@ -34,7 +34,7 @@ class TestLMDBDataset(unittest.TestCase):
             dataset.extend({'eeg': np.full((2, 4), index),
                             'info': {'label': index}} for index in range(3))
             selected = LMDBDataset(
-                directory, transform=prepare_training)[[2, 0]]
+                directory, label_transform=prepare_label)[[2, 0]]
             dataset.close()
             for method in multiprocessing.get_all_start_methods():
                 with self.subTest(method=method):

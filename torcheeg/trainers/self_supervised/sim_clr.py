@@ -48,26 +48,29 @@ class SimCLRTrainer(pl.LightningModule):
         from torcheeg.datasets.utils import get_locations
 
 
-        def preprocess_fn(sample: dict) -> dict:
+        def preprocess_fn(eeg, baseline=None, **kwargs) -> dict:
             eeg_transform = transforms.Compose([
                 transforms.BandDifferentialEntropy(sampling_rate=128),
             ])
             return {
-                **sample,
-                'eeg': eeg_transform(sample['eeg']),
-                'baseline': eeg_transform(sample['baseline']),
+                'eeg': eeg_transform(eeg),
+                'baseline': eeg_transform(baseline) if baseline is not None else None,
             }
 
 
-        def transform_fn(sample: dict) -> dict:
+        def transform_fn(eeg, baseline=None, **kwargs) -> dict:
+            if baseline is not None:
+                eeg = transforms.BaselineRemoval(baseline=baseline)(eeg)
             eeg_transform = transforms.Compose([
-                transforms.BaselineRemoval(baseline=sample['baseline']),
-                transforms.ToGrid(get_locations(DEAPDataset.channels, DEAPDataset.grid)),
+                transforms.ToGrid(get_locations(
+                    DEAPDataset.channels, DEAPDataset.grid)),
                 transforms.ToTensor(),
-                transforms.Contrastive(transforms.Compose([transforms.RandomMask(p=0.5), transforms.RandomNoise(p=0.5)]), num_views=2),
+                transforms.Contrastive(transforms.Compose(
+                    [transforms.RandomMask(p=0.5), transforms.RandomNoise(p=0.5)]), num_views=2),
             ])
             return {
-                'eeg': eeg_transform(sample['eeg']),
+                'eeg': eeg_transform(eeg),
+                'baseline': eeg_transform(baseline) if baseline is not None else None,
             }
 
 

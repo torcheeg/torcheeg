@@ -191,18 +191,25 @@ class FBMSNet(nn.Module):
             }
 
 
-            def transform_fn(sample: dict) -> dict:
+            def transform_fn(eeg, baseline=None, **kwargs) -> dict:
                 eeg_transform = transforms.Compose([
-                    transforms.BandSignal(band_dict=freq_range_per_band, sampling_rate=250),
+                    transforms.BandSignal(
+                        band_dict=freq_range_per_band, sampling_rate=250),
                     transforms.ToTensor(),
                 ])
+                return {
+                    'eeg': eeg_transform(eeg),
+                    'baseline': eeg_transform(baseline) if baseline is not None else None,
+                }
+
+
+            def label_fn(info: dict, **kwargs) -> dict:
                 label_transform = transforms.Compose([
                     transforms.Select('label'),
                     transforms.Lambda(lambda label: label - 1),
                 ])
                 return {
-                    'eeg': eeg_transform(sample['eeg']),
-                    'label': label_transform(sample['info']),
+                    'label': label_transform(info),
                 }
 
 
@@ -210,6 +217,7 @@ class FBMSNet(nn.Module):
                 root_path='./BCICIV_2a_mat',
                 chunk_size=512,
                 online_transform=transform_fn,
+                label_transform=label_fn,
             )
 
             model = FBMSNet(num_classes=4, num_electrodes=22,

@@ -26,27 +26,37 @@ class SSTEmotionNet(nn.Module):
         from torch.utils.data import DataLoader
 
 
-        def transform_fn(sample: dict) -> dict:
+        def transform_fn(eeg, baseline=None, **kwargs) -> dict:
+            if baseline is not None:
+                eeg = transforms.BaselineRemoval(baseline=baseline)(eeg)
             eeg_transform = transforms.Compose([
-                transforms.BaselineRemoval(baseline=sample['baseline']),
-                transforms.Concatenate([transforms.Compose([transforms.BandDifferentialEntropy(sampling_rate=128), transforms.MeanStdNormalize()]), transforms.Compose([transforms.Downsample(num_points=32), transforms.MinMaxNormalize()])]),
-                transforms.ToInterpolatedGrid(get_locations(DEAPDataset.channels, DEAPDataset.grid)),
+                transforms.Concatenate([transforms.Compose([transforms.BandDifferentialEntropy(sampling_rate=128), transforms.MeanStdNormalize(
+                )]), transforms.Compose([transforms.Downsample(num_points=32), transforms.MinMaxNormalize()])]),
+                transforms.ToInterpolatedGrid(get_locations(
+                    DEAPDataset.channels, DEAPDataset.grid)),
                 transforms.ToTensor(),
                 transforms.Resize((16, 16)),
             ])
+            return {
+                'eeg': eeg_transform(eeg),
+                'baseline': eeg_transform(baseline) if baseline is not None else None,
+            }
+
+
+        def label_fn(info: dict, **kwargs) -> dict:
             label_transform = transforms.Compose([
                 transforms.Select('valence'),
                 transforms.Binary(5.0),
             ])
             return {
-                'eeg': eeg_transform(sample['eeg']),
-                'label': label_transform(sample['info']),
+                'label': label_transform(info),
             }
 
 
         dataset = DEAPDataset(
             root_path='./data_preprocessed_python',
             online_transform=transform_fn,
+            label_transform=label_fn,
         )
 
         model = SSTEmotionNet(temporal_in_channels=32,

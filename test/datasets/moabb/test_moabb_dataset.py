@@ -38,7 +38,7 @@ class TestMOABBDataset(unittest.TestCase):
 
     def test_windows_keep_labels_metadata_and_unique_keys(self):
         data = self._adapter.data_class(dataset=self._dataset, paradigm=self._paradigm, chunk_size=4,
-                                        overlap=2, transform=lambda sample: {**sample, 'eeg': sample['eeg'] + 1})
+                                        overlap=2, transform=lambda eeg, **kwargs: {'eeg': eeg + 1})
         items = list(data.iter_record((1, 'session')))
         self.assertEqual(len(items), 6)
         self.assertEqual(len(

@@ -129,28 +129,34 @@ class LGGNet(nn.Module):
         from torcheeg.datasets.montage import GENERAL_REGION_LIST
 
 
-        def preprocess_fn(sample: dict) -> dict:
+        def preprocess_fn(eeg, baseline=None, **kwargs) -> dict:
             eeg_transform = transforms.Compose([
                 transforms.MeanStdNormalize(),
                 transforms.To2d(),
             ])
             return {
-                **sample,
-                'eeg': eeg_transform(sample['eeg']),
+                'eeg': eeg_transform(eeg),
+                'baseline': eeg_transform(baseline) if baseline is not None else None,
             }
 
 
-        def transform_fn(sample: dict) -> dict:
+        def transform_fn(eeg, baseline=None, **kwargs) -> dict:
             eeg_transform = transforms.Compose([
                 transforms.ToTensor(),
             ])
+            return {
+                'eeg': eeg_transform(eeg),
+                'baseline': eeg_transform(baseline) if baseline is not None else None,
+            }
+
+
+        def label_fn(info: dict, **kwargs) -> dict:
             label_transform = transforms.Compose([
                 transforms.Select('emotion'),
                 transforms.Lambda(lambda x: x + 1),
             ])
             return {
-                'eeg': eeg_transform(sample['eeg']),
-                'label': label_transform(sample['info']),
+                'label': label_transform(info),
             }
 
 
@@ -158,6 +164,7 @@ class LGGNet(nn.Module):
             root_path='./Preprocessed_EEG',
             offline_transform=preprocess_fn,
             online_transform=transform_fn,
+            label_transform=label_fn,
         )
         model = LGGNet(region_list=get_regions(SEEDDataset.channels, GENERAL_REGION_LIST),
                        chunk_size=128, num_electrodes=32, hid_channels=32, num_classes=2)

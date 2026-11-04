@@ -132,31 +132,37 @@ class MOABBDataset(CachedDataset):
         paradigm = LeftRightImagery()
 
 
-        def preprocess_fn(sample: dict) -> dict:
+        def preprocess_fn(eeg, baseline=None, **kwargs) -> dict:
             eeg_transform = transforms.Compose([
                 transforms.BandDifferentialEntropy(),
             ])
             return {
-                **sample,
-                'eeg': eeg_transform(sample['eeg']),
+                'eeg': eeg_transform(eeg),
+                'baseline': eeg_transform(baseline) if baseline is not None else None,
             }
 
 
-        def transform_fn(sample: dict) -> dict:
+        def transform_fn(eeg, baseline=None, **kwargs) -> dict:
             eeg_transform = transforms.Compose([
                 transforms.ToTensor(),
             ])
+            return {
+                'eeg': eeg_transform(eeg),
+                'baseline': eeg_transform(baseline) if baseline is not None else None,
+            }
+
+
+        def label_fn(info: dict, **kwargs) -> dict:
             label_transform = transforms.Compose([
                 transforms.Select('label'),
             ])
             return {
-                'eeg': eeg_transform(sample['eeg']),
-                'label': label_transform(sample['info']),
+                'label': label_transform(info),
             }
 
 
         dataset = moabb_dataset.MOABBDataset(
-            dataset=dataset, paradigm=paradigm, io_path='./io/moabb', online_transform=transform_fn)
+            dataset=dataset, paradigm=paradigm, io_path='./io/moabb', offline_transform=preprocess_fn, online_transform=transform_fn, label_transform=label_fn)
 
     Args:
         dataset (MOABBDataset): an instance of :obj:`BaseDataset` defined by moabb.
@@ -166,8 +172,9 @@ class MOABBDataset(CachedDataset):
 
 
 
-        offline_transform (Callable, optional): Sample dictionary transform applied before storage. (default: :obj:`None`)
-        online_transform (Callable, optional): Sample transform applied on each read. (default: :obj:`None`)
+        offline_transform (Callable, optional): EEG transform applied before storage; returns a dictionary containing eeg. (default: :obj:`None`)
+        online_transform (Callable, optional): EEG transform applied on each read. (default: :obj:`None`)
+        label_transform (Callable, optional): Transform info into a dictionary containing label on each read. (default: :obj:`None`)
         io_path (str): The path to generated unified data IO, cached as an intermediate result. If set to None, a random path will be generated. (default: :obj:`./io/moabb`)
         io_size (int): Maximum size database may grow to; used to size the memory mapping. If database grows larger than ``map_size``, an exception will be raised and the user must close and reopen. (default: :obj:`1048576`)
         io_mode (str): Storage mode of EEG signal. When io_mode is set to :obj:`lmdb`, TorchEEG provides an efficient database (LMDB) for storing EEG signals. LMDB may not perform well on limited operating systems, where a file system based EEG signal storage is also provided. When io_mode is set to :obj:`pickle`, pickle-based persistence files are used. When io_mode is set to :obj:`memory`, memory are used. (default: :obj:`lmdb`)
@@ -177,13 +184,13 @@ class MOABBDataset(CachedDataset):
 
     data_class = MOABBData
 
-    def __init__(self, dataset: _MOABBDataset, paradigm: _MOABBParadigm, chunk_size: int = -1, overlap: int = 0, offline_transform: Union[None, Callable] = None, online_transform: Union[None, Callable] = None, io_path: Union[None, str] = None, io_size: int = 1048576, io_mode: str = 'lmdb', download_path: str = None, num_worker: int = 0, verbose: bool = True, **kwargs):
+    def __init__(self, dataset: _MOABBDataset, paradigm: _MOABBParadigm, chunk_size: int = -1, overlap: int = 0, offline_transform: Union[None, Callable] = None, online_transform: Union[None, Callable] = None, label_transform: Union[None, Callable] = None, io_path: Union[None, str] = None, io_size: int = 1048576, io_mode: str = 'lmdb', download_path: str = None, num_worker: int = 0, verbose: bool = True, **kwargs):
         if download_path is None:
             from ...utils import get_random_dir_path
             if io_path is None:
                 io_path = get_random_dir_path(dir_prefix='datasets')
             download_path = os.fspath(io_path) + '_raw'
-        params = {'dataset': dataset, 'paradigm': paradigm, 'chunk_size': chunk_size, 'overlap': overlap, 'offline_transform': offline_transform, 'online_transform': online_transform,
+        params = {'dataset': dataset, 'paradigm': paradigm, 'chunk_size': chunk_size, 'overlap': overlap, 'offline_transform': offline_transform, 'online_transform': online_transform, 'label_transform': label_transform,
                   'io_path': io_path, 'io_size': io_size, 'io_mode': io_mode, 'download_path': download_path, 'num_worker': num_worker, 'verbose': verbose}
         params.update(kwargs)
         super().__init__(**params)
@@ -191,4 +198,4 @@ class MOABBDataset(CachedDataset):
 
     @property
     def repr_body(self) -> Dict:
-        return dict(super().repr_body, **{'dataset': self.dataset, 'paradigm': self.paradigm, 'offline_transform': self.offline_transform, 'online_transform': self.online_transform, 'verbose': self.verbose, 'io_size': self.io_size})
+        return dict(super().repr_body, **{'dataset': self.dataset, 'paradigm': self.paradigm, 'offline_transform': self.offline_transform, 'online_transform': self.online_transform, 'label_transform': self.label_transform, 'verbose': self.verbose, 'io_size': self.io_size})
